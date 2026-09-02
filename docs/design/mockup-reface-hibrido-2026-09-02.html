@@ -696,6 +696,97 @@ thead th{background:color-mix(in oklab,var(--folha-2) 88%,transparent);backdrop-
 .cal .g .d{transition:background var(--dur-1)} .cal .g .d:hover{background:var(--hover)}
 .tfoot .pg button:hover,.seg button:hover,.dens button:hover{background:var(--hover)}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.kpis .kpi,.view.on{opacity:1;transform:none}}
+/* =====================================================================
+   RODADA 5 — pesquisa de estilos aplicada (pesquisa-estilos-2026-09-02.md)
+   ===================================================================== */
+/* §2 OKLCH: rampas com L igual por degrau; hex acima fica como fallback */
+@supports (color: oklch(0.5 0.1 100)){
+  :root{
+    --lime-50:oklch(.98 .05 112);   --lime-100:oklch(.96 .10 112);  --lime-200:oklch(.94 .17 112);  --lime-400:oklch(.92 .22 112);  --lime-600:oklch(.58 .15 112);  --lime-800:oklch(.45 .12 112);
+    --indigo-50:oklch(.96 .03 275); --indigo-100:oklch(.92 .06 275);--indigo-200:oklch(.84 .11 275);--indigo-400:oklch(.62 .19 275);--indigo-600:oklch(.50 .20 275);--indigo-800:oklch(.38 .16 275);
+    --mint-50:oklch(.96 .03 155);   --mint-100:oklch(.92 .06 155);  --mint-200:oklch(.84 .11 155);  --mint-400:oklch(.68 .16 155);  --mint-600:oklch(.50 .13 155);  --mint-800:oklch(.38 .10 155);
+    --sky-50:oklch(.96 .02 255);    --sky-100:oklch(.92 .05 255);   --sky-200:oklch(.84 .10 255);   --sky-400:oklch(.64 .17 255);   --sky-600:oklch(.50 .16 255);   --sky-800:oklch(.38 .13 255);
+    --amber-50:oklch(.96 .04 80);   --amber-100:oklch(.92 .08 80);  --amber-200:oklch(.84 .14 80);  --amber-400:oklch(.74 .16 75);  --amber-600:oklch(.50 .12 70);  --amber-800:oklch(.38 .09 70);
+    --rose-50:oklch(.95 .03 25);    --rose-100:oklch(.90 .06 25);   --rose-200:oklch(.80 .12 25);   --rose-400:oklch(.62 .19 25);   --rose-600:oklch(.50 .18 25);   --rose-800:oklch(.38 .14 25);
+    --violet-50:oklch(.96 .03 305); --violet-100:oklch(.92 .06 305);--violet-200:oklch(.84 .11 305);--violet-400:oklch(.62 .18 305);--violet-600:oklch(.50 .17 305);--violet-800:oklch(.38 .13 305);
+    --teal-50:oklch(.96 .03 195);   --teal-100:oklch(.92 .06 195);  --teal-200:oklch(.84 .10 195);  --teal-400:oklch(.66 .12 195);  --teal-600:oklch(.50 .10 195);  --teal-800:oklch(.38 .08 195);
+    /* neutros também em oklch — H 85 (papel), C mínimo */
+    --n-0:oklch(.995 .006 90); --n-50:oklch(.965 .009 85); --n-100:oklch(.93 .012 85); --n-200:oklch(.875 .014 85); --n-300:oklch(.80 .016 85);
+    --n-400:oklch(.68 .014 85); --n-500:oklch(.55 .014 85); --n-700:oklch(.38 .012 85); --n-900:oklch(.18 .012 85);
+  }
+  [data-theme="dark"]{
+    --n-0:oklch(.19 .008 85); --n-50:oklch(.22 .009 85); --n-100:oklch(.25 .010 85); --n-200:oklch(.30 .011 85); --n-300:oklch(.36 .012 85);
+    --n-400:oklch(.48 .012 85); --n-500:oklch(.64 .012 85); --n-700:oklch(.82 .010 85); --n-900:oklch(.96 .008 85);
+  }
+}
+/* §3 superfície tonal por módulo: bancada carrega 4% do matiz do módulo; folha continua neutra */
+.shell{--bancada-mod:var(--bancada)}
+.shell[data-modulo="compras"]{--bancada-mod:color-mix(in oklab,var(--indigo-400) 4%,var(--bancada))}
+.shell[data-modulo="hoje"]{--bancada-mod:color-mix(in oklab,var(--lime-400) 3%,var(--bancada))}
+.shell[data-modulo="estoque"]{--bancada-mod:color-mix(in oklab,var(--mint-400) 4%,var(--bancada))}
+.shell .main{background:var(--bancada-mod)}
+.shell .top{background:color-mix(in oklab,var(--bancada-mod) 72%,transparent)}
+/* §9 grão de papel: só na bancada, 3.5% */
+.shell .main::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.035;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .9 0'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>")}
+[data-theme="dark"] .shell .main::before{mix-blend-mode:screen;opacity:.05}
+.shell .main>*:not(.top){position:relative;z-index:1}
+.fbar .search{width:210px}
+.nav{position:sticky;top:44px;height:calc(100vh - 44px);overflow:auto;scrollbar-width:thin}
+@media (prefers-reduced-transparency:reduce){.shell .main::before{display:none}}
+/* §5 sombra ambiente no matiz, por baixo da dura */
+.kpi{box-shadow:var(--hard-1),0 14px 28px -14px color-mix(in oklab,var(--kc,var(--n-900)) 45%,transparent)}
+.kpi:hover{box-shadow:3px 3px 0 0 var(--ink),0 18px 32px -14px color-mix(in oklab,var(--kc,var(--n-900)) 55%,transparent)}
+.tc:hover{box-shadow:var(--hard-1),0 12px 24px -12px color-mix(in oklab,var(--cc,var(--n-900)) 40%,transparent)}
+/* §6 número de display + count-up (tabular, então não pula) */
+.kpi .v{font-size:26px;letter-spacing:-.03em;line-height:1}
+.kpi .v.big{font-size:32px}
+.kpi .v .cnt-up{display:inline-block;min-width:0}
+/* §11 bento no dashboard: KPI herói 2×1 */
+#v-dash .kpis{grid-template-columns:1.6fr 1fr 1fr 1fr}
+#v-dash .kpi:nth-child(4){grid-column:1;grid-row:1}
+#v-dash .kpi:nth-child(4) .v.big{font-size:40px}
+#v-dash .kpi:nth-child(4) .spark{width:120px;height:32px;margin-left:auto}
+/* §4 barra de lote FLUTUANTE (Linear/Attio): pílula glass solta no rodapé do painel */
+.card{position:relative}
+.bulk{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);width:max-content;max-width:calc(100% - 32px);border-radius:var(--r-pill);
+  padding:8px 10px 8px 14px;box-shadow:var(--hard-3),0 20px 40px -16px color-mix(in oklab,var(--n-900) 55%,transparent);z-index:6;
+  animation:cab-pop var(--dur-2) var(--ease-out) both}
+.bulk .btn{border-radius:var(--r-pill)}
+@keyframes cab-pop{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
+/* §10 largura de coluna estável por tipo */
+#v-lista thead th:nth-child(2){width:110px} #v-lista thead th:nth-child(4),#v-lista thead th:nth-child(5){width:150px}
+#v-lista thead th:nth-child(6){width:120px} #v-lista thead th:nth-child(7){width:150px} #v-lista thead th:nth-child(8){width:130px}
+/* §7 modo Planilha: célula selecionável, setas navegam, Enter edita */
+table.sheet tbody td{cursor:cell;user-select:none}
+table.sheet tbody td:focus{outline:none;box-shadow:inset 0 0 0 2px var(--lime-600),inset 0 0 0 4px color-mix(in oklab,var(--lime-400) 40%,transparent);background:color-mix(in oklab,var(--lime-400) 10%,var(--folha))}
+table.sheet tbody td[contenteditable="true"]{box-shadow:inset 0 0 0 2px var(--n-900);background:var(--folha);cursor:text;user-select:text}
+table.sheet tbody tr.g td{cursor:default}
+.dens button[data-mode="sheet"]{border-left:1px solid var(--hairline-2)}
+.sheet-hint{display:none;font-size:11px;color:var(--ink-3);font-family:var(--ff-mono);margin-left:8px}
+table.sheet~.tfoot .sheet-hint,.fbar .sheet-hint.on{display:inline}
+/* §8 movimento de artesão: saída mais rápida que entrada; spring ao soltar */
+.tc:active{transform:scale(.985);transition-duration:60ms}
+.view{animation:none}
+.view.on{animation:cab-fade var(--dur-2) var(--ease-out)}
+::view-transition-old(root){animation:cab-fade 90ms var(--ease) reverse}
+::view-transition-new(root){animation:cab-fade 160ms var(--ease-out)}
+/* §1 sistema gráfico da marca: forma dentro de forma, em traço */
+.forma{display:inline-block;width:64px;height:64px;stroke:var(--n-900);fill:none;stroke-linejoin:miter;stroke-width:5}
+.forma.lg{width:120px;height:120px;stroke-width:4}
+.forma .in{stroke-width:4}
+.forma.lg .in{stroke-width:3}
+.forma.tint .out{fill:color-mix(in oklab,var(--fc,var(--lime-400)) 18%,transparent)}
+.forma.tint .in{fill:color-mix(in oklab,var(--fc,var(--lime-400)) 55%,transparent)}
+.forma .in{animation:cab-breathe 2.4s var(--ease) infinite;transform-origin:50% 50%}
+@keyframes cab-breathe{0%,100%{transform:scale(1)}50%{transform:scale(.94)}}
+.forma.static .in{animation:none}
+.empty{display:flex;flex-direction:column;align-items:center;gap:10px;padding:36px 20px;text-align:center}
+.empty h4{font-size:15px;font-weight:500}
+.empty p{font-size:12.5px;color:var(--ink-3);max-width:34ch}
+.formas{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;text-align:center;font-size:11px;color:var(--ink-3)}
+.formas div{display:flex;flex-direction:column;align-items:center;gap:8px}
+.formas code{font-family:var(--ff-mono);font-size:10.5px}
 /* toggle de tema na barra */
 .mq .theme{margin-left:10px;border:1px solid #5a564c;border-radius:6px;padding:4px 9px;color:#C9C4B6;font-size:12px;display:inline-flex;gap:6px;align-items:center}
 .mq .theme:hover{background:#2a2720}
@@ -722,7 +813,7 @@ thead th{background:color-mix(in oklab,var(--folha-2) 88%,transparent);backdrop-
 
 <!-- ============================================================ LISTAGEM -->
 <section class="view on" id="v-lista">
-<div class="shell">
+<div class="shell" data-modulo="compras">
   <aside class="nav">
     <div class="brand">
       <div class="mark"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 1.6 L14.4 6.7 V14.4 H1.6 V6.7 Z"/><path d="M8 5.6 L11.3 8.2 V11.6 H4.7 V8.2 Z"/></svg></div>
@@ -804,7 +895,7 @@ thead th{background:color-mix(in oklab,var(--folha-2) 88%,transparent);backdrop-
           <span class="chip grpby">Agrupar <b>Situação</b><span class="x">×</span></span>
           <div class="sp"></div>
           <button class="btn ghost sm">Ordenar: Previsão ↑</button>
-          <div class="dens"><button aria-selected="false" title="Linha 40 px">Compacta</button><button aria-selected="true" title="Linha 52 px, com subtítulo">Confortável</button></div>
+          <div class="dens"><button aria-selected="false" data-mode="dense" title="Linha 40 px">Compacta</button><button aria-selected="true" data-mode="comfy" title="Linha 52 px, com subtítulo">Confortável</button><button aria-selected="false" data-mode="sheet" title="Célula selecionável: setas navegam, Enter edita, Esc cancela">Planilha</button></div><span class="sheet-hint">↑↓←→ navega · Enter edita · Esc cancela · ⌘C copia</span>
           <div class="seg"><button aria-selected="true" title="Lista"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 4h12M2 8h12M2 12h12"/></svg></button><button title="Kanban por situação"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="2" width="3.5" height="12" rx="1"/><rect x="6.5" y="2" width="3.5" height="8" rx="1"/><rect x="11" y="2" width="3" height="5" rx="1"/></svg></button><button title="Calendário de previsão de chegada"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="3" width="12" height="11" rx="1.5"/><path d="M2 7h12M5 1.5v3M11 1.5v3"/></svg></button></div>
           <button class="btn ghost sm" title="Colunas">Colunas <span style="color:var(--ink-3)">· 2 ocultas</span></button>
         </div>
@@ -849,7 +940,7 @@ thead th{background:color-mix(in oklab,var(--folha-2) 88%,transparent);backdrop-
 
 <!-- ============================================================ FORMULÁRIO -->
 <section class="view" id="v-form">
-<div class="shell">
+<div class="shell" data-modulo="compras">
   <aside class="nav">
     <div class="brand"><div class="mark"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 1.6 L14.4 6.7 V14.4 H1.6 V6.7 Z"/><path d="M8 5.6 L11.3 8.2 V11.6 H4.7 V8.2 Z"/></svg></div><span class="name">Cabinet</span><span class="tag">v0.9</span></div>
     <div class="tenant"><div class="sq">VZ</div><div class="t"><b>Vertz Iluminação</b><span>Administrador · 3 empresas</span></div><span class="chev">⌄</span></div>
@@ -947,7 +1038,7 @@ thead th{background:color-mix(in oklab,var(--folha-2) 88%,transparent);backdrop-
 
 <!-- ============================================================ DASHBOARD -->
 <section class="view" id="v-dash">
-<div class="shell">
+<div class="shell" data-modulo="hoje">
   <aside class="nav">
     <div class="brand"><div class="mark"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 1.6 L14.4 6.7 V14.4 H1.6 V6.7 Z"/><path d="M8 5.6 L11.3 8.2 V11.6 H4.7 V8.2 Z"/></svg></div><span class="name">Cabinet</span><span class="tag">v0.9</span></div>
     <div class="tenant"><div class="sq">VZ</div><div class="t"><b>Vertz Iluminação</b><span>Administrador · 3 empresas</span></div><span class="chev">⌄</span></div>
@@ -1015,7 +1106,7 @@ thead th{background:color-mix(in oklab,var(--folha-2) 88%,transparent);backdrop-
 
 <!-- ============================================================ QUADRO -->
 <section class="view" id="v-board">
-<div class="shell">
+<div class="shell" data-modulo="hoje">
   <aside class="nav">
     <div class="brand"><div class="mark"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 1.6 L14.4 6.7 V14.4 H1.6 V6.7 Z"/><path d="M8 5.6 L11.3 8.2 V11.6 H4.7 V8.2 Z"/></svg></div><span class="name">Cabinet</span><span class="tag">v0.9</span></div>
     <div class="tenant"><div class="sq">VZ</div><div class="t"><b>Vertz Iluminação</b><span>Administrador · 3 empresas</span></div><span class="chev">⌄</span></div>
@@ -1073,7 +1164,13 @@ thead th{background:color-mix(in oklab,var(--folha-2) 88%,transparent);backdrop-
 <div class="auth">
   <div class="l">
     <div class="brand"><div class="mark"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 1.6 L14.4 6.7 V14.4 H1.6 V6.7 Z"/><path d="M8 5.6 L11.3 8.2 V11.6 H4.7 V8.2 Z"/></svg></div><span class="name">Cabinet</span></div>
-    <svg class="orn" viewBox="0 0 360 360" fill="none"><circle cx="180" cy="180" r="150" fill="var(--tint-lilac)" stroke="var(--ink)" stroke-width="1.5"/><circle cx="180" cy="180" r="100" fill="var(--tint-sand)" stroke="var(--ink)" stroke-width="1.5"/><circle cx="180" cy="180" r="50" fill="var(--main)" stroke="var(--ink)" stroke-width="1.5"/><path d="M30 180h300M180 30v300" stroke="var(--ink)" stroke-width="1" stroke-dasharray="3 5"/></svg>
+    <!-- §1 sistema gráfico: a marca em três níveis, tinta e traço — "forma dentro de forma" -->
+    <svg class="orn" viewBox="0 0 360 360" fill="none" stroke="var(--ink)" stroke-linejoin="miter">
+      <path d="M180 22 L338 148 V338 H22 V148 Z" stroke-width="7" fill="color-mix(in oklab,var(--indigo-400) 14%,transparent)"/>
+      <path d="M180 92 L280 171 V280 H80 V171 Z" stroke-width="6" fill="color-mix(in oklab,var(--amber-400) 18%,transparent)"/>
+      <path d="M180 156 L228 194 V228 H132 V194 Z" stroke-width="5" fill="var(--lime-400)"/>
+      <path d="M22 148 H338 M180 22 V338" stroke-width="1" stroke-dasharray="3 6" opacity=".5"/>
+    </svg>
     <div class="claim">Estoque, compras e orçamento <em>numa mesa só.</em></div>
     <div class="foot"><span>Vertz Iluminação · Campinas</span><span>·</span><span>v0.9 · setembro 2026</span></div>
   </div>
@@ -1250,6 +1347,35 @@ Proibido: entrada de tela inteira, hover em linha/célula, parallax, loop decora
       <pre>[data-theme=dark]  n-0 #171613 · n-50 #1E1C18 · n-100 #24221D · n-200 #302E28 · n-300 #3E3B33 · n-400 #625E53 · n-500 #948F82 · n-700 #CBC6B9 · n-900 #F3F1EA
 sombras duras viram n-300/n-400 (tinta clara em papel escuro seria buraco) · lime 400 igual nos dois temas (fill com tinta preta) · texto de acento sobe pra lime-200 · semântica sobe 600→400</pre></div>
   </div>
+  <h2>Rodada 5 — sistema gráfico da marca + pesquisa aplicada</h2>
+  <div class="tok">
+    <div class="tk" style="grid-column:1/-1"><h3>Forma dentro de forma, em traço <span>uma por módulo · vazios, 404, login, hub, favicon, loading (a interna respira)</span></h3>
+      <div class="formas">
+        <div><svg class="forma tint" style="--fc:var(--lime-400)" viewBox="0 0 64 64"><path class="out" d="M32 5 L59 26 V59 H5 V26 Z"/><path class="in" d="M32 21 L46 32 V46 H18 V32 Z"/></svg><b>casa</b><code>marca · Hoje</code></div>
+        <div><svg class="forma tint" style="--fc:var(--indigo-400)" viewBox="0 0 64 64"><path class="out" d="M32 4 L58 18 V46 L32 60 L6 46 V18 Z"/><path class="in" d="M32 20 L45 27 V41 L32 48 L19 41 V27 Z"/></svg><b>caixa</b><code>Compras</code></div>
+        <div><svg class="forma tint" style="--fc:var(--mint-400)" viewBox="0 0 64 64"><rect class="out" x="6" y="6" width="52" height="52"/><rect class="in" x="20" y="20" width="24" height="24"/></svg><b>quadrado</b><code>Estoque</code></div>
+        <div><svg class="forma tint" style="--fc:var(--sky-400)" viewBox="0 0 64 64"><path class="out" d="M8 32 L32 6 L56 32 L44 32 L44 58 H20 V32 Z"/><path class="in" d="M22 32 L32 21 L42 32 L37 32 V46 H27 V32 Z"/></svg><b>seta</b><code>Vendas</code></div>
+        <div><svg class="forma tint" style="--fc:var(--amber-400)" viewBox="0 0 64 64"><path class="out" d="M6 8 H58 L38 34 V56 L26 60 V34 Z"/><path class="in" d="M20 18 H44 L34 32 V44 L30 46 V32 Z"/></svg><b>funil</b><code>CRM</code></div>
+        <div><svg class="forma tint" style="--fc:var(--violet-400)" viewBox="0 0 64 64"><circle class="out" cx="32" cy="32" r="26"/><circle class="in" cx="32" cy="32" r="12"/></svg><b>círculo</b><code>Pessoas</code></div>
+      </div>
+      <pre style="margin-top:12px">&lt;Forma tipo="casa|caixa|quadrado|seta|funil|circulo|barras" tamanho={64} tint="--mod-compras" respira /&gt;   /* ~60 linhas, substitui ornamento.tsx (465) */
+regra: contorno duplo concêntrico · sem preenchimento no traço · cantos vivos · tint só na forma interna (55%) e externa (18%) · traço = n-900 sempre</pre></div>
+    <div class="tk"><h3>Vazio com a forma do módulo <span>vazio-com-saida 2.0</span></h3>
+      <div class="empty" style="background:var(--folha-2);border-radius:var(--r-card)"><svg class="forma lg tint" style="--fc:var(--mint-400)" viewBox="0 0 64 64"><rect class="out" x="6" y="6" width="52" height="52"/><rect class="in" x="20" y="20" width="24" height="24"/></svg><h4>Nenhuma movimentação ainda</h4><p>Escolha um produto pra ver saldo por depósito e o histórico.</p><button class="btn pri sm">Escolher produto</button></div></div>
+    <div class="tk"><h3>404 com a marca <span>tela-nao-capturada 2.0</span></h3>
+      <div class="empty" style="background:var(--folha-2);border-radius:var(--r-card)"><svg class="forma lg tint static" style="--fc:var(--rose-400)" viewBox="0 0 64 64"><path class="out" d="M32 5 L59 26 V59 H5 V26 Z"/><path class="in" d="M32 21 L46 32 V46 H18 V32 Z"/></svg><h4 style="font-family:var(--ff-display);font-weight:400;font-size:22px">Este endereço não existe</h4><p>O caminho que você abriu não faz parte do Cabinet. Confira o endereço ou volte pro início.</p><button class="btn sm">Ir para o início</button></div></div>
+    <div class="tk" style="grid-column:1/-1"><h3>O que mais entrou nesta rodada <span>pesquisa-estilos-2026-09-02.md</span></h3>
+      <pre>§2  OKLCH: 8 rampas com L igual por degrau (400 = L .62–.74 · 600 = L .50) e neutros em H 85 — @supports com fallback hex
+§3  bancada tonal por módulo: Compras 4% indigo · Estoque 4% mint · Hoje 3% lime (folha continua neutra)
+§4  barra de lote FLUTUANTE: pílula glass solta no rodapé do painel, hard-3 + sombra ambiente, some sem seleção
+§5  sombra ambiente no matiz por baixo da dura (KPI, card de kanban) — nunca em linha
+§6  KPI: número 26/32/40px, tracking −.03em, count-up 600 ms tabular
+§7  modo PLANILHA como 3ª densidade: célula selecionável, setas, Enter edita, Esc cancela, ⌘C copia
+§8  saída mais rápida que entrada (90 ms) · spring ao soltar card · View Transitions na troca de aba
+§9  grão de papel 3.5% só na bancada (feTurbulence), desliga com prefers-reduced-transparency
+§10 largura de coluna fixa por tipo: id 110 · data 150 · status 120 · progresso 150 · dinheiro 130
+§11 bento no dashboard: "Vendas do mês" vira herói 1.6× com número 40px e sparkline 120px</pre></div>
+  </div>
   <h2>O que sai da fase 1.5</h2>
   <p>Escada de 6 sombras quentes (fica 3: soft, hard-1, hard-2) · borda 2 px em tudo (fica só no primário) · `--r-item: 0` (chip passa a 4 px, pílula de status 999) · faixa de acento lateral nos painéis (vira faixa de <i>estado</i> na linha, só quando há estado).</p>
 </div>
@@ -1258,11 +1384,29 @@ sombras duras viram n-300/n-400 (tinta clara em papel escuro seria buraco) · li
 <script>
 (function(){
   var tabs=[].slice.call(document.querySelectorAll('.mq [data-v]'));
-  function show(v){
+  function showNow(v){
     tabs.forEach(function(t){t.setAttribute('aria-selected',t.dataset.v===v)});
     [].forEach.call(document.querySelectorAll('.view'),function(s){s.classList.toggle('on',s.id==='v-'+v)});
     window.scrollTo(0,0);
     try{localStorage.setItem('cabinet-reface-tab',v)}catch(e){}
+    countUp(document.getElementById('v-'+v));
+  }
+  /* §8 View Transitions na troca de aba (degrada sem quebrar) */
+  var pronto=false;window.addEventListener('load',function(){pronto=true});
+  function show(v){ if(pronto&&document.startViewTransition&&!matchMedia('(prefers-reduced-motion:reduce)').matches){try{var vt=document.startViewTransition(function(){showNow(v)});vt.ready.catch(function(){})}catch(e){showNow(v)}}else{showNow(v)} }
+  /* §6 count-up tabular nos KPIs: anima só a parte inteira, mantém formatação pt-BR */
+  function countUp(root){
+    if(!root||matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+    [].forEach.call(root.querySelectorAll('.kpi .v'),function(v){
+      if(v.dataset.done)return; v.dataset.done='1';
+      var tn=null;for(var i=0;i<v.childNodes.length;i++){var c=v.childNodes[i];if(c.nodeType===3&&/\d/.test(c.nodeValue)){tn=c;break}}
+      if(!tn)return;
+      var m=tn.nodeValue.match(/^(\s*)([\d.]+)(.*)$/);if(!m)return;
+      var alvo=parseInt(m[2].replace(/\./g,''),10),pre=m[1],pos=m[3],t0=performance.now(),dur=600;
+      function fmt(n){return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}
+      function tick(t){var p=Math.min(1,(t-t0)/dur);p=1-Math.pow(1-p,3);tn.nodeValue=pre+fmt(Math.round(alvo*p))+pos;if(p<1)requestAnimationFrame(tick)}
+      requestAnimationFrame(tick);
+    });
   }
   tabs.forEach(function(t){t.addEventListener('click',function(){show(t.dataset.v)})});
   /* tema claro/escuro */
@@ -1275,9 +1419,28 @@ sombras duras viram n-300/n-400 (tinta clara em papel escuro seria buraco) · li
     if(e.key==='d'){setTheme(root.getAttribute('data-theme')==='dark'?'light':'dark');return}
     var i=parseInt(e.key,10);if(i>=1&&i<=tabs.length)show(tabs[i-1].dataset.v);
   });
-  /* densidade Compacta/Confortável (Untitled) */
-  var dens=document.querySelectorAll('.dens button'),tbl=document.querySelector('#v-lista table');
-  dens.forEach(function(b,i){b.addEventListener('click',function(){dens.forEach(function(x){x.setAttribute('aria-selected','false')});b.setAttribute('aria-selected','true');tbl.classList.toggle('dense',i===0)})});
+  /* densidade Compacta/Confortável/Planilha (Untitled + Airtable/Attio) */
+  var dens=document.querySelectorAll('.dens button'),tbl=document.querySelector('#v-lista table'),hint=document.querySelector('.sheet-hint');
+  dens.forEach(function(b){b.addEventListener('click',function(){dens.forEach(function(x){x.setAttribute('aria-selected','false')});b.setAttribute('aria-selected','true');
+    var m=b.dataset.mode;tbl.classList.toggle('dense',m==='dense');tbl.classList.toggle('sheet',m==='sheet');hint.classList.toggle('on',m==='sheet');
+    var cells=tbl.querySelectorAll('tbody tr:not(.g) td');
+    [].forEach.call(cells,function(td){if(m==='sheet'){td.tabIndex=0}else{td.removeAttribute('tabindex');td.removeAttribute('contenteditable')}});
+    if(m==='sheet'&&cells[1])cells[1].focus();
+  })});
+  /* §7 navegação de planilha */
+  tbl.addEventListener('keydown',function(e){
+    if(!tbl.classList.contains('sheet'))return;var td=e.target;if(td.tagName!=='TD')return;
+    var editing=td.getAttribute('contenteditable')==='true';
+    if(editing){if(e.key==='Escape'){td.removeAttribute('contenteditable');td.textContent=td.dataset.orig;td.focus()}else if(e.key==='Enter'){e.preventDefault();td.removeAttribute('contenteditable');td.focus()}return}
+    var tr=td.parentNode,i=[].indexOf.call(tr.children,td),rows=[].filter.call(tbl.querySelectorAll('tbody tr'),function(r){return !r.classList.contains('g')&&r.style.display!=='none'}),ri=rows.indexOf(tr),n=null;
+    if(e.key==='ArrowRight')n=tr.children[i+1];else if(e.key==='ArrowLeft')n=tr.children[i-1];
+    else if(e.key==='ArrowDown'&&rows[ri+1])n=rows[ri+1].children[i];else if(e.key==='ArrowUp'&&rows[ri-1])n=rows[ri-1].children[i];
+    else if(e.key==='Enter'){e.preventDefault();td.dataset.orig=td.textContent;td.setAttribute('contenteditable','true');td.focus();var s=getSelection(),r=document.createRange();r.selectNodeContents(td);s.removeAllRanges();s.addRange(r);return}
+    else if((e.metaKey||e.ctrlKey)&&e.key==='c'){try{navigator.clipboard.writeText(td.innerText)}catch(x){}return}
+    if(n){e.preventDefault();n.focus()}
+  });
+  tbl.addEventListener('click',function(e){if(tbl.classList.contains('sheet')){var td=e.target.closest('td');if(td&&td.tabIndex===0)td.focus()}});
+  countUp(document.querySelector('.view.on'));
   /* grupos da sidebar colapsam (Shopify/Linear) */
   [].forEach.call(document.querySelectorAll('.grp .up .tg'),function(t){t.parentNode.addEventListener('click',function(){t.parentNode.parentNode.classList.toggle('closed')})});
   /* colapso de grupo (Notion) */

@@ -1,7 +1,7 @@
-import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { Nome } from '@/components/cabinet/nome'
+import { PageHeader } from '@/components/cabinet/page-header'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -58,7 +58,7 @@ export function TelaDeListas() {
 
   return (
     <div className="flex flex-col gap-5">
-      <BandaDeIdentidade
+      <PageHeader
         titulo="Listas de apoio"
         contexto="O que os combos oferecem — marca, setor, cargo, motivo"
       />

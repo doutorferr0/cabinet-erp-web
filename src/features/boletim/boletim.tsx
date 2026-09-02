@@ -1,6 +1,6 @@
 import { rotaLiberada } from '@/app/navigation'
-import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
+import { PageHeader } from '@/components/cabinet/page-header'
 import { PainelBoletim } from '@/components/cabinet/painel-boletim'
 import { Stamp } from '@/components/cabinet/stamp'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -264,7 +264,7 @@ export function BoletimTela() {
 
   return (
     <div className="flex flex-col gap-4">
-      <BandaDeIdentidade titulo="Boletim" contexto="Movimento do dia">
+      <PageHeader titulo="Boletim" contexto="Movimento do dia">
         {dados ? (
           <div className="flex flex-col items-end gap-0.5">
             <span className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
@@ -275,7 +275,7 @@ export function BoletimTela() {
             </span>
           </div>
         ) : null}
-      </BandaDeIdentidade>
+      </PageHeader>
 
       {query.isPending ? (
         <BoletimSkeleton />

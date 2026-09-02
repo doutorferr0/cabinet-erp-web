@@ -1,5 +1,5 @@
 import { AlteracoesNaoSalvas } from '@/components/cabinet/alteracoes-nao-salvas'
-import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
+import { PageHeader } from '@/components/cabinet/page-header'
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
 import { type FamiliaDeCaminho, useReadOnlyPorPapel } from '@/data/papeis'
@@ -155,9 +155,17 @@ export function CadastroForm<T extends FieldValues>({
             O `gap-4` mora aqui: regiões da tela (fileira de cabeçalho, tira de
             abas, barra de rodapé) se separam por `{spacing.lg}` uma vez só, em
             vez de cada tela repetir `mt-2`/`pt-3` no olho. */}
-        {/* Fora do `<fieldset disabled>`: a banda é identidade, não campo — em
-            modo consulta ela continua legível, não apagada com o formulário. */}
-        {titulo ? <BandaDeIdentidade titulo={titulo} {...(contexto ? { contexto } : {})} /> : null}
+        {/* Fora do `<fieldset disabled>`: o cabeçalho é identidade, não campo —
+            em modo consulta ele continua legível, não apagado com o formulário.
+
+            **A `BandaDeIdentidade` morreu aqui (D16).** Ela era uma faixa
+            colorida de largura inteira com o nome da TELA dentro, e respondia a
+            pergunta errada: quem abriu o formulário já sabe em que tela está.
+            Custava a primeira dobra da página — 60px de gradiente, contorno de
+            2px e ornamento — para repetir o breadcrumb. O nome da tela passa ao
+            `PageHeader`, que é onde ele já mora em toda listagem e em toda ficha;
+            **quem** é o registro passa ao card lateral `BlocoIdentidade`. */}
+        {titulo ? <PageHeader titulo={titulo} {...(contexto ? { contexto } : {})} /> : null}
         {/* Acima do aviso e dos campos, colada no topo: é a única coisa da tela
             que fala do ESTADO do trabalho, e ela precisa continuar à vista com a
             página rolada. */}
@@ -181,10 +189,12 @@ export function CadastroForm<T extends FieldValues>({
         >
           {children}
         </fieldset>
-        {/* Rodapé é Documento (`bg-card`): senta na folha; régua superior em
-            Régua Forte (DESIGN.md) — separa a tira de ações do conteúdo. */}
-        {/* Padding nos dois lados: `sticky bottom-0` sem `pb` encosta o botão na moldura. */}
-        <div className="sticky bottom-0 flex justify-end gap-2 rule-strong-top bg-card py-3">
+        {/* Rodapé colado embaixo, separado do conteúdo por UMA hairline — a
+            régua forte de 2px do 1.7 competia com a borda dos cards logo acima e
+            desenhava duas linhas na mesma fronteira.
+            Padding nos dois lados: `sticky bottom-0` sem `pb` encosta o botão na
+            moldura. */}
+        <div className="sticky bottom-0 flex justify-end gap-[var(--s-2)] border-t py-[var(--s-3)] [background:var(--n-0)] [border-color:var(--n-200)]">
           {readOnly ? (
             <Button type="button" variant="outline" onClick={onCancelar}>
               <X />

@@ -465,6 +465,11 @@ function colunasDoKardex(depositos: readonly StockLocationDto[]) {
     {
       accessorKey: 'occurredAt',
       header: 'Quando',
+      // O `tipo` da grade 2.0 (D8) dá o ÍCONE do cabeçalho e a moldura da
+      // célula; a `cell` própria continua mandando no conteúdo, que aqui é o
+      // instante em pt-BR. Declarar o tipo e manter a célula é o que faz esta
+      // grade se parecer com as outras onze sem copiar o desenho delas.
+      meta: { tipo: 'data' },
       cell: ({ row }) => (
         <span className="t-dado">{formatInstanteBR(row.original.occurredAt)}</span>
       ),
@@ -473,15 +478,21 @@ function colunasDoKardex(depositos: readonly StockLocationDto[]) {
       id: 'locationId',
       header: 'Depósito',
       enableSorting: false,
+      meta: { tipo: 'texto' },
       cell: ({ row }) => nomeDoDeposito(depositos, row.original.locationId),
     },
     {
       accessorKey: 'reason',
       header: 'Motivo',
+      meta: { tipo: 'texto' },
     },
     {
       accessorKey: 'delta',
       header: 'Movimento',
+      // `numeric` e não `tipo: 'dinheiro'`: alinha à direita como número, sem
+      // pedir a moldura de moeda — quantidade não é dinheiro, e a grade
+      // procura a coluna de dinheiro para somar o rodapé.
+      meta: { numeric: true },
       cell: ({ row }) => {
         const sentido = sentidoDoMovimento(row.original.delta)
         const voz = VOZ_DO_SENTIDO[sentido]
@@ -514,6 +525,7 @@ function colunasDoKardex(depositos: readonly StockLocationDto[]) {
       id: 'balanceAfter',
       header: 'Saldo após',
       enableSorting: false,
+      meta: { numeric: true },
       cell: ({ row }) => (
         // O saldo acumulado é o número que se COMPARA linha a linha — mono
         // tabular e em tinta cheia, sem chip: ele não tem estado, tem valor.

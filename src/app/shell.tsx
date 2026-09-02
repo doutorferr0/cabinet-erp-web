@@ -178,7 +178,7 @@ function ItemDaBarra({
         >
           <item.icon
             aria-hidden="true"
-            className="size-4 shrink-0 fill-[hsl(var(--modulo-02)/0.5)] text-modulo"
+            className="size-4 shrink-0 fill-[color-mix(in_oklab,var(--modulo-02)_50%,transparent)] text-modulo"
           />
           <span className={cn('min-w-0 flex-1 truncate', algumaAtiva && 'font-bold')}>
             {item.title}

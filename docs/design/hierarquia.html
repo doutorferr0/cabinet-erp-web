@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cabinet 2.0 — §Hierarquia: 11 degraus de tipo e 4 ferramentas de separação</title>
+
+<!-- Os tokens vêm do ARQUIVO do app, não de uma cópia. Uma segunda tabela aqui
+     envelheceria calada, que é exatamente o defeito que a régua existe para
+     impedir. Abrir por file:// funciona; a única coisa que não atravessa é o
+     `@font-face` de lá, cujo `src` é absoluto (`/fonts/…`) porque em produção
+     quem serve é o Vite — por isso ele é redeclarado logo abaixo. -->
+<link rel="stylesheet" href="../../src/styles/tokens-2.0.css">
+<style>
+  @font-face {
+    font-family: "Gambarino";
+    src: url("../../public/fonts/Gambarino-Regular.woff2") format("woff2");
+    font-weight: 400;
+    font-display: swap;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--n-100);
+    color: var(--n-900);
+    font: var(--t-corpo);
+  }
+  .tema { background: var(--n-100); padding: var(--s-6) var(--s-5); }
+  .largura { max-width: 980px; margin: 0 auto; }
+  .capa { display: flex; align-items: baseline; gap: var(--s-3); margin-bottom: var(--s-5); }
+  .capa h1 { font: var(--t-pagina); margin: 0; }
+  h2 { font: var(--t-secao); margin: var(--s-6) 0 var(--s-3); }
+  h3 { font: var(--t-bloco); margin: 0 0 var(--s-3); }
+
+  /* CARD — ferramenta 4 da separação. Borda n-300 + hard-soft. */
+  .card {
+    background: var(--n-0);
+    border: 1px solid var(--n-300);
+    border-radius: var(--r-card);
+    box-shadow: var(--hard-soft);
+    padding: var(--s-4);
+  }
+  .grade { display: grid; gap: var(--s-4); grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+
+  /* ESPAÇO — ferramenta 1. Irmãos por gap, nunca margem por elemento. */
+  .pilha { display: grid; gap: var(--s-3); }
+  .pilha-2 { display: grid; gap: var(--s-2); }
+
+  /* HAIRLINE — ferramenta 2. Uma linha por fronteira, nunca duas encostadas. */
+  .degrau { display: grid; grid-template-columns: 148px 1fr; gap: var(--s-4); align-items: baseline;
+            padding: var(--s-3) 0; border-bottom: 1px solid var(--n-200); }
+  .degrau:last-child { border-bottom: 0; }
+  .degrau code { font: var(--t-dado-meta); color: var(--n-500); }
+
+  /* TINT — ferramenta 3. Tint nunca dentro de tint. */
+  table { width: 100%; border-collapse: collapse; }
+  thead th { background: var(--n-50); text-align: left; font: var(--t-rotulo); color: var(--n-500);
+             padding: var(--s-2) var(--s-3); }
+  tbody td { padding: var(--s-2) var(--s-3); border-bottom: 1px solid var(--n-200); }
+  tbody tr:last-child td { border-bottom: 0; }
+  tfoot td { background: var(--n-50); font: var(--t-dado); padding: var(--s-2) var(--s-3); }
+  td.num { font: var(--t-dado); text-align: right; }
+
+  .t-display { font: var(--t-display); }
+  .t-pagina  { font: var(--t-pagina); }
+  .t-registro{ font: var(--t-registro); }
+  .t-secao   { font: var(--t-secao); }
+  .t-bloco   { font: var(--t-bloco); }
+  .t-corpo   { font: var(--t-corpo); }
+  .t-ui      { font: var(--t-ui); }
+  .t-meta    { font: var(--t-meta); color: var(--n-500); }
+  .t-rotulo  { font: var(--t-rotulo); letter-spacing: .12em; text-transform: uppercase; color: var(--n-500); }
+  .t-dado    { font: var(--t-dado); font-variant-numeric: tabular-nums; }
+  .t-dado-meta { font: var(--t-dado-meta); font-variant-numeric: tabular-nums; color: var(--n-500); }
+
+  .botao { font: var(--t-ui); background: var(--main); color: var(--main-fg);
+           border: 1px solid var(--n-900); border-radius: var(--r-ctrl);
+           box-shadow: var(--key-2); padding: 7px 13px; }
+  .botao.quieto { background: var(--n-0); color: var(--n-900); box-shadow: var(--key-1); }
+  .chip { font: var(--t-ui); background: var(--main-soft); border-radius: var(--r-chip); padding: 3px 9px; }
+  .regua { display: flex; gap: var(--s-3); align-items: flex-end; }
+  .regua span { background: var(--main); display: block; }
+  .kpi { background: var(--n-0); border: 1px solid var(--n-900); border-radius: var(--r-card);
+         box-shadow: var(--hard-1); padding: var(--s-4); }
+  .kpi .valor { font: var(--t-dado); font-size: 26px; }
+  .lateral { background: var(--tint-sky); border-radius: var(--r-card); padding: var(--s-4); }
+  .paleta { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+  .paleta i { width: 46px; height: 46px; border-radius: var(--r-data); border: 1px solid var(--n-300);
+              display: grid; place-items: end center; font: var(--t-dado-meta); font-style: normal;
+              color: var(--n-900); padding-bottom: 2px; }
+</style>
+</head>
+<body>
+
+<!-- Os dois temas lado a lado, na mesma página, de propósito: a régua promete
+     que os onze degraus e as quatro ferramentas se leem nos DOIS, e promessa
+     que só se confere trocando de aba não se confere. `.dark` é o mesmo seletor
+     do app; os tokens cascatam para dentro da seção. -->
+<section class="tema">
+  <div class="largura">
+    <div class="capa">
+      <h1>§Hierarquia — tema claro</h1>
+      <span class="t-dado-meta">tokens de src/styles/tokens-2.0.css</span>
+    </div>
+    <div id="conteudo-claro"></div>
+  </div>
+</section>
+
+<section class="tema dark">
+  <div class="largura">
+    <div class="capa">
+      <h1>§Hierarquia — tema escuro</h1>
+      <span class="t-dado-meta">os MESMOS nomes, a escala invertida</span>
+    </div>
+    <div id="conteudo-escuro"></div>
+  </div>
+</section>
+
+<template id="molde">
+  <h2>Os 11 degraus de tipo</h2>
+  <div class="card">
+    <div class="degrau"><code>--t-display</code><span class="t-display">Boa tarde, Henrique</span></div>
+    <div class="degrau"><code>--t-pagina</code><span class="t-pagina">Ordens de compra</span></div>
+    <div class="degrau"><code>--t-registro</code><span class="t-registro">Vertz Iluminação <span class="t-dado" style="font-size:20px;color:var(--n-500)">#00184</span></span></div>
+    <div class="degrau"><code>--t-secao</code><span class="t-secao">Condições de pagamento</span></div>
+    <div class="degrau"><code>--t-bloco</code><span class="t-bloco">Endereço de entrega</span></div>
+    <div class="degrau"><code>--t-corpo</code><span class="t-corpo">Pedido recebido parcialmente; falta a segunda remessa.</span></div>
+    <div class="degrau"><code>--t-ui</code><span class="t-ui">Incluir · Alterar · Consultar</span></div>
+    <div class="degrau"><code>--t-meta</code><span class="t-meta">salvo há 3 minutos</span></div>
+    <div class="degrau"><code>--t-rotulo</code><span class="t-rotulo">Fornecedor</span></div>
+    <div class="degrau"><code>--t-dado</code><span class="t-dado">R$ 12.480,90 · 27/08/2026 · 0,750</span></div>
+    <div class="degrau"><code>--t-dado-meta</code><span class="t-dado-meta">18 / 240 · há 4 h · Ctrl+K</span></div>
+  </div>
+  <p class="t-meta" style="margin-top:var(--s-3)">
+    Um Gambarino por tela, dois no máximo, nunca abaixo de 20px, nunca em botão nem em tabela.
+    Hierarquia entre Gambarinos é de tamanho (peso único); dentro do Inter é de peso e cor,
+    nunca de tamanho entre 12 e 13,5. Mono é dado, sem exceção.
+  </p>
+
+  <h2>As 4 ferramentas de separação</h2>
+  <div class="grade">
+
+    <div class="card">
+      <h3>1 · Espaço</h3>
+      <p class="t-meta">Separa itens do mesmo tipo. Irmãos por <code class="t-dado-meta">gap</code>, nunca margem por elemento.</p>
+      <div class="regua">
+        <span style="width:4px;height:16px"></span>
+        <span style="width:8px;height:24px"></span>
+        <span style="width:12px;height:32px"></span>
+        <span style="width:16px;height:40px"></span>
+        <span style="width:24px;height:48px"></span>
+        <span style="width:32px;height:56px"></span>
+      </div>
+      <p class="t-dado-meta" style="margin-top:var(--s-2)">s-1 4 · s-2 8 · s-3 12 · s-4 16 · s-5 24 · s-6 32</p>
+    </div>
+
+    <div class="card">
+      <h3>2 · Hairline</h3>
+      <p class="t-meta">Separa itens de uma lista. Nunca duas encostadas; nunca hairline + fundo na mesma fronteira.</p>
+      <div class="pilha-2">
+        <div class="t-ui" style="border-bottom:1px solid var(--n-200);padding-bottom:8px">Pendente Bordeaux</div>
+        <div class="t-ui" style="border-bottom:1px solid var(--n-200);padding-bottom:8px">Arandela Trilho 90</div>
+        <div class="t-ui">Spot Embutir 50</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>3 · Tint</h3>
+      <p class="t-meta">Separa região por natureza. Tint nunca dentro de tint.</p>
+      <table>
+        <thead><tr><th>Produto</th><th style="text-align:right">Total</th></tr></thead>
+        <tbody>
+          <tr><td class="t-ui">Pendente Bordeaux</td><td class="num">4.820,00</td></tr>
+          <tr><td class="t-ui">Arandela Trilho 90</td><td class="num">1.140,50</td></tr>
+        </tbody>
+        <tfoot><tr><td class="t-rotulo">Total</td><td class="num">5.960,50</td></tr></tfoot>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>4 · Card</h3>
+      <p class="t-meta">Separa objeto do plano. Máximo 2 níveis; dentro de um card, só espaço, hairline e tint.</p>
+      <div class="pilha">
+        <div class="kpi">
+          <div class="t-rotulo">Em aberto</div>
+          <div class="valor">R$ 84.210,00</div>
+          <div class="t-dado-meta">12 ordens · atualizado há 6 min</div>
+        </div>
+        <div class="lateral">
+          <div class="t-bloco">Card lateral por assunto</div>
+          <div class="t-meta">tint da família, sem sombra dura</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <h2>Profundidade e ação</h2>
+  <div class="card">
+    <div class="pilha">
+      <div style="display:flex;gap:var(--s-3);align-items:center;flex-wrap:wrap">
+        <button class="botao" type="button">Gravar</button>
+        <button class="botao quieto" type="button">Cancelar</button>
+        <span class="chip">Consulta favorita</span>
+        <a class="t-ui" style="color:var(--main-text)" href="#">o único texto com acento</a>
+      </div>
+      <p class="t-meta">
+        Uma sombra dura de tinta por tela (o KPI acima). O resto é <code class="t-dado-meta">--hard-soft</code>
+        ou nada; tecla (<code class="t-dado-meta">--key-*</code>) só em botão. Chartreuse é FILL: o que se lê
+        em cima dele é tinta escura nos dois temas.
+      </p>
+      <div class="paleta">
+        <i style="background:var(--n-0)">0</i>
+        <i style="background:var(--n-50)">50</i>
+        <i style="background:var(--n-100)">100</i>
+        <i style="background:var(--n-200)">200</i>
+        <i style="background:var(--n-300)">300</i>
+        <i style="background:var(--n-400)">400</i>
+        <i style="background:var(--n-500);color:var(--n-0)">500</i>
+        <i style="background:var(--n-700);color:var(--n-0)">700</i>
+        <i style="background:var(--n-900);color:var(--n-0)">900</i>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+  // O mesmo molde nos dois temas: se as duas colunas divergirem, é porque
+  // alguém escreveu markup diferente para cada uma — e aí a página deixaria de
+  // provar o que promete.
+  const molde = document.getElementById('molde')
+  for (const id of ['conteudo-claro', 'conteudo-escuro']) {
+    document.getElementById(id).append(molde.content.cloneNode(true))
+  }
+</script>
+</body>
+</html>

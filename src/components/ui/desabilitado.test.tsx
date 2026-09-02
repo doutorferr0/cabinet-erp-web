@@ -108,18 +108,29 @@ describe('a regra do desabilitado — tokens', () => {
     expect(css).not.toMatch(/--color-text-disabled\s*:/)
   })
 
-  it('o par superfície+traço existe nos DOIS temas', () => {
-    // Duas ocorrências de cada = bloco claro + bloco `.dark`. Um tema só
-    // significaria estado morto herdando a cor do outro.
-    expect(css.match(/--surface-disabled\s*:/g)).toHaveLength(2)
-    expect(css.match(/--rule-disabled\s*:/g)).toHaveLength(2)
+  it('o par superfície+traço serve os DOIS temas — por derivação, não por cópia', () => {
+    // A guarda pedia DUAS declarações de cada, uma no `:root` e outra no
+    // `.dark`, porque na 1.x o escuro tinha tabela própria: um tema só
+    // significava estado morto herdando a cor do outro.
+    //
+    // Na 2.0 (#469) é o contrário que precisa de guarda. Os dois apontam para
+    // um degrau da escala `--n-*`, que `tokens-2.0.css` inverte no `.dark` — o
+    // escuro cai sozinho, e uma SEGUNDA declaração aqui seria a tabela paralela
+    // que a 2.0 acabou de fechar (foi ela que já divergiu uma vez). Uma
+    // declaração, apontando para a escala: é isso que serve os dois temas.
+    expect(css.match(/--surface-disabled\s*:/g)).toHaveLength(1)
+    expect(css.match(/--rule-disabled\s*:/g)).toHaveLength(1)
+    expect(css).toMatch(/--surface-disabled:\s*var\(--n-\d+\);/)
+    expect(css).toMatch(/--rule-disabled:\s*var\(--n-\d+\);/)
   })
 
   it('a receita apaga fundo e traço, e devolve a tinta do tema', () => {
     const receita = css.slice(css.indexOf('.desabilitado:is('))
-    expect(receita).toMatch(/color:\s*hsl\(var\(--foreground\)\)/)
-    expect(receita).toMatch(/background-color:\s*hsl\(var\(--surface-disabled\)\)/)
-    expect(receita).toMatch(/border-color:\s*hsl\(var\(--rule-disabled\)\)/)
+    // Sem `hsl()` em volta desde a 2.0: os tokens são cor inteira, e envolver
+    // um hex numa função `hsl()` não produz cor nenhuma.
+    expect(receita).toMatch(/color:\s*var\(--foreground\)/)
+    expect(receita).toMatch(/background-color:\s*var\(--surface-disabled\)/)
+    expect(receita).toMatch(/border-color:\s*var\(--rule-disabled\)/)
     // `opacity: 1` explícito — sem ele, o clareamento que RAC e cmdk trazem de
     // fábrica voltaria pela dependência.
     expect(receita).toMatch(/opacity:\s*1/)
@@ -131,7 +142,7 @@ describe('a regra do desabilitado — tokens', () => {
     // `@utility` e todo `border-*` são gerados. Escrita como `@utility`, a
     // receita saiu com o traço PRETO na foto. Se alguém a mover para dentro de
     // um `@layer` ou para cima do `*`, o traço apagado morre em silêncio.
-    const universal = css.indexOf('* {\n  border-color: hsl(var(--border));')
+    const universal = css.indexOf('* {\n  border-color: var(--border);')
     const receita = css.indexOf('.desabilitado:is(')
     expect(universal).toBeGreaterThan(-1)
     expect(receita).toBeGreaterThan(universal)

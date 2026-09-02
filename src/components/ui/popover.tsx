@@ -52,8 +52,8 @@ function PopoverHeader({ className, ...props }: React.ComponentProps<'div'>) {
 }
 
 function PopoverTitle({ className, ...props }: React.ComponentProps<typeof Heading>) {
-  // Sora explícito: com a regra do `index.css` restrita ao `h1`, um `Heading`
-  // sem família cai no Inter do body. Ver a nota do `SheetTitle`.
+  // Família de título DECLARADA: com a regra do `index.css` restrita ao `h1`,
+  // um `Heading` sem família cai no Inter do body. Ver a nota do `SheetTitle`.
   return (
     <Heading
       data-slot="popover-title"

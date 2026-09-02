@@ -1,117 +1,136 @@
 ---
 name: Cabinet
-description: Sistema visual de um ERP denso, desktop, em PT-BR — documento comercial com estrutura neo-brutalista de superfícies cinzas delimitadas por traço preto, elevação em degraus e acento saturado.
+description: Sistema visual de um ERP denso, desktop, em PT-BR — documento comercial sobre papel quente, escala de neutros única, acento chartreuse de preenchimento, sombra dura de tinta e hierarquia tipográfica de 11 degraus.
+# ATENÇÃO — este bloco é a ficha 2.0 e o CORPO da página ainda é 1.7.
+# `docs/design/medir-contraste.py --frontmatter` compara cada linha abaixo com o
+# token real; divergiu, uma das duas está mentindo. Ver a nota logo após o
+# front-matter.
 colors:
-  bench: "hsl(47 31% 94%)"
-  sheet: "hsl(0 0% 100%)"
-  sheet-sunken: "hsl(0 0% 97%)"
-  neutral: "hsl(0 0% 96%)"
-  ink: "hsl(0 0% 7%)"
-  ink-muted: "hsl(0 0% 30%)"
-  ink-strong: "hsl(0 0% 7%)"
-  rule-hair: "hsl(0 0% 72%)"
-  surface-disabled: "hsl(0 0% 92%)"
-  rule-disabled: "hsl(210 8% 40%)"
-  main: "hsl(0 0% 7%)"
-  main-hover: "hsl(0 0% 10%)"
-  main-foreground: "hsl(0 0% 100%)"
-  accent: "hsl(262 97% 76%)"
-  info: "hsl(225 71% 75%)"
-  money: "hsl(155 81% 26%)"
-  danger: "hsl(357 84% 42%)"
-  warn: "hsl(47 100% 50%)"
-  ring: "hsl(47 100% 50%)"
-  empresa: "hsl(234 91% 60%)"
-  fill-money: "hsl(88 51% 71%)"
-  fill-focus: "hsl(44 87% 64%)"
-  fill-error: "hsl(355 76% 64%)"
-  zone-money: "hsl(154 96% 91%)"
-  zone-id: "hsl(263 94% 93%)"
-  zone-info: "hsl(223 69% 95%)"
-  zone-warn: "hsl(48 100% 95%)"
-  zone-danger: "hsl(6 76% 95%)"
-  shadow-1: "hsl(40 10% 60%)"
-  shadow-2: "hsl(40 11% 47%)"
-  shadow-3: "hsl(40 13% 36%)"
-  shadow-4: "hsl(40 14% 27%)"
-  shadow-5: "hsl(40 16% 19%)"
+  bench: "#ece9e1"
+  sheet: "#fffefa"
+  sheet-sunken: "#f6f4ee"
+  hairline: "#dcd7cb"
+  rule: "#c9c3b5"
+  ink-disabled: "#a9a395"
+  ink-muted: "#6d675b"
+  ink-secondary: "#4a463d"
+  ink: "#16140f"
+  main: "#e4f222"
+  main-hover: "#e9f27a"
+  main-foreground: "#16140f"
+  main-text: "#4f5c00"
+  ring: "#ffd23f"
+  ok: "#0e7a4b"
+  info: "#1c5fbf"
+  warn: "#9a5b00"
+  bad: "#b3261e"
+  money: "#0e7a4b"
 typography:
-  nome:
-    fontFamily: "Newsreader, ui-serif, Georgia, serif"
-    fontSize: "1.15em"
-    fontWeight: 400
   display:
-    fontFamily: "Newsreader, ui-serif, Georgia, serif"
-    fontSize: "1.85rem"
-    fontWeight: 700
-    letterSpacing: "-0.005em"
-  headline:
-    fontFamily: "Sora, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "1.35rem"
-    fontWeight: 700
-    letterSpacing: "-0.012em"
-  produto:
-    fontFamily: "Sora, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "0.875rem"
+    fontFamily: "Gambarino, Georgia, serif"
+    fontSize: "30px"
+    lineHeight: 1.05
     fontWeight: 400
-  value:
-    fontFamily: "PT Mono, ui-monospace, monospace"
-    fontSize: "1.5rem"
+  pagina:
+    fontFamily: "Gambarino, Georgia, serif"
+    fontSize: "28px"
+    lineHeight: 1.1
     fontWeight: 400
-    fontFeature: "tabular-nums"
-  body:
-    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "0.875rem"
+  registro:
+    fontFamily: "Gambarino, Georgia, serif"
+    fontSize: "24px"
+    lineHeight: 1.1
     fontWeight: 400
-  label:
-    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "0.875rem"
-    fontWeight: 500
-  control:
-    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "0.875rem"
+  secao:
+    fontFamily: "Gambarino, Georgia, serif"
+    fontSize: "20px"
+    lineHeight: 1.2
+    fontWeight: 400
+  bloco:
+    fontFamily: "Inter, system-ui, sans-serif"
+    fontSize: "13.5px"
+    lineHeight: 1.3
     fontWeight: 600
-  numeric:
-    fontFamily: "PT Mono, ui-monospace, monospace"
-    fontSize: "0.875rem"
+  corpo:
+    fontFamily: "Inter, system-ui, sans-serif"
+    fontSize: "13.5px"
+    lineHeight: 1.45
+    fontWeight: 400
+  ui:
+    fontFamily: "Inter, system-ui, sans-serif"
+    fontSize: "13px"
+    lineHeight: 1.3
+    fontWeight: 500
+  meta:
+    fontFamily: "Inter, system-ui, sans-serif"
+    fontSize: "12px"
+    lineHeight: 1.35
+    fontWeight: 400
+  rotulo:
+    fontFamily: "Inter, system-ui, sans-serif"
+    fontSize: "10.5px"
+    fontWeight: 600
+    letterSpacing: "0.12em"
+    textTransform: "uppercase"
+  dado:
+    fontFamily: "JetBrains Mono, ui-monospace, monospace"
+    fontSize: "12.5px"
+    fontWeight: 500
+    fontFeature: "tabular-nums"
+  dado-meta:
+    fontFamily: "JetBrains Mono, ui-monospace, monospace"
+    fontSize: "11px"
     fontWeight: 400
     fontFeature: "tabular-nums"
-  tag:
-    fontFamily: "PT Mono, ui-monospace, monospace"
-    fontSize: "10px"
-    letterSpacing: "0.12em"
-    textTransform: "uppercase"
-  meta:
-    fontFamily: "PT Mono, ui-monospace, monospace"
-    fontSize: "11px"
-    letterSpacing: "0.12em"
-    textTransform: "uppercase"
-  section:
-    fontFamily: "PT Mono, ui-monospace, monospace"
-    fontSize: "10.5px"
-    letterSpacing: "0.16em"
-    textTransform: "uppercase"
 rounded:
-  item: "0px"
-  data: "2px"
-  control: "4px"
-  card: "6px"
+  item: "4px"
+  data: "4px"
+  chip: "4px"
+  control: "6px"
+  card: "8px"
   panel: "10px"
+  pill: "999px"
 spacing:
-  xs: "4px"
-  sm: "8px"
-  md: "12px"
-  lg: "18px"
-  cell: "52px"
+  s-1: "4px"
+  s-2: "8px"
+  s-3: "12px"
+  s-4: "16px"
+  s-5: "24px"
+  s-6: "32px"
 effects:
-  el-1: "2px 2px 0 0 hsl(214 10% 61%)"
-  el-2: "3px 3px 0 0 hsl(215 11% 47%)"
-  el-3: "4px 4px 0 0 hsl(216 13% 36%)"
-  el-4: "6px 6px 0 0 hsl(216 14% 27%)"
-  el-5: "8px 8px 0 0 hsl(217 16% 19%)"
-  border-strong: "2px solid hsl(0 0% 0%)"
-  border-heavy: "3px solid hsl(0 0% 0%)"
+  key-1: "0 2px 0 0 #16140f"
+  key-2: "0 3px 0 0 #16140f"
+  hard-soft: "3px 3px 0 0 #c9c3b5"
+  hard-1: "2px 2px 0 0 #16140f"
+  hard-2: "4px 4px 0 0 #16140f"
+  hard-3: "6px 6px 0 0 #16140f"
 ---
+
+> **2.0 EM EXECUÇÃO (#469–#498). O front-matter acima já é 2.0; o corpo desta página é 1.7 até
+> D30.** A fundação vive em `src/styles/tokens-2.0.css` (escala `--n-*`, 8 rampas, semântica,
+> tints, `--hard-*`/`--key-*`, `--s-*`, os onze `--t-*` e o tema escuro) e o `src/index.css`
+> virou PONTE: todo nome 1.x aponta para um token 2.0, e nenhum guarda cor própria
+> (`identidade-visual.test.ts` cobra). As fontes da 1.5 saíram do `package.json` — são três
+> famílias agora, uma por papel: título, interface e dado.
+>
+> **Consequência que ninguém pode ler errado: as tabelas de contraste do corpo desta página
+> foram medidas contra tokens que não existem mais.** Citar um número delas hoje é citar medição
+> inválida, exatamente como aconteceu na virada de 2026-08-13. A medição VÁLIDA da 2.0 sai de
+> `python3 docs/design/medir-contraste.py` — reescrito em D1 para resolver hex, `var()` e
+> `color-mix`, e para medir cada par sobre a superfície em que ele realmente pousa. `--conferir`
+> sai com código 1 se algum par exigido reprovar em qualquer um dos dois temas. Quem regenera as
+> tabelas do corpo é D30.
+>
+> **O que a medição já mudou na paleta da auditoria** (§3 dela propunha os valores; o número
+> mandou): `--n-500` desceu de `#7e786b` para `#6d675b`, porque `--t-meta` e `--t-rotulo` davam
+> 4,35:1 e 3,62:1 — e a régua §Hierarquia nomeia esse par como onde o 1.x reprovava; os fundos de
+> badge deixaram de ser alpha e passaram a pousar sobre a folha, porque com alpha os cinco
+> reprovavam sobre a bancada; e a semântica no escuro sobe DOIS degraus da rampa (600 → 200), não
+> um, porque no 400 o badge de info dava 4,01:1.
+>
+> A régua de tipografia e separação da rodada é a **§Hierarquia** da issue-mãe #469, e ela está
+> demonstrada nos dois temas em `docs/design/hierarquia.html`. O overlay de grade de 8px liga com
+> `?grid` na URL, em dev.
 
 # Design System: Cabinet — Polaris por baixo, Cabinet por cima (2026-08-18)
 

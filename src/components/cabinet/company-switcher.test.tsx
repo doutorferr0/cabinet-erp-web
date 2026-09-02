@@ -179,7 +179,8 @@ describe('CompanySwitcher', () => {
     await user.click(await screen.findByRole('button', { name: /vertz iluminação/i }))
     await user.click(await screen.findByRole('button', { name: /sair/i }))
 
-    // A tela de login é a única com heading Cabinet fora do shell.
-    expect(await screen.findByRole('heading', { name: 'Cabinet' })).toBeInTheDocument()
+    // O h1 da tela de login é a TAREFA, não a marca (Reface 2.0, D28): a
+    // bancada nomeia o produto num span, o card diz o que se faz ali.
+    expect(await screen.findByRole('heading', { level: 1, name: 'Entrar' })).toBeInTheDocument()
   })
 })

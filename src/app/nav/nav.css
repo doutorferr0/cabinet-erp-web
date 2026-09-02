@@ -38,6 +38,22 @@
   background: var(--bancada);
   border-right: 1px solid var(--hairline-2);
   color: var(--ink-2);
+
+  /*
+   * STICKY, e não uma coluna de altura fixa.
+   *
+   * A barra tem `100svh` e a lista rola por dentro dela. Sem `sticky`, isso só
+   * funciona enquanto a PÁGINA cabe na viewport: numa listagem longa a coluna
+   * de 100svh fica ancorada no topo do documento e sai da vista junto com o
+   * cabeçalho — o operador rola até o fim de uma grade e perde a navegação
+   * inteira, que é o oposto do que uma barra global existe para fazer.
+   *
+   * É também o que o mockup passou a fazer (`.nav{position:sticky}`, rodada 5).
+   */
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100svh;
 }
 
 /*

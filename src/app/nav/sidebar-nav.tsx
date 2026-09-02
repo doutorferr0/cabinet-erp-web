@@ -374,7 +374,7 @@ export function SidebarNav({ aoAbrirPaleta }: { aoAbrirPaleta: () => void }) {
       aria-label="Navegação principal"
       data-slot="sidebar-nav"
       data-colapsada={colapsada}
-      className="cabinet-nav flex h-svh shrink-0 flex-col overflow-hidden"
+      className="cabinet-nav flex shrink-0 flex-col overflow-hidden"
       style={{
         width: colapsada ? 'var(--nav-largura-colapsada)' : 'var(--nav-largura)',
         transition: 'width var(--dur-2, 200ms) var(--ease, ease)',

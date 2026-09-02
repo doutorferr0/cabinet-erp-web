@@ -423,26 +423,28 @@ describe('AppShell', () => {
     expect(marca).toHaveAttribute('aria-label', 'Cabinet')
     expect(document.querySelector('[data-slot="sidebar-header"] [data-slot="marca"]')).toBeNull()
 
-    // A empresa mora na appbar: um ornamento só, o dela.
-    const ornamentos = topo?.querySelectorAll('[data-slot="ornamento"]') ?? []
-    expect(ornamentos).toHaveLength(1)
-    expect(ornamentos[0]).toHaveAttribute('data-shape', 'empresa')
+    // A empresa mora na appbar, e desde a 2.0 (D6) a peça dela é o MONOGRAMA,
+    // não o ornamento do galpão: cor de empresa fica no quadrado de duas
+    // iniciais, e duas marcas de "empresa" na mesma linha diziam o mesmo duas
+    // vezes. O ornamento sobrou só no alerta que confirma a troca, que não
+    // está montado enquanto ninguém pediu para trocar.
+    expect(topo?.querySelectorAll('[data-slot="ornamento"]')).toHaveLength(0)
     expect(topo).toHaveTextContent('VERTZ ILUMINAÇÃO')
+    expect(topo).toHaveTextContent('VI')
 
-    // E dentro do botão que abre a gaveta — a marca nunca é absorvida por ele.
-    expect(ornamentos[0]?.closest('button')).not.toBeNull()
+    // A marca do produto nunca é absorvida pelo botão da empresa.
     expect(marca?.closest('button')).toBeNull()
   })
 
-  it('switches active company via drawer', async () => {
+  it('troca a empresa ativa pelo popover do seletor', async () => {
     setup()
     const user = userEvent.setup()
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /vertz iluminação/i })).toBeInTheDocument()
     })
     await user.click(screen.getByRole('button', { name: /vertz iluminação/i }))
-    // Gaveta, não menu suspenso: trocar de empresa muda o escopo de tudo que
-    // está aberto, e a escolha é um botão de alvo grande dentro dela.
+    // Popover, e o peso mora no alerta (D6): a peça pousada é o SELETOR —
+    // escolher um nome aqui PROPÕE a troca, não a executa.
     await user.click(await screen.findByRole('button', { name: /via hf/i }))
     // E a escolha não é a troca: o alerta é onde o operador responde "sim".
     await user.click(await screen.findByRole('button', { name: /^trocar empresa$/i }))
@@ -471,7 +473,7 @@ describe('AppShell', () => {
 
     await user.click(screen.getByRole('button', { name: /vertz iluminação/i }))
     await user.click(await screen.findByRole('button', { name: /via hf/i }))
-    // Escolher na gaveta PROPÕE; quem troca é o alerta.
+    // Escolher no popover PROPÕE; quem troca é o alerta.
     await user.click(await screen.findByRole('button', { name: /^trocar empresa$/i }))
 
     await waitFor(() => {

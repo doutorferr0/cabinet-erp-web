@@ -1,3 +1,4 @@
+import { RELEVO_DE_FOLHA, TRACO_DE_FOLHA } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 import { cva } from 'class-variance-authority'
 import { CheckIcon, ChevronRightIcon } from 'lucide-react'
@@ -20,7 +21,14 @@ function DropdownMenuTrigger({ ...props }: React.ComponentProps<typeof MenuTrigg
   return <MenuTriggerPrimitive data-slot="dropdown-menu-trigger" {...props} />
 }
 
-/** Menu brut: folha opaca, caixa preta 2px, sombra dura 3px, item focado = Bancada. */
+/**
+ * Menu 2.0: folha, filete `n-300`, relevo `--hard-soft`, raio de card.
+ *
+ * Mesma moldura do popover e pelo MESMO motivo — os dois pousam sobre a página
+ * e não são a página. A borda e o relevo vêm de `popover.tsx` (`TRACO_DE_FOLHA`
+ * / `RELEVO_DE_FOLHA`) em vez de repetidos aqui: duas cópias do mesmo filete
+ * divergem na primeira vez que alguém ajusta um dos dois.
+ */
 function DropdownMenu({
   'data-slot': dataSlot = 'dropdown-menu-content',
   placement = 'bottom start',
@@ -42,9 +50,10 @@ function DropdownMenu({
       offset={offset}
       crossOffset={crossOffset}
       className={cn(
-        'z-50 w-(--trigger-width) min-w-32 origin-(--trigger-anchor-point) overflow-x-hidden overflow-y-auto rounded-card border-2 border-border bg-popover p-1 text-popover-foreground pop-spring shadow-el3 outline-none data-exiting:overflow-hidden',
+        'z-50 w-(--trigger-width) min-w-32 origin-(--trigger-anchor-point) overflow-x-hidden overflow-y-auto rounded-card border bg-popover p-1 text-popover-foreground pop-spring outline-none data-exiting:overflow-hidden',
         className,
       )}
+      style={{ ...TRACO_DE_FOLHA, ...RELEVO_DE_FOLHA }}
     >
       <MenuPrimitive
         className="max-h-[inherit] overflow-x-hidden overflow-y-auto outline-hidden"
@@ -75,25 +84,37 @@ function DropdownMenuLabel({
     <HeaderPrimitive
       data-slot="dropdown-menu-label"
       data-inset={inset}
-      className={cn(
-        'px-1.5 py-1 font-mono text-xs font-semibold tracking-[0.07em] text-muted-foreground uppercase data-inset:pl-7',
-        className,
-      )}
+      // `t-rotulo` é a régua: Inter 600 uppercase com tracking, NÃO mono — a
+      // 2.0 reserva mono para dado que se copia, compara ou soma, e cabeçalho
+      // de grupo é rótulo. Antes era `font-mono`, que dizia "isto é dado".
+      className={cn('px-1.5 py-1 t-rotulo data-inset:pl-7', className)}
       {...props}
     />
   )
 }
 
+/**
+ * Item de 32px — a altura da régua §Hierarquia para linha de menu.
+ *
+ * `h-8` e não `py-1`: com padding, a altura seguia a fonte, e o item mudava de
+ * tamanho entre um rótulo com ícone e um sem. A régua mede a LINHA, não o
+ * conteúdo, e é isso que faz uma pilha de itens ter ritmo.
+ *
+ * O destrutivo fica em `text-destructive`, que é o consumidor 1.x do vermelho
+ * de estado. A 2.0 o chama `--bad` e a D1 aliasa os nomes antigos para a escala
+ * nova — se aquele alias não incluir `--destructive`, é aqui que se troca, num
+ * lugar só.
+ */
 const dropdownMenuItemVariants = cva(
   'group/dropdown-menu-item desabilitado relative flex cursor-default items-center rounded-item outline-hidden select-none data-disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0',
   {
     variants: {
       selectionMode: {
-        none: 'gap-1.5 px-1.5 py-1 text-sm focus:bg-muted data-inset:pl-7 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive data-[variant=destructive]:focus:text-destructive-foreground [&_svg:not([class*="size-"])]:size-4',
+        none: 'h-8 gap-2 px-2 t-ui focus:bg-muted data-inset:pl-7 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive data-[variant=destructive]:focus:text-destructive-foreground [&_svg:not([class*="size-"])]:size-4',
         single:
-          'gap-1.5 py-1 pr-8 pl-1.5 text-sm focus:bg-muted data-inset:pl-7 [&_svg:not([class*="size-"])]:size-4',
+          'h-8 gap-2 pr-8 pl-2 t-ui focus:bg-muted data-inset:pl-7 [&_svg:not([class*="size-"])]:size-4',
         multiple:
-          'gap-1.5 py-1 pr-8 pl-1.5 text-sm focus:bg-muted data-inset:pl-7 [&_svg:not([class*="size-"])]:size-4',
+          'h-8 gap-2 pr-8 pl-2 t-ui focus:bg-muted data-inset:pl-7 [&_svg:not([class*="size-"])]:size-4',
       },
     },
   },
@@ -165,7 +186,7 @@ function DropdownMenuSubTrigger({
         return tv !== undefined ? { textValue: tv } : {}
       })()}
       className={cn(
-        'flex cursor-default items-center gap-1.5 px-1.5 py-1 text-sm outline-hidden select-none focus:bg-muted data-inset:pl-7 data-open:bg-muted [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4',
+        'flex h-8 cursor-default items-center gap-2 px-2 t-ui outline-hidden select-none focus:bg-muted data-inset:pl-7 data-open:bg-muted [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*="size-"])]:size-4',
         className,
       )}
       {...props}
@@ -216,7 +237,7 @@ function DropdownMenuShortcut({ className, ...props }: React.ComponentProps<'spa
   return (
     <span
       data-slot="dropdown-menu-shortcut"
-      className={cn('ml-auto text-xs tracking-widest text-muted-foreground', className)}
+      className={cn('ml-auto t-dado-meta tracking-widest', className)}
       {...props}
     />
   )

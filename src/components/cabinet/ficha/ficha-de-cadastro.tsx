@@ -125,6 +125,20 @@ export function FichaDeCadastro({
   const documento = primeiroTexto(entidade, registro, CHAVES_DO_DOCUMENTO, rotulos)
   const cidade = primeiroTexto(entidade, registro, CHAVES_DA_CIDADE, rotulos)
 
+  /**
+   * O `contexto` do cabeçalho some quando é o NOME e o card lateral já o diz.
+   *
+   * As rotas passam o nome do registro como contexto — era a única forma de a
+   * tela dizer "quem está aberto" quando o cabeçalho era a única peça de
+   * identidade. Com o `BlocoIdentidade` no lugar, mantê-lo escreveria o mesmo
+   * nome duas vezes na mesma dobra, uma delas em `--t-rotulo`, que é o degrau
+   * de RÓTULO — e nome de entidade não é rótulo de nada.
+   *
+   * Só quando são iguais: `contexto` também carrega o MODO em outras telas
+   * ("Consulta", "Incluir"), e esse não repete nada.
+   */
+  const contextoDoCabecalho = contexto && contexto !== nome ? contexto : undefined
+
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4" data-slot="ficha-de-cadastro">
       {/* Cabeçalho de página (Polaris-2, #197): `Alterar` como a única peça
@@ -139,7 +153,7 @@ export function FichaDeCadastro({
           mesmo lugar em todas — inclusive nas que não tinham nenhum. */}
       <PageHeader
         titulo={titulo}
-        {...(contexto ? { contexto } : {})}
+        {...(contextoDoCabecalho ? { contexto: contextoDoCabecalho } : {})}
         primaria={{ id: 'alterar', label: 'Alterar', icon: Pencil, onClick: () => aoEditar() }}
       />
       {aviso}

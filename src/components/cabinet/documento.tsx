@@ -1,6 +1,6 @@
 import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import type { FormGridTotalRow } from '@/components/cabinet/form-grid'
-import { NumeroHeroi } from '@/components/cabinet/numero-heroi'
+import { NumeroHeroi } from '@/components/cabinet/kpi-tile'
 import { Stamp, type StampTom } from '@/components/cabinet/stamp'
 import { TotalBox } from '@/components/cabinet/total-box'
 import { PERCENT_ESCALA, formatMoneyBRL } from '@/lib/formatters'

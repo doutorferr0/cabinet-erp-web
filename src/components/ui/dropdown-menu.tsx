@@ -104,13 +104,21 @@ function DropdownMenuLabel({
  * de estado. A 2.0 o chama `--bad` e a D1 aliasa os nomes antigos para a escala
  * nova — se aquele alias não incluir `--destructive`, é aqui que se troca, num
  * lugar só.
+ *
+ * **O `!` não é preguiça, é a ordem de cascata.** As classes `.t-*` vêm de
+ * `tokens-2.0.css`, que entra por `@import` DEPOIS do Tailwind e as define fora
+ * de `@layer`: CSS sem camada vence a `@layer utilities` inteira, por mais
+ * específico que o utilitário seja. Sem o `!`, o `t-ui` pinta o item destrutivo
+ * com a tinta de n-900 e o `Excluir` fica igual ao `Duplicar`. Se as `.t-*`
+ * migrarem para `@layer components`, estes dois `!` saem — e com eles os de
+ * todo elemento colorido do repo (medido na D7: badge e aba ativa).
  */
 const dropdownMenuItemVariants = cva(
   'group/dropdown-menu-item desabilitado relative flex cursor-default items-center rounded-item outline-hidden select-none data-disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0',
   {
     variants: {
       selectionMode: {
-        none: 'h-8 gap-2 px-2 t-ui focus:bg-muted data-inset:pl-7 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive data-[variant=destructive]:focus:text-destructive-foreground [&_svg:not([class*="size-"])]:size-4',
+        none: 'h-8 gap-2 px-2 t-ui focus:bg-muted data-inset:pl-7 data-[variant=destructive]:text-destructive! data-[variant=destructive]:focus:bg-destructive data-[variant=destructive]:focus:text-destructive-foreground! [&_svg:not([class*="size-"])]:size-4',
         single:
           'h-8 gap-2 pr-8 pl-2 t-ui focus:bg-muted data-inset:pl-7 [&_svg:not([class*="size-"])]:size-4',
         multiple:

@@ -339,7 +339,11 @@ function RodapeDaBusca({
 }) {
   if (falharam.length > 0) {
     return (
-      <p className="border-t px-3 py-2 t-meta text-destructive" style={HAIRLINE_DO_RODAPE}>
+      // `text-destructive!`: as classes `.t-*` de `tokens-2.0.css` entram FORA
+      // de camada e vencem toda utility de cor do Tailwind — sem o `!`, o aviso
+      // de falha sairia no cinza do `t-meta` e a linha que diz "não deu" leria
+      // como as outras duas, que dizem "espere".
+      <p className="border-t px-3 py-2 t-meta text-destructive!" style={HAIRLINE_DO_RODAPE}>
         Não foi possível procurar em: {falharam.join(', ')}. As telas dessas listagens continuam
         abrindo pelo nome.
       </p>

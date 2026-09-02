@@ -89,19 +89,14 @@ describe('TelaDeDocumento', () => {
   })
 
   /**
-   * FUSÃO v5 §3 — a moldura-mãe é uma declaração de FRONTEIRA: o que está
-   * dentro pertence ao documento. A espec cita Atividades pelo nome como o
-   * exemplo do que fica de fora, e é por isso que existe `foraDaMoldura`:
-   * passar o painel como `children` o penduraria dentro da moldura e o desenho
-   * mentiria — com a tela parecendo perfeitamente certa.
+   * ESQUELETO 2.0 (#483): a moldura-mãe da fusão v5 saiu — ela desenhava a
+   * fronteira do documento com uma quinta ferramenta de separação, por cima
+   * das quatro da §Hierarquia. Quem separa agora é a COLUNA, que é espaço.
    */
-  it('a moldura-mãe envolve cabeçalho e formulário, e leva o número do documento', async () => {
-    renderWithQuery(
+  it('o cabeçalho traz o registro e o id, sem moldura em volta', async () => {
+    const { container } = renderWithQuery(
       <TelaDeDocumento
-        provider={{
-          get: () => Promise.resolve({ id: 7 }),
-          empty: () => ({ id: -1 }),
-        }}
+        provider={{ get: () => Promise.resolve({ id: 7 }), empty: () => ({ id: -1 }) }}
         queryKeyBase="teste"
         idParam="7"
         titulo="Orçamento"
@@ -113,15 +108,14 @@ describe('TelaDeDocumento', () => {
       </TelaDeDocumento>,
     )
 
-    const moldura = await screen.findByRole('region', { name: 'DOCUMENTO · Orçamento Nº 184' })
-    expect(within(moldura).getByText('formulário do documento')).toBeInTheDocument()
-    // O cabeçalho é do documento e mora DENTRO — envolver só o form o deixaria
-    // do lado de fora da fronteira que ele mesmo nomeia.
-    expect(within(moldura).getByText('Orçamento', { selector: 'h1' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Orçamento 184' })).toBeInTheDocument()
+    expect(screen.getByText('formulário do documento')).toBeInTheDocument()
+    expect(container.querySelector('[data-slot="documento-frame"]')).toBeNull()
+    expect(container.querySelector('[data-slot="documento-etiqueta"]')).toBeNull()
   })
 
-  it('em inclusão a moldura fala só o tipo — não há número a mostrar', async () => {
-    renderWithQuery(
+  it('em inclusão o cabeçalho fala só o tipo — não há id a mostrar', async () => {
+    const { container } = renderWithQuery(
       <TelaDeDocumento
         provider={{
           get: () => Promise.reject(new Error('não deveria buscar')),
@@ -139,18 +133,83 @@ describe('TelaDeDocumento', () => {
       </TelaDeDocumento>,
     )
 
-    expect(
-      await screen.findByRole('region', { name: 'DOCUMENTO · Pedido de Compra' }),
-    ).toBeInTheDocument()
+    expect(await screen.findByText('formulário em branco')).toBeInTheDocument()
+    expect(container.querySelector('[data-slot="registro-id"]')).toBeNull()
+    // O modo desce para a linha de meta: colado ao título, o leitor de tela
+    // anunciava "Pedido de Compra — Incluir" como nome do documento.
+    expect(screen.getByRole('heading', { name: 'Pedido de Compra' })).toBeInTheDocument()
+    expect(screen.getByText('Incluir')).toBeInTheDocument()
   })
 
-  it('o que NÃO é do documento monta fora da moldura', async () => {
-    renderWithQuery(
+  it('o que ORBITA o documento vai para a lateral, e não para a coluna dele', async () => {
+    const { container } = renderWithQuery(
       <TelaDeDocumento
-        provider={{
-          get: () => Promise.resolve({ id: 7 }),
-          empty: () => ({ id: -1 }),
-        }}
+        provider={{ get: () => Promise.resolve({ id: 7 }), empty: () => ({ id: -1 }) }}
+        queryKeyBase="teste"
+        idParam="7"
+        titulo="Ordem de compra"
+        numero={() => 'OC-5102'}
+        naoEncontrado="não encontrado"
+        erroAoCarregar="erro"
+        lateral={() => <p>Mister LED</p>}
+      >
+        {() => <p>itens da ordem</p>}
+      </TelaDeDocumento>,
+    )
+
+    await screen.findByText('itens da ordem')
+    const principal = container.querySelector('[data-slot="registro-principal"]')
+    const lateral = container.querySelector('[data-slot="registro-lateral"]')
+    expect(within(principal as HTMLElement).getByText('itens da ordem')).toBeInTheDocument()
+    expect(within(lateral as HTMLElement).getByText('Mister LED')).toBeInTheDocument()
+  })
+
+  /**
+   * A primária do cabeçalho é o PRÓXIMO PASSO, então ela é função do estado do
+   * documento — o mesmo esqueleto mostra "Confirmar recebimento" numa ordem
+   * enviada e nada numa cancelada.
+   */
+  it('proximaAcao muda com o estado do registro', async () => {
+    function tela(estado: string) {
+      return (
+        <TelaDeDocumento
+          provider={{
+            get: () => Promise.resolve({ id: 7, estado }),
+            empty: () => ({ id: -1, estado }),
+          }}
+          queryKeyBase={`teste-${estado}`}
+          idParam="7"
+          titulo="Ordem de compra"
+          numero={() => 'OC-5102'}
+          naoEncontrado="não encontrado"
+          erroAoCarregar="erro"
+          cabecalho={(doc) =>
+            doc.estado === 'enviada'
+              ? {
+                  badge: { tom: 'open' as const, label: 'Enviada' },
+                  proximaAcao: { id: 'receber', label: 'Confirmar recebimento' },
+                }
+              : { badge: { tom: 'void' as const, label: 'Cancelada' } }
+          }
+        >
+          {() => <p>itens da ordem</p>}
+        </TelaDeDocumento>
+      )
+    }
+
+    const { unmount } = renderWithQuery(tela('enviada'))
+    expect(await screen.findByRole('button', { name: 'Confirmar recebimento' })).toBeInTheDocument()
+    unmount()
+
+    renderWithQuery(tela('cancelada'))
+    await screen.findByText('Cancelada')
+    expect(screen.queryByRole('button', { name: 'Confirmar recebimento' })).not.toBeInTheDocument()
+  })
+
+  it('o que NÃO é do registro monta fora das duas colunas', async () => {
+    const { container } = renderWithQuery(
+      <TelaDeDocumento
+        provider={{ get: () => Promise.resolve({ id: 7 }), empty: () => ({ id: -1 }) }}
         queryKeyBase="teste"
         idParam="7"
         titulo="Orçamento"
@@ -163,10 +222,13 @@ describe('TelaDeDocumento', () => {
       </TelaDeDocumento>,
     )
 
-    const moldura = await screen.findByRole('region', { name: 'DOCUMENTO · Orçamento Nº 184' })
-    // Renderizado na tela, mas do LADO DE FORA: é essa diferença que a moldura
-    // existe para desenhar, e `getByText` sozinho não a enxergaria.
+    await screen.findByText('formulário do documento')
+    const layout = container.querySelector('[data-slot="layout-do-registro"]')
+    // Renderizado na tela, mas do LADO DE FORA das colunas: Atividades tem
+    // gravação própria e não pertence ao documento.
     expect(screen.getByText('painel de atividades')).toBeInTheDocument()
-    expect(within(moldura).queryByText('painel de atividades')).not.toBeInTheDocument()
+    expect(
+      within(layout as HTMLElement).queryByText('painel de atividades'),
+    ).not.toBeInTheDocument()
   })
 })

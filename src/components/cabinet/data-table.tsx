@@ -3,12 +3,6 @@ import { consultaDaUrl } from '@/components/cabinet/filtros/filtro-na-url'
 import { PilulasDeFiltro } from '@/components/cabinet/filtros/pilulas-de-filtro'
 import { SincroniaComAUrl } from '@/components/cabinet/filtros/sincronia-com-a-url'
 import { ListaDeFiltros } from '@/components/cabinet/lista-de-filtros'
-import {
-  PontoDoModulo,
-  colunasDaGrade,
-  idsDeclarados,
-  moduloDaColuna,
-} from '@/components/cabinet/listagem/colunas-da-grade'
 import { type AcaoDeLinha, AcoesDeLinha } from '@/components/cabinet/listagem/acoes-de-linha'
 import {
   IconeDeTipo,
@@ -17,6 +11,12 @@ import {
   renderTipo,
   tomDoValor,
 } from '@/components/cabinet/listagem/celulas-tipadas'
+import {
+  PontoDoModulo,
+  colunasDaGrade,
+  idsDeclarados,
+  moduloDaColuna,
+} from '@/components/cabinet/listagem/colunas-da-grade'
 import { ColunasPorModulo } from '@/components/cabinet/listagem/colunas-por-modulo'
 import { FiltroPorModulo } from '@/components/cabinet/listagem/filtro-por-modulo'
 import { ModuloEmConstrucao } from '@/components/cabinet/modulo-em-construcao'
@@ -67,6 +67,7 @@ import {
   filtrosNormalizados,
   filtrosValidos,
 } from '@/lib/filtro-de-consulta'
+import { formatMoneyBRL } from '@/lib/formatters'
 import type { TableFetcher, TableQueryState, TableSort } from '@/lib/table-query'
 import { cn } from '@/lib/utils'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
@@ -81,7 +82,6 @@ import {
   Rows3,
   Search,
 } from 'lucide-react'
-import { formatMoneyBRL } from '@/lib/formatters'
 import { type ReactNode, useCallback, useEffect, useId, useMemo, useState } from 'react'
 
 declare module '@tanstack/react-table' {
@@ -1339,7 +1339,15 @@ export function VitraDataTable<T>({
                             {sortable ? (
                               <button
                                 type="button"
-                                className="inline-flex items-center gap-1 hover:text-foreground focus-visible:focus-ring"
+                                // `uppercase` REPETIDO aqui de propósito: o
+                                // `text-transform` do `.t-rotulo` mora no `<th>`
+                                // e seria herdado, não fosse o UA stylesheet
+                                // declarar `text-transform: none` em `button` —
+                                // o resultado media na tela como meia grade em
+                                // caixa alta (as colunas sem ordenação) e meia
+                                // em caixa mista (as com), sem nada no código
+                                // dizendo por quê.
+                                className="inline-flex items-center gap-1 uppercase hover:text-foreground focus-visible:focus-ring"
                                 onClick={() => toggleSort(header.column.id)}
                               >
                                 {flexRender(header.column.columnDef.header, header.getContext())}
@@ -1505,7 +1513,15 @@ export function VitraDataTable<T>({
                         <TableCell
                           className="w-10"
                           onClick={(e) => e.stopPropagation()}
-                          onKeyDown={(e) => e.stopPropagation()}
+                          // Barra só as teclas que a LINHA trata. Barrar tudo
+                          // custou caro: o React chama `stopPropagation` no
+                          // evento NATIVO, e o ouvinte do `esc` vive no
+                          // document — a saída da barra de lote morria calada
+                          // sempre que o foco estivesse no checkbox, que é
+                          // justamente onde ele está depois de marcar.
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') e.stopPropagation()
+                          }}
                         >
                           <Checkbox
                             isSelected={isSelected}
@@ -1516,7 +1532,7 @@ export function VitraDataTable<T>({
                       ) : null}
                       {rowNumbers ? (
                         // Numeração em Meta, sequencial global da consulta.
-                        <TableCell className="w-10 text-right font-mono text-[11px] tabular-nums tracking-[0.12em] text-muted-foreground">
+                        <TableCell className="w-10 text-right t-dado-meta">
                           {(state.page - 1) * state.pageSize + rowIndex + 1}
                         </TableCell>
                       ) : null}
@@ -1552,7 +1568,11 @@ export function VitraDataTable<T>({
                         <TableCell
                           className="w-[90px]"
                           onClick={(e) => e.stopPropagation()}
-                          onKeyDown={(e) => e.stopPropagation()}
+                          // Mesma regra da célula do checkbox: só as teclas da
+                          // linha. `esc` tem de chegar ao document.
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') e.stopPropagation()
+                          }}
                         >
                           <AcoesDeLinha acoes={acoesDaLinha} linha={row.original} />
                         </TableCell>

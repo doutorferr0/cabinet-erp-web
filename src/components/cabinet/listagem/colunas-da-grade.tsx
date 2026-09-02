@@ -1,4 +1,5 @@
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
+import type { TipoDeColuna } from '@/components/cabinet/listagem/celulas-tipadas'
 import type { ModuloCor } from '@/components/cabinet/modulo-cores'
 import type { CampoCadastro, EntidadeCadastro } from '@/features/cadastro/modulos'
 import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
@@ -116,6 +117,21 @@ function celula(campo: CampoCadastro, valor: unknown): ReactNode {
 }
 
 /**
+ * O TIPO da coluna extra, deduzido do que o schema já diz sobre o campo.
+ *
+ * A coluna extra nasce do schema de módulos, não da tela — então ninguém pode
+ * declarar o tipo à mão nela. Deduzir aqui é o que faz a coluna que o operador
+ * LIGA sair com a mesma moldura da coluna que a tela declarou: mesma família de
+ * dado à direita, mesma data em mono. Sem isto, ligar uma coluna de valor daria
+ * um número em Inter ao lado de outro em mono, na mesma grade.
+ */
+function tipoDoCampo(campo: CampoCadastro): TipoDeColuna | undefined {
+  if (campo.grana) return 'dinheiro'
+  if (campo.t === 'data') return 'data'
+  return undefined
+}
+
+/**
  * As colunas extras, na ordem do SCHEMA e não na de clique.
  *
  * Ordem de clique faria a mesma seleção desenhar grades diferentes conforme a
@@ -134,13 +150,19 @@ export function colunasDaGrade<T>(
   return camposOpcionais(entidade, declaradas).flatMap((campo) => {
     const id = idDaColuna(entidade, campo) as string
     if (!extras.includes(id)) return []
+    const tipo = tipoDoCampo(campo)
     return [
       {
         id,
         accessorKey: id,
         header: campo.r,
         enableSorting: ordenavel(id),
-        ...(campo.grana ? { meta: { numeric: true } } : {}),
+        // A coluna extra continua desenhando o próprio conteúdo (`celula`
+        // trata booleano, ausência e formato); o `tipo` lhe dá a MOLDURA —
+        // mono, alinhamento e o ícone do cabeçalho.
+        ...(campo.grana || tipo
+          ? { meta: { ...(campo.grana ? { numeric: true } : {}), ...(tipo ? { tipo } : {}) } }
+          : {}),
         cell: ({ getValue }) => celula(campo, getValue()),
       } as ColumnDef<T>,
     ]

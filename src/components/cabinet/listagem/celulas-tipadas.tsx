@@ -199,12 +199,12 @@ export function CelulaDeProgresso({ valor }: { valor: ValorDeProgresso }) {
   const pct = total === 0 ? 0 : Math.round((feito / total) * 100)
   return (
     <span className="inline-flex items-center justify-end gap-2" data-slot="celula-progresso">
+      {/* A barra é `aria-hidden` porque o dado está ESCRITO ao lado: `2 / 5` é
+          o número que o operador confere, e a barra é a leitura de relance do
+          mesmo fato. Um `role="progressbar"` aqui anunciaria duas vezes a mesma
+          informação — e pediria foco num elemento que não faz nada. */}
       <span
-        role="progressbar"
-        aria-valuenow={feito}
-        aria-valuemin={0}
-        aria-valuemax={total}
-        aria-label={`${feito} de ${total}`}
+        aria-hidden="true"
         className="inline-block h-[5px] w-14 shrink-0 overflow-hidden rounded-full bg-rule-hair"
       >
         <span className="block h-full bg-money" style={{ width: `${pct}%` }} />

@@ -77,9 +77,14 @@ export function AgendaTela() {
               key={opcao.id}
               className={cn(
                 't-ui cursor-pointer rounded-item border border-[var(--n-300)] px-2 py-0.5',
-                ativo && 'bg-[var(--n-900)] text-[var(--n-0)]',
+                ativo && 'bg-[var(--n-900)]',
                 'has-[:focus-visible]:focus-ring',
               )}
+              // A cor da opção ATIVA vai por `style`, e não por utility: `.t-ui`
+              // declara `color` e tem a mesma especificidade da classe do
+              // Tailwind, então quem ganha é a ordem de fonte — e a folha dos
+              // tokens vem depois. O rótulo saía preto sobre preto.
+              style={ativo ? { color: 'var(--n-0)' } : undefined}
             >
               <input
                 type="radio"

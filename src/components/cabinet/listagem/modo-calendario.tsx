@@ -254,9 +254,13 @@ export function ModoCalendario<T>({
                 key={opcao}
                 className={cn(
                   't-ui cursor-pointer rounded-item border border-[var(--n-300)] px-2 py-0.5',
-                  ativa && 'bg-[var(--n-900)] text-[var(--n-0)]',
+                  ativa && 'bg-[var(--n-900)]',
                   'has-[:focus-visible]:focus-ring',
                 )}
+                // Cor por `style` na opção ativa: `.t-ui` declara `color` com a
+                // mesma especificidade da utility, e a folha dos tokens vem
+                // depois — o rótulo saía preto sobre preto.
+                style={ativa ? { color: 'var(--n-0)' } : undefined}
               >
                 <input
                   type="radio"
@@ -311,8 +315,11 @@ export function ModoCalendario<T>({
                 className={cn(
                   't-dado-meta self-start',
                   celula.iso === hoje &&
-                    'flex size-5 items-center justify-center bg-[var(--n-900)] text-[var(--n-0)]',
+                    'flex size-5 items-center justify-center bg-[var(--n-900)]',
                 )}
+                // Mesma regra do segmented: `.t-dado-meta` declara `color`, e a
+                // tinta invertida do quadrado de HOJE só vence por `style`.
+                style={celula.iso === hoje ? { color: 'var(--n-0)' } : undefined}
               >
                 {celula.dia}
               </span>

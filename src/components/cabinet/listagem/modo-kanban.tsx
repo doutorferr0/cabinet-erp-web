@@ -375,7 +375,13 @@ function CartaoDoKanban({
               {conteudo.badge.rotulo}
             </span>
           ) : null}
-          {conteudo.data ? <span className="t-dado">{formatDateBR(conteudo.data)}</span> : null}
+          {conteudo.data ? (
+            /* Só o DIA: o campo pode chegar como `YYYY-MM-DD` ou como ISO com
+               hora, e `formatDateBR` parte por `-` — o instante completo saía
+               como `02T14:30:00.000Z/09/2026` no cartão. Mesma normalização do
+               modo calendário, que já lia só o dia. */
+            <span className="t-dado">{formatDateBR(conteudo.data.slice(0, 10))}</span>
+          ) : null}
           {/* `null` é "não estimado" e SOME; zero diria que o registro não vale
               nada, que é outra afirmação. */}
           {conteudo.valorCents === null || conteudo.valorCents === undefined ? null : (

@@ -73,14 +73,7 @@ import { cn } from '@/lib/utils'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table'
-import {
-  ArrowDown,
-  ArrowUp,
-  ChevronLeft,
-  ChevronRight,
-  type LucideIcon,
-  Rows3,
-} from 'lucide-react'
+import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, type LucideIcon, Rows3 } from 'lucide-react'
 import { type ReactNode, useCallback, useEffect, useId, useMemo, useState } from 'react'
 
 declare module '@tanstack/react-table' {
@@ -525,7 +518,11 @@ function BarraDeSelecao<T>({
               disabled={morta}
               // Botão de contorno sobre tinta: a borda e o texto viram cor de
               // papel, senão o `outline` desenharia traço preto sobre preto.
-              className="border-muted-foreground bg-transparent text-card! shadow-none hover:bg-muted-foreground/25 disabled:opacity-40"
+              // Desabilitado apaga o TRAÇO, não o conteúdo (regra do repo,
+              // `desabilitado.test.tsx`): opacidade sobre a barra escura some
+              // com a palavra inteira, e um botão ilegível se lê como defeito
+              // em vez de "não dá para clicar agora".
+              className="border-muted-foreground bg-transparent text-card! shadow-none hover:bg-muted-foreground/25 disabled:border-rule-disabled disabled:text-muted-foreground!"
               title={
                 acao.disabled === true
                   ? acao.title

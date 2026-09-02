@@ -1,0 +1,363 @@
+/* =====================================================================
+   CABINET 2.0 — TOKENS (fundação da rodada Reface 2.0, Cowork 2026-09-02)
+   Fonte de verdade: docs/design/mockup-reface-hibrido-2026-09-02.html (aba Tokens)
+   e docs/design/auditoria-reface-2.0-2026-09-02.md (§3, §5, §5a, §5b, §Hierarquia).
+   Este arquivo é ADITIVO: cria os nomes 2.0. Mapear os nomes 1.x para cá e
+   apagar os antigos é a issue D1 (#469). Nenhuma outra issue edita este arquivo
+   sem combinar na #469 — se precisar de token novo, comente lá.
+   ===================================================================== */
+
+/* ---------- fontes 2.0 ---------- */
+@font-face {
+  font-family: "Gambarino";
+  src: url("/fonts/Gambarino-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* ---------- tipografia: 3 papéis ---------- */
+  --font-display: "Gambarino", Georgia, "Times New Roman", serif;
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "PT Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* ---------- escala de neutros (Geist): cada degrau tem UM papel ---------- */
+  --n-0: #fffefa; /* folha — card, tabela, campo            */
+  --n-50: #f6f4ee; /* folha-2 — header de tabela, zebra, ro  */
+  --n-100: #ece9e1; /* bancada — fundo da aplicação           */
+  --n-200: #dcd7cb; /* hairline — divisor de linha            */
+  --n-300: #c9c3b5; /* borda de controle                      */
+  --n-400: #a9a395; /* disabled, ícone inativo, placeholder   */
+  --n-500: #7e786b; /* meta, rótulo, texto terciário          */
+  --n-700: #4a463d; /* texto secundário                       */
+  --n-900: #16140f; /* tinta — texto, borda dura              */
+  --bancada: var(--n-100);
+  --folha: var(--n-0);
+  --folha-2: var(--n-50);
+  --hairline: var(--n-200);
+  --hairline-2: var(--n-300);
+  --ink: var(--n-900);
+  --ink-2: var(--n-700);
+  --ink-3: var(--n-500);
+  --disabled: var(--n-400);
+
+  /* ---------- 8 matizes × 6 degraus ----------
+     50/100 tint · 200 borda/tint forte · 400 fill · 600 texto no claro · 800 texto forte
+     clarear/escurecer = subir/descer na rampa ou color-mix; nunca hex novo em componente */
+  --lime-50: #f7fad4;
+  --lime-100: #f0f6b0;
+  --lime-200: #e9f27a;
+  --lime-400: #e4f222;
+  --lime-600: #7c8a00;
+  --lime-800: #4f5c00;
+  --indigo-50: #eeedfc;
+  --indigo-100: #dedcf9;
+  --indigo-200: #bdb9f2;
+  --indigo-400: #6d67ee;
+  --indigo-600: #4b45e8;
+  --indigo-800: #2f2aa8;
+  --mint-50: #e6f5ec;
+  --mint-100: #cfeedc;
+  --mint-200: #9fddb9;
+  --mint-400: #3db57a;
+  --mint-600: #0e7a4b;
+  --mint-800: #0a5636;
+  --sky-50: #e7eefb;
+  --sky-100: #d2dff7;
+  --sky-200: #a6c0ef;
+  --sky-400: #4c86e3;
+  --sky-600: #1c5fbf;
+  --sky-800: #144387;
+  --amber-50: #fbf1d6;
+  --amber-100: #f8e3ae;
+  --amber-200: #f1c95e;
+  --amber-400: #e5a712;
+  --amber-600: #9a5b00;
+  --amber-800: #6b3f00;
+  --rose-50: #fbe5e2;
+  --rose-100: #f8cdc8;
+  --rose-200: #f09e95;
+  --rose-400: #e2574a;
+  --rose-600: #b3261e;
+  --rose-800: #7f1a14;
+  --violet-50: #f3e8fa;
+  --violet-100: #e7d1f5;
+  --violet-200: #cfa6eb;
+  --violet-400: #a35fd6;
+  --violet-600: #7a3aae;
+  --violet-800: #55287a;
+  --teal-50: #e2f4f4;
+  --teal-100: #c4e8e8;
+  --teal-200: #8ed2d2;
+  --teal-400: #2fa7a7;
+  --teal-600: #177878;
+  --teal-800: #0f5555;
+
+  /* ---------- acento: CHARTREUSE = FILL, nunca texto ---------- */
+  --main: var(--lime-400);
+  --main-hover: var(--lime-200);
+  --main-active: #d3e00f;
+  --main-soft: var(--lime-50);
+  --main-fg: var(--n-900);
+  --main-text: var(--lime-800); /* o único texto com acento: link, id, "salvar consulta" */
+  --primary: var(--main);
+  --primary-hover: var(--main-hover);
+  --primary-foreground: var(--main-fg);
+  --primary-soft: var(--main-soft);
+  --primary-text: var(--main-text);
+  --ring: #ffd23f; /* foco continua amarelo */
+  --ring-outline: 0 0 0 2px var(--n-900), 0 0 0 5px var(--ring); /* foco sobre primário */
+
+  /* ---------- semântica: matiz fixo; bg = alpha (um valor, dois temas) ---------- */
+  --ok: var(--mint-600);
+  --ok-bg: color-mix(in oklab, var(--mint-400) 18%, transparent);
+  --info: var(--sky-600);
+  --info-bg: color-mix(in oklab, var(--sky-400) 18%, transparent);
+  --warn: var(--amber-600);
+  --warn-bg: color-mix(in oklab, var(--amber-400) 22%, transparent);
+  --bad: var(--rose-600);
+  --bad-bg: color-mix(in oklab, var(--rose-400) 18%, transparent);
+  --mut: var(--n-500);
+  --mut-bg: color-mix(in oklab, var(--n-500) 16%, transparent);
+  --money: var(--ok);
+  --money-neg: var(--bad);
+
+  /* ---------- tints por assunto (12% do matiz sobre folha) ---------- */
+  --tint-lilac: color-mix(in oklab, var(--indigo-400) 12%, var(--folha));
+  --tint-mint: color-mix(in oklab, var(--mint-400) 12%, var(--folha));
+  --tint-sky: color-mix(in oklab, var(--sky-400) 12%, var(--folha));
+  --tint-sand: color-mix(in oklab, var(--amber-400) 14%, var(--folha));
+  --tint-rose: color-mix(in oklab, var(--rose-400) 12%, var(--folha));
+  --tint-violet: color-mix(in oklab, var(--violet-400) 12%, var(--folha));
+  --tint-teal: color-mix(in oklab, var(--teal-400) 12%, var(--folha));
+
+  /* ---------- cor de MÓDULO: um matiz por módulo (quadradinho, monograma, KPI, card lateral) ---------- */
+  --mod-hoje: var(--lime-400);
+  --mod-compras: var(--indigo-600);
+  --mod-estoque: var(--mint-600);
+  --mod-vendas: var(--sky-600);
+  --mod-crm: var(--amber-600);
+  --mod-pessoas: var(--violet-600);
+  --mod-relatorios: var(--teal-600);
+  --mod-produtos: var(--mint-600);
+
+  /* ---------- transparências nomeadas (nunca rgba literal) ---------- */
+  --glass: color-mix(in oklab, var(--folha) 72%, transparent); /* + backdrop-filter: blur(10px) */
+  --scrim: color-mix(in oklab, var(--n-900) 45%, transparent);
+  --hover: color-mix(in oklab, var(--n-900) 5%, transparent);
+  --press: color-mix(in oklab, var(--n-900) 9%, transparent);
+
+  /* ---------- canto por natureza ---------- */
+  --r-panel: 10px;
+  --r-card: 8px;
+  --r-ctrl: 6px;
+  --r-data: 4px;
+  --r-item: 4px;
+  --r-chip: 4px;
+  --r-pill: 999px;
+  --radius-panel: var(--r-panel);
+  --radius-card: var(--r-card);
+  --radius-control: var(--r-ctrl);
+  --radius-data: var(--r-data);
+  --radius-item: var(--r-item);
+
+  /* ---------- profundidade: física de papel, sem blur ---------- */
+  --key-1: 0 2px 0 0 var(--n-900); /* botão secundário (tecla)  */
+  --key-2: 0 3px 0 0 var(--n-900); /* botão primário            */
+  --hard-1: 2px 2px 0 0 var(--n-900); /* KPI, card em hover        */
+  --hard-2: 4px 4px 0 0 var(--n-900); /* painel de página          */
+  --hard-3: 6px 6px 0 0 var(--n-900); /* dialog, sheet, ⌘K         */
+  --hard-soft: 3px 3px 0 0 var(--n-300); /* card quieto               */
+  --soft-1: 0 1px 0 rgba(22, 20, 15, 0.06), 0 1px 2px rgba(22, 20, 15, 0.06);
+  --inset: inset 0 1px 2px rgba(22, 20, 15, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  --focus: 0 0 0 3px var(--ring);
+
+  /* ---------- espaço (§Hierarquia) ---------- */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+
+  /* ---------- movimento ---------- */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-1: 120ms;
+  --dur-2: 200ms;
+  --dur-3: 320ms;
+
+  /* ---------- casca ---------- */
+  --nav-w: 236px;
+  --top-h: 56px;
+}
+
+/* ---------- tema escuro: MESMOS nomes, escala invertida ---------- */
+.dark,
+[data-theme="dark"] {
+  --n-0: #171613;
+  --n-50: #1e1c18;
+  --n-100: #24221d;
+  --n-200: #302e28;
+  --n-300: #3e3b33;
+  --n-400: #625e53;
+  --n-500: #948f82;
+  --n-700: #cbc6b9;
+  --n-900: #f3f1ea;
+  --main-soft: color-mix(in oklab, var(--lime-400) 14%, var(--n-50));
+  --main-text: var(--lime-200);
+  --main-fg: #16140f; /* chartreuse é igual nos dois temas: tinta preta em cima */
+  --ok: var(--mint-400);
+  --info: var(--sky-400);
+  --warn: var(--amber-400);
+  --bad: var(--rose-400);
+  --key-1: 0 2px 0 0 var(--n-300);
+  --key-2: 0 3px 0 0 var(--n-400);
+  --hard-1: 2px 2px 0 0 var(--n-300);
+  --hard-2: 4px 4px 0 0 var(--n-300);
+  --hard-3: 6px 6px 0 0 var(--n-400);
+  --hard-soft: 3px 3px 0 0 var(--n-200);
+  --inset: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+  --soft-1: 0 1px 0 rgba(0, 0, 0, 0.4);
+  --glass: color-mix(in oklab, var(--n-50) 72%, transparent);
+  color-scheme: dark;
+}
+
+/* =====================================================================
+   §HIERARQUIA — 11 degraus de tipo. Classes utilitárias; PROIBIDO font-size literal
+   em componente. Peso não é hierarquia em Gambarino (peso único): tamanho é.
+   ===================================================================== */
+.t-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.05;
+  color: var(--n-900);
+  text-wrap: balance;
+}
+.t-pagina {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 1.1;
+  color: var(--n-900);
+  text-wrap: balance;
+}
+.t-registro {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 1.1;
+  color: var(--n-900);
+}
+.t-secao {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 1.2;
+  color: var(--n-900);
+}
+.t-bloco {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 13.5px;
+  line-height: 1.3;
+  color: var(--n-900);
+}
+.t-corpo {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--n-900);
+}
+.t-ui {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--n-900);
+}
+.t-meta {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--n-500);
+}
+.t-rotulo {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 10.5px;
+  line-height: 1.2;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--n-500);
+}
+.t-dado {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 12.5px;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.01em;
+  color: var(--n-900);
+}
+.t-dado-meta {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 11px;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+  color: var(--n-500);
+}
+
+/* ---------- movimento: keyframes com propósito (micro, ≤320ms) ---------- */
+@keyframes cab-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, currentColor 45%, transparent);
+  }
+  60% {
+    box-shadow: 0 0 0 5px transparent;
+  }
+}
+@keyframes cab-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes cab-draw {
+  from {
+    stroke-dashoffset: 120;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes cab-fill {
+  from {
+    width: 0;
+  }
+}
+@keyframes cab-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cab-motion,
+  .cab-motion * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

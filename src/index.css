@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* REFACE 2.0 — fundação (Cowork 2026-09-02): tokens novos são ADITIVOS até D1 (#469) mapear e apagar os 1.x. */
+@import "./styles/tokens-2.0.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+
 /* Fontes SELF-HOSTED (@fontsource) — a amostra da fase 1.5 as puxava do CDN do
    Google; em produção isso é dependência externa e IP do operador vazando para
    terceiro a cada carga. Só os pesos que a rampa usa. */

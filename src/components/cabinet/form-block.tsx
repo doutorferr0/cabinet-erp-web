@@ -184,12 +184,15 @@ export function FormBlock({
   ) : null
 
   const nomeDoBloco = (
-    // `aria-hidden`: o mesmo texto já é o `<legend>` do compartimento e o
-    // `aria-label` do gatilho. Sem isto o leitor de tela diria o nome três
-    // vezes ao entrar no bloco.
-    <span aria-hidden="true" className="t-bloco min-w-0 flex-1 truncate text-left">
+    // `<h3>` porque é o que a espec pede e o que o bloco é: o título do card.
+    // `aria-hidden` porque o mesmo texto já é o `<legend>` do compartimento e o
+    // `aria-label` do gatilho — sem isto o leitor de tela diria o nome três
+    // vezes ao entrar no bloco. A árvore de headings perde este degrau de
+    // propósito: o `<fieldset>`/`<legend>` já dá ao grupo um nome que se
+    // navega, e é a estrutura mais forte das duas para um agrupamento de campos.
+    <h3 aria-hidden="true" className="t-bloco min-w-0 flex-1 truncate text-left">
       {nome}
-    </span>
+    </h3>
   )
 
   const carimbos = (

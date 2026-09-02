@@ -4,13 +4,13 @@ import {
   useAutosave,
 } from '@/components/cabinet/alteracoes-nao-salvas'
 import { AvisoDadosDeExemplo } from '@/components/cabinet/aviso-dados-de-exemplo'
+import type { TomDeBadge } from '@/components/cabinet/badge'
 import { CabecalhoDoRegistro, LayoutDoRegistro } from '@/components/cabinet/documento'
 import {
   ErroDeCarregamento,
   EsqueletoDeCarregamento,
 } from '@/components/cabinet/estado-de-consulta'
 import type { AcaoDeCabecalho } from '@/components/cabinet/page-header'
-import type { StampTom } from '@/components/cabinet/stamp'
 import type { DocumentoProvider } from '@/data/provider'
 import { useQuery } from '@tanstack/react-query'
 import { type ReactNode, createContext, useContext } from 'react'
@@ -26,7 +26,7 @@ import { type ReactNode, createContext, useContext } from 'react'
  */
 export interface DadosDoCabecalho {
   /** Situação do registro — o carimbo ao lado do id. */
-  badge?: { tom: StampTom; label: string }
+  badge?: { tom: TomDeBadge; label: string }
   /**
    * Procedência: "Mister LED · criada 20/08/2026 por Henrique · reagendada 1×".
    *

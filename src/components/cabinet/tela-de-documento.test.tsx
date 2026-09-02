@@ -189,10 +189,10 @@ describe('TelaDeDocumento', () => {
           cabecalho={(doc) =>
             doc.estado === 'enviada'
               ? {
-                  badge: { tom: 'open' as const, label: 'Enviada' },
+                  badge: { tom: 'info' as const, label: 'Enviada' },
                   proximaAcao: { id: 'receber', label: 'Confirmar recebimento' },
                 }
-              : { badge: { tom: 'void' as const, label: 'Cancelada' } }
+              : { badge: { tom: 'bad' as const, label: 'Cancelada' } }
           }
         >
           {() => <p>itens da ordem</p>}

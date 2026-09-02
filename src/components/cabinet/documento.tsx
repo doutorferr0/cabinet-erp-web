@@ -1,7 +1,7 @@
 import type { EstadoDoAutosave } from '@/components/cabinet/alteracoes-nao-salvas'
+import { Badge, type TomDeBadge } from '@/components/cabinet/badge'
 import type { FormGridTotalRow } from '@/components/cabinet/form-grid'
 import { type AcaoDeCabecalho, PageHeader } from '@/components/cabinet/page-header'
-import { Stamp, type StampTom } from '@/components/cabinet/stamp'
 import { TotalBox } from '@/components/cabinet/total-box'
 import { Button } from '@/components/ui/button'
 import { PERCENT_ESCALA, formatMoneyBRL } from '@/lib/formatters'
@@ -119,7 +119,7 @@ export interface CabecalhoDoRegistroProps {
   /** Modo da tela (`Incluir`, `Consulta`) — rótulo ao lado do título. */
   modo?: string | undefined
   /** Situação do registro. Uma, e junto do id. */
-  badge?: { tom: StampTom; label: string } | undefined
+  badge?: { tom: TomDeBadge; label: string } | undefined
   /** "Mister LED · criada 20/08 por Henrique · reagendada 1×" — a procedência. */
   meta?: string | undefined
   /** Estado da fila de autosave; sem ele o cabeçalho não fala de gravação. */
@@ -226,7 +226,7 @@ export function CabecalhoDoRegistro({
         </span>
       ) : null}
 
-      {badge ? <Stamp tom={badge.tom} label={badge.label} /> : null}
+      {badge ? <Badge tom={badge.tom}>{badge.label}</Badge> : null}
 
       {/* `ml-auto` empurra o estado da gravação para o fim da coluna do
           título, encostado no grupo de ações — que é onde o mockup o põe. O

@@ -64,12 +64,12 @@ describe('CabecalhoDoRegistro', () => {
         titulo="Ordem de compra"
         id="OC-5102"
         modo="Consulta"
-        badge={{ tom: 'open', label: 'Enviada' }}
+        badge={{ tom: 'info', label: 'Enviada' }}
         meta="Mister LED · criada 20/08/2026 por Henrique · reagendada 1×"
       />,
     )
 
-    expect(screen.getByText('Enviada')).toHaveAttribute('data-tom', 'open')
+    expect(screen.getByText('Enviada')).toHaveAttribute('data-slot', 'badge')
     const meta = screen.getByText(/reagendada 1×/)
     expect(meta).toHaveAttribute('data-slot', 'page-header-subtitulo')
     expect(meta.className).toContain('t-meta')

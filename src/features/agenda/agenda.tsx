@@ -1,4 +1,5 @@
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
+import { PageHeader } from '@/components/cabinet/page-header'
 import { useAgenda } from '@/data/dashboard-api'
 import { useTheme } from '@/hooks/use-theme'
 import { type Mes, diaLocalISO, limitesDoMes } from '@/lib/datas'
@@ -92,7 +93,17 @@ export function AgendaTela() {
   }
 
   return (
-    <div className="agenda-schedule-x flex h-[calc(100vh-12rem)] flex-col gap-4">
+    <div className="agenda-schedule-x flex h-[calc(100vh-12rem)] flex-col">
+      {/* A tela não tinha nome NENHUM: o calendário começava direto embaixo da
+          casca, e quem chegasse por link colado dependia do menu para saber
+          onde estava. O subtítulo diz o que a grade TEM neste mês, que é a
+          pergunta que o operador faz antes de olhar dia a dia. */}
+      <PageHeader
+        titulo="Agenda"
+        subtitulo={
+          eventos.length === 1 ? '1 compromisso no mês' : `${eventos.length} compromissos no mês`
+        }
+      />
       <ScheduleXCalendar calendarApp={calendarApp} />
     </div>
   )

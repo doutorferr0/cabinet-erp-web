@@ -13,37 +13,39 @@ import { describe, expect, it } from 'vitest'
  * próprio, fora da tira, em 48px (#236).
  */
 describe('DocumentoHeader', () => {
-  it('título em Headline à esquerda e número em Número do Documento à direita', () => {
+  it('título no degrau de REGISTRO e número em Número do Documento à direita', () => {
     render(<DocumentoHeader titulo="Orçamento" numero="ORÇ-2026-00184" />)
-    // FUSÃO v5 r3 (decisão do user, 2026-08-19): o título da banda fala em
-    // display CONDENSADO (Bebas Neue) e CAIXA ALTA — a regra "serifada não
-    // leva caixa alta" era da Newsreader e sai junto com ela AQUI; a serifa
-    // continua sendo a voz de QUEM no <Nome> e nos H1 de cadastro.
+    // Reface 2.0 (D5): documento é REGISTRO, não página — `--t-registro`
+    // (Gambarino 24) com o id em mono ao lado. O `escalaTitulo="documento"`
+    // subia o título a 36px, uma 12ª medida num sistema de 11 degraus; e o
+    // display CONDENSADO em caixa alta saiu junto com o Bebas Neue.
     const titulo = screen.getByRole('heading', { name: 'Orçamento' })
-    expect(titulo.className).toContain('font-[family-name:var(--font-display-condensada)]')
-    expect(titulo.className).toContain('uppercase')
-    // #236: o título do DOCUMENTO sobe a 36px — é o par do número ao lado.
-    // A banda de qualquer outra tela fica em 28px; ver banda-identidade.test.
-    expect(titulo.className).toContain('text-[2.25rem]')
-    // Nº do Documento: número-herói, display condensado a 36px, na caixa preta.
+    expect(titulo).toHaveClass('t-registro')
+    expect(titulo.className).not.toContain('uppercase')
+    expect(titulo.className).not.toContain('text-[2.25rem]')
+    // O número-herói é a peça de D15 e não mudou aqui: mono tabular na caixa.
     const numero = screen.getByText('ORÇ-2026-00184')
-    expect(numero.className).toContain('font-[family-name:var(--font-display-condensada)]')
-    expect(numero.className).toContain('text-[2.25rem]')
     expect(numero.className).toContain('tabular-nums')
-    // A caixa preta continua sendo dele: é a única peça escura do cabeçalho.
+    // A caixa continua sendo dele: é a única peça escura do cabeçalho.
     expect(numero.className).toContain('bg-primary')
   })
 
-  // O cabeçalho de documento é a MESMA banda de identidade do cadastro: quem
-  // muda a faixa muda os dois. Antes era um `<header>` com régua de 1px que
-  // repetia, com outros valores, o que a banda já dizia.
-  it('é a banda de identidade, não um cabeçalho paralelo', () => {
-    const { container } = render(<DocumentoHeader titulo="Pedido de Compra" numero="PC-001" />)
-    const banda = screen.getByRole('heading', { level: 1 }).closest('div')
-    // r5: zona de identidade em gradiente — ver banda-identidade.test.
-    expect(banda?.className).toContain('hsl(var(--zone-id))')
-    expect(banda?.className).toContain('border-2')
-    expect(container.querySelector('header')).toBeNull()
+  /**
+   * O cabeçalho de documento é o MESMO `PageHeader` de toda tela — só a
+   * variante muda. Antes era a `BandaDeIdentidade`, uma caixa lilás com borda
+   * de 2px que gastava borda + fundo + gradiente numa fronteira que espaço
+   * resolve (§Hierarquia: uma ferramenta por fronteira).
+   */
+  it('é o cabeçalho de página, sem caixa em volta do título', () => {
+    render(<DocumentoHeader titulo="Pedido de Compra" numero="PC-001" />)
+    const cabecalho = screen.getByRole('heading', { level: 1 }).closest('header')
+
+    expect(cabecalho).toHaveAttribute('data-slot', 'page-header')
+    expect(cabecalho).toHaveAttribute('data-variante', 'registro')
+    // Nem a zona lilás, nem o traço de 2px: a fronteira com o que vem abaixo
+    // é espaço.
+    expect(cabecalho?.className).not.toContain('zone-id')
+    expect(cabecalho?.className).not.toContain('border-2')
   })
 
   it('modo é contexto ao lado do título, não sufixo dentro dele', () => {

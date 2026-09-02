@@ -1,5 +1,5 @@
 import { AlteracoesNaoSalvas } from '@/components/cabinet/alteracoes-nao-salvas'
-import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
+import { PageHeader } from '@/components/cabinet/page-header'
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
 import { type FamiliaDeCaminho, useReadOnlyPorPapel } from '@/data/papeis'
@@ -157,7 +157,7 @@ export function CadastroForm<T extends FieldValues>({
             vez de cada tela repetir `mt-2`/`pt-3` no olho. */}
         {/* Fora do `<fieldset disabled>`: a banda é identidade, não campo — em
             modo consulta ela continua legível, não apagada com o formulário. */}
-        {titulo ? <BandaDeIdentidade titulo={titulo} {...(contexto ? { contexto } : {})} /> : null}
+        {titulo ? <PageHeader titulo={titulo} {...(contexto ? { contexto } : {})} /> : null}
         {/* Acima do aviso e dos campos, colada no topo: é a única coisa da tela
             que fala do ESTADO do trabalho, e ela precisa continuar à vista com a
             página rolada. */}

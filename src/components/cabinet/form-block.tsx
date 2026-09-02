@@ -145,6 +145,7 @@ export function FormBlock({
   icone: Icone,
 }: FormBlockProps) {
   const idCorpo = useId()
+  const idTitulo = useId()
   const nome = titulo ?? legend
   // A referência mora no `<fieldset>`, não no corpo: medir a partir do corpo
   // deixaria a invariante do `required` cega no bloco sem cabeçalho.
@@ -183,14 +184,22 @@ export function FormBlock({
     <Icone aria-hidden="true" className="size-4 shrink-0 [color:var(--n-500)]" />
   ) : null
 
+  /**
+   * O título é `<h3>` E é o nome acessível do grupo — um texto, um papel.
+   *
+   * A 1.7 tinha `<legend class="sr-only">` com o mesmo texto do rótulo visível,
+   * e o visível ia `aria-hidden` para o leitor de tela não dizer o nome duas
+   * vezes. Isso resolvia a duplicação escondendo o `<h3>` da árvore de
+   * headings — e um heading mudo é o que o `a11y/useHeadingContent` reprova,
+   * com razão: um leitor que navega por títulos não acha o bloco.
+   *
+   * A saída é apontar: `<fieldset aria-labelledby>` para o id do `<h3>`. O
+   * grupo continua nomeado (o papel `group` do fieldset vale com
+   * `aria-labelledby` como valia com `<legend>`), o heading existe de verdade na
+   * árvore, e o texto é dito uma vez só.
+   */
   const nomeDoBloco = (
-    // `<h3>` porque é o que a espec pede e o que o bloco é: o título do card.
-    // `aria-hidden` porque o mesmo texto já é o `<legend>` do compartimento e o
-    // `aria-label` do gatilho — sem isto o leitor de tela diria o nome três
-    // vezes ao entrar no bloco. A árvore de headings perde este degrau de
-    // propósito: o `<fieldset>`/`<legend>` já dá ao grupo um nome que se
-    // navega, e é a estrutura mais forte das duas para um agrupamento de campos.
-    <h3 aria-hidden="true" className="t-bloco min-w-0 flex-1 truncate text-left">
+    <h3 id={idTitulo} className="t-bloco min-w-0 flex-1 truncate text-left">
       {nome}
     </h3>
   )
@@ -236,6 +245,7 @@ export function FormBlock({
     <fieldset
       ref={blocoRef}
       {...(cor ? { 'data-modulo': cor } : {})}
+      {...(nome ? { 'aria-labelledby': idTitulo } : {})}
       data-slot="form-block"
       onChange={podeColapsar ? () => setContagem(medir(blocoRef.current)) : undefined}
       className={cn(
@@ -248,13 +258,12 @@ export function FormBlock({
     >
       {comCabecalho ? (
         <>
-          {/* O `<legend>` continua nomeando o compartimento — e fica FORA do
-              cabeçalho visual, escondido só para o olho. MEDIDO em Chrome antes
-              de decidir: `<legend>` participa da renderização da borda do
-              `<fieldset>` (o browser INTERROMPE o traço atrás dele), então um
-              legend largo fazendo as vezes de cabeçalho come a borda de cima e
-              transborda a de lado. */}
-          {nome ? <legend className="sr-only">{nome}</legend> : null}
+          {/* Sem `<legend>`, e MEDIDO antes de decidir: `<legend>` participa da
+              renderização da borda do `<fieldset>` — o browser INTERROMPE o
+              traço atrás dele —, então um legend largo fazendo as vezes de
+              cabeçalho come a borda de cima e transborda a de lado. Um legend
+              `sr-only` ao lado do `<h3>` diria o nome duas vezes. Quem nomeia o
+              grupo é o `aria-labelledby` acima. */}
           {podeColapsar ? (
             <button
               type="button"

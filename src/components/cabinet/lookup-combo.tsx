@@ -43,6 +43,17 @@ export interface ComboDeEscolhaProps {
   id: string
   open: boolean
   onOpenChange: (open: boolean) => void
+  /**
+   * Cadastro rápido INLINE (2.0): "Cadastrar marca" como último item da lista,
+   * não como um botão `...` ao lado do campo.
+   *
+   * O `...` era um segundo alvo, fora do popover, para uma ação que só faz
+   * sentido depois de o operador procurar e não achar — ele aparecia antes da
+   * busca e ficava longe do lugar onde a falta é descoberta. Inline, a saída
+   * está onde a procura terminou. Ausente = a lista não aceita item novo (papel
+   * sem escrita, ou `hideQuickAdd`).
+   */
+  aoCriar?: (() => void) | undefined
 }
 
 export interface OpcaoDeCombo {

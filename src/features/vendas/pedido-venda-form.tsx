@@ -2,10 +2,9 @@ import type { OrderDetailDto, PartnerDto } from '@/api/gerado'
 import { AbasSemCaptura } from '@/components/cabinet/abas-sem-captura'
 import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
-import { DocumentoBloco, fileirasTotais, totalItemCentavos } from '@/components/cabinet/documento'
+import { DocumentoBloco } from '@/components/cabinet/documento'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { DateField, RadioField, SelectField, TextField } from '@/components/cabinet/form-controls'
-import { FormGrid, type FormGridRow } from '@/components/cabinet/form-grid'
 import { Nome } from '@/components/cabinet/nome'
 import { posGravar } from '@/components/cabinet/pos-gravar'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
@@ -13,28 +12,17 @@ import { Secao } from '@/components/cabinet/secao'
 import { Button } from '@/components/ui/button'
 import { Tabs } from '@/components/ui/tabs'
 import { data } from '@/data'
-import { useLookupOptions } from '@/data/lookups-api'
 import { type PedidoDeVenda, useGravarPedidoDeVenda } from '@/data/pedidos-venda-api'
 import { tabelas } from '@/data/tabelas'
 import { ParticipacaoDoPedido } from '@/features/comissoes/participacao-do-pedido'
-import { BlocoPagamento, useTotaisDoOrcamento } from '@/features/orcamento/bloco-pagamento'
+import { BlocoPagamento } from '@/features/orcamento/bloco-pagamento'
+import { ItensDoOrcamento } from '@/features/orcamento/itens-do-orcamento'
 import { AcoesDoCiclo } from '@/features/vendas/acoes-do-ciclo'
 import { formatDateBR, formatMoneyBRL, formatPercent } from '@/lib/formatters'
-import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
 import { useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
-import {
-  Calculator,
-  CreditCard,
-  Hash,
-  Home,
-  List,
-  Package,
-  Percent,
-  Truck,
-  User,
-} from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Calculator, CreditCard, Hash, List, Percent, Truck, User } from 'lucide-react'
+import { useState } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -153,48 +141,7 @@ export const pedidoDeVendaSchema = z.object({
   ),
 })
 
-const ITEM_VAZIO = {
-  item: '',
-  codigoFornecedor: '',
-  descricaoFornecedor: '',
-  acabamento: '',
-  tamanho: '',
-  quantidade: '',
-  unidade: 'UN',
-  valorUnitarioCentavos: null,
-  descontoPercentual: null,
-  grupoProduto: '',
-  tipoPeca: '',
-  fornecedor: '',
-  ambiente: '',
-}
-
 /** Botões de inserção de item — F5/F6 no legado; aqui Alt+A / Alt+P (F3–F6 vetadas). */
-function BotoesInsercao({ append }: { append: (row: FormGridRow) => void }) {
-  const itens = (useWatch({ name: 'itens' }) ?? []) as unknown[]
-
-  function inserirProduto() {
-    append({ ...ITEM_VAZIO, item: String(itens.length + 1) })
-  }
-
-  function inserirAmbiente() {
-    append({ ...ITEM_VAZIO, item: String(itens.length + 1), ambiente: tabelas.ambientes[0] })
-  }
-
-  useEffect(() => bindShortcut(SHORTCUTS.produto, inserirProduto))
-  useEffect(() => bindShortcut(SHORTCUTS.ambiente, inserirAmbiente))
-
-  return (
-    <>
-      <Button type="button" variant="outline" size="sm" onClick={inserirAmbiente}>
-        <Home className="size-4" /> Ambiente <kbd>{shortcutLabel(SHORTCUTS.ambiente)}</kbd>
-      </Button>
-      <Button type="button" variant="outline" size="sm" onClick={inserirProduto}>
-        <Package className="size-4" /> Produto <kbd>{shortcutLabel(SHORTCUTS.produto)}</kbd>
-      </Button>
-    </>
-  )
-}
 
 /** Colunas de PARCEIRO — a busca de Cliente e a de Profissional são papéis do
  * mesmo `GET /api/partners`; só o filtro `role` muda. */
@@ -354,50 +301,6 @@ function TotaisDoPedido() {
       </output>{' '}
       %
     </p>
-  )
-}
-
-/** Grade de itens com os totais nas últimas fileiras (DESIGN.md §DocumentoTotais). */
-function GradeItens() {
-  const { options: opcoesDeTipoDePeca } = useLookupOptions('tipoPeca')
-  const tiposDePeca = opcoesDeTipoDePeca.map((o) => o.nome)
-  const { subtotalCentavos: subtotal, descontoGeralCentavos: descontoGeral } =
-    useTotaisDoOrcamento()
-
-  return (
-    <FormGrid
-      name="itens"
-      hideAdd
-      actions={(append) => <BotoesInsercao append={append} />}
-      columns={[
-        { key: 'item', label: 'Item' },
-        { key: 'codigoFornecedor', label: 'Código Fornecedor' },
-        { key: 'descricaoFornecedor', label: 'Descrição do Fornecedor', voz: 'produto' },
-        { key: 'ambiente', label: 'Ambiente', type: 'select', options: tabelas.ambientes },
-        { key: 'acabamento', label: 'Acabamento', type: 'select', options: tabelas.acabamentos },
-        { key: 'tamanho', label: 'Tamanho' },
-        { key: 'quantidade', label: 'Quant.' },
-        { key: 'unidade', label: 'Und.', type: 'select', options: tabelas.unidades },
-        { key: 'valorUnitarioCentavos', label: 'Valor Unit.', type: 'money' },
-        { key: 'descontoPercentual', label: 'Desc. %', type: 'percent' },
-        {
-          key: 'valorItem',
-          label: 'Valor Item',
-          type: 'computed',
-          compute: (row: FormGridRow) => formatMoneyBRL(totalItemCentavos(row)),
-        },
-        { key: 'grupoProduto', label: 'Grupo Produto' },
-        { key: 'tipoPeca', label: 'Tipo de Peça', type: 'select', options: tiposDePeca },
-        { key: 'fornecedor', label: 'Fornecedor', voz: 'nome' },
-      ]}
-      newRow={ITEM_VAZIO}
-      totals={{
-        valueColumnKey: 'valorItem',
-        rows: fileirasTotais(subtotal, [
-          { label: 'Desconto', valorCentavos: descontoGeral, sinal: -1 },
-        ]),
-      }}
-    />
   )
 }
 
@@ -578,7 +481,7 @@ function AbaPrincipal() {
       </DocumentoBloco>
 
       <Secao numero="04" titulo="Itens" cor="info" icone={List} nota="o que vai no pedido">
-        <GradeItens />
+        <ItensDoOrcamento rotuloDoTotal="Total do pedido" />
       </Secao>
 
       <Secao numero="05" titulo="Totais" cor="money" icone={Calculator} nota="o que o cliente paga">

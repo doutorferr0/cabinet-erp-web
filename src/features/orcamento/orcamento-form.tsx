@@ -1,7 +1,7 @@
 import type { PartnerDto, QuoteDetailDto } from '@/api/gerado'
 import { AbasSemCaptura } from '@/components/cabinet/abas-sem-captura'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
-import { DocumentoBloco, fileirasTotais, totalItemCentavos } from '@/components/cabinet/documento'
+import { DocumentoBloco } from '@/components/cabinet/documento'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import {
   DateField,
@@ -10,7 +10,6 @@ import {
   SelectField,
   TextField,
 } from '@/components/cabinet/form-controls'
-import { FormGrid, type FormGridRow } from '@/components/cabinet/form-grid'
 import { Nome } from '@/components/cabinet/nome'
 import { posGravar } from '@/components/cabinet/pos-gravar'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
@@ -18,13 +17,13 @@ import { Secao } from '@/components/cabinet/secao'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { data } from '@/data'
-import { useLookupOptions } from '@/data/lookups-api'
 import { useGravarOrcamento } from '@/data/quotes-api'
 import { tabelas } from '@/data/tabelas'
 import { AbaServicos } from '@/features/orcamento/aba-servicos'
-import { BlocoPagamento, useTotaisDoOrcamento } from '@/features/orcamento/bloco-pagamento'
-import { formatMoneyBRL, formatPercent } from '@/lib/formatters'
-import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
+import { BlocoPagamento } from '@/features/orcamento/bloco-pagamento'
+import { ItensDoOrcamento } from '@/features/orcamento/itens-do-orcamento'
+import { formatPercent } from '@/lib/formatters'
+import { SHORTCUTS, shortcutLabel } from '@/lib/shortcuts'
 import type { Orcamento } from '@/mocks/orcamentos'
 import { Link, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -33,14 +32,13 @@ import {
   CreditCard,
   FileText,
   Hash,
-  Home,
   List,
   Lock,
   Package,
   Percent,
   User,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -161,26 +159,6 @@ export const orcamentoSchema = z.object({
   ),
 })
 
-const ITEM_VAZIO = {
-  item: '',
-  codigoFornecedor: '',
-  descricaoFornecedor: '',
-  acabamento: '',
-  tamanho: '',
-  quantidade: '',
-  unidade: 'UN',
-  valorUnitarioCentavos: null,
-  descontoPercentual: null,
-  grupoProduto: '',
-  tipoPeca: '',
-  fornecedor: '',
-  ambiente: '',
-}
-
-/**
- * Botões de inserção de item (§8.2). No legado são F5/F6; o CLAUDE.md veta
- * F3-F6 (conflito com browser), então valem Alt+A / Alt+P pelo registry.
- */
 /**
  * A CADEIA DE VERSÕES do orçamento — de qual documento esta folha é revisão.
  *
@@ -212,44 +190,6 @@ function RevisaoDoOrcamento() {
       </Link>
       , que continua na listagem como foi apresentado ao cliente.
     </p>
-  )
-}
-
-function BotoesInsercao({ append }: { append: (row: FormGridRow) => void }) {
-  const itens = (useWatch({ name: 'itens' }) ?? []) as unknown[]
-
-  function inserirProduto() {
-    append({ ...ITEM_VAZIO, item: String(itens.length + 1) })
-  }
-
-  function inserirAmbiente() {
-    // Ambiente agrupa os itens da obra: entra como linha com ambiente definido.
-    append({ ...ITEM_VAZIO, item: String(itens.length + 1), ambiente: tabelas.ambientes[0] })
-  }
-
-  useEffect(() => bindShortcut(SHORTCUTS.produto, inserirProduto))
-  useEffect(() => bindShortcut(SHORTCUTS.ambiente, inserirAmbiente))
-  useEffect(() =>
-    bindShortcut(SHORTCUTS.imagemProduto, () => console.info('[mock] Mostrar imagem do produto')),
-  )
-
-  return (
-    <>
-      <Button type="button" variant="outline" size="sm" onClick={inserirAmbiente}>
-        <Home className="size-4" /> Ambiente <kbd>{shortcutLabel(SHORTCUTS.ambiente)}</kbd>
-      </Button>
-      <Button type="button" variant="outline" size="sm" onClick={inserirProduto}>
-        <Package className="size-4" /> Produto <kbd>{shortcutLabel(SHORTCUTS.produto)}</kbd>
-      </Button>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => console.info('[mock] Pré Produto (item fora do catálogo)')}
-      >
-        Pré Produto
-      </Button>
-    </>
   )
 }
 
@@ -480,68 +420,6 @@ function TotaisOrcamento() {
   )
 }
 
-/** Grade de itens com os totais nas últimas fileiras (DESIGN.md §DocumentoTotais). */
-function GradeItens() {
-  // A coluna `Tipo de Peça` é um kind do servidor; as demais são tabelas locais
-  // que o contrato não expõe como lista de apoio.
-  // A célula da GRADE continua guardando o NOME, e é a única exceção à
-  // migração para id da issue #94: o `select` da `FormGrid` recebe
-  // `readonly string[]` e é compartilhado com colunas de lista estática. Passar
-  // id ali exigiria a grade inteira aprender pares valor/rótulo — mudança de
-  // componente compartilhado, não desta tela. O item do orçamento é mock e não
-  // viaja para o contrato, então nada se traduz no submit; fica anotado.
-  const { options: opcoesDeTipoDePeca } = useLookupOptions('tipoPeca')
-  const tiposDePeca = opcoesDeTipoDePeca.map((o) => o.nome)
-  // A conta dos totais mora em `useTotaisDoOrcamento` (bloco-pagamento.tsx)
-  // porque DUAS partes da tela dependem dela: o pé desta grade e o combo de
-  // condição de pagamento, que decide quais condições cabem no total. Em duas
-  // cópias, o dia em que o desconto mudar de fórmula deixa o combo oferecendo
-  // parcelamento sobre um total que a grade não mostra mais.
-  const { subtotalCentavos: subtotal, descontoGeralCentavos: descontoGeral } =
-    useTotaisDoOrcamento()
-
-  return (
-    <FormGrid
-      name="itens"
-      hideAdd
-      actions={(append) => <BotoesInsercao append={append} />}
-      columns={[
-        { key: 'item', label: 'Item' },
-        { key: 'codigoFornecedor', label: 'Código Fornecedor' },
-        { key: 'descricaoFornecedor', label: 'Descrição do Fornecedor', voz: 'produto' },
-        { key: 'ambiente', label: 'Ambiente', type: 'select', options: tabelas.ambientes },
-        { key: 'acabamento', label: 'Acabamento', type: 'select', options: tabelas.acabamentos },
-        { key: 'tamanho', label: 'Tamanho' },
-        { key: 'quantidade', label: 'Quant.' },
-        { key: 'unidade', label: 'Und.', type: 'select', options: tabelas.unidades },
-        { key: 'valorUnitarioCentavos', label: 'Valor Unit.', type: 'money' },
-        { key: 'descontoPercentual', label: 'Desc. %', type: 'percent' },
-        {
-          key: 'valorItem',
-          label: 'Valor Item',
-          type: 'computed',
-          compute: (row: FormGridRow) => formatMoneyBRL(totalItemCentavos(row)),
-        },
-        { key: 'grupoProduto', label: 'Grupo Produto' },
-        {
-          key: 'tipoPeca',
-          label: 'Tipo de Peça',
-          type: 'select',
-          options: tiposDePeca,
-        },
-        { key: 'fornecedor', label: 'Fornecedor', voz: 'nome' },
-      ]}
-      newRow={ITEM_VAZIO}
-      totals={{
-        valueColumnKey: 'valorItem',
-        rows: fileirasTotais(subtotal, [
-          { label: 'Desconto', valorCentavos: descontoGeral, sinal: -1 },
-        ]),
-      }}
-    />
-  )
-}
-
 function AbaPrincipal() {
   return (
     <div data-zonas className="flex flex-col gap-4">
@@ -572,7 +450,7 @@ function AbaPrincipal() {
           (`id`/`info`/`warn`/`money`), então quem separa Identificação de Itens
           é o ORDINAL, não um quinto tom inventado para a ocasião. */}
       <Secao numero="04" titulo="Itens" cor="info" icone={List} nota="o que vai no orçamento">
-        <GradeItens />
+        <ItensDoOrcamento rotuloDoTotal="Total do orçamento" />
       </Secao>
 
       <Secao numero="05" titulo="Totais" cor="money" icone={Calculator} nota="o que o cliente paga">

@@ -74,6 +74,15 @@ const DIVIDAS: Record<string, string> = {
   // acesso a dado de terceiro.
   'data/suporte-api.ts':
     'órfã desde o item 6 da fundação (PR #369); religa no console de suporte, que é trilho próprio — o mock e as guardas já respondem sem ela',
+  // Ficou órfão AQUI, e é efeito direto do hub: `/vendas/` era o único
+  // consumidor, e o estado vazio que ele decorava ("Escolha uma opção no menu
+  // de Vendas") deixou de existir — a rota-índice agora TEM conteúdo. Não se
+  // apaga porque `stipple.tsx` é peça do desenho declarada no DESIGN.md
+  // §Stipple e está na zona de D28, que reduz o ornamento e decide o destino
+  // dela junto com `ornamento.tsx`. Apagá-lo daqui seria tomar por D28 uma
+  // decisão de identidade visual, com a issue dela ainda aberta.
+  'components/cabinet/stipple.tsx':
+    'órfão desde o hub de módulo (D26): `/vendas/` era o único consumidor e o estado vazio dele morreu; quem decide religar ou apagar é D28 (ornamento/stipple/marca)',
 }
 
 function arquivosDe(dir: string): string[] {

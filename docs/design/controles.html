@@ -18,6 +18,20 @@
   autoridade: quem manda é o componente. Mudou o componente, mude aqui na mesma
   PR — como o §Hierarquia manda para o DESIGN.md.
 
+  POR QUE HÁ `font-size` LITERAL AQUI, se a §Hierarquia o proíbe. A proibição é
+  para COMPONENTE, que consome a classe `.t-*`. Esta página é estática e abre por
+  `file://`, sem Tailwind: para mostrar os degraus ela tem de escrevê-los. Os sete
+  tamanhos usados — 10.5 · 11 · 12 · 12.5 · 13 · 13.5 · 28 — são subconjunto exato
+  dos dez de `tokens-2.0.css`; conferir com
+  `grep -o 'font-size: *[0-9.]*px' src/styles/tokens-2.0.css | sort -u`.
+
+  O hook do `impeccable` acusa os sete como "fora da rampa", e está medindo contra
+  o `DESIGN.md`, cujo corpo continua sendo o 1.7 até a D30 (é o que o CLAUDE.md
+  diz). São falsos positivos de régua vencida, não dívida: quando a D30 copiar a
+  §Hierarquia para o DESIGN.md, eles somem sozinhos. Não silenciar com
+  `ignore-value --shared` — a config é compartilhada e apagaria o aviso para as
+  outras 29 issues da rodada, onde `font-size` literal em componente É defeito.
+
   Abrir direto do disco (file://) funciona; `?grid` liga o overlay de 8px.
 
   ARMADILHA DE PÁGINA DE DOIS TEMAS LADO A LADO — vale para a `hierarquia.html`

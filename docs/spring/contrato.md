@@ -54,6 +54,13 @@ arquivo de propósito: duas cópias de um hash divergem, e a que ninguém confer
 reclamar que ela mudou, o conserto é `git checkout contracts/baseline/v1.0.0.json`, não uma soma
 nova no `.sha256`. Contrato novo não reescreve a 1.0.0: ele **nasce como 1.1.0** (§7).
 
+**E isso também não depende de alguém lembrar.** Um caso de `scripts/contrato-delta.test.mjs`
+recalcula a soma do arquivo e a compara com o `.sha256`, e ele roda em `pnpm test` — ou seja, no
+job `check` do CI. Baseline mexida sem que a soma acompanhe reprova a PR; se as duas mudarem
+juntas, a intenção fica visível no diff, que é onde ela deve ser discutida. Sem isso o
+`contrato-compat` continuaria verde comparando contra a foto errada, que é a pior forma de falhar:
+silenciosa e com cara de guarda.
+
 > **Implemente a TAG, nunca a `main`.** A `main` deste repositório é o contrato vivo, e ele muda
 > várias vezes por semana. `git show contrato/v1.0.0:contracts/baseline/v1.0.0.json` é estável por
 > definição.

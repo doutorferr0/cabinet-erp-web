@@ -267,7 +267,13 @@ describe('o total do documento soma as DUAS coleções', () => {
     // que o próprio servidor devolveu. Antes desta PR o fecho mostrava
     // R$ 1.000,00 e o documento fechava por outro número.
     await waitFor(() => expect(screen.getByLabelText('Total')).toHaveTextContent('R$ 1.480,00'))
-    expect(screen.getByLabelText('SubTotal')).toHaveTextContent('R$ 1.480,00')
+    // O EXTRATO agora mostra de onde vem cada parte (D17): o subtotal é o dos
+    // PRODUTOS e os serviços entram como parcela nomeada. Antes as duas
+    // coleções chegavam somadas num "SubTotal" que já valia R$ 1.480,00, e a
+    // asserção não distinguia um documento certo de um que somasse produto
+    // duas vezes. Estas três linhas prendem a conta inteira.
+    expect(screen.getByLabelText('Subtotal')).toHaveTextContent('R$ 1.000,00')
+    expect(screen.getByLabelText('Serviços')).toHaveTextContent('R$ 480,00')
   })
 })
 

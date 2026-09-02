@@ -1,7 +1,18 @@
+import { PageHeader } from '@/components/cabinet/page-header'
 import { useSessao } from '@/data/sessao'
 import { dataPorExtenso, saudacao } from '@/lib/datas'
 import { LinhaDeHoje } from './hoje'
 import { Indicadores } from './indicadores'
+
+/**
+ * A data por extenso chega minúscula do `Intl` ("terça-feira, 2 de setembro").
+ * Era o CSS que a capitalizava (`first-letter:uppercase`) — o subtítulo do
+ * cabeçalho é um degrau da régua e não carrega classe da tela, então quem
+ * capitaliza passa a ser o texto.
+ */
+function comInicialMaiuscula(texto: string): string {
+  return texto.charAt(0).toUpperCase() + texto.slice(1)
+}
 
 /**
  * DASHBOARD — a tela de entrada depois do login.
@@ -41,14 +52,18 @@ export function DashboardTela() {
 
   return (
     <div className="flex flex-col gap-8">
-      <header data-slot="dashboard-header" className="border-rule-strong border-b pb-3">
-        <h1 className="font-nome text-3xl font-bold">
-          {saudacao()}
-          {nome ? `, ${nome}` : ''}
-        </h1>
-        {/* A data por extenso é o que ancora tudo que a tela chama de "hoje". */}
-        <p className="text-sm text-muted-foreground first-letter:uppercase">{dataPorExtenso()}</p>
-      </header>
+      {/* A saudação é o único `--t-display` do sistema junto do claim do login
+          (§Hierarquia). A régua embaixo saiu: a fronteira entre o cabeçalho e
+          os indicadores é ESPAÇO, e ela era a segunda ferramenta na mesma
+          fronteira que o `gap-8` já resolvia.
+          A data por extenso é o que ancora tudo que a tela chama de "hoje". */}
+      <div data-slot="dashboard-header">
+        <PageHeader
+          variante="display"
+          titulo={`${saudacao()}${nome ? `, ${nome}` : ''}`}
+          subtitulo={comInicialMaiuscula(dataPorExtenso())}
+        />
+      </div>
 
       <Indicadores />
 

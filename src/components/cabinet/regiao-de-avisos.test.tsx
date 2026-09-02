@@ -66,6 +66,65 @@ describe('região de avisos', () => {
     expect(screen.queryByText('Produto gravado.')).not.toBeInTheDocument()
   })
 
+  /**
+   * O TOM pinta a faixa e decide o relógio (Reface 2.0 · D5). Confirmação sai
+   * sozinha; falha e alerta ficam até alguém dispensar — é exatamente o que o
+   * `lib/avisos` diz do que não pode sumir em cinco segundos: o que o operador
+   * precisa LER e AGIR.
+   */
+  it('confirmação sai pelo relógio; alerta e falha ficam', () => {
+    vi.useFakeTimers()
+    render(<RegiaoDeAvisos />)
+    act(() => {
+      avisar('Produto gravado.')
+      avisar('Estoque abaixo do mínimo.', undefined, 'warn')
+      avisar('A gravação falhou.', undefined, 'bad')
+    })
+
+    act(() => {
+      vi.advanceTimersByTime(6000)
+    })
+
+    expect(screen.queryByText('Produto gravado.')).not.toBeInTheDocument()
+    expect(screen.getByText('Estoque abaixo do mínimo.')).toBeInTheDocument()
+    expect(screen.getByText('A gravação falhou.')).toBeInTheDocument()
+  })
+
+  it('a faixa é tinta do tom, sem borda preta nem sombra', () => {
+    render(<RegiaoDeAvisos />)
+    act(() => {
+      avisar('Estoque abaixo do mínimo.', undefined, 'warn')
+    })
+
+    const faixa = document.querySelector('[data-slot="faixa-de-aviso"]') as HTMLElement
+    expect(faixa).toHaveAttribute('data-tom', 'warn')
+    expect(faixa.className).toContain('bg-[var(--warn-bg)]')
+    // Tint é UMA ferramenta de separação; borda e sombra em cima dela seriam a
+    // segunda e a terceira na mesma fronteira (§Hierarquia).
+    expect(faixa.className).not.toMatch(/\bborder-2\b/)
+    expect(faixa.className).not.toMatch(/\bshadow-/)
+  })
+
+  /**
+   * `polite` espera a leitura em curso terminar — certo para "gravou", errado
+   * para "falhou": quem está ouvindo outra coisa continuaria agindo sobre um
+   * registro que não gravou.
+   */
+  it('falha interrompe a leitura; o resto espera a vez', () => {
+    render(<RegiaoDeAvisos />)
+    const regiao = () => document.querySelector('[data-slot="regiao-de-avisos"]')
+
+    act(() => {
+      avisar('Cadastro incluído.')
+    })
+    expect(regiao()).toHaveAttribute('aria-live', 'polite')
+
+    act(() => {
+      avisar('A gravação falhou.', undefined, 'bad')
+    })
+    expect(regiao()).toHaveAttribute('aria-live', 'assertive')
+  })
+
   it('dispensa repetida não deixa a fila inconsistente', () => {
     const id = avisar('Um.')
     expect(avisosAtuais()).toHaveLength(1)

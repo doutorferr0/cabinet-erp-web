@@ -1,16 +1,17 @@
 import { Appbar, secaoDaRota } from '@/app/appbar'
+import { CintoDeIdentidade, CintoDeNavegacao } from '@/app/cinto-provisorio'
 import { GavetaDeNotificacoes } from '@/app/gaveta-notificacoes'
 import { moduloDaRota } from '@/app/modulo'
 import { type NavItem, type NavSecao, secoesVisiveis } from '@/app/navigation'
 import { PageFrame } from '@/app/page-frame'
 import { PaletaDeComandos } from '@/app/paleta-de-comandos'
 import { RequireRecurso } from '@/app/require-recurso'
-import { ModeToggle } from '@/components/cabinet/mode-toggle'
 import { Ornamento } from '@/components/cabinet/ornamento'
-import { Separator } from '@/components/ui/separator'
+import { RegiaoDeAvisos } from '@/components/cabinet/regiao-de-avisos'
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarHeader,
@@ -20,7 +21,6 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarRail,
-  SidebarTrigger,
 } from '@/components/ui/sidebar'
 import { normalize } from '@/data/provider'
 import { useRecursosDaEmpresa } from '@/data/recursos-da-empresa'
@@ -259,7 +259,20 @@ function ItemDaBarra({
  * lista o que se OPERA, e um bloco de visita rara no pé cobrava espaço
  * permanente por isso.
  */
-function AppSidebar({ secao }: { secao: NavSecao | undefined }) {
+function AppSidebar({
+  secao,
+  secoes,
+  secaoAtiva,
+  aoEscolherSecao,
+  aoAbrirPaleta,
+}: {
+  secao: NavSecao | undefined
+  /** As seções OPERÁVEIS, para a fileira do cinto provisório (some em D4). */
+  secoes: NavSecao[]
+  secaoAtiva: string | undefined
+  aoEscolherSecao: (id: string) => void
+  aoAbrirPaleta: () => void
+}) {
   const { location } = useRouterState()
   const pathname = location.pathname
 
@@ -299,6 +312,14 @@ function AppSidebar({ secao }: { secao: NavSecao | undefined }) {
   return (
     <Sidebar collapsible="offcanvas" variant="inset">
       <SidebarHeader>
+        {/* Marca, busca `Ctrl+K` e fileira de seções vieram da appbar 1.x e
+            ficam aqui até D4/D6 — ver `cinto-provisorio.tsx`. */}
+        <CintoDeNavegacao
+          secoes={secoes}
+          secaoAtiva={secaoAtiva}
+          aoEscolherSecao={aoEscolherSecao}
+          aoAbrirPaleta={aoAbrirPaleta}
+        />
         <div className="flex items-center gap-2 rounded-control border-2 border-input bg-card px-2">
           <Search aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
           <label htmlFor={buscaId} className="sr-only">
@@ -364,6 +385,11 @@ function AppSidebar({ secao }: { secao: NavSecao | undefined }) {
           </nav>
         )}
       </SidebarContent>
+      <SidebarFooter>
+        {/* Empresa ativa e menu do operador (com o `Sair`) — também da appbar
+            1.x, também até D6. */}
+        <CintoDeIdentidade />
+      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   )
@@ -415,11 +441,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
    * volta, e é o que a `main` já fazia antes da fileira voltar.
    */
   const secaoDaBarra = secaoAtiva?.oculta ? daBarra[0] : secaoAtiva
-  /** A TELA da rota, para o rastro do header — busca nas folhas da seção. */
-  const telaAtiva = daRota?.grupos
-    .flatMap((grupo) => grupo.items.flatMap((item) => item.filhas ?? [item]))
-    .find((item) => location.pathname === item.url || location.pathname.startsWith(`${item.url}/`))
-
   // Notificação é CASCA nesta fatia — dado de mock local, sem `src/data/` por
   // trás (não há `/api/notifications` no contrato — §@casca-global). Estado
   // vive no shell porque é ele que também guarda se a gaveta está aberta; as
@@ -434,48 +455,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider>
-      <AppSidebar secao={secaoDaBarra} />
+      <AppSidebar
+        secao={secaoDaBarra}
+        secoes={daBarra}
+        secaoAtiva={secaoAtiva?.id}
+        aoEscolherSecao={(id) => setEspiada({ id, em: location.pathname })}
+        aoAbrirPaleta={() => setPaletaAberta(true)}
+      />
       <SidebarInset>
         {/* APPBAR GLOBAL — acima do cabeçalho de página, em TODA rota
             (§@casca-global). Vive no shell: página nenhuma monta a própria. */}
-        <Appbar
-          naoLidas={naoLidas}
-          secaoAtiva={secaoAtiva?.id}
-          aoEscolherSecao={(id) => setEspiada({ id, em: location.pathname })}
-          aoAbrirGaveta={() => setGavetaAberta(true)}
-          aoAbrirPaleta={() => setPaletaAberta(true)}
-        />
-
-        {/* Header = 1 célula da grade (52px), régua preta 2px embaixo (mockup .header). */}
-        <header className="flex h-[52px] shrink-0 items-center gap-2 border-b-2 bg-card px-4 transition-[width,height] ease-linear">
-          <div className="flex items-center gap-2">
-            <SidebarTrigger />
-            <Separator orientation="vertical" className="h-4" />
-          </div>
-          {/* ONDE ESTOU, por extenso — o Polaris põe o contexto no topo da
-              página e o Odoo crava o nome do app na barra. Seção em negrito,
-              tela depois; some quando a rota não pertence a seção nenhuma. */}
-          {/* O rastro conta a ROTA, e só ela — `secaoAtiva` pode ser a seção
-              que o operador abriu no topo sem sair do lugar (`espiada`), e um
-              "Você está em" que anuncia onde ele NÃO está é pior que ausente.
-              Quem diz qual menu está aberto é o ícone aceso lá em cima. */}
-          {daRota ? (
-            <nav aria-label="Você está em" className="flex min-w-0 items-center gap-1.5 text-sm">
-              <span className="shrink-0 font-bold">{daRota.rotulo}</span>
-              {telaAtiva ? (
-                <>
-                  <span aria-hidden="true" className="text-muted-foreground">
-                    /
-                  </span>
-                  <span className="truncate text-muted-foreground">{telaAtiva.title}</span>
-                </>
-              ) : null}
-            </nav>
-          ) : null}
-          <div className="ml-auto flex items-center gap-2">
-            <ModeToggle />
-          </div>
-        </header>
+        {/* A FAIXA DE 52px SAIU (Reface 2.0 · D5). Ela repetia, dentro do
+            conteúdo, o lugar que a appbar agora diz na migalha — duas respostas
+            para "onde estou", em duas tipografias —, e carregava o botão de
+            colapso da barra lateral, que é da barra e voltou para ela (D4).
+            O que ela tinha de próprio (o rastro, o tema) está na appbar. */}
+        <Appbar naoLidas={naoLidas} aoAbrirNotificacoes={() => setGavetaAberta(true)} />
+        {/* A faixa de avisos é IRMÃ da appbar e vem logo abaixo dela: empurra o
+            conteúdo em vez de cobri-lo, e some sem deixar buraco (`empty:hidden`).
+            Fora do `<main>` de propósito — ela não pertence à tela, e sobrevive
+            à troca de rota que a `key` do `PageFrame` remonta. */}
+        <RegiaoDeAvisos />
         {/* A área de conteúdo é Papel COM a grade de 52px; a folha (PageFrame)
             pousa opaca por cima (Regra da Grade de Fundo).
             `data-modulo` é declarado UMA vez, aqui: tudo que a tela montar

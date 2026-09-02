@@ -185,8 +185,10 @@ describe('useAutosave', () => {
     const { user } = renderWithQuery(<Sonda salvar={salvar} />)
 
     await user.type(screen.getByLabelText('Número'), 'a')
-    await screen.findByText('salvando…')
-    expect(salvar).toHaveBeenCalledOnce()
+    // Espera-se a CHAMADA, não o texto: "salvando…" também é o que a fase
+    // `pendente` mostra (a diferença de 800ms não é informação para quem olha),
+    // então casar o texto passaria antes de a gravação ter saído.
+    await waitFor(() => expect(salvar).toHaveBeenCalledOnce())
 
     // Chega alteração de OUTRO campo com a primeira ainda em voo. Duas
     // requisições concorrentes chegariam fora de ordem e a última a chegar

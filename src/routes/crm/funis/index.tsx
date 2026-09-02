@@ -1,6 +1,7 @@
 import type { CrmPipelineDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
+import type { OpcaoDeAgrupamento } from '@/components/cabinet/data-table'
 import { Nome } from '@/components/cabinet/nome'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
@@ -50,6 +51,20 @@ const columns: ColumnDef<CrmPipelineDto>[] = [
   },
 ]
 
+/** Funil desativado não recebe oportunidade nova; a lista passa a dizê-lo. */
+function decoracaoDoFunil(f: CrmPipelineDto) {
+  return f.active ? undefined : ('muted' as const)
+}
+
+const AGRUPAMENTOS: readonly OpcaoDeAgrupamento<CrmPipelineDto>[] = [
+  {
+    id: 'active',
+    rotulo: 'Situação',
+    valorDaLinha: (f) => (f.active ? 'Ativo' : 'Inativo'),
+    tomDoValor: (valor) => (valor === 'Ativo' ? 'done' : 'void'),
+  },
+]
+
 function FunisPage() {
   const navigate = useNavigate()
   const { readOnly } = useReadOnlyPorPapel('crm')
@@ -92,6 +107,8 @@ function FunisPage() {
       columns={columns}
       queryKey={['crm', 'funis', 'listagem']}
       fetcher={data.funis.list}
+      decoracao={decoracaoDoFunil}
+      agrupamentos={AGRUPAMENTOS}
       actions={actions}
       desativacao={{
         entidade: 'funil',

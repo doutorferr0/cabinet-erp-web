@@ -1,7 +1,11 @@
 import { AvisoDadosDeExemplo } from '@/components/cabinet/aviso-dados-de-exemplo'
 import { ConfirmarCancelamento } from '@/components/cabinet/confirmar-cancelamento'
 import { ConfirmarDesativacao } from '@/components/cabinet/confirmar-desativacao'
-import type { DataTableAction } from '@/components/cabinet/data-table'
+import type {
+  DataTableAction,
+  DecoracaoDaLinha,
+  OpcaoDeAgrupamento,
+} from '@/components/cabinet/data-table'
 import { VitraDataTable } from '@/components/cabinet/data-table'
 import type { AcaoDeCabecalho } from '@/components/cabinet/page-header'
 import { PageHeader } from '@/components/cabinet/page-header'
@@ -80,6 +84,25 @@ export interface TelaDeListagemProps<T> {
    * mentindo de novo.
    */
   origem?: OrigemDosDados | undefined
+  /**
+   * O ESTADO que a linha anuncia sozinha (D10): faixa lateral e tint.
+   *
+   * Sobe até aqui em vez de ficar em cada rota porque a pergunta que ela
+   * responde é a mesma nas onze listagens — "o que nesta lista pede atenção
+   * hoje, e o que já saiu do jogo" —, e porque quem decide o que é atraso é a
+   * TELA: a tabela não conhece prazo nem situação. `undefined` para a linha
+   * comum, que é a maioria; listagem que decora tudo não decora nada.
+   */
+  decoracao?: (linha: T) => DecoracaoDaLinha | undefined
+  /** Campos oferecidos no chip `Agrupar` (D10). */
+  agrupamentos?: readonly OpcaoDeAgrupamento<T>[]
+  /**
+   * O que cada linha soma no subtotal do grupo, em CENTAVOS INTEIROS.
+   *
+   * Só as listagens de documento a declaram — cadastro agrupado dá contagem, e
+   * um `R$ 0,00` com a forma de total conferido seria pior que a ausência.
+   */
+  subtotalDoGrupo?: (linha: T) => number
 }
 
 /** Id da ação que ABRE o filtro — fica na tabela, com colunas e consultas salvas. */
@@ -144,6 +167,9 @@ export function TelaDeListagem<T>({
   modoDeFiltro,
   entidadeDoSchema,
   origem,
+  decoracao,
+  agrupamentos,
+  subtotalDoGrupo,
 }: TelaDeListagemProps<T>) {
   const acoesDaTabela = actions.filter((a) => a.id === ACAO_FILTRO)
   const primaria = actions.find((a) => a.id === ACAO_PRIMARIA)
@@ -206,6 +232,9 @@ export function TelaDeListagem<T>({
         consultaNoEndereco
         {...(modoDeFiltro ? { modoDeFiltro } : {})}
         {...(entidadeDoSchema ? { entidade: entidadeDoSchema } : {})}
+        {...(decoracao ? { decoracao } : {})}
+        {...(agrupamentos ? { agrupamentos } : {})}
+        {...(subtotalDoGrupo ? { subtotalDoGrupo } : {})}
       />
       {rodape}
       {cancelamento?.registro ? (

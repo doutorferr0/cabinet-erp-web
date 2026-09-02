@@ -1,5 +1,6 @@
 import type { QuoteDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
+import type { OpcaoDeAgrupamento } from '@/components/cabinet/data-table'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { Button } from '@/components/ui/button'
 import { data } from '@/data'
@@ -139,6 +140,47 @@ const camposFiltraveis: readonly CampoFiltravel[] = [
   { id: 'expiresAt', rotulo: 'Data Validade', variante: 'date', icon: CalendarDays },
 ]
 
+/** Dias inteiros entre hoje e a validade; negativo = já venceu. */
+function diasAteVencer(validade: string | null | undefined, hoje = new Date()) {
+  if (!validade) return null
+  const limite = new Date(`${validade.slice(0, 10)}T00:00:00`)
+  const dia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate())
+  return Math.round((limite.getTime() - dia.getTime()) / 86_400_000)
+}
+
+/**
+ * A VALIDADE é o que este documento tem de urgente, e a lista não a dizia.
+ *
+ * `bad` é o orçamento que já venceu e ninguém fechou — o prejuízo já
+ * aconteceu; `warn` é o que vence dentro de três dias, que é a janela em que
+ * ainda dá para ligar para o cliente. O cancelado vira `muted` antes das duas
+ * contas: documento fora do jogo não tem prazo a cobrar.
+ *
+ * O contrato publica DUAS situações (`active`, `cancelled`). "Vencido" não é
+ * uma delas — é a data contra hoje, e por isso mora aqui e não numa coluna.
+ */
+const JANELA_DE_VENCIMENTO_EM_DIAS = 3
+
+function decoracaoDoOrcamento(o: QuoteDto) {
+  if (o.status === 'cancelled') return 'muted' as const
+  const dias = diasAteVencer(o.expiresAt)
+  if (dias === null) return undefined
+  if (dias < 0) return 'bad' as const
+  if (dias <= JANELA_DE_VENCIMENTO_EM_DIAS) return 'warn' as const
+  return undefined
+}
+
+const AGRUPAMENTOS: readonly OpcaoDeAgrupamento<QuoteDto>[] = [
+  {
+    id: 'status',
+    rotulo: 'Situação',
+    valorDaLinha: (o) => (o.status === 'cancelled' ? 'Cancelado' : 'Em aberto'),
+    tomDoValor: (valor) => (valor === 'Cancelado' ? 'void' : 'open'),
+  },
+  // Cliente não tinge: nome próprio não é estado (§Hierarquia).
+  { id: 'customerName', rotulo: 'Cliente', valorDaLinha: (o) => o.customerName ?? '—' },
+]
+
 function OrcamentosPage() {
   const navigate = useNavigate()
   const [paraCancelar, setParaCancelar] = useState<QuoteDto | null>(null)
@@ -241,6 +283,9 @@ function OrcamentosPage() {
         actions={acoesDaTela}
         filtros={camposFiltraveis}
         rodape={<RodapeDeOrcamento />}
+        decoracao={decoracaoDoOrcamento}
+        agrupamentos={AGRUPAMENTOS}
+        subtotalDoGrupo={(o) => o.totalCents ?? 0}
         cancelamento={{
           documento: 'orçamento',
           registro: paraCancelar,

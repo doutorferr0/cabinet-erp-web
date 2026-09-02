@@ -1,6 +1,7 @@
 import type { EmployeeDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
+import type { OpcaoDeAgrupamento } from '@/components/cabinet/data-table'
 import { Nome } from '@/components/cabinet/nome'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
@@ -75,6 +76,26 @@ const columns: ColumnDef<EmployeeDto>[] = [
  * servidor serve.
  */
 
+/** Colaborador desligado fica na lista e sai da disputa por atenção. */
+function decoracaoDoColaborador(c: EmployeeDto) {
+  return c.active ? undefined : ('muted' as const)
+}
+
+/**
+ * Setor e cargo são como a empresa se enxerga, e é por eles que a lista de
+ * pessoas é lida. `Situação` tinge (é estado); os outros dois, não.
+ */
+const AGRUPAMENTOS: readonly OpcaoDeAgrupamento<EmployeeDto>[] = [
+  { id: 'sector', rotulo: 'Setor', valorDaLinha: (c) => c.sector ?? '—' },
+  { id: 'jobTitle', rotulo: 'Cargo', valorDaLinha: (c) => c.jobTitle ?? '—' },
+  {
+    id: 'active',
+    rotulo: 'Situação',
+    valorDaLinha: (c) => (c.active ? 'Ativo' : 'Inativo'),
+    tomDoValor: (valor) => (valor === 'Ativo' ? 'done' : 'void'),
+  },
+]
+
 function ColaboradoresPage() {
   const navigate = useNavigate()
   const { readOnly } = useReadOnlyPorPapel('employees')
@@ -106,6 +127,8 @@ function ColaboradoresPage() {
         columns={columns}
         queryKey={['colaboradores']}
         fetcher={data.colaboradores.list}
+        decoracao={decoracaoDoColaborador}
+        agrupamentos={AGRUPAMENTOS}
         actions={actions}
         origem={data.colaboradores.origem}
         // O SELETOR DE COLUNAS continua, e é função diferente do filtro: o

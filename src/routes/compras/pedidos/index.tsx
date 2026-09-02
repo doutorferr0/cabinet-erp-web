@@ -1,5 +1,6 @@
 import type { PurchaseRequestDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
+import type { OpcaoDeAgrupamento } from '@/components/cabinet/data-table'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
 import { SITUACAO_DO_PEDIDO } from '@/data/compras-api'
@@ -64,6 +65,41 @@ const camposFiltraveis: readonly CampoFiltravel[] = [
   { id: 'itemCount', rotulo: 'Itens', variante: 'text', icon: List, placeholder: 'Ex.: 3' },
 ]
 
+/**
+ * O pedido CANCELADO continua na lista — o número foi emitido e some da
+ * conferência se sumir da tela —, mas rebaixado: quem saiu do jogo não compete
+ * por atenção com o que ainda espera ordem. Nenhum outro estado é decorado:
+ * `open` é o caso comum desta tela e pintá-lo apagaria a marca.
+ */
+function decoracaoDoPedido(p: PurchaseRequestDto) {
+  return p.status === 'cancelled' ? ('muted' as const) : undefined
+}
+
+/**
+ * `Situação` tinge a faixa (é estado) e `Pedido de Venda` não (é número de
+ * outro documento). O agrupamento por pedido de venda responde à pergunta que
+ * a tela existe para responder — o que já pedi para ESTA venda —, e o
+ * `— estoque` das linhas sem vínculo vira um grupo legítimo em vez de um vazio.
+ */
+const AGRUPAMENTOS: readonly OpcaoDeAgrupamento<PurchaseRequestDto>[] = [
+  {
+    id: 'status',
+    rotulo: 'Situação',
+    valorDaLinha: (p) => SITUACAO_DO_PEDIDO[p.status] ?? '—',
+    tomDoValor: (valor) =>
+      valor === SITUACAO_DO_PEDIDO.ordered
+        ? 'done'
+        : valor === SITUACAO_DO_PEDIDO.cancelled
+          ? 'void'
+          : 'open',
+  },
+  {
+    id: 'orderNumber',
+    rotulo: 'Pedido de Venda',
+    valorDaLinha: (p) => p.orderNumber ?? '— estoque',
+  },
+]
+
 function PedidosCompraPage() {
   const navigate = useNavigate()
   const { readOnly } = useReadOnlyPorPapel('purchases')
@@ -90,6 +126,8 @@ function PedidosCompraPage() {
       columns={columns}
       queryKey={['pedidos-compra']}
       fetcher={data.pedidosCompra.list}
+      decoracao={decoracaoDoPedido}
+      agrupamentos={AGRUPAMENTOS}
       actions={actions}
       filtros={camposFiltraveis}
       origem={data.pedidosCompra.origem}

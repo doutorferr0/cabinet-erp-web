@@ -1,5 +1,6 @@
 import type { OrderDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
+import type { OpcaoDeAgrupamento } from '@/components/cabinet/data-table'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
 import { useReadOnlyPorPapel } from '@/data/papeis'
@@ -116,6 +117,37 @@ const camposFiltraveis: readonly CampoFiltravel[] = [
   },
 ]
 
+/**
+ * `muted` no cancelado e nada no resto.
+ *
+ * O concluído NÃO é rebaixado: ele é o desfecho que a tela celebra, e o
+ * operador ainda o consulta para conferir o que saiu. Rebaixá-lo trataria
+ * "deu certo" e "foi cancelado" como a mesma coisa.
+ */
+function decoracaoDoPedido(p: OrderDto) {
+  return p.status === 'cancelled' ? ('muted' as const) : undefined
+}
+
+const AGRUPAMENTOS: readonly OpcaoDeAgrupamento<OrderDto>[] = [
+  {
+    id: 'status',
+    rotulo: 'Situação',
+    valorDaLinha: (p) => ROTULO_DA_SITUACAO[p.status] ?? '—',
+    tomDoValor: (valor) =>
+      valor === ROTULO_DA_SITUACAO.concluded
+        ? 'done'
+        : valor === ROTULO_DA_SITUACAO.cancelled
+          ? 'void'
+          : 'open',
+  },
+  { id: 'customerName', rotulo: 'Cliente', valorDaLinha: (p) => p.customerName ?? '—' },
+  {
+    id: 'type',
+    rotulo: 'Tipo',
+    valorDaLinha: (p) => (p.type === 'demo' ? 'Demonstração' : 'Venda'),
+  },
+]
+
 function PedidosDeVendaPage() {
   const navigate = useNavigate()
   const [paraCancelar, setParaCancelar] = useState<OrderDto | null>(null)
@@ -162,6 +194,9 @@ function PedidosDeVendaPage() {
       fetcher={data.pedidosVenda.list}
       actions={actionsPedido}
       filtros={camposFiltraveis}
+      decoracao={decoracaoDoPedido}
+      agrupamentos={AGRUPAMENTOS}
+      subtotalDoGrupo={(p) => p.totalCents ?? 0}
       cancelamento={{
         documento: 'pedido de venda',
         registro: paraCancelar,

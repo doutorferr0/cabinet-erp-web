@@ -1,6 +1,7 @@
 import type { ProductDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
+import type { OpcaoDeAgrupamento } from '@/components/cabinet/data-table'
 import { Produto } from '@/components/cabinet/nome'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
@@ -92,6 +93,30 @@ const camposFiltraveis: readonly CampoFiltravel[] = [
   { id: 'active', rotulo: 'Ativo', variante: 'boolean', icon: CircleCheck },
 ]
 
+/**
+ * Produto DESATIVADO continua na lista (padrão 8: cadastro não se apaga) e
+ * passa a se anunciar como o que é — fora de linha. Antes ele só se distinguia
+ * pela coluna `Ativo`, no fim da linha, que é onde o olho chega por último.
+ */
+function decoracaoDoProduto(p: ProductDto) {
+  return p.active ? undefined : ('muted' as const)
+}
+
+/**
+ * Agrupar pelo que ORGANIZA o catálogo. Nenhum destes tinge a faixa: tipo,
+ * marca e fábrica são nomes próprios, não estados — cor aqui seria decoração
+ * sem significado (§Hierarquia).
+ */
+const AGRUPAMENTOS: readonly OpcaoDeAgrupamento<ProductDto>[] = [
+  {
+    id: 'productTypeName',
+    rotulo: 'Tipo de Produto',
+    valorDaLinha: (p) => p.productTypeName ?? '—',
+  },
+  { id: 'brandName', rotulo: 'Marca', valorDaLinha: (p) => p.brandName ?? '—' },
+  { id: 'factoryName', rotulo: 'Fábrica', valorDaLinha: (p) => p.factoryName ?? '—' },
+]
+
 function ProdutosPage() {
   const navigate = useNavigate()
   const { readOnly } = useReadOnlyPorPapel('products')
@@ -132,6 +157,8 @@ function ProdutosPage() {
       columns={columns}
       queryKey={['produtos']}
       fetcher={data.produtos.list}
+      decoracao={decoracaoDoProduto}
+      agrupamentos={AGRUPAMENTOS}
       actions={actions}
       filtros={camposFiltraveis}
       desativacao={{

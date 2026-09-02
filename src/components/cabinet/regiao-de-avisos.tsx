@@ -96,13 +96,16 @@ function FaixaDeAviso({ aviso }: { aviso: Aviso }) {
       // alinha o texto com a migalha da appbar, na mesma calha de 16px.
       className={cn('flex items-center gap-3 px-4 py-2', TINTA_DO_TOM[tom])}
     >
-      <p className="t-ui min-w-0 flex-1 font-semibold">
+      {/* `!` na cor e no peso: `.t-ui` é regra sem `@layer` e vence a utility.
+          Sem ele o texto sairia em n-900 sobre o tint — a faixa perderia a
+          própria voz — e em 500 no lugar do forte que a espec pede. */}
+      <p className="t-ui min-w-0 flex-1 font-semibold! text-current!">
         {aviso.texto}
         {aviso.detalhe ? (
           // O detalhe divide a LINHA com o texto, não uma linha própria: a
           // faixa empurra o conteúdo para baixo, e cada linha dela custa altura
           // em toda tela que o aviso atravessar.
-          <span className="t-meta ml-2 font-normal opacity-80">{aviso.detalhe}</span>
+          <span className="t-meta ml-2 text-current! opacity-80">{aviso.detalhe}</span>
         ) : null}
       </p>
       <Button

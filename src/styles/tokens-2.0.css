@@ -210,6 +210,26 @@
      o consumidor, dentro dos três degraus permitidos (n-900 · n-700 · n-500).
 
      `identidade-visual.test.ts` confere que token e classe não divergem. */
+  /* O TAMANHO TAMBÉM SOZINHO, e não é conveniência: é o que permite alimentar
+     COMPONENTE DE TERCEIRO sem escrever pixel na mão (pedido de D23, #469 — o
+     Gantt do SVAR recebe a tipografia por variável própria e não aceita a
+     shorthand inteira). Sem isto a saída seria um literal na tela, que é
+     exatamente o que a régua §Hierarquia proíbe.
+     Peso e família continuam vindo de `--font-*`, que já são token. Os valores
+     abaixo repetem o que está na shorthand, e `identidade-visual.test.ts` confere
+     que as duas formas não divergem — a mesma disciplina da pilha de fontes. */
+  --t-display-size: 30px;
+  --t-pagina-size: 28px;
+  --t-registro-size: 24px;
+  --t-secao-size: 20px;
+  --t-bloco-size: 13.5px;
+  --t-corpo-size: 13.5px;
+  --t-ui-size: 13px;
+  --t-meta-size: 12px;
+  --t-rotulo-size: 10.5px;
+  --t-dado-size: 12.5px;
+  --t-dado-meta-size: 11px;
+
   --t-display: 400 30px / 1.05 var(--font-display);
   --t-pagina: 400 28px / 1.1 var(--font-display);
   --t-registro: 400 24px / 1.1 var(--font-display);

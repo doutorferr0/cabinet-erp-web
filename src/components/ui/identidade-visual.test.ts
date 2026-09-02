@@ -120,7 +120,8 @@ describe('identidade visual — o que a próxima leva de UI não pode levar junt
     // não são o mesmo degrau.
     const degraus = pares(bloco(TOKENS, ':root'))
     for (const [nome, valor] of degraus) {
-      if (!nome.startsWith('t-')) continue
+      // `--t-*-size` é o tamanho solto, medido no caso seguinte.
+      if (!nome.startsWith('t-') || nome.endsWith('-size')) continue
       // `peso tamanho/entrelinha familia`, e o Biome escreve a barra com
       // espaços em volta (`400 30px / 1.05 …`) — casar por regex e não por
       // `split(' ')`, senão a formatação do repo quebra a guarda.
@@ -133,7 +134,25 @@ describe('identidade visual — o que a próxima leva de UI não pode levar junt
       expect(classe).toContain(`line-height: ${entrelinha};`)
       expect(classe).toContain(`font-family: ${familia};`)
     }
-    expect([...degraus.keys()].filter((n) => n.startsWith('t-'))).toHaveLength(11)
+    expect(
+      [...degraus.keys()].filter((n) => /^t-[a-z-]+$/.test(n) && !n.endsWith('-size')),
+    ).toHaveLength(11)
+  })
+
+  it('o tamanho solto de cada degrau bate com o da shorthand', () => {
+    // `--t-*-size` existe para alimentar componente de TERCEIRO, que recebe a
+    // tipografia por variável própria e não aceita a shorthand (o Gantt do
+    // SVAR, pedido de D23). Duas formas do mesmo número é duas chances de
+    // divergir — e a que divergisse seria a que ninguém olha, porque ela mora
+    // dentro de uma lib.
+    const degraus = pares(bloco(TOKENS, ':root'))
+    const soltos = [...degraus.keys()].filter((n) => n.endsWith('-size'))
+    expect(soltos).toHaveLength(11)
+    for (const nome of soltos) {
+      const shorthand = degraus.get(nome.replace(/-size$/, ''))
+      expect(shorthand, `--${nome} sem shorthand correspondente`).toBeDefined()
+      expect(shorthand).toContain(` ${degraus.get(nome)} `)
+    }
   })
 
   it('a sombra é hard-offset de TINTA e nunca preta', () => {

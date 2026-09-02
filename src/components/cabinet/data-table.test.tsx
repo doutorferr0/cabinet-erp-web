@@ -703,18 +703,21 @@ describe('VitraDataTable — visões', () => {
   it('o `Agrupar por` só existe na visão que agrupa', async () => {
     const { user } = setupComVisao()
 
-    expect(await screen.findByLabelText('Agrupar por:')).toBeInTheDocument()
+    // Na barra 2.0 o agrupamento é um CHIP, como o filtro: os dois são
+    // condições sobre a lista, e o chip diz por qual campo sem abrir nada.
+    expect(await screen.findByRole('button', { name: /^Agrupado por/ })).toBeInTheDocument()
     await user.click(screen.getByRole('radio', { name: 'Lista' }))
 
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
-    expect(screen.queryByLabelText('Agrupar por:')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Agrup/ })).not.toBeInTheDocument()
   })
 
   it('o agrupamento escolhido chega à visão', async () => {
     const { user } = setupComVisao()
 
     expect(await screen.findByText('agrupado por marca')).toBeInTheDocument()
-    await user.selectOptions(screen.getByLabelText('Agrupar por:'), 'nossoCodigo')
+    await user.click(screen.getByRole('button', { name: /^Agrupado por/ }))
+    await user.click(await screen.findByRole('button', { name: 'Código' }))
     expect(await screen.findByText('agrupado por nossoCodigo')).toBeInTheDocument()
   })
 

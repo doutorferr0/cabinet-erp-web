@@ -85,3 +85,32 @@ export function resumoDoFiltro(filtro: FiltroDaTabela, campo: CampoFiltravel): s
   const valor = valorLegivel(filtro, campo)
   return valor ? `${frase} ${valor}` : `${frase}…`
 }
+
+/**
+ * A mesma frase repartida para o CHIP, que pinta cada pedaço de um jeito
+ * (`Situação: **Enviada, Confirmada**`).
+ *
+ * ## O operador PADRÃO some do chip, e só ele
+ *
+ * "Situação está em Enviada" gasta duas palavras dizendo o que os dois-pontos
+ * já dizem: o operador padrão da variante é o que o `+ Filtro` monta sozinho, e
+ * escrevê-lo em toda barra empurraria os chips seguintes para a segunda linha.
+ * Operador ESCOLHIDO continua escrito — "Preço maior que 100" e "Preço 100" são
+ * perguntas diferentes, e omitir a diferença seria mentir sobre o que filtrou.
+ */
+export interface PartesDoChip {
+  rotulo: string
+  /** `undefined` quando é o operador padrão da variante — os dois-pontos bastam. */
+  operador?: string
+  /** `''` enquanto a pessoa ainda não digitou; o chip mostra `…` no lugar. */
+  valor: string
+}
+
+export function partesDoChip(filtro: FiltroDaTabela, campo: CampoFiltravel): PartesDoChip {
+  const padrao = operadoresDaVariante(filtro.variante)[0]?.valor
+  const operador = filtro.operador === padrao ? undefined : rotuloDoOperador(filtro)
+  if (dispensaValor(filtro.operador)) {
+    return { rotulo: campo.rotulo, operador: rotuloDoOperador(filtro), valor: '' }
+  }
+  return { rotulo: campo.rotulo, operador, valor: valorLegivel(filtro, campo) }
+}

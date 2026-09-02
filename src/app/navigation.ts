@@ -245,7 +245,14 @@ export const navSecoes: NavSecao[] = [
             icon: Inbox,
             descricao:
               'O que chegou para você: menções, atribuições e prazos, com o registro a um clique.',
-            aparencia: { modulo: 'boletim', shape: 'dashboard' },
+            // SEM `aparencia`, e é o mesmo blocker da Agenda mais abaixo: emprestar
+            // cor exige um `ShapeDeLugar` PRÓPRIO em
+            // `src/components/cabinet/ornamento.tsx` — componente compartilhado,
+            // fora da zona de D7, e com ritual de medição de cobertura para o
+            // desenho novo. Reusar o `dashboard` não é opção: `navigation.test.ts`
+            // exige desenhos distintos entre quem empresta, e a razão está escrita
+            // lá — mesma cor com mesmo desenho faz a fileira da sidebar deixar de
+            // ser um mapa. Fica no ícone lucide puro até haver decisão do user.
           },
           {
             title: 'Tarefas',

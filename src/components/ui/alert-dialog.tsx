@@ -72,10 +72,12 @@ function AlertDialog({
     <AlertDialogOverlay {...props}>
       <ModalPrimitive
         data-slot="alert-dialog-content"
-        // Mesma folha do diálogo: raio de painel e `el-5`, o degrau que a
-        // escada reserva para o que flutua sobre tudo.
+        // Mesma folha do diálogo, e a mesma pelo mesmo motivo: traço de 1.5px
+        // em n-900 e sombra dura `--hard-3` (alias `shadow-el5`). Alerta que
+        // parecesse outra superfície ensinaria que existem dois tipos de
+        // "coisa por cima" — existe um, e o que muda é o comportamento.
         className={cn(
-          'pop-spring fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-panel border-2 border-border bg-card p-4 text-sm text-card-foreground shadow-el5 outline-none sm:max-w-sm',
+          'pop-spring fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-panel border-[1.5px] border-border bg-card p-4 t-corpo text-card-foreground shadow-el5 outline-none sm:max-w-sm',
           className,
         )}
       >
@@ -120,12 +122,10 @@ function AlertDialogTitle({
     <Heading
       slot="title"
       data-slot="alert-dialog-title"
-      // Sem caixa alta e em 700: ver a nota do `SheetTitle`.
-      // Sora explícito, e não herdado: desde que a regra do `index.css` passou a
-      // valer só para `h1` (2026-08-13), um `Heading` sem família cai no Inter
-      // do body — e a regra é "de H2 para baixo, Sora". Herança que sumiu, e
-      // sumiu calada: o título continuava renderizando, só que na voz errada.
-      className={cn('font-display text-base leading-none font-bold', className)}
+      // `t-secao` (Gambarino 20), igual ao `DialogTitle`: o alerta é tela
+      // própria e gasta o Gambarino dele. A família vem da utility e não da
+      // herança — herança de `font-display` já sumiu calada uma vez aqui.
+      className={cn('t-secao', className)}
       {...props}
     />
   )
@@ -142,7 +142,7 @@ function AlertDialogDescription({
       // anunciaria o alerta e não leria a consequência junto.
       slot="description"
       data-slot="alert-dialog-description"
-      className={cn('text-sm text-muted-foreground', className)}
+      className={cn('t-meta', className)}
       {...props}
     />
   )
@@ -152,10 +152,12 @@ function AlertDialogFooter({ className, ...props }: React.ComponentProps<'div'>)
   return (
     <div
       data-slot="alert-dialog-footer"
-      // Rodapé afundado com régua forte por cima: a mesma gramática do rodapé
-      // de formulário — a régua separa a decisão do texto que a explica.
+      // Rodapé afundado, ações à DIREITA. §Hierarquia manda UMA ferramenta de
+      // separação por fronteira, e aqui o tint (`surface-sunken`) já separa a
+      // decisão do texto que a explica — a régua forte que morava aqui era a
+      // segunda na mesma linha.
       className={cn(
-        'rule-strong-top -mx-4 -mb-4 flex flex-col-reverse gap-2 bg-surface-sunken p-4 sm:flex-row sm:justify-end',
+        '-mx-4 -mb-4 flex flex-col-reverse gap-2 bg-surface-sunken p-4 sm:flex-row sm:justify-end',
         className,
       )}
       {...props}
@@ -167,9 +169,17 @@ function AlertDialogAction({ className, ...props }: React.ComponentProps<typeof 
   return <Button data-slot="alert-dialog-action" className={cn(className)} {...props} />
 }
 
+/**
+ * `Cancelar` — **ghost** desde a D29, ao lado da tecla que confirma.
+ *
+ * Continua sendo a saída nomeada (é ele, e não um "x", que diz o que faz), e
+ * continua recebendo o foco inicial. O que muda é o peso: numa confirmação
+ * destrutiva, as duas ações em caixa liam como escolha entre iguais, e a que
+ * apaga tinha o mesmo desenho da que desiste.
+ */
 function AlertDialogCancel({
   className,
-  variant = 'outline',
+  variant = 'ghost',
   size = 'default',
   ...props
 }: React.ComponentProps<typeof Button>) {

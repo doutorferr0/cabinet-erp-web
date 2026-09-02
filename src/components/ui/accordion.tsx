@@ -93,7 +93,7 @@ function AccordionTrigger({
         data-slot="accordion-trigger"
         className={composeRenderProps(className, (className) =>
           cn(
-            'group/accordion-trigger flex w-full cursor-pointer items-center gap-2 rounded-item px-3.5 py-3 text-left font-semibold text-sm outline-none transition-colors',
+            'group/accordion-trigger t-bloco flex w-full cursor-pointer items-center gap-2 rounded-item px-3.5 py-3 text-left outline-none transition-colors',
             'hover:bg-neutral data-pressed:bg-neutral',
             // Seção ABERTA fica com o cabeçalho tingido. A seta girada já diz,
             // mas ela é pequena e some no canto — o fundo é o sinal que se lê
@@ -133,7 +133,7 @@ function AccordionPanel({
       className={composeRenderProps(className, (className) =>
         // Fundo afundado: o painel é conteúdo DENTRO da seção, e meio grau de
         // luz separa sem gastar traço nem cor.
-        cn('bg-surface-sunken px-3 py-2.5 text-sm', className),
+        cn('t-corpo bg-surface-sunken px-3 py-2.5', className),
       )}
       {...props}
     />

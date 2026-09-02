@@ -20,8 +20,10 @@
 export function TelaNaoCapturada({ titulo, menu }: { titulo: string; menu: string }) {
   return (
     <div className="flex flex-col gap-2">
-      <h1 className="font-nome text-2xl font-bold">{titulo}</h1>
-      <p className="text-sm text-muted-foreground">
+      {/* `t-pagina`: é o título da PÁGINA, e a régua dá um Gambarino por tela —
+          esta gasta o dela aqui. `font-nome` saiu com as famílias da 1.x. */}
+      <h1 className="t-pagina">{titulo}</h1>
+      <p className="t-meta">
         Tela do menu <strong>{menu}</strong> do SoftLux, listada mas sem transcrição de campo
         (transcricaosoftlux.md §10) — aguardando nova rodada de prints antes de modelar.
       </p>

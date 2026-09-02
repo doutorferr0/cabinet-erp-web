@@ -129,6 +129,8 @@ import type {
   LoginRequest,
   NaoAutenticadoResponse,
   NaoImplementadoResponse,
+  NavCountersDto,
+  OpportunitiesSummaryDto,
   OrderDetailDto,
   OrderFulfillmentDto,
   OrderParticipantsWriteRequest,
@@ -205,11 +207,13 @@ import type {
   PurchaseOrderRescheduleRequest,
   PurchaseOrderSendRequest,
   PurchaseOrderWriteRequest,
+  PurchaseOrdersSummaryDto,
   PurchaseRequestDto,
   PurchaseRequestWriteRequest,
   QuoteDetailDto,
   QuoteVsStockReportDto,
   QuoteWriteRequest,
+  QuotesSummaryDto,
   ReadinessStatus,
   ReleaseOrderItemRequest,
   RoleDetailDto,
@@ -229,6 +233,7 @@ import type {
   StockLocationWriteRequest,
   StockMovementDto,
   StockMovementRequest,
+  StockSummaryDto,
   StockValuationReportDto,
   SupplierMovementReportDto,
   SupportGrantDto,
@@ -13089,6 +13094,248 @@ export const getPrintProductLabelsUrl = (params: PrintProductLabelsParams,) => {
 export const printProductLabels = async (params: PrintProductLabelsParams, options?: Parameters<typeof apiFetch>[1]): Promise<printProductLabelsResponse> => {
 
   return apiFetch<printProductLabelsResponse>(getPrintProductLabelsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getPurchaseOrdersSummaryResponse200 = {
+  data: PurchaseOrdersSummaryDto
+  status: 200
+}
+
+export type getPurchaseOrdersSummaryResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getPurchaseOrdersSummaryResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getPurchaseOrdersSummaryResponseSuccess = (getPurchaseOrdersSummaryResponse200) & {
+  headers: Headers;
+};
+export type getPurchaseOrdersSummaryResponseError = (getPurchaseOrdersSummaryResponse401 | getPurchaseOrdersSummaryResponse403) & {
+  headers: Headers;
+};
+
+export type getPurchaseOrdersSummaryResponse = (getPurchaseOrdersSummaryResponseSuccess | getPurchaseOrdersSummaryResponseError)
+
+export const getGetPurchaseOrdersSummaryUrl = () => {
+
+
+
+
+  return `/api/purchases/orders-summary`
+}
+
+/**
+ * Proposto. Os números da faixa de KPI acima da listagem de ordens de compra, da EMPRESA ATIVA da sessão. Números derivados do movimento — o servidor apura, o front só formata.
+ *
+ * Caminho sob `/api/purchases/`, e não `/api/purchase-orders/summary`, pelo precedente que já está no contrato (`arrival-forecast`, `stock-replenishment`): agregado ganha prefixo próprio em vez de virar irmão de `/{id}`, onde `summary` e um uuid disputam a mesma posição do roteador. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.
+ */
+export const getPurchaseOrdersSummary = async ( options?: Parameters<typeof apiFetch>[1]): Promise<getPurchaseOrdersSummaryResponse> => {
+
+  return apiFetch<getPurchaseOrdersSummaryResponse>(getGetPurchaseOrdersSummaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getQuotesSummaryResponse200 = {
+  data: QuotesSummaryDto
+  status: 200
+}
+
+export type getQuotesSummaryResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getQuotesSummaryResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getQuotesSummaryResponseSuccess = (getQuotesSummaryResponse200) & {
+  headers: Headers;
+};
+export type getQuotesSummaryResponseError = (getQuotesSummaryResponse401 | getQuotesSummaryResponse403) & {
+  headers: Headers;
+};
+
+export type getQuotesSummaryResponse = (getQuotesSummaryResponseSuccess | getQuotesSummaryResponseError)
+
+export const getGetQuotesSummaryUrl = () => {
+
+
+
+
+  return `/api/sales/quotes-summary`
+}
+
+/**
+ * Proposto. Os números da faixa de KPI acima da listagem de orçamentos, da EMPRESA ATIVA da sessão. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.
+ */
+export const getQuotesSummary = async ( options?: Parameters<typeof apiFetch>[1]): Promise<getQuotesSummaryResponse> => {
+
+  return apiFetch<getQuotesSummaryResponse>(getGetQuotesSummaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getStockSummaryResponse200 = {
+  data: StockSummaryDto
+  status: 200
+}
+
+export type getStockSummaryResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getStockSummaryResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getStockSummaryResponseSuccess = (getStockSummaryResponse200) & {
+  headers: Headers;
+};
+export type getStockSummaryResponseError = (getStockSummaryResponse401 | getStockSummaryResponse403) & {
+  headers: Headers;
+};
+
+export type getStockSummaryResponse = (getStockSummaryResponseSuccess | getStockSummaryResponseError)
+
+export const getGetStockSummaryUrl = () => {
+
+
+
+
+  return `/api/stock/summary`
+}
+
+/**
+ * Proposto. Os números da faixa de KPI acima das listagens de estoque (valorizado, parado, movimentação), da EMPRESA ATIVA da sessão. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.
+ */
+export const getStockSummary = async ( options?: Parameters<typeof apiFetch>[1]): Promise<getStockSummaryResponse> => {
+
+  return apiFetch<getStockSummaryResponse>(getGetStockSummaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getOpportunitiesSummaryResponse200 = {
+  data: OpportunitiesSummaryDto
+  status: 200
+}
+
+export type getOpportunitiesSummaryResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getOpportunitiesSummaryResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getOpportunitiesSummaryResponseSuccess = (getOpportunitiesSummaryResponse200) & {
+  headers: Headers;
+};
+export type getOpportunitiesSummaryResponseError = (getOpportunitiesSummaryResponse401 | getOpportunitiesSummaryResponse403) & {
+  headers: Headers;
+};
+
+export type getOpportunitiesSummaryResponse = (getOpportunitiesSummaryResponseSuccess | getOpportunitiesSummaryResponseError)
+
+export const getGetOpportunitiesSummaryUrl = () => {
+
+
+
+
+  return `/api/crm/opportunities-summary`
+}
+
+/**
+ * Proposto. Os números da faixa de KPI acima do funil de oportunidades, da EMPRESA ATIVA da sessão. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.
+ */
+export const getOpportunitiesSummary = async ( options?: Parameters<typeof apiFetch>[1]): Promise<getOpportunitiesSummaryResponse> => {
+
+  return apiFetch<getOpportunitiesSummaryResponse>(getGetOpportunitiesSummaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getNavCountersResponse200 = {
+  data: NavCountersDto
+  status: 200
+}
+
+export type getNavCountersResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getNavCountersResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getNavCountersResponseSuccess = (getNavCountersResponse200) & {
+  headers: Headers;
+};
+export type getNavCountersResponseError = (getNavCountersResponse401 | getNavCountersResponse403) & {
+  headers: Headers;
+};
+
+export type getNavCountersResponse = (getNavCountersResponseSuccess | getNavCountersResponseError)
+
+export const getGetNavCountersUrl = () => {
+
+
+
+
+  return `/api/nav/counters`
+}
+
+/**
+ * Proposto. Os contadores da navegação, do usuário e da EMPRESA ATIVA da sessão, numa leitura só. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.
+ */
+export const getNavCounters = async ( options?: Parameters<typeof apiFetch>[1]): Promise<getNavCountersResponse> => {
+
+  return apiFetch<getNavCountersResponse>(getGetNavCountersUrl(),
   {
     ...options,
     method: 'GET'

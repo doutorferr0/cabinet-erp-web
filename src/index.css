@@ -37,6 +37,15 @@
    Cor em HSL-triplet (não hex) porque é o que `@theme inline` consome — trocar
    a notação quebraria todo `bg-*`/`text-*` do repo. */
 :root {
+  /* RITMO DO MOVIMENTO (2026-08-28): três durações e duas curvas para as
+     receitas novas — número solto em receita nova é deriva. As receitas já
+     calibradas (lift 140ms, pop-spring 360ms) mantêm seus valores. */
+  --dur-curta: 120ms;
+  --dur-media: 200ms;
+  --dur-longa: 320ms;
+  --ease-saida: cubic-bezier(0, 0, 0.2, 1);
+  --ease-entrada: cubic-bezier(0.4, 0, 1, 1);
+
   /* PALETA FLAT — cinzas nas duas superfícies (decisão do user, 2026-08-13).
      A paleta flat governa SUPERFÍCIE e TEXTO SECUNDÁRIO; NUNCA cor de módulo
      (neon /01 + pastel /02), NUNCA tinta dos donos (money/focus/error).
@@ -1091,20 +1100,63 @@
   color: hsl(var(--modulo-01));
 }
 
-/* FOCO POR ZONA (issue #234, fusão v5 r6): a zona onde o operador está
-   digitando vem pra frente; as irmãs recuam de leve. Desligado em repouso —
-   nada muda até um campo receber foco. Gatilho por :focus-within puro (CSS,
-   zero JS); o recuo é suave de propósito (opacidade e brilho, sem escala),
-   calibrado com o user em 2026-08-19 ("não tanto, mais suave"). */
-[data-zonas] > * {
-  transition: opacity 0.22s ease, filter 0.22s ease, box-shadow 0.22s ease;
+/* FOCO POR ZONA v2 (issue #234 · 2026-08-28): a seção onde o operador
+   digita vem pra frente; TODAS as outras recuam de leve — inclusive as que
+   moram dentro do DocumentoBloco, que a v1 (filhos diretos) nunca alcançava:
+   o cabeçalho inteiro era UM filho, e focar o Cliente não recuava nada
+   visível na dobra. O gatilho é CAMPO (`:has(input:focus)`), não
+   `:focus-within` — tabular até o Gravar ou clicar numa aba não é digitar, e
+   escurecer a página durante um clique de botão é ruído.
+   O recuo é deliberadamente leve (pedido do user, 2026-08-28: "BEM
+   levemente"; a v1 usava 0.72 e lia como apagão sobre o creme). */
+[data-zonas] :is([data-slot="secao"], [data-slot="form-block"]) {
+  transition: opacity var(--dur-media) ease, filter var(--dur-media) ease, box-shadow
+    var(--dur-media) ease;
 }
-[data-zonas]:focus-within > *:not(:focus-within) {
-  opacity: 0.72;
-  filter: saturate(0.7) brightness(0.97);
+[data-zonas]:has(:is(input, select, textarea):focus)
+  :is([data-slot="secao"], [data-slot="form-block"]):not(:has(:is(input, select, textarea):focus)) {
+  opacity: 0.78;
+  filter: saturate(0.8) brightness(0.97);
 }
-[data-zonas]:focus-within > *:focus-within {
+[data-zonas]:has(:is(input, select, textarea):focus)
+  :is([data-slot="secao"], [data-slot="form-block"]):has(:is(input, select, textarea):focus) {
   box-shadow: 0 0 0 2px hsl(var(--accent) / 0.4), var(--shadow-macia);
+}
+
+/* O título da seção ativa CRESCE um degrau (2026-08-28): tamanho que muda
+   com animação é o canal de hierarquia — o operador vê onde está sem ler.
+   `transform`, não `font-size`: escala não relayouta os campos abaixo.
+   Campo continua proibido de animar (§Motion). */
+[data-slot="secao"] h2 {
+  transition: transform var(--dur-media) var(--ease-saida);
+  transform-origin: left center;
+}
+[data-zonas] [data-slot="secao"]:has(:is(input, select, textarea):focus) h2 {
+  transform: scale(1.06);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-zonas] :is([data-slot="secao"], [data-slot="form-block"]),
+  [data-slot="secao"] h2 {
+    transition: none;
+  }
+}
+
+/* TROCA DE ABA (2026-08-28): o painel que entra sobe 6px com fade curto — a
+   aba responde ao clique em vez de trocar por corte seco. Quem dispara é a
+   REMONTAGEM do painel: trocar de aba remonta, re-render não. */
+@keyframes painel-entra {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+[role="tabpanel"] {
+  animation: painel-entra var(--dur-media) var(--ease-saida);
+}
+@media (prefers-reduced-motion: reduce) {
+  [role="tabpanel"] {
+    animation: none;
+  }
 }
 
 /* ENTRADA ESCALONADA (r6): as zonas sobem uma atrás da outra na montagem —

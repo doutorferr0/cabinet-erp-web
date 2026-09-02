@@ -25,8 +25,11 @@ import { motion } from 'motion/react'
  * movimento" ligado no sistema, a mola vira duração zero e nada aqui muda.
  */
 
-/** Mola da entrada: `{stiffness:120, damping:30}` — chega sem passar do alvo. */
-const MOLA = { type: 'spring', stiffness: 120, damping: 30 } as const
+/** Mola da entrada: `{stiffness:260, damping:32}` — chega sem passar do alvo.
+ * Endurecida em 2026-08-28 (era `{120,30}`): a mola mole assentava em ~1s e a
+ * tela inteira ficava "lavada" durante a espera — o operador lia como lentidão,
+ * não como movimento. A viagem continua a mesma (16px + fade); muda o tempo. */
+const MOLA = { type: 'spring', stiffness: 260, damping: 32 } as const
 
 /** Passo do escalonamento entre regiões irmãs. */
 const PASSO = 0.08

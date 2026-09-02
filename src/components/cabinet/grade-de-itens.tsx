@@ -328,7 +328,10 @@ export function AcaoDoRodape({
         // `--t-ui` é o degrau do BOTÃO (§Hierarquia). `--t-corpo` é texto de
         // leitura e deixaria a ação com a mesma voz da célula ao lado dela.
         PAPEL.ui,
-        primaria ? null : 'border-0 text-muted-foreground hover:text-foreground',
+        // `!` pelo mesmo motivo do fecho: `t-ui` traz `color: n-900` fora de
+        // camada e apagaria o recuo da origem, deixando as três ações do
+        // rodapé com o mesmo peso de tinta.
+        primaria ? null : 'border-0 text-muted-foreground! hover:text-foreground!',
       )}
     >
       {children}
@@ -536,7 +539,14 @@ function LinhaDeTotal({
           PAPEL.dado,
           'text-right',
           fecho && 'font-semibold',
-          valorCentavos < 0 ? 'text-destructive' : fecho ? 'text-money' : 'text-foreground',
+          // O `!` não é gosto: `tokens-2.0.css` entra por `@import` DEPOIS do
+          // Tailwind e declara o `color` das `.t-*` fora de `@layer`, então
+          // `t-dado` (n-900) vence `text-money` por mais específico que o
+          // utilitário seja. Sem isto o fecho sai em tinta preta e o teste
+          // passa mesmo assim — o DOM tem a classe certa, quem não pinta é a
+          // cascata. Sai no dia em que as `.t-*` forem para `@layer
+          // components` (decisão da D1/D30, registrada na #469).
+          valorCentavos < 0 ? 'text-destructive!' : fecho ? 'text-money!' : 'text-foreground!',
         )}
         // O FECHO tem 16px e a escala `--t-*` para em 12.5 no dado: não há
         // degrau para ele. A régua da rodada manda, para token que falta,

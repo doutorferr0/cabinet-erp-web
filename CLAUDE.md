@@ -27,8 +27,16 @@ especificação de **entrada** que o backend precisa implementar, não cópia qu
   planner nasceram assim — caminho que o front escreveu antes de existir implementação — e hoje
   respondem. No modo mock quem responde é `src/mocks/api/handlers.ts`, e a tela não sabe a
   diferença: é isso que mantém `cabinetonline.cc` de pé sem backend nenhum.
-- **Ainda mock por falta de caminho no contrato:** cidades e boletim. Seguem a regra antiga:
-  dados tipados em `src/mocks/`, campos LITERAIS de `topicos/transcricaosoftlux.md` da memória.
+- **Ainda mock por falta de caminho no contrato:** boletim. Segue a regra antiga: dados tipados
+  em `src/mocks/`, campos LITERAIS de `topicos/transcricaosoftlux.md` da memória.
+- **CIDADES SAIU DESSA LISTA, e não foi virando HTTP.** Os 5571 municípios do IBGE são dado
+  público, oficial e igual para todo tenant: viraram asset LOCAL do front
+  (`src/data/geografia/`, gerado por `scripts/gera-municipios-ibge.mjs`, carregado sob demanda),
+  com o código do IBGE no lugar da sequência inventada de três dígitos. Não há caminho no
+  contrato porque não deve haver — publicá-lo seria pedir ao backend proxy de um arquivo que não
+  muda. O registry ganhou por isso uma terceira `origem`, `'local'`: nem servidor, nem exemplo.
+  A fase fiscal é que move a fonte para o servidor, e sai barata porque o código já é o certo.
+  Ver `docs/geografia-ibge.md`.
 - **Ainda mock COM caminho no contrato — que é outra coisa:** colaborador. A família tem 8
   operações — listagem, ficha, escrita, vínculo e faixas de comissão — e a passagem as liga;
   quem não migrou foi `data.colaboradores`, e o que segura é o lado do MOCK — falta handler de
@@ -471,7 +479,7 @@ um push dispara os dois builds em paralelo, e o que os separa é só a env fixad
   true`. Origem nova (preview, domínio novo) precisa entrar na lista do `cabinet-erp-api` antes de
   conseguir logar.
 - **O `app.` mostra dado fake onde a tela ainda é mock, e isso NÃO é modo mock.** Provider de
-  `src/data/index.ts` montado sobre `src/mocks/` (colaborador, compras, cidades, boletim) não fala
+  `src/data/index.ts` montado sobre `src/mocks/` (colaborador, compras, boletim) não fala
   com a rede em modo nenhum — em `app.cabinetonline.cc` ele serve a mesma fixture, agora ao lado de
   dado do Postgres. Migrar tela para HTTP virou trabalho de produção, não de demo.
 - Push em QUALQUER outra branch → preview isolado em **cada** um dos dois projetos, com URL própria

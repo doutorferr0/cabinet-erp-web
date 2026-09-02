@@ -1,5 +1,4 @@
 import { Appbar, secaoDaRota } from '@/app/appbar'
-import { GavetaDeNotificacoes } from '@/app/gaveta-notificacoes'
 import { moduloDaRota } from '@/app/modulo'
 import { type NavItem, type NavSecao, secoesVisiveis } from '@/app/navigation'
 import { PageFrame } from '@/app/page-frame'
@@ -25,7 +24,6 @@ import {
 import { normalize } from '@/data/provider'
 import { useRecursosDaEmpresa } from '@/data/recursos-da-empresa'
 import { cn } from '@/lib/utils'
-import { NOTIFICACOES_MOCK } from '@/mocks/notificacoes'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { ChevronDown, Search } from 'lucide-react'
 import { useId, useState } from 'react'
@@ -420,17 +418,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     .flatMap((grupo) => grupo.items.flatMap((item) => item.filhas ?? [item]))
     .find((item) => location.pathname === item.url || location.pathname.startsWith(`${item.url}/`))
 
-  // Notificação é CASCA nesta fatia — dado de mock local, sem `src/data/` por
-  // trás (não há `/api/notifications` no contrato — §@casca-global). Estado
-  // vive no shell porque é ele que também guarda se a gaveta está aberta; as
-  // duas coisas nascem e morrem juntas com a navegação da sessão.
-  const [notificacoes, setNotificacoes] = useState(NOTIFICACOES_MOCK)
-  const [gavetaAberta, setGavetaAberta] = useState(false)
+  // A CAIXA DE ENTRADA saiu daqui (D7). O estado das notificações vivia no
+  // shell porque a gaveta vivia junto; com `/inbox` sendo rota, o contador do
+  // sino e a lista ficam em ramos diferentes da árvore e o estado passou para
+  // um store de módulo (`features/inbox/estado-do-inbox.ts`), que a appbar lê
+  // sozinha. O shell não intermedeia mais.
+  //
   // A paleta é do SHELL, não da appbar: ela está em toda rota e o `Ctrl+K`
   // precisa valer com o foco em qualquer lugar. Montá-la dentro da appbar a
   // amarraria ao botão que a abre — e o botão é só um dos dois caminhos.
   const [paletaAberta, setPaletaAberta] = useState(false)
-  const naoLidas = notificacoes.filter((n) => !n.lida).length
 
   return (
     <SidebarProvider>
@@ -439,10 +436,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {/* APPBAR GLOBAL — acima do cabeçalho de página, em TODA rota
             (§@casca-global). Vive no shell: página nenhuma monta a própria. */}
         <Appbar
-          naoLidas={naoLidas}
           secaoAtiva={secaoAtiva?.id}
           aoEscolherSecao={(id) => setEspiada({ id, em: location.pathname })}
-          aoAbrirGaveta={() => setGavetaAberta(true)}
           aoAbrirPaleta={() => setPaletaAberta(true)}
         />
 
@@ -498,19 +493,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </main>
       </SidebarInset>
 
-      {/* Coluna IRMÃ do `<SidebarInset>` (que já é `flex-1`), dentro do mesmo
-          wrapper flex do `SidebarProvider` — é isso que faz a gaveta EMPURRAR
-          o conteúdo ao abrir, em vez de flutuar por cima dele (decisão do
-          user, §@casca-global: "não quero que sobreponha, e sim empurre"). */}
+      {/* A gaveta de notificações era a coluna irmã daqui — ela EMPURRAVA o
+          conteúdo em vez de sobrepor, e por isso não era Dialog nem Sheet.
+          Saiu inteira em D7: notificação virou `/inbox`, que é rota e não
+          precisa de coluna. A paleta fica: ela é o único overlay do shell. */}
       <PaletaDeComandos aberta={paletaAberta} onOpenChange={setPaletaAberta} />
-      <GavetaDeNotificacoes
-        aberta={gavetaAberta}
-        onOpenChange={setGavetaAberta}
-        notificacoes={notificacoes}
-        aoMarcarLida={(id) =>
-          setNotificacoes((atual) => atual.map((n) => (n.id === id ? { ...n, lida: !n.lida } : n)))
-        }
-      />
     </SidebarProvider>
   )
 }

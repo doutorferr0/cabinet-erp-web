@@ -604,9 +604,10 @@ Folha.
 
 As tabelas acima medem superfície e voz. Falta o terceiro grupo, e é onde está a única reprovação
 de TEXTO desta página: os lugares em que a cheia /01 deixa de ser traço e vira **fundo com letra em
-cima**. Hoje são dois, e o par é o mesmo — `data-active:bg-modulo-cheia` no item de menu
-(`sidebar.tsx`) e a gaveta de notificações, que herda o `text-sidebar-foreground`/`text-foreground`
-do tema.
+cima**. Eram dois, e o par era o mesmo — `data-active:bg-modulo-cheia` no item de menu
+(`sidebar.tsx`) e a gaveta de notificações, que herdava o `text-sidebar-foreground`/`text-foreground`
+do tema. **Hoje é um:** a gaveta foi apagada em D7 (§Casca global), e a caixa de entrada que a
+substituiu não usa a /01 como fundo de texto — o monograma dela é a /02, onde a tinta passa folgado.
 
 <!-- tabela:estados-fundo -->
 | Módulo | claro: tinta × /01 | escuro: tinta × /01 |
@@ -1283,7 +1284,7 @@ e em parte dos browsers isso engole o `:active`.
 
 Nunca escrever a receita à mão no componente.
 
-## Casca global — appbar, gaveta e regra de quebra
+## Casca global — appbar, caixa de entrada e regra de quebra
 
 Cromo que aparece em **toda rota**, vive no `AppShell` (`src/app/shell.tsx`) e nunca na página —
 igual `data-modulo` do `<main>`. Origem: mockup `mockup-dashboard-cores.html`, sessão Cowork
@@ -1295,8 +1296,25 @@ Faixa própria (`src/app/appbar.tsx`), acima do cabeçalho de página, presente 
 esquerda, a **entrada da paleta de comandos** (240px, `Pesquisar…` + a etiqueta `Ctrl+K`); cluster
 à direita: engrenagem (**desabilitada** — não existe tela de configurações; um botão que não leva a
 lugar nenhum é pior que apagado, a mesma razão que desabilita `Alterar`/`Consul.` sem `get` no
-contrato) · sino com badge de não-lidas (abre a gaveta) · divisor · usuário (avatar + nome + papel +
-chevron, menu com `Sair`).
+contrato) · sino com badge de não-lidas · divisor · usuário (avatar + nome + papel + chevron, menu
+com `Sair`).
+
+**O sino é LINK, e a gaveta não existe mais (Reface 2.0, D7 · #475).** Ele abria uma coluna irmã do
+`<main>` que EMPURRAVA o conteúdo (`src/app/gaveta-notificacoes.tsx`, apagado); hoje é
+`<Link to="/inbox">`. A troca não é de desenho, é de natureza: notificação era AVISO — um cartão com
+título e parágrafo, que respondia "aconteceu algo?" e parava aí — e virou LISTA DE TRABALHO, uma
+linha por item com **quem · o quê · qual registro · quando**, ação de resolver na própria linha e
+views (`Não lidas` / `Menções` / `Tudo`) publicadas no endereço (`/inbox?view=…`).
+
+O que a gaveta não tinha e o endereço dá de graça: sobrevive ao F5, cola para outra pessoa, volta
+pelo botão do navegador, entra no menu (`Hoje › Caixa de entrada`) e é achável pela paleta. Um
+painel que abre por clique não tem nenhuma dessas.
+
+**`Sheet` continua no repo e foi REESTILIZADO, não apagado** — são coisas distintas: a gaveta era
+escrita à mão, sem Dialog e sem véu; o `Sheet` é o painel modal do sistema, tem consumidor hoje
+(sidebar estreita, seletor de empresa) e encomendado em D24. Ele ganhou a sombra dura de tinta do
+degrau `--hard-3`, espelhada por `data-side` — painel encostado em `right-0` com sombra para a
+direita projeta para fora da janela e não existe.
 
 #### Paleta de comandos (`src/app/paleta-de-comandos.tsx`)
 

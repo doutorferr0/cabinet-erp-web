@@ -12,6 +12,7 @@ import {
   GanttChart,
   HandCoins,
   Home,
+  Inbox,
   LayoutDashboard,
   type LucideIcon,
   Package,
@@ -226,6 +227,24 @@ export const navSecoes: NavSecao[] = [
             descricao: 'O que está em curso agora: números do dia e o que pede atenção.',
             // Coral do Boletim nas três: a seção da VISÃO fala do mesmo assunto
             // que ele — o dia. Desenhos distintos é o que as separa.
+            aparencia: { modulo: 'boletim', shape: 'dashboard' },
+          },
+          {
+            /**
+             * CAIXA DE ENTRADA — o que chegou para VOCÊ hoje.
+             *
+             * Fica em `Hoje` e logo depois do Dashboard porque responde a mesma
+             * pergunta do grupo com um recorte a menos: o Dashboard mostra o dia
+             * da empresa, esta mostra o pedaço do dia que tem seu nome. Antes de
+             * D7 isto não era tela nenhuma — era um sino na appbar, e o que um
+             * sino abre não entra em menu, não tem endereço e não se acha pela
+             * paleta.
+             */
+            title: 'Caixa de entrada',
+            url: '/inbox',
+            icon: Inbox,
+            descricao:
+              'O que chegou para você: menções, atribuições e prazos, com o registro a um clique.',
             aparencia: { modulo: 'boletim', shape: 'dashboard' },
           },
           {

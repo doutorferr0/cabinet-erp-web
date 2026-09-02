@@ -2,7 +2,6 @@ import { type NavSecao, destinoDaSecao, secoesVisiveis } from '@/app/navigation'
 import { ATALHO_DA_PALETA } from '@/app/paleta-de-comandos'
 import { CompanySwitcher } from '@/components/cabinet/company-switcher'
 import { Marca } from '@/components/cabinet/marca'
-import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuItem,
@@ -15,6 +14,8 @@ import { useEmpresasDaSessao } from '@/data/empresas-api'
 import { papelLabel } from '@/data/papeis'
 import { useRecursosDaEmpresa } from '@/data/recursos-da-empresa'
 import { useLogout, useSessao } from '@/data/sessao'
+import { useNaoLidasDoInbox } from '@/features/inbox/estado-do-inbox'
+import { VIEW_PADRAO } from '@/features/inbox/views'
 import { cn } from '@/lib/utils'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Bell, ChevronDown, Search } from 'lucide-react'
@@ -209,24 +210,27 @@ function SecoesNoTopo({
  * ESCRITO — é onde o hábito manda procurar ajuste de conta, e o custo de um
  * segundo caminho é uma linha, não uma tela.
  *
- * ## Sino — abre a gaveta que EMPURRA
+ * ## Sino — NAVEGA para a caixa de entrada (D7)
  *
- * `aoAbrirGaveta` é do AppShell: a gaveta é coluna irmã do `<main>`, e o
- * estado mora lá — a topbar só avisa a intenção.
+ * Ele abria uma gaveta que empurrava o conteúdo; agora é `<Link to="/inbox">`,
+ * porque notificação deixou de ser aviso e virou lista de trabalho com endereço
+ * próprio. Sendo link de verdade, abre em outra aba pelo próprio navegador e
+ * volta pelo botão de voltar — duas coisas que um `<button>` que abre painel
+ * nunca deu.
+ *
+ * A contagem vem do store da caixa (`features/inbox/estado-do-inbox.ts`), lida
+ * aqui e não recebida por prop: o shell não tem mais o que intermediar, e uma
+ * prop que só atravessa um nível esconde de onde o número sai.
  */
 export function Appbar({
-  naoLidas,
   secaoAtiva,
   aoEscolherSecao,
-  aoAbrirGaveta,
   aoAbrirPaleta,
 }: {
-  naoLidas: number
   /** Id da seção em foco — quem a resolve é o `AppShell`. */
   secaoAtiva: string | undefined
   /** Clique num ícone da fileira: escolhe a seção SEM navegar. */
   aoEscolherSecao: (id: string) => void
-  aoAbrirGaveta: () => void
   aoAbrirPaleta: () => void
 }) {
   const navigate = useNavigate()
@@ -234,6 +238,7 @@ export function Appbar({
   const { ativa } = useEmpresasDaSessao()
   const logout = useLogout()
   const { tem } = useRecursosDaEmpresa()
+  const naoLidas = useNaoLidasDoInbox()
 
   const secoes = secoesVisiveis(tem)
   const config = secoes.find((secao) => secao.oculta)
@@ -298,23 +303,39 @@ export function Appbar({
           </TooltipTrigger>
         ) : null}
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={aoAbrirGaveta}
-          aria-label={naoLidas > 0 ? `Notificações, ${naoLidas} não lidas` : 'Notificações'}
-          className="relative"
-        >
-          <Bell />
-          {naoLidas > 0 ? (
-            <span
-              aria-hidden="true"
-              className="-top-1 -right-1 absolute grid size-4 place-content-center rounded-full bg-destructive font-mono text-[0.625rem] font-bold text-destructive-foreground tabular-nums"
-            >
-              {naoLidas > 9 ? '9+' : naoLidas}
-            </span>
-          ) : null}
-        </Button>
+        <TooltipTrigger delay={200}>
+          <Link
+            to="/inbox"
+            // O sino leva às NÃO LIDAS, que é justamente o que ele conta. Levar
+            // a `Tudo` faria o operador chegar numa lista onde o número do badge
+            // não se localiza. A view é obrigatória no endereço, então o destino
+            // é uma escolha declarada, não um default herdado.
+            search={{ view: VIEW_PADRAO }}
+            aria-label={
+              naoLidas > 0 ? `Caixa de entrada, ${naoLidas} não lidas` : 'Caixa de entrada'
+            }
+            className="relative grid size-8 place-content-center rounded-control outline-none hover:bg-muted focus-visible:focus-ring aria-[current=page]:bg-muted"
+          >
+            <Bell aria-hidden="true" className="size-4" />
+            {naoLidas > 0 ? (
+              <span
+                aria-hidden="true"
+                // `.t-dado-meta` e não `text-[0.625rem]`: contagem é dado, e a
+                // régua §Hierarquia tem um degrau só para ela.
+                //
+                // O `!` na cor não é gosto: `.t-dado-meta` mora em CSS SEM
+                // CAMADA (`tokens-2.0.css`), e CSS sem camada vence a
+                // `@layer utilities` do Tailwind por mais específico que o
+                // utilitário seja. Sem ele o dígito herda o n-500 da classe e
+                // some no vermelho — medido na captura, o badge saía vazio.
+                className="t-dado-meta -top-1 -right-1 absolute grid size-4 place-content-center rounded-full bg-destructive text-destructive-foreground!"
+              >
+                {naoLidas > 9 ? '9+' : naoLidas}
+              </span>
+            ) : null}
+          </Link>
+          <Tooltip>Caixa de entrada</Tooltip>
+        </TooltipTrigger>
 
         {/* EMPRESA + OPERADOR juntos no canto direito — o par que o admin
             Shopify usa (nome da loja ao lado do avatar): escopo do dado e

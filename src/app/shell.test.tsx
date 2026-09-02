@@ -57,6 +57,23 @@ function setup(initialUrl = '/') {
   return renderRoute(initialUrl, fetchStub)
 }
 
+/**
+ * O SINO da topbar. Escopado, e não `screen.getByRole`: desde D7 a caixa de
+ * entrada é destino de menu também, então "Caixa de entrada" aparece duas vezes
+ * na tela — uma na sidebar, uma aqui. Buscar solto acha as duas e o caso falha
+ * por ambiguidade, dizendo nada sobre o sino.
+ */
+async function sinoDaTopbar(nome: string | RegExp = /Caixa de entrada/) {
+  // `waitFor` resolve quando o corpo NÃO LANÇA — devolver `null` dele espera
+  // zero e entrega null. A espera precisa de uma asserção dentro.
+  const topo = await waitFor(() => {
+    const el = document.querySelector('[data-slot="appbar"]')
+    expect(el).not.toBeNull()
+    return el as HTMLElement
+  })
+  return within(topo).getByRole('link', { name: nome })
+}
+
 /** A fileira de seções da topbar — escopo pelo `aria-label`, que é o contrato. */
 function fileira() {
   return within(
@@ -569,7 +586,15 @@ describe('AppShell', () => {
           'href',
           '/config',
         )
-        expect(screen.getByRole('button', { name: /Notificações/ })).toBeInTheDocument()
+        // O sino é LINK desde D7 — e a busca é escopada na topbar, porque a
+        // sidebar tem um item com o mesmo nome (a caixa também é destino de
+        // menu). Nome repetido em dois lugares não é ambiguidade da tela: são
+        // dois caminhos para o mesmo lugar, que é o desenho.
+        expect(
+          within(document.querySelector('[data-slot="appbar"]') as HTMLElement).getByRole('link', {
+            name: /Caixa de entrada/,
+          }),
+        ).toBeInTheDocument()
         unmount()
       }
     })
@@ -641,60 +666,48 @@ describe('AppShell', () => {
       expect(router.state.location.pathname).toBe('/cadastros/clientes')
     })
 
-    it('o sino abre a gaveta, que EMPURRA — sem fixed, sem véu', async () => {
-      setup()
+    /**
+     * D7 apagou a gaveta. O sino continua contando, mas o que ele faz mudou de
+     * natureza: era um `<button>` que abria uma coluna irmã do `<main>`, virou
+     * um `<a>` para `/inbox`.
+     *
+     * O teste assere o ELEMENTO e não só o efeito. Um `<button>` com `onClick`
+     * que navegasse passaria por qualquer asserção sobre a rota resultante — e
+     * perderia justamente o que a issue comprou: abrir em outra aba pelo próprio
+     * navegador, o botão de voltar, e o endereço colável.
+     */
+    it('o sino é LINK para /inbox, e leva às não lidas', async () => {
+      const { router } = setup()
       const user = userEvent.setup()
+
+      const sino = await sinoDaTopbar()
+      expect(sino).toHaveAttribute('href', expect.stringContaining('/inbox'))
+
+      await user.click(sino)
+
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Notificações/ })).toBeInTheDocument()
+        expect(router.state.location.pathname).toBe('/inbox')
       })
-
-      const gaveta = () => document.querySelector('[data-slot="gaveta-notificacoes"]')
-      expect(gaveta()).toHaveAttribute('data-aberta', 'false')
-
-      await user.click(screen.getByRole('button', { name: /Notificações/ }))
-
-      expect(gaveta()).toHaveAttribute('data-aberta', 'true')
-      // Coluna flex de verdade, não overlay: nunca `fixed`.
-      expect(getComputedStyle(gaveta() as Element).position).not.toBe('fixed')
-      expect(await screen.findByText('Notificações')).toBeInTheDocument()
-
-      // X fecha.
-      await user.click(screen.getByRole('button', { name: 'Fechar notificações' }))
-      expect(gaveta()).toHaveAttribute('data-aberta', 'false')
+      // A view viaja no endereço — o sino conta não lidas, então é onde ele cai.
+      expect(router.state.location.search).toEqual({ view: 'nao-lidas' })
     })
 
-    it('Esc fecha a gaveta', async () => {
+    it('o badge do sino conta as não lidas do mock', async () => {
       setup()
-      const user = userEvent.setup()
-      await user.click(await screen.findByRole('button', { name: /Notificações/ }))
-      expect(document.querySelector('[data-slot="gaveta-notificacoes"]')).toHaveAttribute(
-        'data-aberta',
-        'true',
-      )
-
-      await user.keyboard('{Escape}')
-
-      expect(document.querySelector('[data-slot="gaveta-notificacoes"]')).toHaveAttribute(
-        'data-aberta',
-        'false',
-      )
+      // `src/mocks/inbox.ts`: 8 itens, 5 nascem não lidos.
+      expect(await sinoDaTopbar('Caixa de entrada, 5 não lidas')).toBeInTheDocument()
     })
 
-    it('o badge conta as não lidas, e marcar como lida abate o contador', async () => {
+    /**
+     * A gaveta não existe mais em lugar nenhum da casca. Vale como teste porque
+     * "apagar" tem duas metades: o arquivo sai, e o shell para de montá-lo — e a
+     * segunda some calada, já que um componente removido do JSX não deixa erro.
+     */
+    it('a gaveta de notificações não é montada em rota nenhuma', async () => {
       setup()
-      const user = userEvent.setup()
-      // Dado de mock (`src/mocks/notificacoes.ts`): 3 de 4 nascem não lidas.
-      expect(
-        await screen.findByRole('button', { name: 'Notificações, 3 não lidas' }),
-      ).toBeInTheDocument()
+      await sinoDaTopbar()
 
-      await user.click(screen.getByRole('button', { name: /Notificações/ }))
-      const primeiraNaoLida = screen.getAllByRole('button', { name: 'Marcar como lida' })[0]
-      await user.click(primeiraNaoLida as HTMLElement)
-
-      expect(
-        await screen.findByRole('button', { name: 'Notificações, 2 não lidas' }),
-      ).toBeInTheDocument()
+      expect(document.querySelector('[data-slot="gaveta-notificacoes"]')).toBeNull()
     })
   })
   /**

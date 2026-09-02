@@ -6,7 +6,7 @@ import type { StampTom } from '@/components/cabinet/stamp'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
 import { useResumoDeOrdensDeCompra, variacao } from '@/data/agregados-api'
-import { SITUACAO_DA_ORDEM } from '@/data/compras-api'
+
 import { useReadOnlyPorPapel } from '@/data/papeis'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import { formatDateBR } from '@/lib/formatters'
@@ -29,6 +29,14 @@ export const Route = createFileRoute('/compras/ordens/')({
  * A data mostrada é a VÁLIDA: reagendada quando houve reagendamento, com a
  * promessa original ao lado. Mostrar só `expectedAt` esconderia justamente o
  * atraso que a coluna existe para revelar.
+ *
+ * **`Envio` saiu da grade (D14), e não é corte de espaço por espaço:** com sete
+ * colunas a tabela passava de 1400px em tela de 1440 e rolava na horizontal —
+ * a última coluna, `Total`, ficava fora da vista, que é justamente a que se
+ * confere. O mockup §Listagem não a tem, e a data de envio quase sempre repete
+ * a da ordem; quem precisa dela abre a ficha. O filtro por `Envio` saiu junto,
+ * pela mesma regra: filtro por coluna que não está à vista estreita a listagem
+ * sem o operador enxergar por quê.
  */
 const columns: ColumnDef<PurchaseOrderDto>[] = [
   { accessorKey: 'number', header: 'Número', meta: { tipo: 'id' } },
@@ -49,12 +57,6 @@ const columns: ColumnDef<PurchaseOrderDto>[] = [
     accessorKey: 'orderedAt',
     header: 'Data Ordem',
     cell: ({ getValue }) => formatDateBR(getValue<string | null>()),
-    meta: { tipo: 'data' },
-  },
-  {
-    accessorKey: 'sentAt',
-    header: 'Envio',
-    cell: ({ getValue }) => formatDateBR(getValue<string | null>()) || '—',
     meta: { tipo: 'data' },
   },
   {
@@ -88,7 +90,7 @@ const columns: ColumnDef<PurchaseOrderDto>[] = [
     // ficarem apagadas sem nenhuma tela passar uma prop a mais (§D8).
     accessorFn: (row) => ({
       tom: TOM_DA_SITUACAO[row.status],
-      label: SITUACAO_DA_ORDEM[row.status] ?? '—',
+      label: CARIMBO_DA_SITUACAO[row.status] ?? '—',
     }),
     meta: { tipo: 'status' },
   },
@@ -125,10 +127,22 @@ const TOM_DA_SITUACAO: Record<PurchaseOrderDto['status'], StampTom> = {
   cancelled: 'void',
 }
 
+/**
+ * A palavra dentro do carimbo — uma só.
+ *
+ * `SITUACAO_DA_ORDEM` continua sendo a autoridade na ficha, onde `Em montagem`
+ * cabe. No carimbo da grade a frase de duas palavras quebra em duas linhas e
+ * estica a altura da linha (medido na captura); `Rascunho` é a forma do mockup.
+ */
+const CARIMBO_DA_SITUACAO: Record<PurchaseOrderDto['status'], string> = {
+  draft: 'Rascunho',
+  sent: 'Enviada',
+  cancelled: 'Cancelada',
+}
+
 const camposFiltraveis: readonly CampoFiltravel[] = [
   { id: 'number', rotulo: 'Número', variante: 'text', icon: Hash, placeholder: 'Ex.: OC-0012' },
   { id: 'orderedAt', rotulo: 'Data Ordem', variante: 'date', icon: CalendarDays },
-  { id: 'sentAt', rotulo: 'Envio', variante: 'date', icon: CalendarDays },
   { id: 'expectedAt', rotulo: 'Previsão', variante: 'date', icon: CalendarClock },
   { id: 'status', rotulo: 'Situação', variante: 'text', icon: CircleDot, placeholder: 'draft…' },
   { id: 'totalCents', rotulo: 'Total', variante: 'text', icon: Coins, placeholder: 'Em centavos' },
@@ -196,11 +210,11 @@ const AGRUPAMENTOS: readonly OpcaoDeAgrupamento<PurchaseOrderDto>[] = [
   {
     id: 'status',
     rotulo: 'Situação',
-    valorDaLinha: (o) => SITUACAO_DA_ORDEM[o.status] ?? '—',
+    valorDaLinha: (o) => CARIMBO_DA_SITUACAO[o.status] ?? '—',
     tomDoValor: (valor) =>
-      valor === SITUACAO_DA_ORDEM.sent
+      valor === CARIMBO_DA_SITUACAO.sent
         ? 'open'
-        : valor === SITUACAO_DA_ORDEM.cancelled
+        : valor === CARIMBO_DA_SITUACAO.cancelled
           ? 'void'
           : 'neutral',
   },

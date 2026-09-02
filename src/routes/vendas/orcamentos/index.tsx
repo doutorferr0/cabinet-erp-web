@@ -22,7 +22,14 @@ export const Route = createFileRoute('/vendas/orcamentos/')({
 })
 
 /**
- * Colunas LITERAIS da transcrição §8.1 — com o `accessorKey` em INGLÊS.
+ * Colunas da transcrição §8.1 — com o `accessorKey` em INGLÊS.
+ *
+ * **`Série` saiu na D14.** O argumento já estava escrito duas seções abaixo,
+ * sobre o FILTRO: "é o mesmo valor em toda linha, e filtro por campo de valor
+ * único não estreita nada". Uma COLUNA de valor único informa ainda menos que
+ * um filtro — e ela ocupava a largura que empurrava `Total` para fora da vista
+ * em tela de 1440 (medido na captura). Quem tiver segunda série a vê pelo
+ * seletor de Colunas.
  *
  * O rótulo que o operador lê continua o da transcrição; o que muda é a CHAVE,
  * que é o nome que a whitelist de `sortBy` do servidor aceita. Traduzir a chave
@@ -58,9 +65,6 @@ const columns: ColumnDef<QuoteDto>[] = [
       )
     },
   },
-  // `series` não está na whitelist do contrato: a coluna aparece e não ordena,
-  // o que é melhor que um cabeçalho clicável que responde 400.
-  { accessorKey: 'series', header: 'Série', enableSorting: false, meta: { tipo: 'texto' } },
   {
     id: 'customerName',
     header: 'Cliente',
@@ -89,7 +93,9 @@ const columns: ColumnDef<QuoteDto>[] = [
     header: 'Situação',
     accessorFn: (row) => ({
       tom: row.status === 'cancelled' ? ('void' as const) : ('open' as const),
-      label: row.status === 'cancelled' ? 'Cancelado' : 'Em aberto',
+      // Uma palavra: `Em aberto` quebrava o carimbo em duas linhas e esticava
+      // a altura da linha inteira (medido na captura).
+      label: row.status === 'cancelled' ? 'Cancelado' : 'Aberto',
     }),
     meta: { tipo: 'status' },
   },
@@ -171,10 +177,15 @@ function diasAteVencer(validade: string | null | undefined, hoje = new Date()) {
 /**
  * A VALIDADE é o que este documento tem de urgente, e a lista não a dizia.
  *
- * `bad` é o orçamento que já venceu e ninguém fechou — o prejuízo já
- * aconteceu; `warn` é o que vence dentro de três dias, que é a janela em que
- * ainda dá para ligar para o cliente. O cancelado vira `muted` antes das duas
- * contas: documento fora do jogo não tem prazo a cobrar.
+ * `warn` é a JANELA — o que vence dentro de três dias, enquanto ainda dá para
+ * ligar para o cliente. O cancelado vira `muted`: documento fora do jogo não
+ * tem prazo a cobrar.
+ *
+ * **O já vencido NÃO é decorado, e a decisão foi medida.** A primeira versão o
+ * marcava `bad`, e a captura mostrou a listagem inteira de faixa vermelha —
+ * numa base com meses de histórico, vencido é a maioria, e "listagem que decora
+ * tudo não decora nada" (D10). Quem procura os vencidos filtra por validade; a
+ * decoração serve o que pede ação HOJE.
  *
  * O contrato publica DUAS situações (`active`, `cancelled`). "Vencido" não é
  * uma delas — é a data contra hoje, e por isso mora aqui e não numa coluna.
@@ -184,17 +195,15 @@ const JANELA_DE_VENCIMENTO_EM_DIAS = 3
 function decoracaoDoOrcamento(o: QuoteDto) {
   if (o.status === 'cancelled') return 'muted' as const
   const dias = diasAteVencer(o.expiresAt)
-  if (dias === null) return undefined
-  if (dias < 0) return 'bad' as const
-  if (dias <= JANELA_DE_VENCIMENTO_EM_DIAS) return 'warn' as const
-  return undefined
+  if (dias === null || dias < 0) return undefined
+  return dias <= JANELA_DE_VENCIMENTO_EM_DIAS ? ('warn' as const) : undefined
 }
 
 const AGRUPAMENTOS: readonly OpcaoDeAgrupamento<QuoteDto>[] = [
   {
     id: 'status',
     rotulo: 'Situação',
-    valorDaLinha: (o) => (o.status === 'cancelled' ? 'Cancelado' : 'Em aberto'),
+    valorDaLinha: (o) => (o.status === 'cancelled' ? 'Cancelado' : 'Aberto'),
     tomDoValor: (valor) => (valor === 'Cancelado' ? 'void' : 'open'),
   },
   // Cliente não tinge: nome próprio não é estado (§Hierarquia).

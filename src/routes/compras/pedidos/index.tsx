@@ -4,7 +4,7 @@ import type { OpcaoDeAgrupamento } from '@/components/cabinet/data-table'
 import type { StampTom } from '@/components/cabinet/stamp'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
-import { SITUACAO_DO_PEDIDO } from '@/data/compras-api'
+
 import { useReadOnlyPorPapel } from '@/data/papeis'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import { formatDateBR } from '@/lib/formatters'
@@ -44,7 +44,7 @@ const columns: ColumnDef<PurchaseRequestDto>[] = [
     header: 'Situação',
     accessorFn: (row) => ({
       tom: TOM_DA_SITUACAO[row.status],
-      label: SITUACAO_DO_PEDIDO[row.status] ?? '—',
+      label: CARIMBO_DA_SITUACAO[row.status] ?? '—',
     }),
     meta: { tipo: 'status' },
   },
@@ -74,6 +74,17 @@ const TOM_DA_SITUACAO: Record<PurchaseRequestDto['status'], StampTom> = {
   cancelled: 'void',
 }
 
+/**
+ * A palavra dentro do carimbo — uma só. `Parcialmente em ordem` são três, e o
+ * carimbo quebrava em três linhas na grade.
+ */
+const CARIMBO_DA_SITUACAO: Record<PurchaseRequestDto['status'], string> = {
+  open: 'Aberto',
+  partially_ordered: 'Parcial',
+  ordered: 'Em ordem',
+  cancelled: 'Cancelado',
+}
+
 const camposFiltraveis: readonly CampoFiltravel[] = [
   { id: 'number', rotulo: 'Número', variante: 'text', icon: Hash, placeholder: 'Ex.: PC-0007' },
   { id: 'issuedAt', rotulo: 'Emissão', variante: 'date', icon: CalendarDays },
@@ -101,11 +112,11 @@ const AGRUPAMENTOS: readonly OpcaoDeAgrupamento<PurchaseRequestDto>[] = [
   {
     id: 'status',
     rotulo: 'Situação',
-    valorDaLinha: (p) => SITUACAO_DO_PEDIDO[p.status] ?? '—',
+    valorDaLinha: (p) => CARIMBO_DA_SITUACAO[p.status] ?? '—',
     tomDoValor: (valor) =>
-      valor === SITUACAO_DO_PEDIDO.ordered
+      valor === CARIMBO_DA_SITUACAO.ordered
         ? 'done'
-        : valor === SITUACAO_DO_PEDIDO.cancelled
+        : valor === CARIMBO_DA_SITUACAO.cancelled
           ? 'void'
           : 'open',
   },

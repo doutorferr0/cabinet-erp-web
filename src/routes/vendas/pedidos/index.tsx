@@ -6,7 +6,6 @@ import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
 import { useReadOnlyPorPapel } from '@/data/papeis'
 import { useCancelarPedidoDeVenda } from '@/data/pedidos-venda-api'
-import { ROTULO_DA_SITUACAO } from '@/features/vendas/pedido-venda-form'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import { formatDateBR } from '@/lib/formatters'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
@@ -31,9 +30,6 @@ export const Route = createFileRoute('/vendas/pedidos/')({
  */
 const columns: ColumnDef<OrderDto>[] = [
   { accessorKey: 'number', header: 'Número', meta: { tipo: 'id' } },
-  // Fora da whitelist do contrato: a coluna aparece e não ordena, o que é
-  // melhor que um cabeçalho clicável que responde 400.
-  { accessorKey: 'series', header: 'Série', enableSorting: false, meta: { tipo: 'texto' } },
   {
     id: 'customerName',
     header: 'Cliente',
@@ -57,7 +53,7 @@ const columns: ColumnDef<OrderDto>[] = [
     enableSorting: false,
     accessorFn: (row) => ({
       tom: TOM_DA_SITUACAO[row.status],
-      label: ROTULO_DA_SITUACAO[row.status] ?? '—',
+      label: CARIMBO_DA_SITUACAO[row.status] ?? '—',
     }),
     meta: { tipo: 'status' },
   },
@@ -81,6 +77,20 @@ const TOM_DA_SITUACAO: Record<OrderDto['status'], StampTom> = {
   active: 'open',
   concluded: 'done',
   cancelled: 'void',
+}
+
+/**
+ * A palavra DENTRO do carimbo, que não é a mesma do formulário.
+ *
+ * `ROTULO_DA_SITUACAO` continua sendo a autoridade na ficha, onde há linha
+ * inteira para "Em andamento". No carimbo da grade a frase de duas palavras
+ * quebra em duas linhas e estica a altura da linha (medido na captura), então
+ * aqui vale a forma de uma palavra só — a mesma que o mockup usa.
+ */
+const CARIMBO_DA_SITUACAO: Record<OrderDto['status'], string> = {
+  active: 'Aberto',
+  concluded: 'Concluído',
+  cancelled: 'Cancelado',
 }
 
 /**
@@ -151,11 +161,11 @@ const AGRUPAMENTOS: readonly OpcaoDeAgrupamento<OrderDto>[] = [
   {
     id: 'status',
     rotulo: 'Situação',
-    valorDaLinha: (p) => ROTULO_DA_SITUACAO[p.status] ?? '—',
+    valorDaLinha: (p) => CARIMBO_DA_SITUACAO[p.status] ?? '—',
     tomDoValor: (valor) =>
-      valor === ROTULO_DA_SITUACAO.concluded
+      valor === CARIMBO_DA_SITUACAO.concluded
         ? 'done'
-        : valor === ROTULO_DA_SITUACAO.cancelled
+        : valor === CARIMBO_DA_SITUACAO.cancelled
           ? 'void'
           : 'open',
   },

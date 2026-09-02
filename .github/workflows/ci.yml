@@ -1,10 +1,14 @@
 name: CI
 
+# `design/2.0` entra ao lado de `main` por causa da rodada Reface 2.0 (#469–#498):
+# as trinta issues abrem PR contra ela e nenhuma contra `main`, então sem esta
+# linha as trinta nasceriam SEM CI — e a DoD de todas elas pede CI verde. Sai
+# junto com a branch, quando D30 integrar na `main`.
 on:
   push:
-    branches: [main]
+    branches: [main, design/2.0]
   pull_request:
-    branches: [main]
+    branches: [main, design/2.0]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

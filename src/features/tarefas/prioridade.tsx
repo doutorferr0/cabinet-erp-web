@@ -2,45 +2,74 @@ import type { TaskDtoPriority } from '@/api/gerado'
 import { cn } from '@/lib/utils'
 
 /**
- * A PILL DE PRIORIDADE — a mesma no cartão do quadro e na linha da lista.
+ * A PÍLULA DE PRIORIDADE — a mesma no cartão do quadro e na linha da lista.
  *
- * Leva o PREENCHIMENTO FLAT com contorno preto (decisão user 2026-08-09,
- * §@paleta-flat): o degrau do meio entre a tinta /01 e a pastel /02.
- * Chip pequeno dentro de peça que já tem caixa — o fill mais saturado
- * destaca sem competir com o título ao lado, e o contorno preto (~20:1)
- * mantém a forma legível mesmo com a cor viva.
+ * ## O que mudou na 2.0 (mockup, aba Quadro · `.prio`)
  *
- * **Vermelho em `Alta` é exceção registrada.** A cor de bloqueio tem dono —
- * erro — e a memória prevê exatamente este caso ("se usar vermelho para alta,
- * registrar a exceção"). Vale porque prioridade alta é o que TRAVA a fila do
- * dia, que é a mesma família de significado; o que a exceção não autoriza é
- * ornamento vermelho ao lado, nem vermelho em qualquer outro lugar do
- * Dashboard.
+ * Era chip de fill FLAT com contorno preto de 2px — o degrau do meio da paleta
+ * 1.x. Vira **pastel alpha com tinta forte e ponto**: fundo `--*-bg` (que é
+ * `color-mix` com `transparent`, então funciona sobre a folha do cartão e sobre
+ * o `--n-50` da coluna sem um segundo valor por tema) e texto na cor cheia. O
+ * contorno saiu: dentro de um cartão que já tem borda, a pílula com borda
+ * própria era a segunda ferramenta de separação na mesma fronteira.
  *
- * O rótulo é escrito, nunca só a cor: três chips que só diferem de tom seriam
- * ilegíveis para daltônico e mudos no leitor de tela (WCAG 1.4.1).
+ * `Alta` continua em vermelho, e a exceção continua registrada: a cor de
+ * bloqueio tem dono — erro —, e vale aqui porque prioridade alta é o que TRAVA
+ * a fila do dia. `Média` é âmbar e `Baixa` é o mudo (`--mut`), como no mockup:
+ * baixa prioridade é o que menos pede atenção, e azul ali competiria com o
+ * quadradinho da coluna `A fazer`.
  *
- * `Baixa` mantém a zona pastel: não há fill flat para info na paleta, e
- * baixa prioridade é o que MENOS pede atenção — o fill saturado aqui
- * gritaria onde não precisa.
+ * O rótulo é escrito, nunca só a cor: três pílulas que só diferem de tom seriam
+ * ilegíveis para daltônico e mudas no leitor de tela (WCAG 1.4.1). O ponto
+ * herda `currentColor` — ele repete a cor, não acrescenta uma.
+ *
+ * ## §Hierarquia: por que `.t-rotulo`
+ *
+ * O `.prio` do mockup é Inter 600 a 10,5px, que é EXATAMENTE o degrau
+ * `--t-rotulo`; a régua proíbe `font-size` literal em componente, então o
+ * caminho conforme é a classe, não um `text-[10.5px]`. A régua também diz que
+ * `--t-rotulo` não tem caixa própria — regra escrita para o rótulo ESTRUTURAL
+ * (cabeçalho de coluna, rótulo de KPI, título de grupo da sidebar), que é um
+ * texto solto no plano. Aqui o elemento é uma pílula de estado, a mesma família
+ * do badge que o mockup desenha com fundo; a alternativa seria medida literal,
+ * que a régua proíbe em primeiro lugar. Registrado na PR.
+ *
+ * A cor vai por `style`, e não por classe utilitária: as classes `.t-*` entram
+ * fora de `@layer`, então definem `color` com precedência sobre o Tailwind — um
+ * `text-[var(--bad)]` ao lado de `t-rotulo` sairia em `--n-500` e a pílula
+ * ficaria cinza sem ninguém ver erro nenhum.
  */
-const PRIORIDADES: Record<TaskDtoPriority, { rotulo: string; classe: string }> = {
-  high: { rotulo: 'Alta', classe: 'bg-fill-error' },
-  medium: { rotulo: 'Média', classe: 'bg-fill-focus' },
-  low: { rotulo: 'Baixa', classe: 'bg-zone-info' },
+const PRIORIDADES: Record<TaskDtoPriority, { rotulo: string; fundo: string; tinta: string }> = {
+  high: { rotulo: 'Alta', fundo: 'var(--bad-bg)', tinta: 'var(--bad)' },
+  medium: { rotulo: 'Média', fundo: 'var(--warn-bg)', tinta: 'var(--warn)' },
+  low: { rotulo: 'Baixa', fundo: 'var(--mut-bg)', tinta: 'var(--mut)' },
 }
 
-export function Prioridade({ prioridade }: { prioridade: TaskDtoPriority }) {
-  const { rotulo, classe } = PRIORIDADES[prioridade]
+export function Prioridade({
+  prioridade,
+  className,
+}: { prioridade: TaskDtoPriority; className?: string }) {
+  const { rotulo, fundo, tinta } = PRIORIDADES[prioridade]
+
   return (
     <span
       data-slot="prioridade"
       data-prioridade={prioridade}
-      className={cn(
-        'inline-flex items-center rounded-item border-2 px-1.5 font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em]',
-        classe,
-      )}
+      className={cn('t-rotulo inline-flex shrink-0 items-center rounded-full', className)}
+      style={{
+        background: fundo,
+        color: tinta,
+        // Padding de chip da régua (§Hierarquia: chip 0 9) e altura do mockup.
+        padding: '0 var(--s-2)',
+        height: '18px',
+        gap: '5px',
+      }}
     >
+      <span
+        aria-hidden="true"
+        className="size-[5px] shrink-0 rounded-full"
+        style={{ background: 'currentColor' }}
+      />
       {rotulo}
     </span>
   )

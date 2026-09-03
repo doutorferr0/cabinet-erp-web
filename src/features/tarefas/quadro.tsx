@@ -12,53 +12,67 @@ import { COLUNAS, agruparPorColuna, useAlterarTarefa, useTarefas } from '@/data/
 import { formatDateBR } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
 import { draggable, dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
-import { Calendar, MessageSquare, MoreHorizontal, Paperclip } from 'lucide-react'
+import { MoreHorizontal } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { diasDeAtraso, estaAtrasada, hojeISO } from './apuracao'
 import { Prioridade } from './prioridade'
 
 /**
- * O QUADRO — as tarefas nas quatro colunas do andamento.
+ * O QUADRO — as tarefas nas quatro colunas do andamento, no desenho 2.0.
+ *
+ * ## O que a Reface 2.0 mudou aqui (mockup, aba Quadro)
+ *
+ * O 1.x pintava a COLUNA inteira com a pastel da situação e punha um cartão
+ * branco de contorno grosso por cima. Lido de longe, o quadro virava quatro
+ * blocos de cor com retângulos dentro: a cor dominava e o cartão — que é o
+ * objeto que o operador move — era o que menos aparecia. Invertemos:
+ *
+ * - **Coluna em `--n-50`, sem borda.** Tint é a ferramenta mais barata que
+ *   separa região por natureza (§Hierarquia), e borda por cima dela seria a
+ *   segunda ferramenta na mesma fronteira. A cor da situação não sumiu: foi
+ *   para o quadradinho do cabeçalho, que é onde ela informa sem tingir tudo.
+ *   (O mockup ainda leva uma borda superior de 3px na cor; a issue pede coluna
+ *   sem borda, e o quadradinho já carrega a mesma informação.)
+ * - **O cartão é o card**, e o único: folha `--n-0`, borda `--n-300`,
+ *   `--hard-soft` parado. No hover ele LEVANTA — `--hard-1` (sombra de tinta),
+ *   borda `--n-900` e 1px para cima e para a esquerda. É a única mudança de
+ *   profundidade do quadro, e ela acontece onde a mão vai.
+ * - **Dentro do cartão, só espaço e hairline.** Prioridade em pílula pastel,
+ *   prazo e contadores em mono, avatares empilhados de 20px. Nada de terceiro
+ *   nível de card.
  *
  * ## Move-se por CLIQUE **e** por arrasto — nesta ordem
  *
- * O arrasto entrou com `@atlaskit/pragmatic-drag-and-drop` (#229). O menu `⋯`
- * NÃO saiu, e a ordem da frase é a regra: o clique continua sendo o caminho
- * completo, o arrasto é atalho por cima dele.
- *
- * A decisão de interface por clique (user, 30/07/2026) diz que toda ação é
- * alcançável por mouse e nenhum fluxo depende de gesto ou tecla memorizada.
- * Arrastar falha nisso sozinho: não existe para quem opera por teclado nem em
- * leitor de tela. O que a issue pediu foi somar o gesto, e trocar um pelo outro
- * teria REGREDIDO a acessibilidade que o menu garante — por isso o menu é o que
- * os testes de teclado vigiam, e ele é a base de comparação, não o arrasto.
- *
- * A peça foi escolhida por não ter opinião de estilo: ela publica eventos e não
- * pinta nada, então o realce de coluna abaixo é escrito com os tokens do
- * `DESIGN.md`, e não com CSS de terceiro.
+ * O arrasto entrou com `@atlaskit/pragmatic-drag-and-drop` (#229) e o menu `⋯`
+ * NÃO saiu. A decisão de interface por clique (user, 30/07/2026) diz que toda
+ * ação é alcançável por mouse e nenhum fluxo depende de gesto: arrastar falha
+ * nisso sozinho — não existe para quem opera por teclado nem em leitor de tela.
+ * O gesto SOMA, e é por isso que o menu é o que os testes de teclado vigiam.
  *
  * ## Arrastar troca de COLUNA, e só
  *
- * `TaskPatchRequest` tem `status`, e não tem campo de ordem — reordenar dentro
- * da coluna não é coisa que o contrato saiba dizer, e inventar aqui seria
- * escrever no servidor um pedido que ele não entende. Por isso a coluna inteira
- * é o alvo do arrasto, e não a posição entre dois cartões: o realce diz "vai
- * para esta coluna", que é a verdade do que vai acontecer. O quadro do funil
- * reordena porque LÁ o contrato tem `precedeId`.
+ * `TaskPatchRequest` tem `status` e não tem campo de ordem — reordenar dentro
+ * da coluna é coisa que o contrato não sabe dizer, e inventar aqui seria mandar
+ * ao servidor um pedido que ele não entende. Por isso o alvo do arrasto é a
+ * coluna inteira, e não a posição entre dois cartões: o realce promete
+ * exatamente o que vai acontecer. O quadro do funil reordena porque LÁ o
+ * contrato tem `precedeId`.
  *
- * ## A cor da coluna vem da SITUAÇÃO, não de módulo emprestado
+ * ## Por que o quadro é local, e não o `ModoKanban` genérico de D12
  *
- * `mockup-dashboard-cores.html` pinta as quatro colunas com pastéis de módulo
- * (laranja de Boletim, azul de Estoque, roxo de Vendas, verde). O preenchimento
- * entra, a FONTE da cor não: coluna é situação da tarefa, e uma coluna roxa de
- * Vendas diria ao operador que `Em revisão` pertence àquele módulo — que é
- * exatamente a leitura que o par por módulo ensina no resto do sistema.
- *
- * As quatro leem as ZONAS, que é a família que já significa estado aqui:
- * informação · o violeta do que está ATIVO (o mesmo do "hoje" no calendário) ·
- * o amarelo de FOCO, que é o que uma revisão pede · e o verde, que já é a cor
- * do carimbo `done`. O efeito do mockup fica de pé — quatro colunas, quatro
- * preenchimentos distintos — e nenhuma cor mente sobre o que significa.
+ * O kanban genérico (`components/cabinet/listagem/modo-kanban.tsx`) está
+ * mergeado nesta branch e é usado — na visão Calendário desta mesma tela, pelo
+ * irmão `ModoCalendario`. O que ele não serve é o CARTÃO: por decisão dele,
+ * `CartaoDoQuadro` tem cinco lugares fixos (título, subtítulo, badge, data,
+ * valor em centavos) e nenhum slot livre. O cartão de tarefa do mockup tem
+ * quatro elementos fora dessa lista — pílula de prioridade, contadores
+ * `↩n ⌗n`, avatares empilhados e o riscado da concluída — mais o `+` no
+ * cabeçalho da coluna. Usá-lo apagaria os cinco do desenho aprovado; ampliá-lo
+ * seria editar a zona de D12. Fica local, com o MESMO vocabulário visual
+ * (coluna `--n-50` sem borda, cartão que levanta do `--hard-soft` para o
+ * `--hard-1`), e a fusão volta quando o cartão genérico tiver slot rico.
  */
+
 /**
  * A etiqueta do que está sendo arrastado.
  *
@@ -84,18 +98,50 @@ export function colunaDoArrasto(
   return alvo.status === cartao.status ? null : alvo.status
 }
 
-const ZONA_DA_COLUNA: Record<TaskDtoStatus, string> = {
-  todo: 'bg-zone-info',
-  doing: 'bg-zone-id',
-  review: 'bg-zone-warn',
-  done: 'bg-zone-money',
+/**
+ * A cor da coluna vem da SITUAÇÃO, e mora só no quadradinho.
+ *
+ * `A fazer` é neutro de propósito: o que ainda não começou não tem estado
+ * próprio, e dar-lhe matiz gastaria uma cor para dizer "nada aconteceu".
+ * Os outros três leem a semântica que já significa estado no sistema — o azul
+ * do que está em curso, o âmbar do que pede atenção, o verde do que fechou.
+ */
+const COR_DA_COLUNA: Record<TaskDtoStatus, string> = {
+  todo: 'var(--n-400)',
+  doing: 'var(--sky-400)',
+  review: 'var(--amber-400)',
+  done: 'var(--mint-400)',
 }
 
 /**
- * Avatares empilhados. Roxo de MARCA é o tom de avatar no DESIGN.md (§Acentos:
- * "roxo — marca e realce (avatar, badge)"), e é o mesmo para todo mundo de
- * propósito: cor por pessoa viraria uma nona, décima, décima-primeira cor sem
- * dono, e a paleta de módulo perderia o significado que ela tem hoje.
+ * As iniciais dentro de um avatar de 20px.
+ *
+ * §Hierarquia não tem degrau abaixo de `--t-dado-meta` (11px), e 11px não cabe
+ * num círculo de 20 — o mockup escreve 9px ali. Entra pelo mecanismo da regra 4
+ * do regime paralelo (token faltando → `var(--x, <fallback>)`), como o
+ * `KpiTile` já fez com `--t-kpi-valor`, e o pedido de promover o degrau está
+ * registrado na #469. Nunca como literal solto: `text-[9px]` é exatamente o que
+ * D30 grepa em `src`.
+ */
+const INICIAIS = {
+  fontFamily: 'var(--font-mono)',
+  fontSize: 'var(--t-avatar-iniciais, 9px)',
+  lineHeight: 1,
+  fontWeight: 500,
+} as const
+
+/**
+ * Avatares empilhados de 20px (mockup `.avs`).
+ *
+ * Três visíveis e o resto vira `+n`: a pilha existe para dizer "quem", e a
+ * partir do quarto ela só diz "muita gente" — que o `+n` diz melhor e em menos
+ * espaço.
+ *
+ * Tint ÚNICO aqui, como no mockup: no cartão a pilha responde "quantos e
+ * quem", e quatro pastéis diferentes dentro de uma tira de 60px competiriam
+ * com a pílula de prioridade ao lado, que é a cor que precisa ser vista. Quem
+ * distingue pessoa por cor é a carga da faixa (`faixa.tsx`), onde cada pessoa
+ * tem uma linha só sua.
  */
 function Avatares({ pessoas }: { pessoas: TaskDto['assignees'] }) {
   if (pessoas.length === 0) return null
@@ -103,18 +149,22 @@ function Avatares({ pessoas }: { pessoas: TaskDto['assignees'] }) {
   const resto = pessoas.length - visiveis.length
 
   return (
-    <span className="ml-auto flex items-center">
+    <span className="ml-auto flex shrink-0 items-center">
       {visiveis.map((pessoa) => (
         <span
           key={pessoa.id}
           title={pessoa.name}
-          className="-ml-1.5 grid size-6 place-content-center rounded-item border-2 bg-accent font-mono text-[0.75rem] font-medium first:ml-0"
+          className="-ml-1.5 grid size-5 place-content-center rounded-item border border-[var(--n-300)] first:ml-0"
+          style={{ ...INICIAIS, background: 'var(--tint-lilac)', color: 'var(--n-900)' }}
         >
           {pessoa.initials}
         </span>
       ))}
       {resto > 0 ? (
-        <span className="-ml-1.5 grid size-6 place-content-center rounded-item border-2 bg-card font-mono text-[0.75rem] font-medium">
+        <span
+          className="-ml-1.5 grid size-5 place-content-center rounded-item border border-[var(--n-300)]"
+          style={{ ...INICIAIS, background: 'var(--n-0)', color: 'var(--n-500)' }}
+        >
           +{resto}
         </span>
       ) : null}
@@ -122,10 +172,11 @@ function Avatares({ pessoas }: { pessoas: TaskDto['assignees'] }) {
   )
 }
 
-function Cartao({ tarefa }: { tarefa: TaskDto }) {
+function Cartao({ tarefa, hoje }: { tarefa: TaskDto; hoje: string }) {
   const alterar = useAlterarTarefa()
   const destinos = COLUNAS.filter((coluna) => coluna.status !== tarefa.status)
   const concluida = tarefa.status === 'done'
+  const atrasada = estaAtrasada(tarefa, hoje)
   const caixa = useRef<HTMLLIElement>(null)
   const [arrastando, setArrastando] = useState(false)
 
@@ -180,33 +231,35 @@ function Cartao({ tarefa }: { tarefa: TaskDto }) {
       data-status={tarefa.status}
       data-arrastando={arrastando ? '' : undefined}
       className={cn(
-        'rounded-card border-2 bg-card p-2.5',
+        'flex cursor-grab flex-col rounded-control border border-[var(--n-300)] bg-[var(--n-0)] shadow-[var(--hard-soft)]',
+        // O papel LEVANTA: `--hard-soft` (cinza, parado) vira `--hard-1` (sombra
+        // de tinta) e o cartão anda 1px para cima e para a esquerda, como se
+        // saísse da mesa. É a única profundidade que muda no quadro.
+        'transition-[transform,box-shadow,border-color] duration-[var(--dur-1)] ease-[var(--ease)]',
+        'hover:-translate-x-px hover:-translate-y-px hover:border-[var(--n-900)] hover:shadow-[var(--hard-1)]',
         // O cartão em trânsito some pela metade: ele continua no lugar de
         // origem enquanto o gesto não termina, e sem isso o operador vê duas
         // cópias do mesmo cartão — a que ele arrasta e a que ficou.
         arrastando && 'opacity-40',
       )}
+      style={{ gap: 'var(--s-2)', padding: 'var(--s-2) var(--s-3)' }}
     >
       <div className="flex items-start gap-1">
         <span
           className={cn(
-            'font-display font-semibold leading-tight',
-            // Concluído se lê riscado, e não só por cor: o mesmo motivo do
+            't-ui min-w-0 flex-1',
+            // Concluída se lê riscada, e não só por cor: o mesmo motivo do
             // carimbo — cor sozinha não diz estado (WCAG 1.4.1).
-            concluida && 'text-muted-foreground line-through',
+            concluida && 'line-through',
           )}
+          style={concluida ? { color: 'var(--n-500)' } : undefined}
         >
           {tarefa.title}
         </span>
 
         <DropdownMenuTrigger>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="ml-auto"
-            aria-label={`Ações de ${tarefa.title}`}
-          >
-            <MoreHorizontal className="text-modulo" />
+          <Button variant="ghost" size="icon-sm" aria-label={`Ações de ${tarefa.title}`}>
+            <MoreHorizontal aria-hidden="true" />
           </Button>
           <DropdownMenu placement="bottom end">
             <DropdownMenuLabel>Mover para</DropdownMenuLabel>
@@ -224,31 +277,36 @@ function Cartao({ tarefa }: { tarefa: TaskDto }) {
         </DropdownMenuTrigger>
       </div>
 
-      {tarefa.description ? (
-        <p className="mt-1 text-sm text-muted-foreground">{tarefa.description}</p>
-      ) : null}
+      {tarefa.description ? <p className="t-meta">{tarefa.description}</p> : null}
 
-      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t pt-1.5 text-sm text-muted-foreground">
+      {/* A tira de meta: prioridade · prazo · contadores · avatares. Tudo numa
+          linha só, e sem hairline acima — o espaço já separa, e a linha seria a
+          segunda ferramenta na mesma fronteira. Contador em mono porque é dado
+          que se compara entre cartões. */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        {concluida ? null : <Prioridade prioridade={tarefa.priority} />}
+
         {tarefa.dueOn ? (
-          <span className="flex items-center gap-1 tabular-nums">
-            <Calendar className="size-3.5" aria-hidden="true" />
-            {formatDateBR(tarefa.dueOn)}
+          <span
+            className="t-dado-meta"
+            // Atrasada é a única cor que entra no prazo, e ela vem com a
+            // palavra junto: âmbar sozinho não diz "atrasada" para quem não
+            // enxerga a diferença.
+            style={atrasada ? { color: 'var(--warn)', fontWeight: 600 } : undefined}
+          >
+            {formatDateBR(tarefa.dueOn.slice(0, 10))}
+            {atrasada ? ` · atrasada ${diasDeAtraso(tarefa.dueOn, hoje)}d` : ''}
           </span>
         ) : null}
-        <span className="flex items-center gap-1 tabular-nums">
-          <MessageSquare className="size-3.5" aria-hidden="true" />
-          <span className="sr-only">Comentários:</span>
-          {tarefa.commentCount}
-        </span>
-        <span className="flex items-center gap-1 tabular-nums">
-          <Paperclip className="size-3.5" aria-hidden="true" />
-          <span className="sr-only">Anexos:</span>
-          {tarefa.attachmentCount}
-        </span>
-      </div>
 
-      <div className="mt-2 flex items-center gap-2">
-        <Prioridade prioridade={tarefa.priority} />
+        {tarefa.commentCount > 0 || tarefa.attachmentCount > 0 ? (
+          <span className="t-dado-meta">
+            <span className="sr-only">Comentários: </span>↩{tarefa.commentCount}
+            {' · '}
+            <span className="sr-only">Anexos: </span>⌗{tarefa.attachmentCount}
+          </span>
+        ) : null}
+
         <Avatares pessoas={tarefa.assignees} />
       </div>
     </li>
@@ -259,11 +317,13 @@ function Coluna({
   status,
   titulo,
   tarefas,
+  hoje,
   aoIncluir,
 }: {
   status: TaskDtoStatus
   titulo: string
   tarefas: TaskDto[]
+  hoje: string
   aoIncluir: (status: TaskDtoStatus) => void
 }) {
   const caixa = useRef<HTMLElement>(null)
@@ -290,28 +350,28 @@ function Coluna({
       data-slot="coluna"
       data-status={status}
       data-sob-voo={sobVoo ? '' : undefined}
-      // A coluna vira caixa própria com o preenchimento da situação. Os cartões
-      // ficam em `bg-card` por cima — é o contraste que separa a tarefa da
-      // coluna, e sem ele a pilha some dentro da pastel.
       className={cn(
-        'flex min-w-0 flex-col gap-2 rounded-panel border-2 p-2.5 shadow-el1',
-        ZONA_DA_COLUNA[status],
-        // A coluna que vai receber sobe um DEGRAU de elevação (§Elevação), e
-        // não muda de cor: a cor daqui já significa a situação da tarefa, e um
-        // realce colorido diria que a coluna virou outra coisa enquanto o dedo
-        // passa. O amarelo também está fora — ele é a identidade do FOCO, e
-        // dois significados no mesmo tom é o que o DESIGN.md chama de duas
-        // leituras de estado brigando.
-        sobVoo && 'shadow-el2',
+        'flex min-w-0 flex-col rounded-card bg-[var(--n-50)]',
+        // O realce do alvo é ANEL, e não borda: borda mudaria a largura da
+        // coluna e o quadro inteiro andaria de lado quando o cartão passa por
+        // cima. Anel de tinta, não de cor — a cor daqui já significa a situação
+        // da tarefa, e um realce colorido diria que a coluna virou outra coisa
+        // enquanto o dedo passa.
+        sobVoo && 'ring-2 ring-[var(--n-900)]',
       )}
+      style={{ gap: 'var(--s-2)', padding: 'var(--s-2)' }}
     >
-      <header className="flex items-center gap-2 rounded-card border-2 bg-card px-2 py-1.5">
-        <h3 className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em]">
-          {titulo}
-        </h3>
-        <span className="rounded-item border-2 px-1.5 font-mono text-[0.75rem] font-medium tabular-nums">
-          {tarefas.length}
-        </span>
+      {/* Quadradinho + nome + contagem + `+`. O cabeçalho não tem caixa nem
+          fundo próprio: a coluna já é a região, e uma barra branca aqui seria um
+          card dentro do tint. */}
+      <header className="flex items-center gap-2" style={{ padding: '0 var(--s-1)' }}>
+        <span
+          aria-hidden="true"
+          className="size-2 shrink-0 rounded-[2px]"
+          style={{ background: COR_DA_COLUNA[status] }}
+        />
+        <h3 className="t-bloco truncate">{titulo}</h3>
+        <span className="t-dado-meta shrink-0">{tarefas.length}</span>
         <Button
           variant="ghost"
           size="icon-sm"
@@ -324,13 +384,15 @@ function Coluna({
       </header>
 
       {tarefas.length === 0 ? (
-        <p className="rounded-card border-2 border-dashed p-3 text-center text-sm text-muted-foreground">
+        // Sem borda tracejada: dentro de uma região tintada, o vazio se diz com
+        // texto, e a moldura seria mais uma caixa onde não há objeto nenhum.
+        <p className="t-meta text-center" style={{ padding: 'var(--s-3) 0' }}>
           Nenhuma tarefa aqui.
         </p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="flex flex-col" style={{ gap: 'var(--s-2)' }}>
           {tarefas.map((tarefa) => (
-            <Cartao key={tarefa.id} tarefa={tarefa} />
+            <Cartao key={tarefa.id} tarefa={tarefa} hoje={hoje} />
           ))}
         </ul>
       )}
@@ -341,12 +403,16 @@ function Coluna({
 export function Quadro({
   busca,
   aoIncluir,
-}: { busca: string; aoIncluir: (status: TaskDtoStatus) => void }) {
+  hoje = hojeISO(),
+}: { busca: string; aoIncluir: (status: TaskDtoStatus) => void; hoje?: string }) {
   const query = useTarefas(busca)
 
   if (query.isPending) {
     return (
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(238px,1fr))] gap-4">
+      <div
+        className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))]"
+        style={{ gap: 'var(--s-3)' }}
+      >
         {COLUNAS.map((coluna) => (
           <Skeleton key={coluna.status} className="h-64 w-full" />
         ))}
@@ -368,34 +434,33 @@ export function Quadro({
 
   if (busca.trim() && query.data.length === 0) {
     return (
-      <p className="rounded-card border-2 bg-card p-6 text-center text-sm text-muted-foreground">
+      <p
+        className="t-meta rounded-card border border-[var(--n-300)] bg-[var(--n-0)] text-center"
+        style={{ padding: 'var(--s-5)' }}
+      >
         Nenhuma tarefa encontrada para “{busca}”.
       </p>
     )
   }
 
   return (
-    // A bancada afundada SAIU: ela existia para as quatro colunas não flutuarem
-    // soltas, e agora cada coluna tem caixa, contorno e preenchimento próprios.
-    // Mantida, seria um cinza atrás de quatro pastéis — o degrau que separava
-    // viraria a sujeira que aproxima.
-    //
     // `items-start`: cada coluna para onde os cartões dela param. Sem isto o
-    // grid estica as quatro até a altura da mais cheia, e o que antes era um
-    // vazio branco invisível virou um bloco de pastel do tamanho da diferença —
-    // medido na conferência renderizada, com `Em andamento` de um cartão só ao
-    // lado de `A fazer` com dois.
-    // `auto-fit`/`minmax(238px,1fr)`, nunca `@media` (§@casca-global — regra
-    // de quebra): as quatro colunas espremem antes de quebrar em duas linhas,
-    // e a quebra reage ao espaço real — inclusive à gaveta de notificações
-    // aberta encolhendo o `<main>`, que um breakpoint fixo não veria.
-    <div className="grid grid-cols-[repeat(auto-fit,minmax(238px,1fr))] items-start gap-4">
+    // grid estica as quatro até a altura da mais cheia, e o tint da coluna vazia
+    // vira um bloco do tamanho da diferença.
+    // `auto-fit`/`minmax(240px,1fr)`, nunca `@media`: as quatro espremem antes
+    // de quebrar em duas linhas, e a quebra reage ao espaço real — inclusive à
+    // gaveta de notificações aberta encolhendo o `<main>`.
+    <div
+      className="grid grid-cols-[repeat(auto-fit,minmax(240px,1fr))] items-start"
+      style={{ gap: 'var(--s-3)' }}
+    >
       {COLUNAS.map((coluna) => (
         <Coluna
           key={coluna.status}
           status={coluna.status}
           titulo={coluna.titulo}
           tarefas={porColuna[coluna.status]}
+          hoje={hoje}
           aoIncluir={aoIncluir}
         />
       ))}

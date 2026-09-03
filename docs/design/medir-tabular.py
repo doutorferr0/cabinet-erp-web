@@ -55,6 +55,9 @@ FAMILIAS = [
     # do user sobre o teto de quatro famílias). Ficou dois dias fora da medição
     # — ver `familias_nao_medidas`, que existe por causa disto.
     ("Bebas Neue", "display condensado (--font-display-condensada)", "bebas-neue"),
+    # REFACE 2.0 (fundação, 2026-09-02): a mono nova. Substitui PT Mono como
+    # `--font-mono` em D1 (#469); até lá as duas coexistem e as duas são medidas.
+    ("JetBrains Mono", "dado: id, data, valor (--font-mono 2.0)", "jetbrains-mono"),
 ]
 
 RAIZ = Path(__file__).resolve().parents[2]

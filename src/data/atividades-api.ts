@@ -90,6 +90,46 @@ export function useAtividades(alvo: AlvoDaAtividade | null) {
   })
 }
 
+/** Quantas linhas o feed do Dashboard mostra. Ver `useAtividadesRecentes`. */
+export const FEED_RECENTE = 6
+
+/**
+ * O FEED do Dashboard — as últimas atividades CONCLUÍDAS da empresa inteira.
+ *
+ * É a consulta que o comentário de `useInvalidarAtividades` já previa ("no dia
+ * em que existir, uma tela de minhas atividades"): a MESMA operação, sem o par
+ * `entityType`/`entityId`. O contrato declara os dois opcionais e exige apenas
+ * que viajem juntos — omitir ambos é a leitura da empresa, e é 400 só quando um
+ * vem sem o outro.
+ *
+ * **Concluídas, e não pendentes, porque o feed responde "o que ANDOU".** O que
+ * ainda espera alguém já tem duas casas no Dashboard — `A fazer` e a `Agenda` —,
+ * e uma terceira lista de pendência seria a mesma fila contada de novo. É também
+ * o que faz a coluna da hora existir: `doneAt` é instante carimbado pelo
+ * servidor, enquanto `dueDate` é data sem hora, e um feed cujo relógio marca
+ * 00:00 em toda linha não é feed.
+ *
+ * **Ordena por `doneAt` desc no SERVIDOR.** `doneAt` está na whitelist do
+ * contrato, e ordenar as seis linhas no cliente ordenaria só a página — a mais
+ * recente poderia estar na segunda.
+ */
+export function useAtividadesRecentes() {
+  return useQuery({
+    queryKey: [...CHAVES_ATIVIDADES.tronco, 'recentes'] as const,
+    retry: repetirSeValeAPena,
+    queryFn: async () => {
+      const resposta: RespostaDaApi = await listActivities({
+        open: false,
+        sortBy: 'doneAt',
+        sortDesc: true,
+        page: 1,
+        pageSize: FEED_RECENTE,
+      })
+      return dadosOuErro<PagedResultOfActivityDto>(resposta, 'Falha ao carregar a atividade.')
+    },
+  })
+}
+
 /**
  * Toda mutação de atividade invalida o mesmo tronco (`['atividades']`).
  *

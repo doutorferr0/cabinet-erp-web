@@ -141,7 +141,35 @@ function LinhaDoFeed({ atividade }: { atividade: ActivityDto }) {
   )
 }
 
-export function FeedDeAtividade() {
+export interface FeedDeAtividadeProps {
+  /**
+   * O RECORTE, dito em voz alta na nota do cabeçalho. Padrão `concluídas`, que
+   * é o recorte no Dashboard — a tela da empresa, onde "da empresa" seria
+   * redundante.
+   *
+   * O hub de módulo passa outro texto, e não é preciosismo: ali o operador está
+   * dentro de Compras e leria "Atividade" como "a atividade de Compras". O
+   * contrato não serve esse recorte (`entityType` sem `entityId` é 400), então
+   * quem mostra o feed da empresa dentro de um módulo tem de NOMEAR o que
+   * mostra — é a mesma regra do `AvisoDeCobertura`, na medida do cabeçalho.
+   */
+  recorte?: React.ReactNode
+  /**
+   * A régua por CIMA do cabeçalho. Verdadeira no Dashboard, onde o feed é a
+   * segunda seção de um card cuja primeira metade é a agenda — e ali a linha
+   * separa as duas.
+   *
+   * Falsa no hub, onde o feed é o card INTEIRO: uma hairline no topo de um card
+   * encostaria na borda dele, e §Hierarquia nomeia isso — "nunca duas hairlines
+   * encostadas; nunca hairline + fundo diferente na mesma fronteira".
+   */
+  divisor?: boolean
+}
+
+export function FeedDeAtividade({
+  recorte = 'concluídas',
+  divisor = true,
+}: FeedDeAtividadeProps = {}) {
   const query = useAtividadesRecentes()
   const linhas = query.data?.rows ?? []
 
@@ -151,9 +179,9 @@ export function FeedDeAtividade() {
           hairline da última linha dela. Duas hairlines encostadas na mesma
           fronteira é o defeito que §Hierarquia nomeia palavra por palavra. */}
       <CabecalhoDeCard
-        divisor
+        divisor={divisor}
         marca={<MarcaDeCard cor="var(--main)" />}
-        nota={query.isPending || query.isError ? undefined : 'concluídas'}
+        nota={query.isPending || query.isError ? undefined : recorte}
       >
         Atividade
       </CabecalhoDeCard>

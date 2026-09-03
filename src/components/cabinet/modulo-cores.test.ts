@@ -98,11 +98,18 @@ describe('cor de módulo — os pares que o `[data-modulo]` introduz', () => {
     // escuro cai sozinho, e ressuscitar a tabela é reabrir a divergência.
     const css = [...modulo.values()]
     expect(css).toHaveLength(MODULOS_COR.length)
+    // A Rodada 5 (#527) acrescentou a BANCADA TONAL ao mesmo bloco: `--bancada`
+    // e o alias `--background`, que é quem a utility `bg-paper-grid` lê. Eles
+    // entram na lista porque não são tabela de cor — a bancada é `color-mix` do
+    // próprio matiz do módulo sobre o neutro, então ela acompanha o tema pela
+    // mesma escala e não precisa de espelho no escuro. O que este caso continua
+    // impedindo é o que ele sempre impediu: cor de módulo redefinida à mão,
+    // token a token, num segundo lugar.
+    const PERMITIDOS = ['background', 'bancada', 'modulo-01', 'modulo-02']
     for (const [nome, tokens] of modulo) {
-      expect([...tokens.keys()].sort(), `${nome} declara só o par`).toEqual([
-        'modulo-01',
-        'modulo-02',
-      ])
+      const fora = [...tokens.keys()].filter((token) => !PERMITIDOS.includes(token))
+      expect(fora, `${nome} declara token de cor fora do par e da bancada`).toEqual([])
+      expect(tokens.has('modulo-01') && tokens.has('modulo-02'), `${nome} sem o par`).toBe(true)
     }
   })
 })

@@ -213,6 +213,37 @@ por máscara, jamais preta.
 
 ## Colors
 
+> **2.0 · A RAMPA É OKLCH, E CLAREAR/ESCURECER É ANDAR NO DEGRAU (#527).** As oito rampas e a
+> escala de neutros são declaradas duas vezes em `src/styles/tokens-2.0.css`: hex no `:root` e
+> `oklch()` dentro de um `@supports (color: oklch(...))`. Todo navegador desde 2023 aplica o
+> segundo; o hex é rede para o resto e é a referência contra a qual o oklch é conferido.
+>
+> **O que muda na prática:** em hex o degrau era uma promessa (`400 = fill`) que a paleta não
+> cumpria — `amber-400` era perceptivelmente mais claro que `indigo-400`. Em OKLCH o degrau É a
+> luminosidade: `L` igual em todos os oito matizes, `C` por degrau, só `H` muda. O tema escuro dos
+> neutros vira aritmética — mesmo `H` e `C`, `L` espelhada.
+>
+> **Consequência para quem escreve componente:** precisa de uma variante mais clara ou mais
+> escura? Suba ou desça um degrau da rampa, ou componha com `color-mix`. **Hex novo em componente
+> continua proibido**, e agora tem motivo mecânico além do estético: um hex solto não participa da
+> uniformidade de `L`, então ele pesa diferente do resto do sistema em todo lugar onde aparecer.
+>
+> **Quando um par reprova contraste, o que se mexe é a `L` do degrau.** Foi o que aconteceu com
+> `--n-500`: a Rodada 5 propunha `L .55`, e ali `.t-dado-meta` (4,38:1), `.t-rotulo` (3,95:1) e o
+> badge `mut` (4,20:1) ficavam abaixo do piso de texto. Em `L .51` eles vão a 5,19, 4,68 e 4,92.
+> Trocar por um hex escolhido a olho teria consertado o número e quebrado a escala.
+>
+> **25 dos 57 valores ficam fora do gamut sRGB** (chartreuse inteiro, os 50/100 quentes, os
+> 600/800 frios) e isso é intencional: cada navegador mapeia para a tela que tem, e em P3 as cores
+> saem mais saturadas. As tabelas de contraste medem o corte em sRGB, que é o PISO.
+>
+> **A bancada carrega o matiz do módulo; a folha, nunca.** `[data-modulo]` tinge `--bancada` com
+> 4% do matiz do módulo (Boletim, 3%) — a página de Compras tem ar indigo, a de Estoque, menta.
+> Dado não é tingido: `--folha` é a mesma em todo módulo, e há teste que reprova quem a mover.
+>
+> Medição: `python3 docs/design/medir-contraste.py --conferir` mede as duas paletas nos dois
+> temas, confere que elas não se afastaram e sai 1 se algum par exigido reprovar.
+
 ### Superfícies — fundo cinza e cartão branco (Polaris, 2026-08-18)
 | papel | uso |
 |---|---|
@@ -1438,6 +1469,34 @@ poderiam aparecer; num estado em que o nome não está na tela, um cartão sem n
 identificação do ícone por uma frase solta. Onde o rótulo sumiu, a peça é a dica.
 
 ## Motion
+
+> **2.0 · MOVIMENTO DE ARTESÃO — o que pode e o que não (#527).** Os tokens vivem em
+> `src/styles/tokens-2.0.css`: `--dur-1` (120 ms, micro), `--dur-2` (200 ms, peça), `--dur-3`
+> (320 ms, entrada de região), `--ease` (a curva geral), `--ease-out` (quem abre) e `--spring`,
+> uma `linear()` de 30 pontos que é a mola já medida da 1.6 — bezier de 4 pontos não representa
+> passar do alvo e voltar.
+>
+> **A regra que governa duração: saída mais rápida que entrada.** Quem sai já foi decidido pelo
+> operador, e atrasá-lo custa a próxima ação; quem entra precisa ser lido. Na troca de rota isso é
+> 90 ms contra 160 ms.
+>
+> **PERMITIDO:** troca de rota com View Transitions, com o título da página como shared element
+> (a lista vira a ficha e o título atravessa) · entrada de região (`cab-rise`, escalonada em ≤ 80 ms
+> e no máximo seis) · peça que aparece (`cab-pop`, com a mola) · linha desenhando em gráfico
+> (`cab-draw`) · barra enchendo (`cab-fill`) · pulso de atenção em pendência (`cab-pulse`, e uma
+> vez) · hover/press dos controles (120 ms).
+>
+> **PROIBIDO:** animar linha de tabela, célula de grade, campo ou anel de foco · loop infinito
+> fora do carregamento · `delay` acima de 80 ms · movimento que reposiciona o que o operador está
+> prestes a clicar · bounce em confirmação · animar `width`/`height`/`top`/`left` (é `transform` e
+> `opacity`, que não recalculam layout) · duração acima de `--dur-3` em qualquer coisa que não seja
+> carregamento.
+>
+> **As três guardas das View Transitions** (`src/app/transicao-de-rota.ts`): sem
+> `startViewTransition` a navegação acontece igual, sem transição; com `prefers-reduced-motion` não
+> acontece; e antes de `readyState === 'complete'` também não — transição durante o carregamento
+> fotografa uma tela pela metade. Há teto de 400 ms: enquanto o callback não resolve, o browser
+> segura a tela congelada na foto.
 
 Movimento aqui serve para dizer que a tela trocou, não para enfeitar — é ferramenta de oito horas.
 Três receitas, e a lista do que NÃO anima vale tanto quanto elas.

@@ -255,7 +255,17 @@ function PonteParaOrdem({ pedido }: { pedido: PedidoDeCompra }) {
   const navigate = useNavigate()
   const fornecedores = fornecedoresComLinhaAberta(pedido)
 
-  if (!pedido.id || pedido.situacao === 'cancelled' || fornecedores.length === 0) return null
+  /**
+   * COM UM FORNECEDOR SÓ a ponte não aparece: quem leva ao próximo passo é a
+   * primária do cabeçalho (D19, #487), e dois botões com o mesmo destino na
+   * mesma tela é a duplicação que a rodada existe para desfazer.
+   *
+   * Com dois ou mais ela continua aqui, e isso não é inconsistência: a próxima
+   * ação é UMA, e o pedido com três fornecedores em aberto não tem uma próxima
+   * ordem — tem três. Escolher a primeira por ordem alfabética seria a tela
+   * decidindo de quem se compra.
+   */
+  if (!pedido.id || pedido.situacao === 'cancelled' || fornecedores.length <= 1) return null
 
   return (
     <div className="flex flex-wrap items-center gap-2">

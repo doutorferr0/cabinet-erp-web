@@ -17,7 +17,6 @@ import {
   fornecedoresComLinhaAberta,
   linhasAbertasParaOrdem,
   useCancelarOrdemDeCompra,
-  useEnviarOrdemDeCompra,
   useGravarOrdemDeCompra,
   usePedidosComLinhaAberta,
   useReagendarOrdemDeCompra,
@@ -27,7 +26,7 @@ import { PERCENT_ESCALA, formatDateBR, formatPercent } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { CalendarClock, FileText, Hash, List, Percent, Send } from 'lucide-react'
+import { CalendarClock, FileText, Hash, List, Percent } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { z } from 'zod'
@@ -445,7 +444,6 @@ export function OrdemCompraForm({
 }) {
   const navigate = useNavigate()
   const gravar = useGravarOrdemDeCompra()
-  const enviar = useEnviarOrdemDeCompra()
   const cancelar = useCancelarOrdemDeCompra()
 
   function onGravar(valores: OrdemNoFormulario) {
@@ -513,11 +511,6 @@ export function OrdemCompraForm({
           pedido de origem nasciam DESABILITADOS — justamente na situação em que
           são os únicos gestos que restam. Transição de documento não é campo. */}
       <ErroDeGravacao
-        mutacao={enviar}
-        erro={enviar.error}
-        mensagem="Não foi possível enviar a ordem ao fornecedor."
-      />
-      <ErroDeGravacao
         mutacao={cancelar}
         erro={cancelar.error}
         mensagem="Não foi possível cancelar a ordem."
@@ -549,17 +542,12 @@ export function OrdemCompraForm({
           ))}
         </div>
 
+        {/* `Enviar ao fornecedor` SAIU daqui (D19, #487): virou a próxima ação
+            do cabeçalho do registro, que é o lugar da transição que muda o
+            resto do documento. Reagendar e cancelar são o que se faz DEPOIS de
+            enviar, e continuam aqui — a mesma decisão que tirou `Gravar` do
+            rodapé sem tirar tudo o mais. */}
         <div className="flex flex-wrap items-center gap-2">
-          {ordem.id && ordem.situacao === 'draft' && !readOnly ? (
-            <Button
-              type="button"
-              size="sm"
-              disabled={enviar.isPending}
-              onClick={() => enviar.mutate({ id: ordem.id })}
-            >
-              <Send className="size-4" /> Enviar ao fornecedor
-            </Button>
-          ) : null}
           <DialogoDeReagendamento ordem={ordem} />
           {ordem.id && !cancelada && !readOnly ? (
             <Button

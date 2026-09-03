@@ -72,6 +72,18 @@ const DIVIDAS: Record<string, string> = {
   // convidaria a primeira tela de suporte a improvisar o caminho, que é o
   // defeito que a regra existe para impedir — e improvisar ali é improvisar o
   // acesso a dado de terceiro.
+  // Ficou órfã na D19 (#487), e de propósito. Ela é o SHELL 1.x da ficha de
+  // cadastro — `PageHeader` com `Alterar` forte e a calha estreita à esquerda —
+  // e a Reface 2.0 o substituiu pelo esqueleto do registro
+  // (`features/cadastro/ficha-de-registro.tsx`): cabeçalho com entidade, código
+  // e situação, coluna lateral de consulta e uma próxima ação que não é
+  // `Alterar`. O que D16 entregou DENTRO dela — `BlocoIdentidade`,
+  // `FichaDeModulos`, `IndiceDeModulos` — continua montado, pelo esqueleto novo.
+  // Não se apaga aqui porque apagar componente de zona alheia no meio da rodada
+  // é o que a regra de zonas existe para impedir; quem a remove é a D30, que é
+  // a issue de fechamento.
+  'components/cabinet/ficha/ficha-de-cadastro.tsx':
+    'órfã desde a D19 (#487): o esqueleto 2.0 é `features/cadastro/ficha-de-registro.tsx`; a D30 apaga',
   'data/suporte-api.ts':
     'órfã desde o item 6 da fundação (PR #369); religa no console de suporte, que é trilho próprio — o mock e as guardas já respondem sem ela',
 }

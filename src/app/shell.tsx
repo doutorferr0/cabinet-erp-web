@@ -5,8 +5,8 @@ import { type NavItem, type NavSecao, secoesVisiveis } from '@/app/navigation'
 import { PageFrame } from '@/app/page-frame'
 import { PaletaDeComandos } from '@/app/paleta-de-comandos'
 import { RequireRecurso } from '@/app/require-recurso'
+import { useFaviconDoModulo } from '@/components/cabinet/favicon-do-modulo'
 import { ModeToggle } from '@/components/cabinet/mode-toggle'
-import { Ornamento } from '@/components/cabinet/ornamento'
 import { Separator } from '@/components/ui/separator'
 import {
   Sidebar,
@@ -80,35 +80,25 @@ function casa(titulo: string, termo: string): boolean {
 }
 
 /**
- * O ícone do item: o shape do módulo quando existe, o lucide quando não.
+ * O ícone do item é o LUCIDE dele, e voltou a ser (D35).
  *
- * ## A cor NÃO acompanha mais o estado
+ * ## A cor não acompanha o estado, e isso não mudou
  *
  * Ela acompanhava — ativo na `/02`, inativo na `/01` — e o preenchimento do
- * item acompanhava junto, na ordem INVERSA. Ícone e fundo trocavam de lugar no
- * mesmo par: `/01` sobre `/02` no hover, `/02` sobre `/01` no ativo. O par mede
- * **1,39–2,40:1 no tema claro** nos nove módulos (§tabela:nav-estados), contra
- * o piso de 3:1 da WCAG 1.4.11 — o ícone sumia dentro do próprio realce.
+ * item acompanhava junto, na ordem INVERSA. O par mede **1,39–2,40:1 no tema
+ * claro** nos nove módulos (§tabela:nav-estados), contra o piso de 3:1 da WCAG
+ * 1.4.11 — o ícone sumia dentro do próprio realce. Em tinta ele passa nos três
+ * estados: 18,76:1 em repouso e 16,88–18,81:1 sobre a `/02` do hover e do ativo.
  *
- * Em tinta ele passa nos três estados, porque acompanha o rótulo que já passa:
- * 18,76:1 em repouso e 16,88–18,81:1 sobre a `/02` do hover e do ativo.
+ * ## Por que a `<Forma>` NÃO entra aqui
  *
- * É o que o tom `icone` do `Ornamento` já previa por escrito — *"um ícone
- * acompanha o texto ao lado em hover, ativo e desabilitado; com token fixo,
- * cada um desses estados precisaria de uma SEGUNDA regra de cor só para o
- * ornamento"*. Ele existia sem consumidor; agora tem.
- *
- * **A cor do módulo não sai da barra**: continua na superfície do item (hover e
- * ativo em `/02`) e no quadradinho do grupo. E no ícone quem diz o módulo passa
- * a ser o SHAPE, que já era a informação dele — o desenho de Produtos não é o
- * de Clientes esteja ele em ciano ou em tinta.
+ * A D28 pôs o shape do módulo no ícone do item, e a D35 o tira. A forma é
+ * identidade de MÓDULO e a barra lista TELAS dentro dele: as sete telas de
+ * Compras receberiam a mesma caixa, e um grupo inteiro com o mesmo desenho é
+ * pior mapa do que sete lucides distintos. Em 18px o contorno duplo ainda vira
+ * mancha. A forma serve onde há uma tela inteira para ela — vazio, 404, login,
+ * hub e favicon —, e a cor do módulo continua na superfície do item.
  */
-function IconeDoItem({ item }: { item: NavItem }) {
-  const shape = moduloDaRota(item.url) ?? item.aparencia?.shape
-  if (!shape) return <item.icon />
-  return <Ornamento shape={shape} tom="icone" tamanho={18} />
-}
-
 /**
  * Uma linha da barra: tela, tela FUTURA ou pai colapsável.
  *
@@ -215,13 +205,13 @@ function ItemDaBarra({
             para o roteador — 404 com o arquivo ali do lado. */}
         {item.externo ? (
           <a href={item.url} target="_blank" rel="noreferrer">
-            <IconeDoItem item={item} />
+            <item.icon />
             <span>{item.title}</span>
             <span className="sr-only">(abre em nova aba)</span>
           </a>
         ) : (
           <Link to={item.url}>
-            <IconeDoItem item={item} />
+            <item.icon />
             <span>{item.title}</span>
           </Link>
         )}
@@ -372,6 +362,9 @@ function AppSidebar({ secao }: { secao: NavSecao | undefined }) {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { location } = useRouterState()
   const modulo = moduloDaRota(location.pathname)
+  // A aba do navegador carrega a forma do módulo: seis abas do mesmo sistema
+  // viram um mapa, em vez de seis títulos truncados iguais.
+  useFaviconDoModulo()
   const { tem } = useRecursosDaEmpresa()
 
   const secoes = secoesVisiveis(tem)

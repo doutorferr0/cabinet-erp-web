@@ -11,23 +11,23 @@ import { Link } from '@tanstack/react-router'
 /**
  * FAIXA DE INDICADORES — os quatro números do topo do Dashboard.
  *
- * ## Por que cada cartão tem ornamento, se o teto é de 1 por região
+ * ## Por que cada cartão tem desenho, se o teto é de 1 por região
  *
- * O teto da memória (§@ornamentos) existe contra POLUIÇÃO: três desenhos
- * disputando a mesma leitura. A fileira de KPIs é o outro caso, o mesmo da
- * fileira da sidebar — cada shape marca um LUGAR diferente (Vendas, Compras,
- * Estoque), e é justamente a variação que faz a fileira se ler como um mapa. É
- * papel de ÍCONE, não de decoração — agora dentro de um `Selo`, que é a caixa
- * que devolve contraste ao shape depois que o fundo do cartão virou pastel.
+ * O teto da memória (§desenho por região) existe contra POLUIÇÃO: três desenhos
+ * disputando a mesma leitura. A fileira de KPIs é o outro caso — cada forma
+ * marca um MÓDULO diferente (Vendas, Compras, Estoque), e é justamente a
+ * variação que faz a fileira se ler como um mapa. É papel de ÍCONE, não de
+ * decoração — dentro de um `Selo`, que é a caixa que devolve contraste à forma
+ * depois que o fundo do cartão virou pastel.
  *
  * A cor vem do `data-modulo` do próprio cartão, e não do módulo da rota: o
  * Dashboard não é módulo nenhum (a tabela de cor travada pelo user cobre oito, e
  * este não é um deles), então cada cartão declara o escopo do número que ele
  * mostra.
  *
- * **Três dos quatro, não os quatro:** o cartão de dinheiro fica sem ornamento,
- * porque o número dele não pertence a módulo — pertence a verde, cor que
- * ornamento não pode usar. Ver o comentário na montagem da lista.
+ * **Três dos quatro, não os quatro:** o cartão de dinheiro fica sem desenho,
+ * porque o número dele não pertence a módulo — pertence a verde, cor que a
+ * forma não pode usar. Ver o comentário na montagem da lista.
  *
  * ## Nem todo número leva a algum lugar
  *
@@ -40,7 +40,7 @@ import { Link } from '@tanstack/react-router'
 
 interface Indicador {
   /**
-   * Módulo a que o número pertence — dá shape e cor ao ornamento. Ausente no
+   * Módulo a que o número pertence — dá forma e cor ao selo. Ausente no
    * número que não é de módulo nenhum: ver o cartão de dinheiro abaixo.
    */
   modulo?: Modulo
@@ -59,9 +59,9 @@ function Cartao({ indicador }: { indicador: Indicador }) {
       {/* O selo sai do meio do texto e vira a âncora do cartão, como no mockup:
           com o fundo agora colorido, um shape de 20px em linha com o rótulo
           desaparecia dentro da própria pastel. Fica de fora o cartão de
-          dinheiro — a regra de que ornamento não usa as cores com dono não
+          dinheiro — a regra de que a forma não usa as cores com dono não
           mudou, e é ela que decide, não o alinhamento da fileira. */}
-      {indicador.modulo ? <Selo shape={indicador.modulo} tamanho="lg" /> : null}
+      {indicador.modulo ? <Selo modulo={indicador.modulo} tamanho="lg" /> : null}
       <span className="flex min-w-0 flex-col gap-1">
         <span className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
           {indicador.rotulo}
@@ -194,8 +194,8 @@ export function Indicadores() {
       apoio: 'abaixo do mínimo',
     },
     {
-      // SEM ornamento, e é decisão: este número não é de módulo nenhum — é
-      // DINHEIRO, e dinheiro é verde, cor que ornamento não pode usar (regra
+      // SEM desenho, e é decisão: este número não é de módulo nenhum — é
+      // DINHEIRO, e dinheiro é verde, cor que a forma não pode usar (regra
       // dura: as três cores com dono estão fora). Emprestar o shape de Produtos
       // ou de Vendas diria que o total do mês pertence àquele cadastro. Quem
       // marca o cartão aqui é a zona de valor e o verde do número, que é

@@ -1,4 +1,5 @@
 import { DetalheTecnico } from '@/components/cabinet/detalhe-tecnico'
+import { FormaDoModulo } from '@/components/cabinet/forma'
 import { ModuloEmConstrucao } from '@/components/cabinet/modulo-em-construcao'
 import { Button } from '@/components/ui/button'
 import {
@@ -11,7 +12,7 @@ import {
 } from '@/components/ui/empty'
 import { ehModuloEmConstrucao } from '@/data/modulos-em-construcao'
 import { detalheDoErro } from '@/lib/erros'
-import { Inbox, SearchX, Unplug } from 'lucide-react'
+import { SearchX, Unplug } from 'lucide-react'
 
 /**
  * O QUE A LISTAGEM MOSTRA NO LUGAR DAS LINHAS — vazio e falha.
@@ -26,14 +27,18 @@ import { Inbox, SearchX, Unplug } from 'lucide-react'
  *    lado de uma tabela que explica, seria a mesma tela contando duas histórias
  *    sobre a mesma requisição. Peça compartilhada é o que impede isso.
  *
- * ## O que mudou no 2.0
+ * ## O que mudou no 2.0 — e o que a D35 devolveu
  *
- * O ornamento saiu (`Ornamento` de 96/128px, um shape por situação) e entrou um
- * ícone lucide de 32px em tinta apagada, servido pelo `EmptyMedia`. O desenho
- * grande era o elemento mais alto e mais saturado de um estado cuja informação
- * inteira é a FRASE e cuja saída inteira é a TECLA — ele ganhava do que
- * resolve. Os três ícones continuam distinguindo os três casos (caixa vazia ·
- * lupa riscada · tomada solta), que é o serviço que o shape prestava.
+ * A D29 tirou o desenho de 96/128px (um shape de acervo por situação) e pôs
+ * ícone lucide de 32px: o desenho era o elemento mais alto e mais saturado de um
+ * estado cuja informação inteira é a FRASE e cuja saída inteira é a TECLA.
+ *
+ * A D35 devolve o desenho ao vazio de MÓDULO, e não é a volta do que saiu: a
+ * `<Forma>` é contorno em traço, com o tint na forma e não no bloco, e diz uma
+ * coisa que o ícone genérico não dizia — DE QUE MÓDULO está vazia esta tela. No
+ * vazio de BUSCA ela não entra: ali a informação é a pergunta que o operador
+ * fez, não o lugar onde ele está, e a lupa riscada continua sendo quem a conta.
+ * A tomada solta fica na falha, que é de rede e não de módulo.
  */
 
 /**
@@ -107,7 +112,9 @@ export function VazioDaConsulta({
   const houveConsulta = q !== '' || temFiltro
   return (
     <Empty data-testid="vazio-da-consulta">
-      <EmptyMedia>{houveConsulta ? <SearchX /> : <Inbox />}</EmptyMedia>
+      <EmptyMedia className={houveConsulta ? undefined : '[&_svg]:size-auto'}>
+        {houveConsulta ? <SearchX /> : <FormaDoModulo tamanho={120} />}
+      </EmptyMedia>
       <EmptyHeader>
         <EmptyTitle>{houveConsulta ? 'Nenhum registro encontrado' : 'Nenhum registro'}</EmptyTitle>
         <EmptyDescription>

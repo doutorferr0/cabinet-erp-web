@@ -1,4 +1,3 @@
-import { Ornamento } from '@/components/cabinet/ornamento'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,7 +10,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { useBlocker } from '@tanstack/react-router'
-import { Check, Undo2 } from 'lucide-react'
+import { Check, TriangleAlert, Undo2 } from 'lucide-react'
 
 export interface AlteracoesNaoSalvasProps {
   /** Gravação em curso: o `Gravar` da barra desabilita junto com o do rodapé. */
@@ -104,10 +103,10 @@ export function AlteracoesNaoSalvas({
         <AlertDialogHeader>
           <div className="flex items-center gap-3">
             <AlertDialogMedia>
-              {/* Mesmo ornamento da confirmação de desativação, e no mesmo tom:
-                  os dois diálogos perguntam sobre perda — de cadastro lá, de
+              {/* Mesmo sinal da confirmação de desativação, e no mesmo tom: os
+                  dois diálogos perguntam sobre perda — de cadastro lá, de
                   digitação aqui. */}
-              <Ornamento shape="alerta" tom="erro" tamanho={40} />
+              <TriangleAlert className="text-destructive" />
             </AlertDialogMedia>
             <AlertDialogTitle>Sair sem gravar?</AlertDialogTitle>
           </div>

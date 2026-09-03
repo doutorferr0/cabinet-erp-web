@@ -22,7 +22,7 @@ const SIDEBAR_COOKIE_NAME = 'sidebar_state'
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = '16rem'
 const SIDEBAR_WIDTH_MOBILE = '18rem'
-// 3.5rem, não 3rem: a coluna colapsada precisa caber um ornamento que se
+// 3.5rem, não 3rem: a coluna colapsada precisa caber um ícone que se
 // leia como marca do módulo. Em 3rem o botão fechava em 32px e o shape
 // sobrava 16px de área útil — tamanho de ícone de aviso, não de módulo.
 const SIDEBAR_WIDTH_ICON = '3.5rem'

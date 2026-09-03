@@ -1,6 +1,5 @@
 import { LookupCombo } from '@/components/cabinet/lookup-combo'
 import { Nome } from '@/components/cabinet/nome'
-import { Ornamento } from '@/components/cabinet/ornamento'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +17,7 @@ import {
   OBSERVACAO_MAX,
   motivoVazio,
 } from '@/data/cancelamento-de-documento'
+import { TriangleAlert } from 'lucide-react'
 import { useEffect, useId, useState } from 'react'
 
 /**
@@ -94,7 +94,7 @@ export function ConfirmarCancelamento({
       <AlertDialogHeader>
         <div className="flex items-center gap-3">
           <AlertDialogMedia>
-            <Ornamento shape="alerta" tom="erro" tamanho={40} />
+            <TriangleAlert className="text-destructive" />
           </AlertDialogMedia>
           <AlertDialogTitle>
             {cancelado

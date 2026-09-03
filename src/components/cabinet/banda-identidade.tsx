@@ -1,4 +1,4 @@
-import { OrnamentoDoModulo } from '@/components/cabinet/ornamento'
+import { FormaDoModulo } from '@/components/cabinet/forma'
 import { cn } from '@/lib/utils'
 
 export interface BandaDeIdentidadeProps {
@@ -94,11 +94,11 @@ export function BandaDeIdentidade({
         </span>
       ) : null}
       {children ? <div className="ml-auto flex items-center gap-3">{children}</div> : null}
-      {/* Marca d'água do módulo, 24px, no fim da faixa (memória §@ornamentos).
+      {/* Marca d'água do módulo, 24px, no fim da faixa (um desenho por região).
           Fica DEPOIS do `children` e com `ml-auto` só quando não há children:
           o carimbo e o número do documento são dado, e dado vem antes de
           decoração na ordem de leitura. Um por região — esta é a região. */}
-      <OrnamentoDoModulo tamanho={24} className={children ? '' : 'ml-auto'} />
+      <FormaDoModulo tamanho={24} className={children ? '' : 'ml-auto'} />
     </div>
   )
 }

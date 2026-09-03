@@ -1,7 +1,6 @@
 import { ProblemType } from '@/api/gerado'
 import type { PartnerDto } from '@/api/gerado'
 import { Nome } from '@/components/cabinet/nome'
-import { Ornamento } from '@/components/cabinet/ornamento'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
 import {
   AlertDialog,
@@ -30,7 +29,7 @@ import {
 import { type FrasesDeRecusa, mensagemDaRecusa } from '@/lib/erros'
 import { formatDateBR } from '@/lib/formatters'
 import type { ColumnDef } from '@tanstack/react-table'
-import { CheckCircle2, History, PackageCheck, UserCog } from 'lucide-react'
+import { CheckCircle2, History, Info, PackageCheck, UserCog } from 'lucide-react'
 import { useId, useState } from 'react'
 
 /**
@@ -161,7 +160,7 @@ export function AcoesDoCiclo({ pedido, somenteLeitura = false }: AcoesDoCicloPro
         <AlertDialogHeader>
           <div className="flex items-center gap-3">
             <AlertDialogMedia>
-              <Ornamento shape="alerta" tom="info" tamanho={40} />
+              <Info className="text-info" />
             </AlertDialogMedia>
             <AlertDialogTitle>Concluir pedido {pedido.numero}?</AlertDialogTitle>
           </div>
@@ -198,7 +197,7 @@ export function AcoesDoCiclo({ pedido, somenteLeitura = false }: AcoesDoCicloPro
         <AlertDialogHeader>
           <div className="flex items-center gap-3">
             <AlertDialogMedia>
-              <Ornamento shape="alerta" tom="info" tamanho={40} />
+              <Info className="text-info" />
             </AlertDialogMedia>
             <AlertDialogTitle>A peça voltou?</AlertDialogTitle>
           </div>

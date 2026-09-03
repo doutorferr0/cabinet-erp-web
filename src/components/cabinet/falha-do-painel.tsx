@@ -22,7 +22,7 @@ import { Unplug } from 'lucide-react'
  *
  * ## 2.0 (D29): mesma anatomia dos outros estados
  *
- * Era um bloco próprio — ornamento `falha-rede` de 32px, título em semibold,
+ * Era um bloco próprio — desenho de `falha-rede` em 32px, título em semibold,
  * frase, botão — desenhado à mão ao lado dos vazios, que usavam `Empty`. Duas
  * gramáticas para duas situações que o operador lê no mesmo lugar da tela.
  * Agora é `Empty` com ícone lucide, como o vazio da listagem e o 404.

@@ -20,7 +20,7 @@ function Nota({
   return (
     <li data-modulo={notificacao.modulo} className="rounded-card border-2 bg-card p-3 shadow-el1">
       <div className="flex items-start gap-2">
-        <Selo shape={notificacao.modulo} tamanho="sm" />
+        <Selo modulo={notificacao.modulo} tamanho="sm" />
         <span className="min-w-0 flex-1 font-display font-bold leading-tight">
           {notificacao.titulo}
         </span>

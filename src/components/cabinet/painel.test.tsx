@@ -19,18 +19,16 @@ describe('Painel', () => {
     )
 
     const painel = container.querySelector('[data-slot="painel"]')
-    // O `data-modulo` na própria seção é o que faz `bg-modulo` e o ornamento
-    // resolverem o par sem ninguém passar cor por propriedade.
+    // O `data-modulo` na própria seção é o que faz `bg-modulo` resolver o par
+    // sem ninguém passar cor por propriedade.
     expect(painel).toHaveAttribute('data-modulo', 'compras')
     expect(painel?.querySelector('header')).toHaveClass('bg-modulo')
-    expect(painel?.querySelector('[data-slot="ornamento"]')).toHaveAttribute(
-      'data-shape',
-      'compras',
-    )
+    // Compras é a caixa, pela mesma tabela que o vazio e o favicon leem.
+    expect(painel?.querySelector('[data-slot="forma"]')).toHaveAttribute('data-tipo', 'caixa')
   })
 
   it('a tinta de zona vale para região que NÃO é de módulo, e não leva selo', () => {
-    // Pendência é estado, não assunto. E ornamento não usa as cores com dono —
+    // Pendência é estado, não assunto. E o desenho não usa as cores com dono —
     // um selo amarelo aqui violaria a regra dura da paleta.
     const { container } = renderWithQuery(
       <Painel titulo="A fazer" tinta="warn">

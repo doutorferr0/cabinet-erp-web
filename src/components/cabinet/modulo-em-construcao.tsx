@@ -1,10 +1,10 @@
 import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
 import { DetalheTecnico } from '@/components/cabinet/detalhe-tecnico'
+import { FormaDoModulo } from '@/components/cabinet/forma'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { moduloDoErro } from '@/data/modulos-em-construcao'
 import { detalheDoErro } from '@/lib/erros'
 import { cn } from '@/lib/utils'
-import { Hammer } from 'lucide-react'
 
 /**
  * O que a tela mostra quando o servidor responde **501** — o módulo está no
@@ -19,6 +19,13 @@ import { Hammer } from 'lucide-react'
  * botão, portanto, pela mesma razão que `SemPermissao` não tem um: botão que
  * não resolve é promessa que a tela não cumpre, e o operador clica três vezes
  * antes de desconfiar.
+ *
+ * ## A forma é a do módulo, em n-400 e parada (D35)
+ *
+ * É o mesmo desenho que o vazio e o hub daquele módulo mostram — quem chega aqui
+ * reconhece ONDE está antes de ler. Sem tint e em n-400 porque a peça não está
+ * pronta: cor cheia aqui prometeria um módulo que responde. E parada, nunca
+ * respirando: forma que pulsa é a de carregando, e isto não vai carregar.
  *
  * ## A cor é de PENDÊNCIA, não de erro
  *
@@ -44,8 +51,8 @@ export function ModuloEmConstrucao({ erro, className }: { erro?: unknown; classN
 
   return (
     <Empty data-slot="modulo-em-construcao" className={className}>
-      <EmptyMedia>
-        <Hammer />
+      <EmptyMedia className="[&_svg]:size-auto">
+        <FormaDoModulo tamanho={120} className="text-[var(--n-400)]" />
       </EmptyMedia>
       <EmptyHeader>
         {/* A MESMA palavra do menu. O item que ainda não tem tela sai da

@@ -39,7 +39,7 @@ import { MarcaDeTipo, TIPOS, TIPOS_NA_ORDEM, eventosDoDia } from './tipos-de-eve
  *
  * `A fazer` é o que quebra o padrão, e de propósito: pendência é ESTADO, não
  * assunto, então a faixa lê a zona de foco. Sem selo — amarelo é cor com dono, e
- * ornamento não usa as três cores com dono.
+ * a forma do módulo não usa as três cores com dono.
  */
 
 function Contador({ n }: { n: number }) {

@@ -376,29 +376,22 @@ describe('AppShell', () => {
     // `getByText` acharia os dois. Colaboradores não entra aqui porque a
     // empresa padrão do teste não opera o recurso — a atribuição dele está
     // travada em `navigation.test.ts`, sobre o dado.
-    const esperado: Array<[string, string, string]> = [
-      ['/dashboard', 'boletim', 'dashboard'],
-      ['/planner', 'boletim', 'planner'],
+    const esperado: Array<[string, string]> = [
+      ['/dashboard', 'boletim'],
+      ['/planner', 'boletim'],
     ]
 
-    for (const [url, modulo, shape] of esperado) {
+    for (const [url, modulo] of esperado) {
       const item = document.querySelector(`a[href="${url}"]`)?.closest('[data-sidebar="menu-item"]')
       // A cor emprestada vale para o ITEM e para no item: `moduloDaRota`
       // continua sem conhecer essas rotas, senão a folha inteira seria tingida.
       expect(item).toHaveAttribute('data-modulo', modulo)
-      expect(item?.querySelector('[data-slot="ornamento"]')).toHaveAttribute('data-shape', shape)
     }
 
-    // Quem empresta a cor mantém o PRÓPRIO desenho: três shapes iguais em
-    // coral fariam a fileira deixar de ser mapa. O Boletim também prova que a
-    // entrada solta no topo entrou na fileira colorida — ela ficava de fora do
-    // laço dos grupos e caía num lucide cinza.
+    // O Boletim prova que a entrada solta no topo entrou na fileira colorida —
+    // ela ficava de fora do laço dos grupos e caía sem `data-modulo` nenhum.
     const boletim = document.querySelector('a[href="/"]')?.closest('[data-sidebar="menu-item"]')
     expect(boletim).toHaveAttribute('data-modulo', 'boletim')
-    expect(boletim?.querySelector('[data-slot="ornamento"]')).toHaveAttribute(
-      'data-shape',
-      'boletim',
-    )
   })
 
   // POLARIS (2026-08-17): a MARCA mora na topbar, à esquerda — a posição do
@@ -423,14 +416,13 @@ describe('AppShell', () => {
     expect(marca).toHaveAttribute('aria-label', 'Cabinet')
     expect(document.querySelector('[data-slot="sidebar-header"] [data-slot="marca"]')).toBeNull()
 
-    // A empresa mora na appbar: um ornamento só, o dela.
-    const ornamentos = topo?.querySelectorAll('[data-slot="ornamento"]') ?? []
-    expect(ornamentos).toHaveLength(1)
-    expect(ornamentos[0]).toHaveAttribute('data-shape', 'empresa')
+    // A empresa mora na appbar, e o sinal dela é o prédio — não a `<Forma>`,
+    // que diz módulo, e empresa não é um deles.
     expect(topo).toHaveTextContent('VERTZ ILUMINAÇÃO')
+    const daEmpresa = topo?.querySelector('.lucide-building-2')
 
     // E dentro do botão que abre a gaveta — a marca nunca é absorvida por ele.
-    expect(ornamentos[0]?.closest('button')).not.toBeNull()
+    expect(daEmpresa?.closest('button')).not.toBeNull()
     expect(marca?.closest('button')).toBeNull()
   })
 
@@ -762,8 +754,8 @@ describe('AppShell', () => {
 
     it('o ícone do item não troca de tom com o estado — herda a tinta do rótulo', async () => {
       setup()
-      const ativo = (await itemDaBarra('/')).querySelector('[data-slot="ornamento"]')
-      const inativo = (await itemDaBarra('/dashboard')).querySelector('[data-slot="ornamento"]')
+      const ativo = (await itemDaBarra('/')).querySelector('svg')
+      const inativo = (await itemDaBarra('/dashboard')).querySelector('svg')
       expect(ativo).toBeInTheDocument()
       expect(inativo).toBeInTheDocument()
 
@@ -774,9 +766,12 @@ describe('AppShell', () => {
         expect(icone).not.toHaveClass('text-modulo')
         expect(icone).not.toHaveClass('text-modulo-suave')
       }
-      // O módulo continua sendo dito pelo SHAPE — é isso que sobra no ícone.
-      expect(ativo).toHaveAttribute('data-shape', 'boletim')
-      expect(inativo).toHaveAttribute('data-shape', 'dashboard')
+      // E o ícone é o lucide do item, não a `<Forma>`: quem diz o módulo é a
+      // superfície do item, e a forma diria a mesma coisa em todas as telas do
+      // mesmo módulo — sete caixas iguais em Compras não são mapa.
+      for (const icone of [ativo, inativo]) {
+        expect(icone).not.toHaveAttribute('data-slot', 'forma')
+      }
     })
 
     /**

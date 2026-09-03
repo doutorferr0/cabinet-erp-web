@@ -103,7 +103,7 @@ function AlertDialogHeader({ className, ...props }: React.ComponentProps<'div'>)
   )
 }
 
-/** Onde o ornamento de alerta pousa, ao lado do título. */
+/** Onde o sinal de alerta pousa, ao lado do título. */
 function AlertDialogMedia({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div

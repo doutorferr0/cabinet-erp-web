@@ -77,7 +77,7 @@ export function Painel({
   tinta?: TintaDePainel
   /**
    * Selo antes do título. Só desenha quando há `modulo` — o shape vem do módulo,
-   * e ornamento não empresta cor de zona (verde é dinheiro, amarelo é foco).
+   * e a forma não empresta cor de zona (verde é dinheiro, amarelo é foco).
    */
   selo?: boolean
   /** Contador, botão ou o que a região precisar no fim do cabeçalho. */
@@ -110,7 +110,7 @@ export function Painel({
           modulo ? 'bg-modulo' : tinta ? TINTAS[tinta] : 'bg-surface-sunken',
         )}
       >
-        {modulo && selo ? <Selo shape={modulo} tamanho="sm" /> : null}
+        {modulo && selo ? <Selo modulo={modulo} tamanho="sm" /> : null}
         {/* Título de painel em Display: é o degrau abaixo do título da tela, e
             o que o olho usa para saltar de assunto em assunto. */}
         <h2 className="font-display text-lg font-bold text-text-strong first-letter:uppercase">

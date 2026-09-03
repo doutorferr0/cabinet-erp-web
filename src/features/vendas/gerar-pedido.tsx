@@ -1,7 +1,7 @@
 import type { QuoteDto } from '@/api/gerado'
 import { ProblemType } from '@/api/gerado'
+import { FormaDoModulo } from '@/components/cabinet/forma'
 import { Nome } from '@/components/cabinet/nome'
-import { OrnamentoDoModulo } from '@/components/cabinet/ornamento'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -86,7 +86,7 @@ export function GerarPedido({ orcamento, onFechar }: GerarPedidoProps) {
       <AlertDialogHeader>
         <div className="flex items-center gap-3">
           <AlertDialogMedia>
-            <OrnamentoDoModulo tom="modulo" tamanho={40} />
+            <FormaDoModulo tamanho={40} />
           </AlertDialogMedia>
           {/* O título acompanha a RECUSA. Continuar perguntando "gerar?" com o
               corpo dizendo que já foi gerado deixaria a caixa afirmando duas

@@ -6,12 +6,12 @@ import { cn } from '@/lib/utils'
 /**
  * MARCA — o símbolo e o nome do Cabinet. Desenho do user, não do acervo.
  *
- * **Não passa pelo `<Ornamento>`, e não é preferência de organização.** O
- * ornamento monta traço e preenchimento em duas camadas a partir do `d` de um
- * shape do acervo, com peso (`drop-shadow`) e tom de módulo. A marca é o
- * oposto disso: desenho de LINHA sem preenchimento, espessura própria por
- * peso, e cor que não pertence a módulo nenhum. Passá-la pelo ornamento
- * pintaria o miolo da casa e daria a ela a cor da tela em que estivesse.
+ * **Não passa pela `<Forma>`, e não é preferência de organização.** A `<Forma>`
+ * é uma tabela FECHADA de sete desenhos que o código conhece de cor, um por
+ * módulo, e o que ela varia é tint e fio. A marca é o contrário em dois pontos:
+ * o desenho vem de um `.svg` que o user edita, e ela tem um wordmark deitado ao
+ * lado do símbolo, que forma nenhuma tem. Dito isso, a gramática é a MESMA — a
+ * casa de três níveis do login é esta casa, e é dela que as sete derivam.
  *
  * **Dois pesos, e o corte é de LEGIBILIDADE, não de gosto** (medido em render,
  * 2026-08-13):
@@ -50,9 +50,9 @@ interface Desenho {
 }
 
 /**
- * O arquivo continua sendo a FONTE — a mesma disciplina do `<Ornamento>`. O que
- * o componente faz é reler `viewBox`, espessura e caminhos e remontar o SVG com
- * o tamanho pedido. Editar o desenho é editar o `.svg`, nunca este arquivo.
+ * O arquivo continua sendo a FONTE. O que o componente faz é reler `viewBox`,
+ * espessura e caminhos e remontar o SVG com o tamanho pedido. Editar o desenho é
+ * editar o `.svg`, nunca este arquivo.
  */
 function lerDesenho(raw: string): Desenho {
   const viewBox = ATRIBUTO_VIEWBOX.exec(raw)?.[1] ?? '0 0 100 100'

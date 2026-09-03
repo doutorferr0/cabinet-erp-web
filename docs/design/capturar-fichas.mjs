@@ -1,3 +1,4 @@
+import { mkdirSync, readFileSync } from 'node:fs'
 // Capturas das 9 fichas 2.0, nos dois temas, com o overlay de 8px.
 //
 // O `?grid` do `__root.tsx` é entrega da D1 e ainda não existe na base — aqui o
@@ -9,7 +10,6 @@
 // tela vai abrir. Ids fixados à mão envelheceriam na primeira mudança de
 // semente e a captura sairia em "não encontrado", com 200.
 import { chromium } from '/home/doutorferro/projetos/cabinet-erp-web/node_modules/.pnpm/playwright@1.62.1/node_modules/playwright/index.mjs'
-import { mkdirSync, readFileSync } from 'node:fs'
 
 const BASE = process.env.BASE ?? 'http://localhost:5173'
 const SAIDA = process.env.SAIDA ?? 'docs/design/capturas/2.0'

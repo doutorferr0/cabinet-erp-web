@@ -28,4 +28,15 @@ describe('EsqueletoDeCarregamento', () => {
     // linha inteira.
     expect(within(esqueleto).getAllByTestId('esqueleto-campo').length).toBeGreaterThanOrEqual(6)
   })
+
+  it('reserva a coluna lateral, que a folha 2.0 tem e a 1.x não tinha', () => {
+    render(<EsqueletoDeCarregamento />)
+    const esqueleto = screen.getByRole('status')
+
+    // Sem esta coluna a lateral apareceria de repente e empurraria o documento
+    // inteiro para a esquerda no instante em que a consulta responde — o salto
+    // que o esqueleto existe para evitar.
+    const lateral = within(esqueleto).getByTestId('esqueleto-lateral')
+    expect(within(lateral).getAllByTestId('esqueleto-cartao')).toHaveLength(4)
+  })
 })

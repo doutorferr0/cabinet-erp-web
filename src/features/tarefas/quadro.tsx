@@ -12,7 +12,7 @@ import { COLUNAS, agruparPorColuna, useAlterarTarefa, useTarefas } from '@/data/
 import { formatDateBR } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
 import { draggable, dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
-import { MoreHorizontal } from 'lucide-react'
+import { MessageSquare, MoreHorizontal, Paperclip } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { diasDeAtraso, estaAtrasada, hojeISO } from './apuracao'
 import { Prioridade } from './prioridade'
@@ -299,11 +299,23 @@ function Cartao({ tarefa, hoje }: { tarefa: TaskDto; hoje: string }) {
           </span>
         ) : null}
 
-        {tarefa.commentCount > 0 || tarefa.attachmentCount > 0 ? (
-          <span className="t-dado-meta">
-            <span className="sr-only">Comentários: </span>↩{tarefa.commentCount}
-            {' · '}
-            <span className="sr-only">Anexos: </span>⌗{tarefa.attachmentCount}
+        {/* Contadores. O mockup escreve `↩n · ⌗n`, e o `⌗` (U+2317) NÃO existe
+            na JetBrains Mono — na primeira captura ele saiu como caixa vazia,
+            que é a mesma família de defeito da cedilha da Gambarino. O ícone
+            desenha em qualquer fonte, e o número, que é o dado, continua em
+            mono tabular. */}
+        {tarefa.commentCount > 0 ? (
+          <span className="t-dado-meta inline-flex items-center gap-1">
+            <MessageSquare className="size-3" aria-hidden="true" />
+            <span className="sr-only">Comentários: </span>
+            {tarefa.commentCount}
+          </span>
+        ) : null}
+        {tarefa.attachmentCount > 0 ? (
+          <span className="t-dado-meta inline-flex items-center gap-1">
+            <Paperclip className="size-3" aria-hidden="true" />
+            <span className="sr-only">Anexos: </span>
+            {tarefa.attachmentCount}
           </span>
         ) : null}
 

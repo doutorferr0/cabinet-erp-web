@@ -40,7 +40,12 @@ export function FaixaDoQuadro({
   return (
     <div
       data-slot="faixa-do-quadro"
-      className="flex flex-wrap items-stretch"
+      // `items-start`, não `stretch`: os dois blocos crescem com o que têm
+      // dentro, e o tile do KPI é três linhas fixas. Esticado até a altura da
+      // carga (que cresce com o número de pessoas), ele ganharia um vazio do
+      // tamanho da diferença — o mesmo defeito que `items-start` já resolveu
+      // nas colunas do quadro.
+      className="flex flex-wrap items-start"
       style={{ gap: 'var(--s-3)' }}
     >
       {/* As proporções do mockup (1.1fr / 1.6fr) viram `flex-grow`: mesma
@@ -58,7 +63,15 @@ export function FaixaDoQuadro({
 
 function Kpis({ apuracao }: { apuracao: ApuracaoDoQuadro }) {
   return (
-    <FaixaDeKpi className="h-full">
+    <FaixaDeKpi
+      // Os TRÊS lado a lado, como no mockup (`repeat(3,1fr)`). O padrão da
+      // peça pede 220px por tile, largura pensada para os quatro de uma
+      // listagem ocupando a página inteira; aqui a faixa divide a linha com a
+      // carga, e com 220px o terceiro tile caía para uma segunda fileira —
+      // medido na primeira captura. `auto-fit` continua: a quebra reage ao
+      // espaço real, nunca a um `@media`.
+      style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))' }}
+    >
       <KpiTile
         rotulo="Concluídas"
         valor={apuracao.concluidas}

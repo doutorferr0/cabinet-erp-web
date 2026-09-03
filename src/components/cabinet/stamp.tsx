@@ -1,52 +1,55 @@
-import { cn } from '@/lib/utils'
+import { Badge, type TomDeBadge } from '@/components/cabinet/badge'
 
 /**
- * Carimbo de situação (DESIGN.md §Stamp): retângulo de 24px, borda 2px, canto
- * reto, conteúdo em Meta (mono 700, 0.75rem, caixa alta, tracking 0.07em).
+ * STAMP — ALIAS do `<Badge>`, mantido até D30. Reface 2.0, #471 (D3).
  *
- * **Os tons não têm o mesmo peso, e isso é a informação.** `open` e `done` são
- * PREENCHIDOS (amarelo com Tinta em cima; Tinta com cream em cima) porque são
- * os estados que se procuram correndo o olho numa lista; `void` e `neutral`
- * ficam em tinta sobre papel. Quatro carimbos com o mesmo peso não destacam
- * nenhum. Amarelo entra como FUNDO — nunca como cor de texto (§Don'ts).
+ * Era o carimbo da 1.x: retângulo de 24px, borda 2px, canto reto, mono 700 em
+ * caixa alta, e dois dos quatro tons PREENCHIDOS de cor cheia. A 2.0 troca a
+ * peça inteira — a razão está escrita em `badge.tsx` §"Por que trocar carimbo
+ * cheio por pílula pastel". O que sobra aqui é a assinatura antiga, para as
+ * telas que já a chamam não precisarem mudar no mesmo PR.
  *
- * Os quatro tons são semânticos e chegam por propriedade: o mapeamento tom →
- * situação é `[a resolver]` — a transcrição prova que o conceito existe
- * (`Consultar Situação do Pedido de Venda`) mas não transcreve os valores.
- * Nenhuma tela fixa nome de situação até a enumeração real vir da transcrição
- * ou do contrato do backend.
+ * ## O mapeamento é a única coisa que este arquivo decide
+ *
+ * `open → info` · `done → ok` · `void → bad` · `neutral → mut`.
+ *
+ * Ele vem da issue #471 e cai onde já caía semanticamente: o que está aberto é
+ * informativo (nada a fazer ainda), o resolvido é o bom, o anulado é o ruim, e
+ * o neutro é o silêncio. O que MUDA de verdade é o peso: `open` e `done` eram
+ * blocos cheios (amarelo com tinta em cima; verde com branco em cima) e agora
+ * são pastel como os outros dois. Quatro carimbos com o mesmo peso não
+ * destacam nenhum — mas quatro pílulas pastel com PONTO colorido destacam pela
+ * cor do ponto, sem encher a coluna de bloco saturado.
+ *
+ * ## Por que `data-slot`/`data-tom` continuam os antigos
+ *
+ * Alias que muda o atributo não é alias: `documento-visual.test.tsx` consulta
+ * `data-tom="open"`, e telas futuras podem estilizar por `[data-slot=stamp]`.
+ * Os dois são sobrescritos aqui; quem quiser o tom da 2.0 lê `data-badge-tom`,
+ * que o `Badge` escreve e ninguém sobrescreve.
+ *
+ * Novo consumidor usa `<Badge>` direto. Este arquivo sai em D30.
  */
 export type StampTom = 'neutral' | 'open' | 'done' | 'void'
 
-const TONS: Record<StampTom, string> = {
-  neutral: 'border-stamp-neutral text-stamp-neutral bg-transparent',
-  // Borda TINTA, não amarela: no mockup o `open` é caixa preta PREENCHIDA de
-  // amarelo. Amarelo sobre amarelo apagaria a caixa — e a Regra da Caixa Preta
-  // vale para o carimbo como para todo o resto.
-  open: 'border-border bg-stamp-open text-foreground',
-  done: 'border-stamp-done bg-stamp-done text-primary-foreground',
-  void: 'border-stamp-void text-stamp-void bg-transparent',
+const TOM_DA_2_0: Record<StampTom, TomDeBadge> = {
+  open: 'info',
+  done: 'ok',
+  void: 'bad',
+  neutral: 'mut',
 }
 
 export interface StampProps {
   tom: StampTom
-  /** Rótulo em caixa alta (Meta). A situação real ainda é `[a resolver]`. */
+  /** O estado por extenso — o Badge nunca fala só por cor. */
   label: string
   className?: string
 }
 
 export function Stamp({ tom, label, className }: StampProps) {
   return (
-    <span
-      data-slot="stamp"
-      data-tom={tom}
-      className={cn(
-        'inline-flex h-6 items-center border-2 px-2 font-bold font-mono text-[0.75rem] uppercase tracking-[0.07em]',
-        TONS[tom],
-        className,
-      )}
-    >
+    <Badge tom={TOM_DA_2_0[tom]} data-slot="stamp" data-tom={tom} className={className}>
       {label}
-    </span>
+    </Badge>
   )
 }

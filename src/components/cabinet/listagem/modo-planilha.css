@@ -1,0 +1,65 @@
+/*
+ * MODO PLANILHA — o desenho da célula focável (D33, pesquisa §7).
+ *
+ * Mora num arquivo próprio, e não em `index.css`, porque `index.css` é zona
+ * exclusiva de D1 nesta rodada. `@layer components` é obrigatório: regra sem
+ * camada vence a `@layer utilities` do Tailwind, e um `.celula-de-planilha` com
+ * `background` fora de camada apagaria o tint da linha de grupo e o
+ * `--primary-soft` da linha marcada — as duas escritas com utility.
+ */
+@layer components {
+  /*
+   * A célula é a unidade do modo: o cursor diz isso antes de qualquer tecla, e
+   * `user-select: none` é o que impede que ↑↓←→ com Shift pintem a seleção do
+   * NAVEGADOR por cima da faixa da grade. Duas seleções sobrepostas, uma delas
+   * copiando outra coisa no ⌘C, é o defeito que a planilha do operador mostra
+   * só depois de colado.
+   */
+  .celula-de-planilha {
+    cursor: cell;
+    user-select: none;
+  }
+
+  /*
+   * Anel de 2px em `--lime-600` + halo de 4px (mockup §7). É `inset`, e não
+   * `outline`, por causa do `border-collapse` da grade: outline em `<td>`
+   * desenha por fora e é recortado pela célula vizinha, então o anel apareceria
+   * em três lados. O halo repete o gesto do `focus-ring` do app sem ser ele —
+   * aqui o alvo tem a largura de uma coluna, não a de um botão.
+   *
+   * `:focus` e não `:focus-visible`: a célula recebe foco por CLIQUE também, e
+   * é o clique que diz onde as setas vão continuar. Uma célula clicada sem anel
+   * deixaria o operador sem saber de onde a próxima seta parte.
+   */
+  .celula-de-planilha:focus {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--lime-600), inset 0 0 0 4px
+      color-mix(in oklab, var(--lime-400) 40%, transparent);
+    background: color-mix(in oklab, var(--lime-400) 10%, var(--card));
+  }
+
+  /*
+   * A FAIXA (Shift+setas) é tinta chapada, sem anel: o anel diz "daqui parte a
+   * próxima tecla" e existe uma vez só. A faixa inteira com anel seria uma
+   * grade de molduras, e o operador perderia a célula-cursor de vista.
+   */
+  .celula-de-planilha[aria-selected="true"] {
+    background: color-mix(in oklab, var(--lime-400) 16%, var(--card));
+  }
+
+  /*
+   * O editor ocupa a célula inteira e some do fluxo: a linha não pode crescer
+   * quando o operador aperta Enter, senão a grade salta sob o cursor no gesto
+   * mais repetido do modo.
+   */
+  .editor-da-planilha {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: var(--card);
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--n-900);
+    padding: 0 var(--s-3);
+  }
+}

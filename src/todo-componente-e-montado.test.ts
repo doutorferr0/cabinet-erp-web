@@ -84,6 +84,15 @@ const DIVIDAS: Record<string, string> = {
   // este é o único dos três cujo lugar cai fora da zona da issue.
   'components/cabinet/monograma.tsx':
     'órfão desde a #471 (D3); a página de controles da D2 o monta — é o consumidor que a DoD da #471 declara',
+  // Ficou órfão AQUI, e é efeito direto do hub: `/vendas/` era o único
+  // consumidor, e o estado vazio que ele decorava ("Escolha uma opção no menu
+  // de Vendas") deixou de existir — a rota-índice agora TEM conteúdo. Não se
+  // apaga porque `stipple.tsx` é peça do desenho declarada no DESIGN.md
+  // §Stipple e está na zona de D28, que reduz o ornamento e decide o destino
+  // dela junto com `ornamento.tsx`. Apagá-lo daqui seria tomar por D28 uma
+  // decisão de identidade visual, com a issue dela ainda aberta.
+  'components/cabinet/stipple.tsx':
+    'órfão desde o hub de módulo (D26): `/vendas/` era o único consumidor e o estado vazio dele morreu; quem decide religar ou apagar é D28 (ornamento/stipple/marca)',
 }
 
 function arquivosDe(dir: string): string[] {

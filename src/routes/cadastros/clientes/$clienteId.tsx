@@ -2,12 +2,13 @@ import {
   ErroDeCarregamento,
   EsqueletoDeCarregamento,
 } from '@/components/cabinet/estado-de-consulta'
-import { FichaDeCadastro } from '@/components/cabinet/ficha/ficha-de-cadastro'
 import { useRotulosDeApoio } from '@/data/lookups-api'
+import { FichaDeRegistro } from '@/features/cadastro/ficha-de-registro'
 import { camposDoContrato, cliente as esquema } from '@/features/cadastro/modulos'
 import { ClienteForm } from '@/features/cliente/cliente-form'
 import { CoberturaParceiro } from '@/features/parceiro/cobertura-parceiro'
 import { ContatosDoParceiro } from '@/features/parceiro/contatos-do-parceiro'
+import { papeisDoParceiro, resumoDoParceiro } from '@/features/parceiro/ficha-resumo'
 import { HierarquiaParceiro } from '@/features/parceiro/hierarquia'
 import { papelCliente } from '@/features/parceiro/papeis/cliente'
 import { registroParaFicha } from '@/features/parceiro/registro-para-ficha'
@@ -96,12 +97,22 @@ function ClienteEditPage() {
 
   if (readOnly && !isNovo) {
     return (
-      <FichaDeCadastro
+      <FichaDeRegistro
         entidade={esquema}
         {...(rotulos ? { rotulos } : {})}
         registro={registroParaFicha(registro, esquema, ausentesNaFicha)}
-        titulo="Cadastro de Clientes"
-        contexto={registro.nome}
+        // A entidade no SINGULAR: o cabeçalho 2.0 é do registro aberto, não da
+        // tela. "Cadastro de Clientes" dizia onde o operador está — ele já sabe.
+        titulo="Cliente"
+        nome={registro.nome}
+        {...(query.data?.code ? { id: query.data.code } : {})}
+        meta={papeisDoParceiro(query.data)}
+        ativo={registro.ativo}
+        // `Ativar`/`Desativar` é `PUT /api/partners/{id}` com o `active`
+        // invertido — o mesmo caminho do Gravar, e por isso a mesma mutação.
+        aoAlternarAtivo={() => gravar.mutate({ ...registro, ativo: !registro.ativo })}
+        alternando={gravar.isPending}
+        resumo={resumoDoParceiro()}
         aviso={aviso}
         abaixo={
           <>

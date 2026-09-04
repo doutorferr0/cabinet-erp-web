@@ -436,9 +436,13 @@ export function KpiTile({
       : typeof valor === 'number'
         ? Math.trunc(Math.abs(valor))
         : null
-  const contando = useContagemNaEntrada(
-    naFaixa && Number.isFinite(alvoDaContagem) ? alvoDaContagem : null,
-  )
+  // COUNT-UP DESLIGADO (user, 2026-09-04): "não precisa de números se
+  // movimentando rápido". O número nasce pronto; o hook fica para a decisão
+  // voltar com um flag, sem reescrever. `alvoDaContagem` segue calculado para
+  // não mexer na leitura do dinheiro abaixo.
+  void naFaixa
+  void alvoDaContagem
+  const contando = useContagemNaEntrada(null)
 
   /** O texto autoritativo da contagem, quando ela não é dinheiro. */
   const contagemFinal = typeof valor === 'number' ? AGRUPADOR.format(valor) : null

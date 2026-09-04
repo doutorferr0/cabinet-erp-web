@@ -254,7 +254,9 @@ describe('KpiTile — contagem crescente', () => {
     )
   })
 
-  it('começa longe do alvo — senão não há contagem nenhuma', () => {
+  // count-up desligado (user, 2026-09-04) — o hook existe, o KPI não o chama.
+
+  it.skip('começa longe do alvo — senão não há contagem nenhuma', () => {
     // Sem esta asserção o caso acima passaria com a contagem removida.
     render(
       <FaixaDeKpi>
@@ -264,7 +266,9 @@ describe('KpiTile — contagem crescente', () => {
     expect(screen.getByLabelText('Vendido').textContent).not.toContain('182.400')
   })
 
-  it('conta a CONTAGEM também, e agrupa milhar em pt-BR', async () => {
+  // count-up desligado (user, 2026-09-04) — o hook existe, o KPI não o chama.
+
+  it.skip('conta a CONTAGEM também, e agrupa milhar em pt-BR', async () => {
     render(
       <FaixaDeKpi>
         <KpiTile rotulo="Variantes" valor={38_410} unidade="SKUs" />
@@ -286,7 +290,9 @@ describe('KpiTile — contagem crescente', () => {
     expect(screen.getByLabelText('Vendido').textContent).toContain(',99')
   })
 
-  it('`prefers-reduced-motion` PULA a contagem — não a encurta', () => {
+  // count-up desligado (user, 2026-09-04) — o hook existe, o KPI não o chama.
+
+  it.skip('`prefers-reduced-motion` PULA a contagem — não a encurta', () => {
     // Síncrono de propósito: com a preferência ligada o PRIMEIRO quadro já tem
     // o número final. Encurtar a duração ainda seria movimento, e a preferência
     // do sistema não pede menos movimento — pede nenhum.
@@ -299,7 +305,9 @@ describe('KpiTile — contagem crescente', () => {
     expect(screen.getByLabelText('Vendido').textContent?.replace(/\s/g, '')).toBe('R$182.400,00')
   })
 
-  it('o fecho do documento NÃO conta — o total muda a cada tecla na grade', () => {
+  // count-up desligado (user, 2026-09-04) — o hook existe, o KPI não o chama.
+
+  it.skip('o fecho do documento NÃO conta — o total muda a cada tecla na grade', () => {
     // `TotalBox` é este componente fora de uma faixa. Contar 600 ms por
     // alteração faria o total nunca ficar parado enquanto se preenche um
     // orçamento, e é por isso que o gatilho é o contexto da faixa.
@@ -307,7 +315,9 @@ describe('KpiTile — contagem crescente', () => {
     expect(screen.getByLabelText('Total').textContent?.replace(/\s/g, '')).toBe('R$182.400,00')
   })
 
-  it('o valor que MUDA depois da entrada salta, sem recontar', async () => {
+  // count-up desligado (user, 2026-09-04) — o hook existe, o KPI não o chama.
+
+  it.skip('o valor que MUDA depois da entrada salta, sem recontar', async () => {
     const { rerender } = render(
       <FaixaDeKpi>
         <KpiTile rotulo="Vendido" valorCentavos={1000} />
@@ -323,7 +333,9 @@ describe('KpiTile — contagem crescente', () => {
     expect(screen.getByLabelText('Vendido')).toHaveTextContent('9.000,00')
   })
 
-  it('600 ms é a duração da pesquisa, e ela é DADO, não número solto no meio', () => {
+  // count-up desligado (user, 2026-09-04) — o hook existe, o KPI não o chama.
+
+  it.skip('600 ms é a duração da pesquisa, e ela é DADO, não número solto no meio', () => {
     expect(DURACAO_DA_CONTAGEM).toBe(600)
   })
 
@@ -452,7 +464,9 @@ describe('FaixaDeKpi com herói (bento)', () => {
     silencio.mockRestore()
   })
 
-  it('o bento também liga a contagem e a ambiente — é faixa, com outra medida', () => {
+  // count-up desligado (user, 2026-09-04) — o hook existe, o KPI não o chama.
+
+  it.skip('o bento também liga a contagem e a ambiente — é faixa, com outra medida', () => {
     const { container } = render(
       <FaixaDeKpi heroi={<KpiTile rotulo="Herói" valorCentavos={1000} escala="heroi" />}>
         <KpiTile rotulo="Um" valor={1} />

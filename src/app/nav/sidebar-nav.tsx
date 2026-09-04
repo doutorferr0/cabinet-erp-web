@@ -3,10 +3,10 @@ import {
   MAXIMO_DE_RECENTES,
   idadeRelativa,
   useBarraColapsada,
-  useFavoritos,
   useGruposAbertos,
   useRecentes,
 } from '@/app/nav/estado'
+import { GrupoFavoritos, useFavoritosDaTela } from '@/app/nav/favoritos'
 import {
   GRUPOS_NAV,
   GRUPO_CONFIG,
@@ -135,7 +135,7 @@ function ItemDaBarra({
   comIcone: boolean
   contador: number | undefined
   favorito: boolean
-  aoFavoritar: (url: string) => void
+  aoFavoritar: (url: string, titulo: string) => void
 }) {
   const ativo = ativoEm(item.url, pathname)
   const Icone = item.icon
@@ -224,9 +224,16 @@ function ItemDaBarra({
           type="button"
           data-estrela
           data-marcado={favorito}
-          onClick={() => aoFavoritar(item.url)}
+          onClick={() => aoFavoritar(item.url, item.title)}
           aria-pressed={favorito}
-          aria-label={favorito ? `Desmarcar ${item.title}` : `Marcar ${item.title}`}
+          aria-label={
+            // A cópia é a do `EstrelaDeView` (D13), que é a mesma ★ na aba da
+            // listagem: "Fixar X nos favoritos" / "Tirar X dos favoritos". A D4
+            // escrevia "Marcar"/"Desmarcar" — dois verbos para o mesmo gesto em
+            // dois cantos da tela, e o `/Marca/` da busca de um teste de
+            // listagem passou a casar estes botões (D37).
+            favorito ? `Tirar ${item.title} dos favoritos` : `Fixar ${item.title} nos favoritos`
+          }
           className="-translate-y-1/2 absolute top-1/2 right-1 grid size-5 place-content-center rounded-item outline-none"
         >
           <Star aria-hidden="true" className={cn('size-3.5', favorito && 'fill-current')} />
@@ -254,7 +261,7 @@ function GrupoDaBarra({
   colapsada: boolean
   contadores: ReturnType<typeof useContadoresNav>
   favoritos: string[]
-  aoFavoritar: (url: string) => void
+  aoFavoritar: (url: string, titulo: string) => void
 }) {
   if (grupo.items.length === 0) return null
 
@@ -337,7 +344,7 @@ export function SidebarNav({ aoAbrirPaleta }: { aoAbrirPaleta: () => void }) {
   const daRota = grupoDaRota(pathname, grupos)
   const { abertos, alternar } = useGruposAbertos(usuario, daRota)
   const { colapsada, alternar: alternarColapso } = useBarraColapsada(usuario)
-  const { favoritos, alternar: alternarFavorito } = useFavoritos(usuario)
+  const { fixadas: favoritos, alternar: alternarFavorito } = useFavoritosDaTela()
   const { recentes, registrar } = useRecentes(usuario)
 
   /**
@@ -366,7 +373,6 @@ export function SidebarNav({ aoAbrirPaleta }: { aoAbrirPaleta: () => void }) {
     if (registro) registrar({ ...registro, em: Date.now() })
   }, [pathname, todosOsItens, registrar])
 
-  const itensFavoritos = todosOsItens.filter((item) => favoritos.includes(item.url))
   const nome = sessao?.displayName?.trim() || 'Usuário'
 
   return (
@@ -442,17 +448,15 @@ export function SidebarNav({ aoAbrirPaleta }: { aoAbrirPaleta: () => void }) {
 
         {/* FAVORITOS vem em SEGUNDO, e some quando está vazio: rótulo sem
             conteúdo é ruído, e um grupo vazio permanente ensinaria o operador
-            a pular aquela altura da barra para sempre. */}
-        <GrupoDaBarra
-          grupo={{ id: 'favoritos', title: 'Favoritos', items: itensFavoritos }}
-          aberto={abertos.includes('favoritos')}
-          aoAlternar={alternar}
-          pathname={pathname}
-          colapsada={colapsada}
-          contadores={contadores}
-          favoritos={favoritos}
-          aoFavoritar={alternarFavorito}
-        />
+            a pular aquela altura da barra para sempre.
+
+            A LISTA não sai mais dos itens de nav (D4, `localStorage`): sai das
+            views favoritas do contrato (D13), e por isso ela traz as duas
+            naturezas — a tela fixada pela ★ da barra E a consulta salva fixada
+            pela ★ da aba da listagem. Montar a partir de `todosOsItens` só
+            saberia mostrar a primeira, e a segunda sumiria da barra sem que
+            ninguém a tivesse soltado. */}
+        <GrupoFavoritos colapsada={colapsada} />
 
         {grupos.slice(1).map((grupo) => (
           <GrupoDaBarra

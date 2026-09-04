@@ -1,7 +1,7 @@
 import { renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { Monograma, iniciaisDe } from './monograma'
+import { MonogramaDoFunil, iniciaisDoFunil } from './monograma'
 import { realceDosDias } from './quadro-do-funil'
 
 /**
@@ -24,31 +24,31 @@ function etapa(rotDays: number | null) {
   }
 }
 
-describe('iniciaisDe', () => {
+describe('iniciaisDoFunil', () => {
   it('pega os dois primeiros termos', () => {
-    expect(iniciaisDe('Lívia Moreira')).toBe('LM')
-    expect(iniciaisDe('Henrique Ferro Silva')).toBe('HF')
+    expect(iniciaisDoFunil('Lívia Moreira')).toBe('LM')
+    expect(iniciaisDoFunil('Henrique Ferro Silva')).toBe('HF')
   })
 
   it('razão social não vira as iniciais do sufixo — o defeito medido na tela', () => {
     // Primeiro+último daria `MM` aqui, e `CS` em "Construtora Horizonte SA".
-    expect(iniciaisDe('MARIA HELENA ARQUITETURA ME')).toBe('MH')
-    expect(iniciaisDe('Construtora Horizonte SA')).toBe('CH')
+    expect(iniciaisDoFunil('MARIA HELENA ARQUITETURA ME')).toBe('MH')
+    expect(iniciaisDoFunil('Construtora Horizonte SA')).toBe('CH')
   })
 
   it('ignora termo de uma letra — a partícula não distingue ninguém', () => {
-    expect(iniciaisDe('Marina D Duarte')).toBe('MD')
+    expect(iniciaisDoFunil('Marina D Duarte')).toBe('MD')
   })
 
   it('nome de uma palavra dá uma letra, e vazio não quebra', () => {
-    expect(iniciaisDe('Construtora')).toBe('C')
-    expect(iniciaisDe('   ')).toBe('?')
+    expect(iniciaisDoFunil('Construtora')).toBe('C')
+    expect(iniciaisDoFunil('   ')).toBe('?')
   })
 })
 
-describe('Monograma', () => {
+describe('MonogramaDoFunil', () => {
   it('mostra as iniciais e diz o nome inteiro a quem ouve', () => {
-    renderWithQuery(<Monograma nome="Rafael Alves" />)
+    renderWithQuery(<MonogramaDoFunil nome="Rafael Alves" />)
 
     expect(screen.getByText('RA')).toBeInTheDocument()
     // O nome inteiro continua legível — o monograma é reconhecimento, não

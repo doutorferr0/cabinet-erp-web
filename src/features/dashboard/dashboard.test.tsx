@@ -168,8 +168,7 @@ describe('tela Dashboard', () => {
     expect(valor.style.color).toBe('var(--bad)')
   })
 
-  // INTEGRAÇÃO 2.0 (Cowork, 2026-09-03): quebrou no merge de PRs paralelas; a D37 (#532) religa.
-  it.skip('a agenda mostra só o que é de HOJE; o calendário conhece o mês inteiro', async () => {
+  it('a agenda mostra só o que é de HOJE; o calendário conhece o mês inteiro', async () => {
     renderRoute('/dashboard', servidor().stub)
 
     expect(await screen.findByText('Revisar orçamento')).toBeInTheDocument()
@@ -184,23 +183,19 @@ describe('tela Dashboard', () => {
     expect(within(linha).getByText('orçamento')).toBeInTheDocument()
   })
 
-  // INTEGRAÇÃO 2.0 (Cowork, 2026-09-03): quebrou no merge de PRs paralelas; a D37 (#532) religa.
-  it.skip('o feed de atividade mostra quem, o quê e a hora; e só linka o que tem ficha', async () => {
-    renderRoute('/dashboard', servidor().stub)
-
-    expect(await screen.findByText(/enviou o orçamento ao cliente/)).toBeInTheDocument()
-    expect(screen.getByText('12:40')).toBeInTheDocument()
-
-    // `quote` tem ficha: a linha inteira é o link.
-    const comFicha = screen.getByText(/enviou o orçamento ao cliente/).closest('a')
-    expect(comFicha).toHaveAttribute('href', '/vendas/orcamentos/orc-9')
-
-    // `partner` não tem endereço inequívoco (cliente/fornecedor/profissional
-    // conforme o papel, e o DTO não publica o papel): some o CLIQUE, não o dado.
-    const semFicha = screen.getByText(/confirmou a visita técnica/)
-    expect(semFicha.closest('a')).toBeNull()
-    expect(semFicha).toBeInTheDocument()
-  })
+  /**
+   * O FEED DE ATIVIDADE SAIU DESTA TELA, e o caso foi para onde ele mora (D37).
+   *
+   * A D20 reescreveu o dashboard pelo mockup — saudação, KPIs, calendário,
+   * agenda e A fazer — e o `FeedDeAtividade` não entrou na composição nova. O
+   * commit não o menciona (fala de unificar as três caixas e da rota
+   * `/boletim`), então ele saiu em silêncio; hoje o único consumidor é o
+   * `HubDeModulo` (D26). Remontá-lo aqui seria desfazer uma reescrita feita com
+   * o mockup ao lado, o que a D37 não faz — a passada é de consistência, não de
+   * desenho. O que ela fez foi não perder a COBERTURA: o caso "quem, o quê e a
+   * hora, e só linka o que tem ficha" está em `hub-de-modulo.test.tsx`, que é
+   * onde o feed é montado de verdade.
+   */
 
   it('a cabeça da tela tem UM Gambarino e as duas ações do mockup', async () => {
     renderRoute('/dashboard', servidor().stub)

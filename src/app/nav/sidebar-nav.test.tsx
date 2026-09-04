@@ -22,10 +22,25 @@ const EMPRESAS = [
 ]
 
 let fetchStub: FetchStub
+let servidorFalso: ReturnType<typeof instalarServidor>
+/** As views que `/api/me/views` devolve — mutável, para a ★ ter efeito. */
+let views: unknown[]
 
 beforeEach(() => {
   localStorage.clear()
+  views = []
   const servidor = instalarServidor({
+    '/api/me/views': (chamada) => {
+      if (chamada.metodo === 'POST') {
+        const corpo = chamada.corpo as Record<string, unknown>
+        views = [...views, { ...corpo, id: 'nova' }]
+        return new Response(JSON.stringify({ ...corpo, id: 'nova' }), {
+          status: 201,
+          headers: { 'content-type': 'application/json' },
+        })
+      }
+      return views
+    },
     '/auth/tenants': () => EMPRESAS,
     '/auth/me': () => ({
       organizationId: 'org-1',
@@ -35,6 +50,7 @@ beforeEach(() => {
     }),
   })
   fetchStub = servidor.fetch
+  servidorFalso = servidor
 })
 
 afterEach(() => {
@@ -144,6 +160,15 @@ describe('SidebarNav', () => {
     })
   })
 
+  /**
+   * A ★ da barra grava no CONTRATO, não no navegador (D37).
+   *
+   * A D4 guardava as marcas em `localStorage` e a D13 entregou os favoritos por
+   * `saved_views`, órfã. Ficou a casca da D4 com a fonte da D13 — e é por isso
+   * que a asserção aqui é uma REQUISIÇÃO, e não uma chave de armazenamento.
+   * O grupo em si (as duas naturezas, o sumiço sem reload, o corpo do `PUT`) é
+   * assunto de `favoritos.test.tsx`, que monta o servidor completo.
+   */
   it('a ★ cria o grupo Favoritos, que não existia vazio', async () => {
     setup()
     const user = userEvent.setup()
@@ -151,11 +176,19 @@ describe('SidebarNav', () => {
 
     expect(within(barra()).queryByText('Favoritos')).not.toBeInTheDocument()
 
-    await user.click(within(barra()).getByRole('button', { name: 'Marcar Dashboard' }))
+    await user.click(within(barra()).getByRole('button', { name: 'Fixar Dashboard nos favoritos' }))
 
-    expect(within(barra()).getByText('Favoritos')).toBeInTheDocument()
-    const favoritos = JSON.parse(localStorage.getItem('cabinet.nav.favoritos') ?? '{}')
-    expect(favoritos['emp-1']).toEqual(['/dashboard'])
+    await waitFor(() => expect(within(barra()).getByText('Favoritos')).toBeInTheDocument())
+    const escritas = servidorFalso.em('/api/me/views').filter((c) => c.metodo === 'POST')
+    expect(escritas).toHaveLength(1)
+    expect(escritas[0]?.corpo).toMatchObject({
+      route: '/dashboard',
+      name: 'Dashboard',
+      favorite: true,
+      filters: [],
+    })
+    // Nada foi para o navegador: a chave da D4 não existe mais.
+    expect(localStorage.getItem('cabinet.nav.favoritos')).toBeNull()
   })
 
   it('colapsa a 56px pelo botão e pela tecla, e o estado fica gravado', async () => {

@@ -187,7 +187,7 @@ export function TelaDeListagem<T>({
   const abrir = actions.find((a) => a.id === ACAO_ABRIR)
   // Ação de registro desce para a barra de seleção; o que não depende de linha
   // fica no `⋯`. `Consul.` sai das duas: quem a faz agora é a linha.
-  const acoesDeSelecao = actions.filter(
+  const acoesDeLote = actions.filter(
     (a) => a.needsSelection === true && a.id !== ACAO_ABRIR && a.disabled !== true,
   )
   const secundarias = actions.filter(
@@ -218,7 +218,7 @@ export function TelaDeListagem<T>({
         queryKey={queryKey}
         fetcher={fetcher}
         actions={acoesDaTabela}
-        acoesDeSelecao={acoesDeSelecao}
+        acoesDeLote={acoesDeLote}
         {...(abrir?.onClick && abrir.disabled !== true
           ? // A linha abre em CONSULTA, que é o uso mais frequente de um
             // cadastro. Recurso cujo contrato ainda não publica detalhe por id

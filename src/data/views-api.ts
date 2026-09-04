@@ -85,14 +85,39 @@ export function corpoDaView(
  *
  * É a mesma regra que o mock já aplica ao ler lixo do `localStorage`: perder as
  * views é aborrecimento, perder a tela por causa delas é defeito.
+ *
+ * ## `retry: false` e falha que vira lista vazia (D37)
+ *
+ * O argumento acima blindava a FORMA da resposta e parava aí. Faltava a outra
+ * metade: a requisição que não responde. Desde que os favoritos da barra saíram
+ * do `localStorage` e passaram a vir daqui, **toda rota autenticada consulta
+ * esta coleção ao montar a casca** — inclusive nos ~40 testes de tela cujo
+ * servidor falso não conhece o caminho e devolve `undefined`. Com o `retry`
+ * padrão do TanStack (3 tentativas com backoff), a consulta ficava insistindo
+ * em silêncio e ATRASAVA o fluxo da tela testada: um caso de orçamento passou a
+ * contar uma escrita onde havia duas, e a mensagem falava de payload, não de
+ * views. Reproduzido isolado, 3 de 3.
+ *
+ * Favorito é CONVENIÊNCIA. Insistir por ele atrasa o que o operador está
+ * fazendo, e falhar por ele apaga a barra — nas duas pontas o custo é maior que
+ * o benefício. Sem repetição, e a falha vira lista vazia: a barra fica sem o
+ * grupo de favoritos e o resto da tela não sabe que houve pergunta.
  */
 export function useViews() {
   return useQuery({
     queryKey: CHAVE_VIEWS,
+    retry: false,
     queryFn: async () => {
-      const resposta: RespostaDaApi = await listMyViews()
-      const dados = dadosOuErro<SavedViewDto[]>(resposta, 'Falha ao carregar as consultas salvas.')
-      return Array.isArray(dados) ? dados : []
+      try {
+        const resposta: RespostaDaApi = await listMyViews()
+        const dados = dadosOuErro<SavedViewDto[]>(
+          resposta,
+          'Falha ao carregar as consultas salvas.',
+        )
+        return Array.isArray(dados) ? dados : []
+      } catch {
+        return []
+      }
     },
   })
 }

@@ -86,6 +86,13 @@ function servidor(escritas: Escrita[], logins: unknown[], statusInicial = 401) {
     // O painel de Atividades (#90) passou a montar nesta rota; sem resposta
     // aqui o `fetch` do teste devolve `undefined` e a falha aparece longe.
     if (url.includes('/api/activities')) return json({ rows: [], total: 0 })
+    // As VIEWS SALVAS entraram na barra lateral na D37: os favoritos deixaram
+    // de morar em `localStorage` e passaram a vir do contrato, então toda rota
+    // autenticada consulta esta coleção ao montar a casca. É a mesma armadilha
+    // do bloco acima — sem dublê o `fetch` devolve `undefined`, o `retry` do app
+    // insiste em silêncio e a falha aparece longe do que a causou (aqui, na
+    // contagem de escritas do orçamento).
+    if (url.includes('/api/me/views')) return json([])
 
     if (url.includes('/api/quotes')) {
       if (metodo !== 'GET') {

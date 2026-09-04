@@ -405,8 +405,7 @@ describe('tela de acesso', () => {
    * essa a diferença entre convidar e gerar senha. O que o aviso precisa dizer
    * é para ONDE saiu, que é o que o administrador confere.
    */
-  // INTEGRAÇÃO 2.0 (Cowork, 2026-09-03): quebrou no merge de PRs paralelas; a D37 (#532) religa.
-  it.skip('Convidar manda o link e o recibo diz para onde saiu, sem senha', async () => {
+  it('Convidar manda o link e o recibo diz para onde saiu, sem senha', async () => {
     const { stub, escritas } = servidor()
     const { user } = renderRoute('/config/usuarios', stub)
 

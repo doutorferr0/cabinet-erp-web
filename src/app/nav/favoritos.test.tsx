@@ -1,8 +1,9 @@
-// INTEGRAÇÃO 2.0 (Cowork, 2026-09-03): a D4 (#519) entregou a barra única com
+// INTEGRAÇÃO 2.0 — LIGADA na D37 (#532). A D4 (#519) entregou a barra única com
 // Favoritos em localStorage; a D13 (#513) entregou Favoritos por saved_views
-// (contrato Proposto) montados no shell ANTIGO. No merge ficou a barra da D4;
-// `GrupoFavoritos`/`EstrelaDaTela` daqui ainda não estão ligados nela. Ligar
-// (e apagar o localStorage da D4) é item da D37 (#532). Até lá, skip.
+// (contrato Proposto) montados no shell ANTIGO, que o merge descartou. Ficou a
+// CASCA da D4 com a FONTE da D13: `GrupoFavoritos` monta na barra e
+// `useFavoritosDaTela` move a ★ do item de nav para o contrato. O
+// `localStorage` de favoritos saiu do `estado.ts`.
 import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -100,7 +101,7 @@ function servidorDeViews(iniciais: unknown[]) {
 
 afterEach(() => vi.unstubAllGlobals())
 
-describe.skip('grupo Favoritos', () => {
+describe('grupo Favoritos', () => {
   it('lista as views fixadas de TODAS as telas, com o destino de cada uma', async () => {
     const { stub } = servidorDeViews([ATRASADAS, DA_SEMANA])
     renderRoute('/compras/ordens', stub)
@@ -120,8 +121,10 @@ describe.skip('grupo Favoritos', () => {
     const { stub } = servidorDeViews([{ ...ATRASADAS, favorite: false }])
     renderRoute('/compras/ordens', stub)
 
-    // A barra montou (as telas do módulo estão lá) e o grupo de favoritos não.
-    await screen.findByRole('navigation', { name: /^Telas de/ })
+    // A barra montou e o grupo de favoritos não. O marco é o `<nav>` da barra
+    // inteira: a D4 nomeia os grupos com `<ul aria-label>`, não com um `<nav>`
+    // por módulo como o shell antigo em que este caso foi escrito (D37).
+    await screen.findByRole('navigation', { name: 'Navegação principal' })
     await waitFor(() =>
       expect(
         screen.queryByRole('navigation', { name: 'Consultas favoritas' }),
@@ -161,6 +164,12 @@ describe.skip('grupo Favoritos', () => {
     const { stub, escritas } = servidorDeViews([])
     const { user } = renderRoute('/compras/ordens', stub)
 
+    // O grupo do item precisa estar ABERTO para a ★ existir no DOM: a barra da
+    // D4 só monta os itens do grupo aberto, e a rota deste caso é de Compras.
+    // Não é detalhe do teste — é o gesto real de quem fixa uma tela de outro
+    // módulo, e escondê-lo com um `getAll` frouxo esconderia a regressão do dia
+    // em que o grupo parasse de abrir.
+    await user.click(await screen.findByRole('button', { name: 'Estoque' }))
     await user.click(await screen.findByRole('button', { name: /^Fixar Movimentação/ }))
 
     // Nasce JÁ fixada: forçar `favorite: false` no servidor obrigaria a estrela a

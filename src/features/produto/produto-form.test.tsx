@@ -150,8 +150,7 @@ function servidorComEscrita(resposta: () => Response, rotas: Record<string, () =
 }
 
 describe('listagem de produtos', () => {
-  // INTEGRAÇÃO 2.0 (Cowork, 2026-09-03): colunas/KPIs mudaram no merge de PRs paralelas (D14 x D34); a D37 (#532) religa.
-  it.skip('mostra as colunas que o contrato preenche', async () => {
+  it('mostra as colunas que o contrato preenche', async () => {
     renderRoute('/cadastros/produtos', servidorDeProdutos())
 
     expect(await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')).toBeInTheDocument()
@@ -178,15 +177,25 @@ describe('listagem de produtos', () => {
   // `code`/`description`/`active`. Clicar em `Marca` mandaria `sortBy=brandName`
   // e voltaria 400: a tela quebraria no CLIQUE, não na carga — o pior lugar,
   // porque o operador associa a quebra ao que ele fez.
-  // INTEGRAÇÃO 2.0 (Cowork, 2026-09-03): colunas/KPIs mudaram no merge de PRs paralelas (D14 x D34); a D37 (#532) religa.
-  it.skip('a classificação não é ordenável enquanto a whitelist não a aceitar', async () => {
+  it('a classificação não é ordenável enquanto a whitelist não a aceitar', async () => {
     renderRoute('/cadastros/produtos', servidorDeProdutos())
 
     await screen.findByText('VERTZ')
-    expect(screen.queryByRole('button', { name: /Marca/ })).toBeNull()
-    expect(screen.queryByRole('button', { name: /Fábrica/ })).toBeNull()
+    // A pergunta é sobre o CABEÇALHO DA TABELA, e por isso ela é feita dentro
+    // dele. Fora, `/Marca/` casa os botões de favoritar da sidebar
+    // (`aria-label="Marcar Dashboard"`, D4) — a busca global achava dois
+    // "Marca" e reprovava com "found multiple elements", que é o oposto do que
+    // este caso afirma. Escopo em vez de regex mais fechada: o que se quer
+    // dizer é "neste cabeçalho não há botão", não "não há esta string na tela".
+    const tabela = screen.getByRole('table')
+    // `?? tabela` em vez de `!`: se a tabela um dia perder o `<thead>`, o escopo
+    // cai para ela inteira — ainda fora da barra, que é o que este caso precisa
+    // excluir — em vez de estourar com um erro que não fala de ordenação.
+    const cabecalho = within(tabela).getAllByRole('rowgroup')[0] ?? tabela
+    expect(within(cabecalho).queryByRole('button', { name: /Marca/ })).toBeNull()
+    expect(within(cabecalho).queryByRole('button', { name: /Fábrica/ })).toBeNull()
     // Contraprova: a coluna que a whitelist ACEITA continua clicável.
-    expect(screen.getByRole('button', { name: /Nosso Código/ })).toBeInTheDocument()
+    expect(within(cabecalho).getByRole('button', { name: /Nosso Código/ })).toBeInTheDocument()
   })
 
   // A whitelist do servidor é `code`/`description`/`active`: mandar o nome em

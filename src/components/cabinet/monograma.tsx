@@ -57,9 +57,50 @@ const ORDEM_DAS_TINTS = Object.keys(TINTS) as TintDeMonograma[]
 const PARTICULAS = new Set(['de', 'da', 'do', 'das', 'dos', 'e', 'del', 'di', 'du', 'y'])
 
 /**
- * Primeira letra da primeira palavra + primeira da última. Nome de uma palavra
+ * Sufixo de razão social. Não é nome de ninguém — é a forma jurídica, e ela
+ * repete no cadastro inteiro: por primeira+última, metade dos fornecedores
+ * terminaria no `L` de `Ltda`. `s/a` entra com a barra porque é assim que o
+ * operador digita.
+ */
+const SUFIXOS_SOCIETARIOS = new Set([
+  'ltda',
+  'ltda.',
+  'me',
+  'sa',
+  's/a',
+  's.a.',
+  'epp',
+  'eireli',
+  'mei',
+  'cia',
+  'cia.',
+])
+
+/**
+ * Primeira letra da primeira palavra + primeira da SEGUNDA. Nome de uma palavra
  * só usa as duas primeiras letras dela ("Vertz" → VE) — uma letra sozinha
  * ficaria perdida no meio da caixa e colidiria com metade do cadastro.
+ *
+ * ## Era primeira+ÚLTIMA, e a D37 trocou (decisão de convenção)
+ *
+ * Primeira+última é a convenção para NOME DE GENTE, e este repositório é um ERP
+ * onde a maioria dos nomes é razão social. **A última palavra de razão social é
+ * `Ltda`, `ME` ou `S/A`** — primeira+última faria metade do cadastro terminar na
+ * mesma letra (`Vertz Iluminação Ltda` → `VL`, `Mister LED Comercio de
+ * Iluminação Ltda` → `ML` só por acaso).
+ *
+ * A troca não é preferência: **dois lugares independentes já tinham chegado
+ * nela, e um deles mediu na tela.** `bloco-identidade.test.tsx` (D16) cobrava
+ * `Vertz Iluminação Ltda` → `VI` — e reprovava, porque esta função dizia `VL`;
+ * `features/crm/monograma.tsx` (D22) escreveu a própria cópia com a regra dos
+ * dois primeiros, registrando que `MARIA HELENA ARQUITETURA ME` daria `MM` pela
+ * outra. Três implementações, duas convenções, um teste vermelho na base — a
+ * D37 ficou com a que dois deles pediam e tem argumento de domínio.
+ *
+ * O que a mudança alcança: nome de PESSOA com três partes ou mais passa a usar
+ * o nome do meio (`José dos Santos Oliveira` → `JS`, não `JO`). Trocar de volta
+ * é editar estas quatro linhas — mas então `bloco-identidade` volta a reprovar,
+ * e é isso que precisa ser decidido junto, não em silêncio.
  */
 export function iniciaisDe(nome: string): string {
   const palavras = nome
@@ -67,14 +108,21 @@ export function iniciaisDe(nome: string): string {
     .split(/\s+/)
     .filter((p) => p.length > 0 && !PARTICULAS.has(p.toLowerCase()))
 
-  const primeira = palavras.at(0)
-  const ultima = palavras.at(-1)
-  if (!primeira || !ultima) return '—'
+  // Sufixo societário não distingue ninguém: metade do cadastro termina em
+  // `Ltda`. O critério é a PALAVRA, não o comprimento — a D16 cortava tudo com
+  // menos de três letras e comia `VIA HF` (que virava `VI`) e `Al`. Preferência,
+  // não exclusão: sobrando só sufixo, ele vale, senão `HF Ltda` não teria sigla.
+  const nomes = palavras.filter((p) => !SUFIXOS_SOCIETARIOS.has(p.toLowerCase()))
+  const uteis = nomes.length > 0 ? nomes : palavras
+
+  const primeira = uteis.at(0)
+  const segunda = uteis.at(1)
+  if (!primeira) return '—'
   // Por comprimento, não por igualdade de texto: "Ana Ana" tem duas palavras e
   // devolve AA, não AN.
-  if (palavras.length === 1) return primeira.slice(0, 2).toUpperCase()
+  if (!segunda) return primeira.slice(0, 2).toUpperCase()
 
-  return `${primeira.slice(0, 1)}${ultima.slice(0, 1)}`.toUpperCase()
+  return `${primeira.slice(0, 1)}${segunda.slice(0, 1)}`.toUpperCase()
 }
 
 /**
@@ -123,18 +171,18 @@ export function Monograma({ nome, cor, tamanho, className }: MonogramaProps) {
 }
 
 /**
- * Iniciais no critério da D16 (#484): primeira letra das duas primeiras
- * palavras com mais de 2 letras (ignora "de", "e"); nome curto/vazio cai para
- * os 2 primeiros caracteres. É o que `BlocoIdentidade` e `LookupCombo` esperam;
- * `iniciaisDe` (D3) fica para a grade. Unificar é item da D37.
+ * `monograma` É `iniciaisDe` (D37).
+ *
+ * Este arquivo chegou a ter DUAS funções de iniciais, com a segunda anunciando a
+ * dívida: *"é o que `BlocoIdentidade` e `LookupCombo` esperam; `iniciaisDe` (D3)
+ * fica para a grade. Unificar é item da D37"*. Duas regras para a mesma pergunta,
+ * no mesmo arquivo, cada uma com o seu teste — e a mesma entidade saía com duas
+ * siglas conforme a tela que a mostrasse.
+ *
+ * A regra que ficou junta o que cada uma acertava: as DUAS PRIMEIRAS palavras
+ * (D16/D22, porque a última de uma razão social é `Ltda`), partícula fora (D3,
+ * porque `Maria da Silva` é MS e não MD) e palavra curta preterida mas não
+ * proibida (D16 cortava por comprimento e perdia `Al`). Os casos de borda dos
+ * três testes passam sem exceção nenhuma.
  */
-export function monograma(nome: string): string {
-  const partes = nome
-    .trim()
-    .split(/\s+/)
-    .filter((parte) => parte.length > 2 && /\p{L}/u.test(parte))
-  if (partes.length === 0) return nome.trim().slice(0, 2).toLocaleUpperCase()
-  const primeira = partes[0] ?? ''
-  const segunda = partes[1] ?? ''
-  return (primeira.slice(0, 1) + (segunda.slice(0, 1) || primeira.slice(1, 2))).toLocaleUpperCase()
-}
+export const monograma = iniciaisDe

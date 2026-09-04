@@ -328,7 +328,7 @@ describe('modo Planilha — a terceira densidade', () => {
 })
 
 describe('a barra de lote FLUTUA — não empurra a grade', () => {
-  const acoesDeSelecao = [{ id: 'imprimir', label: 'Imprimir' }]
+  const acoesDeLote = [{ id: 'imprimir', label: 'Imprimir' }]
 
   it('a barra nasce dentro de um ancoradouro de altura ZERO', async () => {
     const { user } = renderWithQuery(
@@ -336,7 +336,7 @@ describe('a barra de lote FLUTUA — não empurra a grade', () => {
         columns={columns}
         queryKey={['produtos-lote']}
         fetcher={(state) => produtosMock.list(state, 0)}
-        acoesDeSelecao={acoesDeSelecao}
+        acoesDeLote={acoesDeLote}
         aoAbrirLinha={() => {}}
       />,
     )
@@ -369,7 +369,7 @@ describe('a barra de lote FLUTUA — não empurra a grade', () => {
         columns={columns}
         queryKey={['produtos-lote-saida']}
         fetcher={(state) => produtosMock.list(state, 0)}
-        acoesDeSelecao={acoesDeSelecao}
+        acoesDeLote={acoesDeLote}
         aoAbrirLinha={() => {}}
       />,
     )

@@ -55,9 +55,9 @@ describe('PaginaDeAuth', () => {
     expect(screen.getByText('sub')).toHaveClass('t-meta')
   })
 
-  it('a bancada é decoração — o ornamento não entra na árvore de acessibilidade', () => {
+  it('a bancada é decoração — a forma não entra na árvore de acessibilidade', () => {
     const { container } = renderWithQuery(<PaginaDeAuth titulo="Entrar">campos</PaginaDeAuth>)
-    const ornamento = container.querySelector('[data-slot="ornamento"]')
-    expect(ornamento).toHaveAttribute('aria-hidden', 'true')
+    const forma = container.querySelector('[data-slot="forma"]')
+    expect(forma).toHaveAttribute('aria-hidden', 'true')
   })
 })

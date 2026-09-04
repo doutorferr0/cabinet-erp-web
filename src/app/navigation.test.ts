@@ -196,19 +196,18 @@ describe('itemDaRota', () => {
 })
 
 describe('aparência emprestada', () => {
-  // As quatro telas fora da tabela de shape×cor travada pelo user. O que este
-  // teste guarda é a REGRA, não a estética: só quem não tem módulo próprio
-  // empresta, e cada uma leva desenho seu — mesma cor com mesmo desenho faria a
-  // fileira da sidebar deixar de ser um mapa.
-  it('só tela sem módulo próprio empresta cor, e o desenho é dela', () => {
+  // As quatro telas fora da tabela de cor travada pelo user. O que este teste
+  // guarda é a REGRA, não a estética: só quem não tem módulo próprio empresta,
+  // e o empréstimo para no item — a folha continua sem cor de módulo.
+  it('só tela sem módulo próprio empresta cor', () => {
     const itens = navGroups.flatMap((grupo) => grupo.items)
     const comEmprestimo = itens.filter((item) => item.aparencia)
 
     expect(comEmprestimo.map((item) => [item.url, item.aparencia])).toEqual([
-      ['/dashboard', { modulo: 'boletim', shape: 'dashboard' }],
-      ['/tarefas', { modulo: 'boletim', shape: 'tarefas' }],
-      ['/planner', { modulo: 'boletim', shape: 'planner' }],
-      ['/cadastros/colaboradores', { modulo: 'clientes', shape: 'colaboradores' }],
+      ['/dashboard', { modulo: 'boletim' }],
+      ['/tarefas', { modulo: 'boletim' }],
+      ['/planner', { modulo: 'boletim' }],
+      ['/cadastros/colaboradores', { modulo: 'clientes' }],
     ])
 
     // Nenhuma delas é conhecida por `moduloDaRota`, e é o que mantém o
@@ -222,10 +221,6 @@ describe('aparência emprestada', () => {
     for (const item of itens) {
       if (moduloDaRota(item.url)) expect(item.aparencia).toBeUndefined()
     }
-
-    // Desenhos distintos entre si.
-    const shapes = comEmprestimo.map((item) => item.aparencia?.shape)
-    expect(new Set(shapes).size).toBe(shapes.length)
   })
 })
 

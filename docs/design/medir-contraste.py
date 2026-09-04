@@ -24,12 +24,22 @@ As tabelas do corpo do DESIGN.md continuam sendo as da 1.7 — foram medidas
 contra tokens que já não existem, e quem as regenera é D30. A medição VÁLIDA da
 2.0 é a que sai daqui.
 
+**O QUE MUDOU NA RODADA 5 (#527).** A paleta passou a existir DUAS vezes: hex
+no `:root` e `oklch()` dentro de um `@supports`. Este script mede a segunda —
+que é a que todo navegador desde 2023 pinta — e por isso desce no `@supports`
+(`declaracoes`), entende `oklch()` e sabe dizer quando um valor sai do gamut
+sRGB. O hex continua sendo conferido: o front-matter do DESIGN.md é comparado
+com ELE (é o valor escrito no CSS), e `conferir_paralela` garante que as duas
+metades não se afastaram — sem isso, um degrau corrigido de um lado só
+publicaria cores diferentes conforme o navegador, sem quebrar nada.
+
 Não altera cor nenhuma: é instrumento de medição. Trocar cor por causa de um
 número reprovado é decisão do user.
 """
 
 from __future__ import annotations
 
+import math
 import re
 import sys
 from pathlib import Path
@@ -64,7 +74,35 @@ def sem_comentario(css: str) -> str:
     return re.sub(r"/\*[\s\S]*?\*/", "", css)
 
 
-def tabelas() -> tuple[dict[str, str], dict[str, str]]:
+def declaracoes(css: str, com_oklch: bool) -> list[tuple[str, dict[str, str]]]:
+    """(seletor, declarações) de cada bloco, descendo no `@supports` quando pedido.
+
+    **`com_oklch` escolhe QUAL das duas paletas medir**, e as duas existem de
+    verdade: as rampas e os neutros são declarados em hex no `:root` e de novo
+    em `oklch()` dentro de um `@supports` (#527). Todo navegador desde 2023
+    aplica o segundo; medir só o primeiro seria medir a cor que quase ninguém
+    vê, e ignorar o segundo foi o que fez a versão anterior deste script passar
+    verde sem enxergar 57 tokens.
+
+    `@media`, `@keyframes` e `@font-face` continuam de fora: o seletor não bate
+    `:root` nem `.dark` e as declarações de dentro não são token de tema.
+    """
+    saida: list[tuple[str, dict[str, str]]] = []
+    for seletor, corpo in blocos(css):
+        # O seletor é tudo que vem depois do `}` anterior; no primeiro bloco de
+        # `index.css` isso inclui os `@import` e o `@custom-variant`. Cortar no
+        # último `;` deixa só o seletor — sem isso os aliases do `index.css`
+        # nunca entram no mapa, calados.
+        alvo = seletor.split(";")[-1].replace("\n", " ").strip()
+        if alvo.startswith("@supports"):
+            if com_oklch:
+                saida.extend(declaracoes(corpo, com_oklch))
+            continue
+        saida.append((alvo, dict(DECL.findall(corpo))))
+    return saida
+
+
+def tabelas(com_oklch: bool = True) -> tuple[dict[str, str], dict[str, str]]:
     """(claro, escuro) — os dois mapas de token cru, aliases do index.css inclusos.
 
     O escuro parte do claro e recebe por cima o que `.dark` redefine: é a
@@ -74,13 +112,7 @@ def tabelas() -> tuple[dict[str, str], dict[str, str]]:
     claro: dict[str, str] = {}
     escuro_delta: dict[str, str] = {}
     for arquivo in (TOKENS, INDEX):
-        for seletor, corpo in blocos(sem_comentario(arquivo.read_text(encoding="utf-8"))):
-            pares = dict(DECL.findall(corpo))
-            # O seletor é tudo que vem depois do `}` anterior; no primeiro bloco
-            # de `index.css` isso inclui os `@import` e o `@custom-variant`.
-            # Cortar no último `;` deixa só o seletor — sem isso os aliases do
-            # `index.css` nunca entram no mapa, calados.
-            alvo = seletor.split(";")[-1].replace("\n", " ").strip()
+        for alvo, pares in declaracoes(sem_comentario(arquivo.read_text(encoding="utf-8")), com_oklch):
             if alvo.startswith(":root"):
                 claro.update(pares)
             elif alvo.startswith(".dark"):
@@ -96,6 +128,7 @@ HEX = re.compile(r"^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
 VAR = re.compile(r"^var\(\s*(--[a-z0-9-]+)\s*\)$")
 HSL = re.compile(r"^hsl\(\s*([\d.]+)\s+([\d.]+)%\s+([\d.]+)%\s*\)$")
 MIX = re.compile(r"^color-mix\(\s*in\s+(\w+)\s*,\s*(.+)\s*\)$")
+OKLCH = re.compile(r"^oklch\(\s*([\d.]+)(%?)\s+([\d.]+)\s+([\d.]+)\s*\)$")
 
 
 def _fatias(texto: str) -> list[str]:
@@ -148,6 +181,42 @@ def de_oklab(lab: tuple[float, float, float]) -> tuple[float, float, float]:
     )
 
 
+def oklch_lch(m: re.Match[str]) -> tuple[float, float, float]:
+    """(L, C, H) de um `oklch(...)`. `L` aceita as duas escritas: 0..1 e 0..100%."""
+    L = float(m.group(1)) / (100 if m.group(2) else 1)
+    return L, float(m.group(3)), float(m.group(4))
+
+
+def oklch_linear(L: float, C: float, H: float) -> tuple[float, float, float]:
+    """sRGB LINEAR, sem clamp — é o que revela se a cor cabe no gamut."""
+    rad = math.radians(H)
+    lab = (L, C * math.cos(rad), C * math.sin(rad))
+    l = (lab[0] + 0.3963377774 * lab[1] + 0.2158037573 * lab[2]) ** 3
+    m_ = (lab[0] - 0.1055613458 * lab[1] - 0.0638541728 * lab[2]) ** 3
+    s_ = (lab[0] - 0.0894841775 * lab[1] - 1.2914855480 * lab[2]) ** 3
+    return (
+        4.0767416621 * l - 3.3077115913 * m_ + 0.2309699292 * s_,
+        -1.2684380046 * l + 2.6097574011 * m_ - 0.3413193965 * s_,
+        -0.0041960863 * l - 0.7034186147 * m_ + 1.7076147010 * s_,
+    )
+
+
+def de_oklch(L: float, C: float, H: float) -> Cor:
+    """OKLCH -> sRGB. Fora do gamut, `gama()` corta canal a canal.
+
+    O corte é a leitura CONSERVADORA, não a do browser: Chrome e Safari mapeiam
+    para o gamut da tela preservando matiz, e numa tela P3 boa parte destas
+    cores sai mais saturada do que aqui. Medir contraste em sRGB clipado dá o
+    PISO — que é o número que a WCAG pede.
+    """
+    return (*(gama(v) for v in oklch_linear(L, C, H)), 1.0)
+
+
+def fora_do_gamut(valor: str) -> bool:
+    m = OKLCH.match(valor.split("/*")[0].strip())
+    return bool(m) and any(v < -0.002 or v > 1.002 for v in oklch_linear(*oklch_lch(m)))
+
+
 def resolver(valor: str, mapa: dict[str, str], profundidade: int = 0) -> Cor:
     """Um valor de token → sRGB + alfa. Segue `var()`, entende hex, hsl e color-mix."""
     valor = valor.split("/*")[0].strip()
@@ -181,6 +250,10 @@ def resolver(valor: str, mapa: dict[str, str], profundidade: int = 0) -> Cor:
             int(hh // 60) % 6
         ]
         return (*[v + l - c / 2 for v in base], 1.0)
+
+    m = OKLCH.match(valor)
+    if m:
+        return de_oklch(*oklch_lch(m))
 
     m = MIX.match(valor)
     if m:
@@ -372,6 +445,57 @@ def tabela(nome: str, mapa: dict[str, str]) -> tuple[str, int]:
     return "\n".join(linhas), reprovas
 
 
+# ---------------------------------------------------------------- as duas paletas
+
+# Distância em OKLab que separa "a mesma cor, arredondada" de "outra cor". Os
+# degraus vizinhos de uma rampa estão a 0,10 ou mais; o pior par de hoje
+# (`--violet-200`) está a 0,053, e um degrau trocado por engano bateria em 0,1.
+LIMITE_PARALELA = 0.06
+
+
+def distancia_oklab(a: Cor, b: Cor) -> float:
+    la, lb = para_oklab(a[:3]), para_oklab(b[:3])
+    return sum((la[i] - lb[i]) ** 2 for i in range(3)) ** 0.5
+
+
+def conferir_paralela() -> int:
+    """A paleta existe DUAS vezes — hex no `:root`, `oklch()` no `@supports`.
+
+    Um degrau corrigido de um lado só publica cores diferentes conforme o
+    navegador, e não quebra nada: a tela abre igual, com a cor errada. Esta
+    conferência é o que impede as duas metades de se afastarem em silêncio —
+    e é também onde o front-matter do DESIGN.md fecha a corrente, porque ele é
+    conferido contra o hex e o hex é conferido contra o oklch.
+
+    Fora do gamut sRGB não é erro: é o que OKLCH permite pedir, e cada
+    navegador mapeia para a tela que tem. Sai como REGISTRO, com a contagem,
+    porque um salto grande na lista é sinal de que alguém puxou o croma sem
+    olhar.
+    """
+    hex_claro, hex_escuro = tabelas(com_oklch=False)
+    okl_claro, okl_escuro = tabelas(com_oklch=True)
+    problemas, fora = 0, set()
+    for tema, hexes, okls in (("claro", hex_claro, okl_claro), ("escuro", hex_escuro, okl_escuro)):
+        for nome, valor in okls.items():
+            if not OKLCH.match(valor.split("/*")[0].strip()):
+                continue
+            if fora_do_gamut(valor):
+                fora.add(nome)
+            cru = hexes.get(nome)
+            if cru is None:
+                print(f"×  --{nome} ({tema}): em oklch e SEM hex de fallback")
+                problemas += 1
+                continue
+            d = distancia_oklab(resolver(valor, okls), resolver(cru, hexes))
+            if d >= LIMITE_PARALELA:
+                print(f"×  --{nome} ({tema}): {valor.strip()} × {cru.strip()} — {d:.3f} em OKLab")
+                problemas += 1
+    if fora:
+        print(f"registro: {len(fora)} token(s) fora do gamut sRGB — medidos com corte por canal")
+    print("as duas paletas dizem a mesma coisa" if not problemas else f"{problemas} divergência(s) entre hex e oklch")
+    return problemas
+
+
 # ---------------------------------------------------------------- frontmatter
 
 # Nome no YAML → token. O YAML do DESIGN.md é a ficha que ferramenta de design
@@ -427,7 +551,10 @@ def main() -> None:
     claro, escuro = tabelas()
 
     if "--frontmatter" in sys.argv:
-        raise SystemExit(1 if conferir_frontmatter(claro) else 0)
+        # Contra o HEX declarado, e não contra o oklch que pinta: o YAML copia
+        # o valor que está escrito no CSS, e quem garante que os dois lados da
+        # paleta são a mesma cor é `conferir_paralela`.
+        raise SystemExit(1 if conferir_frontmatter(tabelas(com_oklch=False)[0]) else 0)
 
     if "--par" in sys.argv:
         i = sys.argv.index("--par")
@@ -444,7 +571,7 @@ def main() -> None:
         ruins = reprovas_claro + reprovas_escuro
         if ruins:
             print(claro_md if reprovas_claro else "", escuro_md if reprovas_escuro else "", sep="\n")
-        divergem = conferir_frontmatter(claro)
+        divergem = conferir_frontmatter(tabelas(com_oklch=False)[0]) + conferir_paralela()
         print(
             f"claro: {reprovas_claro} reprova(s) · escuro: {reprovas_escuro} reprova(s)"
             if ruins

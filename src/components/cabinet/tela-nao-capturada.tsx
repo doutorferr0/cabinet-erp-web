@@ -11,11 +11,11 @@
  * e mantém a rota alcançável para o dia em que a captura chegar.
  *
  * **Não é `Empty` (`components/ui/empty.tsx`).** Aquele componente é para os
- * SEIS vazios de DADO (módulo sem registro, busca sem resultado…), cada um
- * com ornamento e shape próprios. Este é vazio de CAPTURA — uma frase, sem
- * ornamento, pelo mesmo motivo que a versão em aba não leva um: inventar um
- * shape para "tela que não existe ainda" seria decidir identidade visual sem
- * fonte, a mesma armadilha que a fonte de campo já proíbe para conteúdo.
+ * vazios de DADO (módulo sem registro, busca sem resultado…), que ganham a
+ * `<Forma>` do módulo ou o ícone da situação. Este é vazio de CAPTURA — uma
+ * frase, e desenho nenhum: a tela não pertence a módulo que a `<Forma>` saiba
+ * nomear, e escolher uma para "tela que ainda não existe" seria decidir
+ * identidade visual sem fonte, a mesma armadilha que a fonte de campo proíbe.
  */
 export function TelaNaoCapturada({ titulo, menu }: { titulo: string; menu: string }) {
   return (

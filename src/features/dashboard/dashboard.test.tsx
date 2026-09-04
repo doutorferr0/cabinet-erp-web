@@ -1,7 +1,7 @@
 import type { ActivityDto, AgendaEventDto, DashboardSummaryDto, TodoDto } from '@/api/gerado'
 import { diaLocalISO } from '@/lib/datas'
 import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const RESUMO: DashboardSummaryDto = {
@@ -116,8 +116,13 @@ describe('tela Dashboard', () => {
     const abertos = await screen.findByText('Orçamentos abertos')
     // O valor é procurado DENTRO do tile: "14" também é um dia do
     // mini-calendário, e um getByText solto casa os dois.
+    //
+    // E é procurado com ESPERA: a rodada 5 (#529) pôs contagem crescente de
+    // 600 ms na entrada do tile, então o primeiro quadro tem zero e o número
+    // pedido chega alguns quadros depois. Assertar síncrono aqui mediria o
+    // começo da animação, não o dado.
     const tile = abertos.closest('[data-slot="kpi-tile"]') as HTMLElement
-    expect(within(tile).getByText('14')).toBeInTheDocument()
+    await within(tile).findByText('14')
     expect(screen.getByText('4 vencem esta semana')).toBeInTheDocument()
     // Singular e plural são frases diferentes — "1 chegam hoje" é defeito visível.
     expect(screen.getByText('1 chega hoje')).toBeInTheDocument()
@@ -125,23 +130,32 @@ describe('tela Dashboard', () => {
     // centavos pesarem menos), então a asserção é por parte, não pela máscara
     // inteira. O `<output>` traz o rótulo em `aria-label`.
     const vendas = screen.getByLabelText('Vendas do mês')
-    expect(vendas.textContent).toBe('R$182.400,00')
+    await waitFor(() => expect(vendas.textContent).toBe('R$182.400,00'))
     expect(screen.getByText('+12%')).toBeInTheDocument()
     expect(screen.getByText('vs. mês anterior')).toBeInTheDocument()
   })
 
-  it('os quatro tiles levam a tinta do assunto, na ordem do mockup', async () => {
-    // lilac · sky · sand · mint. A cor aqui é do ASSUNTO, e é ela que
-    // substituiu o ornamento de módulo do 1.x.
+  it('o bento abre pelo HERÓI, e a tinta continua sendo a do assunto', async () => {
+    // A cor é do ASSUNTO, e é ela que substituiu o ornamento de módulo do 1.x.
+    // A ORDEM mudou na rodada 5 (#529): `Vendas do mês` é o herói 1,6× e abre a
+    // fileira, então mint vem primeiro — no DOM e na tela, juntos. Bento que
+    // move o herói por `grid-row` deixaria a leitura discordar do que se vê.
     renderRoute('/dashboard', servidor().stub)
 
     await screen.findByText('Orçamentos abertos')
     const tiles = document.querySelectorAll('[data-slot="kpi-tile"]')
     expect([...tiles].map((t) => (t as HTMLElement).dataset.tint)).toEqual([
+      'mint',
       'lilac',
       'sky',
       'sand',
-      'mint',
+    ])
+    // O herói é o único fora do degrau padrão, e é ele que carrega os 40px.
+    expect([...tiles].map((t) => (t as HTMLElement).dataset.escala)).toEqual([
+      'heroi',
+      'padrao',
+      'padrao',
+      'padrao',
     ])
   })
 

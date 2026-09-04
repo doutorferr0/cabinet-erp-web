@@ -96,6 +96,49 @@ export function classeDoTipo(tipo: TipoDeColuna | undefined): string | undefined
   )
 }
 
+/**
+ * Tipos que montam LAYOUT dentro da célula, e por isso não podem receber
+ * `truncate` no `<td>`.
+ *
+ * `entidade` empilha nome e subtítulo (e já trunca os dois por dentro);
+ * `progresso` põe a barra ao lado do `n / m`; `status` carrega o `<Stamp>`. Um
+ * `white-space: nowrap` herdado do pai cortaria o subtítulo da entidade em vez
+ * de truncá-lo com reticências, que é justamente o que a §Hierarquia manda
+ * evitar.
+ */
+const TIPO_COMPOSTO: ReadonlySet<TipoDeColuna> = new Set<TipoDeColuna>([
+  'entidade',
+  'progresso',
+  'status',
+])
+
+export function ehTipoComposto(tipo: TipoDeColuna | undefined): boolean {
+  return tipo !== undefined && TIPO_COMPOSTO.has(tipo)
+}
+
+/**
+ * LARGURA FIXA POR TIPO, em pixels (D33 · pesquisa §10).
+ *
+ * A grade roda em `table-layout: fixed` e estas larguras vão num `<colgroup>`:
+ * a coluna de data ocupa 150px na página 1 e 150px na página 7, mesmo que a
+ * página 7 só traga datas de janeiro. Enquanto a largura vinha do conteúdo, o
+ * operador que paginava via a grade inteira se reorganizar a cada página — e
+ * comparar a mesma coluna entre duas páginas virava trabalho de reencontrar
+ * onde ela foi parar.
+ *
+ * `entidade` e `texto` NÃO entram, e a ausência é o desenho: são as colunas que
+ * carregam nome próprio e descrição, e é entre elas que a sobra da tela tem de
+ * ser dividida. Fixá-las também deixaria a grade com um vão à direita em tela
+ * larga, que é o oposto do que a largura estável quer resolver.
+ */
+export const LARGURA_DO_TIPO: Partial<Record<TipoDeColuna, number>> = {
+  id: 110,
+  data: 150,
+  status: 120,
+  progresso: 150,
+  dinheiro: 130,
+}
+
 /** Valor de uma coluna `entidade`: o nome que se lê e o que o qualifica embaixo. */
 export interface ValorDeEntidade {
   nome: string

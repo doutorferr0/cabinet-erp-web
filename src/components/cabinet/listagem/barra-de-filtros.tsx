@@ -102,6 +102,15 @@ export interface BarraDeFiltrosProps {
   densidades?: readonly OpcaoDeDensidade[]
   densidade?: string
   onDensidadeChange?: (id: string) => void
+  /**
+   * A DICA da densidade escolhida — hoje, as teclas do modo Planilha.
+   *
+   * Fica colada no segmented porque é a legenda dele: o modo Planilha muda o
+   * que o teclado faz, e um modo que muda o teclado sem dizer quais teclas é um
+   * modo secreto. Slot, e não uma prop `dicaDaPlanilha`: quem sabe o que cada
+   * densidade significa é a grade, não a barra.
+   */
+  dica?: ReactNode
 
   /** Alternador de modo de visão (D12). */
   modos?: ReactNode
@@ -134,6 +143,7 @@ export function BarraDeFiltros({
   densidades,
   densidade,
   onDensidadeChange,
+  dica,
   modos,
   acoes,
 }: BarraDeFiltrosProps) {
@@ -283,8 +293,14 @@ export function BarraDeFiltros({
                 {...(opcao.altura ? { title: opcao.altura } : {})}
                 className={cn(
                   't-ui h-7 px-2 outline-none focus-visible:focus-ring',
+                  // `text-background!` — o `!` é medido, não defensivo: as
+                  // classes `.t-*` da 2.0 declaram `color` FORA de camada e
+                  // vencem a `@layer utilities` do Tailwind. Sem ele, o
+                  // segmento ativo saía tinta sobre tinta: um retângulo preto
+                  // sem rótulo nenhum, e só a captura mostrava (o teste
+                  // continuava achando o botão pelo nome acessível).
                   ativa
-                    ? 'bg-foreground text-background'
+                    ? 'bg-foreground text-background!'
                     : 'text-muted-foreground hover:bg-[var(--hover)]',
                 )}
                 onPress={() => onDensidadeChange(opcao.id)}
@@ -294,6 +310,17 @@ export function BarraDeFiltros({
             )
           })}
         </fieldset>
+      ) : null}
+
+      {/* Mono, porque é lista de TECLA — e tecla é dado, não prosa
+          (§Hierarquia: "se está em mono, é algo que se copia, compara ou
+          soma"). `<output>` porque o texto APARECE quando a densidade muda: é
+          resposta a uma ação do operador, e quem não vê a tela precisa ouvi-la
+          sem ir procurar. */}
+      {dica ? (
+        <output className="whitespace-nowrap t-dado-meta" data-slot="dica-da-densidade">
+          {dica}
+        </output>
       ) : null}
 
       {modos}

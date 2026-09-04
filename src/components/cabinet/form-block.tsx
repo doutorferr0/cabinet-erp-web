@@ -271,6 +271,7 @@ export function FormBlock({
               aria-controls={idCorpo}
               aria-label={nome ?? 'Expandir bloco'}
               onClick={() => setAberto((estava) => !estava)}
+              data-slot="form-block-cabecalho"
               className="flex w-full cursor-pointer items-center gap-[var(--s-2)] focus-visible:focus-ring-inset"
             >
               {cabecalho}
@@ -283,7 +284,9 @@ export function FormBlock({
               />
             </button>
           ) : (
-            <div className="flex items-center gap-[var(--s-2)]">{cabecalho}</div>
+            <div data-slot="form-block-cabecalho" className="flex items-center gap-[var(--s-2)]">
+              {cabecalho}
+            </div>
           )}
         </>
       ) : null}

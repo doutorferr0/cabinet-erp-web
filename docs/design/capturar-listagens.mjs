@@ -1,3 +1,4 @@
+import { mkdirSync, readFileSync } from 'node:fs'
 // Capturas das 11 listagens 2.0, nos dois temas, com o overlay de 8px.
 //
 // O `?grid` do `__root.tsx` é entrega da D1 e ainda não existe na base — aqui
@@ -5,7 +6,6 @@
 // `docs/design/grid.css`), para a captura provar o alinhamento em múltiplos
 // de 4 sem depender de uma issue que não mergeou.
 import { chromium } from '/home/doutorferro/projetos/cabinet-erp-web/node_modules/.pnpm/playwright@1.62.1/node_modules/playwright/index.mjs'
-import { readFileSync, mkdirSync } from 'node:fs'
 
 const BASE = process.env.BASE ?? 'http://localhost:5173'
 const SAIDA = process.env.SAIDA ?? 'docs/design/capturas/2.0'

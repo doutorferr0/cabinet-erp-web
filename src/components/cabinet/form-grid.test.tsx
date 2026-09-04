@@ -192,10 +192,10 @@ describe('FormGrid — totais no pé da grade', () => {
     const total = screen.getByLabelText('Total')
     expect(total.closest('table')).toBeNull()
     expect(total.closest('[data-slot="total-box"]')).not.toBeNull()
-    // 48px em display condensado — o maior dado da tela.
-    const valor = total.firstElementChild
-    expect(valor?.className).toContain('font-[family-name:var(--font-display-condensada)]')
-    expect(valor?.className).toContain('text-[3rem]')
+    // MONO tabular na escala de destaque — o maior DADO da tela. Era 48px em
+    // display condensado até a #479: a Bebas que tornava a medida possível saiu
+    // na D1, e mono é o que a régua manda para dado.
+    expect(total).toHaveStyle({ fontVariantNumeric: 'tabular-nums' })
 
     // SubTotal continua fileira, e continua na medida da malha.
     const subtotal = screen.getByLabelText('SubTotal')
@@ -260,16 +260,16 @@ describe('FormGrid — zona de dinheiro nos totais', () => {
     expect(desconto.className).not.toContain('text-money')
   })
 
-  it('o fecho leva a borda de 3px, o lima e a sombra dura do documento', () => {
+  it('o fecho é card de tinta com relevo duro, na tinta de dinheiro', () => {
     render(<HarnessZona />)
 
-    const caixa = screen.getByLabelText('Total').closest('[data-slot="total-box"]')
-    expect(caixa?.className).toContain('border-[3px]')
-    expect(caixa?.className).toContain('border-rule-strong')
-    // Mesma tinta de dinheiro que a fileira de total tinha — o fecho não
-    // estreia par de cor que ninguém mediu.
-    expect(caixa?.className).toContain('bg-fill-money')
-    expect(caixa?.className).toContain('shadow-el3')
+    // #479: o fecho virou `KpiTile`. Borda de tinta 1,5px + `--hard-1` no lugar
+    // dos 3px + `shadow-el3` — o fecho e o KPI sempre foram a mesma peça dita
+    // duas vezes, e as diferenças entre elas nunca tinham sido decididas.
+    const caixa = screen.getByLabelText('Total').closest('[data-slot="total-box"]') as HTMLElement
+    expect(caixa).toHaveAttribute('data-tint', 'mint')
+    expect(caixa.style.border).toContain('var(--n-900)')
+    expect(caixa.style.boxShadow).toBe('var(--hard-1)')
   })
 
   it('célula comum da malha NÃO usa a cor de dinheiro', () => {

@@ -1139,16 +1139,44 @@ continua `[a resolver]` até a enumeração real do backend.
 Fundo Folha, traço 2px, raio de controle, foco pela `focus-ring` (§Foco). **Rótulo é etiqueta**:
 caixa clara com traço 2px, mono 10px, caixa alta — não texto solto acima do campo.
 
-### DataTable (assinatura)
-Caixa de dado (raio 2px, `el-3`, `overflow:hidden`). **Cabeçalho: caixa clara, letra preta, mono 11px
-tracking 0.12em, 42px, régua inferior 3px** — a barra preta sólida sai. Célula 52px com régua de 2px
-entre linhas, e **sem malha vertical** — a régua horizontal já delimita, e coluna fechada dos dois
-lados vira gaiola. Linha selecionada = **violeta com texto branco**, mais peso 600 e `aria-selected`:
-cor sozinha não diz estado (1.4.1). Linha focada = utility `focus-ring-row`, que monta UM anel com as
-partes que cada célula pode desenhar (topo e base em todas, lateral só na primeira e na última) —
-`box-shadow` no `<tr>` não pinta sob o `border-collapse` que a tabela herda do preflight, e anel por
-célula desenharia uma moldura por coluna.
-Célula de dinheiro em verde sobre zona de valor (e sem zona quando a linha está selecionada).
+### DataTable (assinatura) — reescrita na 2.0 (#476 · D8)
+Caixa de dado: **UM traço de `n-300` e a sombra quieta (`--hard-soft`), `overflow-clip`**. A borda de
+2px de tinta saiu porque era a mesma espessura da régua entre linhas — cada linha lia como caixa
+própria, e a listagem virava pilha de caixas sem hierarquia entre o objeto e seus itens.
+
+**Cabeçalho: tint `n-50`, `sticky`, rótulo em `--t-rotulo`** (Inter 600 · 10.5 · tracking .12em ·
+caixa alta · `n-500`), com **ícone de tipo** de 12px à esquerda. O tint é a ÚNICA separação entre
+header e corpo — §Separação, uma ferramenta por fronteira: sem borda por baixo, sem caixa por célula.
+A barra preta da fusão v5 saiu com ela.
+
+**Célula 52px (`confortavel`) ou 40px (`compacta`), hairline `n-200` entre linhas**, e **sem malha
+vertical** — coluna fechada dos dois lados vira gaiola.
+
+**Linha selecionada = `--primary-soft` com faixa de 3px em chartreuse na borda esquerda**, mais
+`aria-selected`: cor sozinha não diz estado (1.4.1), e a faixa é forma. O violeta cheio da 1.x lavava
+o dado da linha justo quando o operador confere o que marcou. **Chartreuse aqui é área, nunca letra.**
+Linha concluída ou cancelada fica em `n-500` — continua conferível e para de disputar o olho; quem
+sabe disso é a coluna de situação (`tipo: 'status'`, tom `done`/`void`), não uma prop por tela.
+
+Linha focada = utility `focus-ring-row`, que monta UM anel com as partes que cada célula pode desenhar
+(topo e base em todas, lateral só na primeira e na última) — `box-shadow` no `<tr>` não pinta sob o
+`border-collapse` que a tabela herda do preflight, e anel por célula desenharia uma moldura por coluna.
+
+**Célula tipada** (`meta.tipo`): `id` (mono, `--primary-text`) · `entidade` (monograma + nome + subtítulo,
+que some na compacta) · `data` (mono) · `dinheiro` (mono à direita, `R$` em Meta) · `status` (carimbo) ·
+`progresso` (barra de 56px + `n / m`) · `texto` (trunca com `…` e `title`). Coluna que declara `cell`
+próprio manda no conteúdo; o tipo só lhe dá a moldura.
+
+**Ações de linha**: três botões de 26px na última coluna, visíveis no hover E no foco de teclado. `Abrir`
+é derivada de `aoAbrirLinha` — a tela não a declara.
+
+**Barra de lote**: aparece com ≥1 marcada, tinta cheia com texto de papel, `n selecionadas`, e `esc`
+limpa (anunciado na própria barra, com o botão ao lado — não é atalho memorizado).
+
+**Rodapé**: à esquerda `n de N registros · soma da página`; à direita `Por página`, a FAIXA `1–20 de 340`
+e o par de setas. A soma sai da coluna que declarou `tipo: 'dinheiro'`; com paginação ela é da PÁGINA, e
+o rótulo diz isso — chamá-la de filtrada seria um número certo com o nome errado.
+
 `rowNumbers` e cabeçalho agrupado: mecanismos inalterados.
 
 ### CadastroForm / PageHeader (assinatura)
@@ -1581,3 +1609,31 @@ Fusão, não substituição: a cara do v5 entra SEM revogar as lições medidas 
   2026-08-19), e os tamanhos vieram depois — 36px no nome e no nº do documento, 48px no total,
   este último fora da grade, em bloco próprio (`TotalBox`).
 - Sidebar escura com dots de módulo (avaliar contra a bancada creme antes de decidir).
+
+## Modos da listagem — lista · kanban · calendário (2.0, D12)
+
+A listagem tem TRÊS desenhos para a mesma consulta. A tabela existe sempre; kanban e calendário
+são visões alternativas, ligadas pelo alternador da barra (padrão 9, `visoes`/`agrupamentos`).
+Nenhuma delas consulta nada: recebem as linhas que a `VitraDataTable` já trouxe, e é isso que
+garante que alternar não troque o filtro por baixo do operador.
+
+- **Kanban** (`ModoKanban`, `visaoKanban`) — colunas por `campoDeColuna` (o `Agrupar por` da barra
+  vence, quando escolhido). Coluna em `--n-50` **sem borda** (tint separa região; borda ali seria a
+  segunda ferramenta na mesma fronteira), cabeçalho com quadradinho de cor + nome em `--t-rotulo` +
+  contagem em `--t-dado-meta`. Cartão = folha `--n-0`, borda `--n-300`, `--hard-soft` parado e
+  `--hard-1` no hover — o papel levanta. Dentro do cartão só espaço e hairline, nunca um terceiro
+  card. Título `--t-bloco`, subtítulo `--t-meta`, selo/data/dinheiro no rodapé, os dois últimos em
+  `--t-dado`. Arrastar entre colunas dispara `onMover`; **quem grava é a tela**. O menu `Mover para`
+  de cada cartão não é opcional: arrasto não existe para teclado nem leitor de tela.
+- **Calendário** (`ModoCalendario`, `visaoCalendario`) — mês ou semana por `campoDeData`. Grade de
+  hairline (`gap: 1px` sobre `--n-200`, nenhuma célula com borda própria), cabeçalho de dia em
+  `--t-rotulo`, número do dia em `--t-dado-meta` e **hoje** num quadrado `--n-900` — o único
+  preenchimento sólido da grade. Evento = pílula tintada pelo tom (`ok`/`info`/`warn`/`bad`/`mut`)
+  com ponto da mesma família; três por célula e `+n` para o resto, porque célula que cresce faz a
+  grade inteira pular de tamanho. Registro sem data **não some calado**: o rodapé conta quantos
+  ficaram de fora.
+
+**Três telas morreram nesta rodada** e viraram visão da listagem de origem: `Previsão de chegada`,
+`Quadro de cargas` e o calendário próprio da `Agenda` (que era Schedule-X). Tela própria para o
+mesmo recurso significava segunda barra de filtro, segunda tabela e segunda ideia de consulta
+salva sobre o mesmo dado — e o operador que estreitasse uma não via efeito na outra.

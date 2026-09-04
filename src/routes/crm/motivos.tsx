@@ -1,6 +1,7 @@
 import type { CrmLostReasonDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
+import type { OpcaoDeAgrupamento } from '@/components/cabinet/data-table'
 import { Nome } from '@/components/cabinet/nome'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { motivosDePerda, useAlterarMotivoDePerda } from '@/data/crm-api'
@@ -22,6 +23,7 @@ const columns: ColumnDef<CrmLostReasonDto>[] = [
   {
     accessorKey: 'name',
     header: 'Motivo',
+    meta: { tipo: 'entidade' },
     cell: ({ getValue }) => <Nome>{getValue<string>()}</Nome>,
   },
   {
@@ -39,6 +41,20 @@ const columns: ColumnDef<CrmLostReasonDto>[] = [
  * Incluir e Alterar abrem DIÁLOGO: o contrato não tem detalhe por id, e a linha
  * já é o registro inteiro (ver `MotivoDePerdaDialog`).
  */
+/** Motivo desativado some das escolhas novas e continua nos relatórios. */
+function decoracaoDoMotivo(m: CrmLostReasonDto) {
+  return m.active ? undefined : ('muted' as const)
+}
+
+const AGRUPAMENTOS: readonly OpcaoDeAgrupamento<CrmLostReasonDto>[] = [
+  {
+    id: 'active',
+    rotulo: 'Situação',
+    valorDaLinha: (m) => (m.active ? 'Ativo' : 'Inativo'),
+    tomDoValor: (valor) => (valor === 'Ativo' ? 'done' : 'void'),
+  },
+]
+
 function MotivosPage() {
   const [emEdicao, setEmEdicao] = useState<CrmLostReasonDto | null>(null)
   const [aberto, setAberto] = useState(false)
@@ -72,6 +88,8 @@ function MotivosPage() {
         columns={columns}
         queryKey={['crm', 'motivos-de-perda', 'listagem']}
         fetcher={motivosDePerda.list}
+        decoracao={decoracaoDoMotivo}
+        agrupamentos={AGRUPAMENTOS}
         actions={actions}
         desativacao={{
           entidade: 'motivo de perda',

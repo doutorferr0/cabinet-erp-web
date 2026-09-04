@@ -579,9 +579,27 @@ describe('passthrough por rota', () => {
       'post /api/tenants',
       'get /api/tenants/{id}',
       'put /api/tenants/{id}',
+      // Os cinco agregados de KPI (#479, D11) nasceram AQUI hoje: caminho novo
+      // publicado neste repo, cópia do contrato do api ainda sem ele. São
+      // `sem-contrato` por CONSTRUÇÃO, não por medição — e é isto que os separa
+      // dos seis acima, cuja natureza a sonda já conferiu contra o par.
+      'get /api/purchases/orders-summary',
+      'get /api/sales/quotes-summary',
+      'get /api/stock/summary',
+      'get /api/crm/opportunities-summary',
+      'get /api/nav/counters',
+      // As views salvas (#481, D13) nascem AQUI pelo mesmo motivo dos cinco
+      // agregados: caminho publicado neste repo, cópia do contrato do api ainda
+      // sem ele. `sem-contrato` por CONSTRUÇÃO. É a família com o handler de
+      // mock mais teimoso do repo — grava em `localStorage`, porque view salva
+      // que some no F5 ensina que o recurso não funciona.
+      'get /api/me/views',
+      'post /api/me/views',
+      'put /api/me/views/{id}',
+      'delete /api/me/views/{id}',
     ])
-    // Cabeçalho com o próximo passo + uma linha por rota = 1 + 6.
-    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(7)
+    // Cabeçalho com o próximo passo + uma linha por rota = 1 + 15.
+    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(16)
   })
 
   it('toda rota mockada declara NATUREZA, e o console imprime o passo dela', () => {

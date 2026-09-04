@@ -18,6 +18,7 @@ import type {
 import { diaDoInstante, diaLocalISO } from '@/lib/datas'
 import { http, HttpResponse } from 'msw'
 import { handlersDeAcesso } from './acesso'
+import { handlersDeAgregados } from './agregados'
 import { handlersDeAtividades } from './atividades'
 import { handlersDeCompras } from './compras'
 import { handlersDeContatos } from './contatos'
@@ -48,6 +49,7 @@ import { handlersDeRelatorios } from './relatorios'
 import { handlersDeServicos } from './servicos'
 import { type ParceiroDaOrg, novoId, partnerDto, store } from './store'
 import { contextoDeSuporte, handlersDeSuporte, trilhaDeSuporte } from './suporte'
+import { handlersDeViews } from './views'
 
 /**
  * Handlers do modo mock — o "backend" do `VITE_API_MODE=mock`.
@@ -970,6 +972,13 @@ export const handlers = [
   ...handlersDeServicos,
   ...handlersDeContatos,
 
+  // ---------------- AGREGADOS DE KPI (D11, #479) ----------------
+  // Os quatro resumos por família e os contadores da navegação. Arquivo próprio
+  // e NENHUM estado próprio: cada módulo exporta o leitor do que já guarda, e
+  // `agregados.ts` só compõe. É o que impede a faixa de KPI de contar "aberto"
+  // por um critério e a grade abaixo dela por outro.
+  ...handlersDeAgregados,
+
   // ---------------- COMPRAS (G2) ----------------
   // Arquivo próprio, como CRM, orçamento e pagamento: estado que não é do store
   // das telas antigas. As 14 operações estavam no contrato desde a #316 sem
@@ -1034,6 +1043,12 @@ export const handlers = [
   // cima porque depende do `listar`/`lerConsulta` deste arquivo; as regras da
   // escrita moram no arquivo próprio — ver o cabeçalho de `lookups.ts`.
   ...handlersDeLookups,
+
+  // As VIEWS SALVAS do usuário (D13). Arquivo próprio, e ele é o único mock que
+  // grava em `localStorage`: a view existe para durar mais que a sessão, e
+  // perdê-la no F5 ensinaria que o recurso não funciona. O porquê inteiro está
+  // no cabeçalho de `views.ts`.
+  ...handlersDeViews,
 
   // ---------------- health ----------------
   // `version`/`commit` dizem QUAL BINÁRIO respondeu, e no mock a resposta

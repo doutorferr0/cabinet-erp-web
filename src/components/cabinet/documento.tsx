@@ -1,5 +1,5 @@
 import type { FormGridTotalRow } from '@/components/cabinet/form-grid'
-import { NumeroHeroi } from '@/components/cabinet/numero-heroi'
+import { NumeroHeroi } from '@/components/cabinet/kpi-tile'
 import { PageHeader } from '@/components/cabinet/page-header'
 import { Stamp, type StampTom } from '@/components/cabinet/stamp'
 import { TotalBox } from '@/components/cabinet/total-box'

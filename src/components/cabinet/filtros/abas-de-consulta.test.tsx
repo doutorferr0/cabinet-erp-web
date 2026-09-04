@@ -1,4 +1,9 @@
-import { AbasDeConsulta, consultaBate } from '@/components/cabinet/filtros/abas-de-consulta'
+import {
+  ABA_TODOS,
+  AbasDeConsulta,
+  consultaBate,
+  corDaVisao,
+} from '@/components/cabinet/filtros/abas-de-consulta'
 import type { ConsultaSalva, FavoritoDeConsulta } from '@/lib/favoritos-de-consulta'
 import { renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
@@ -151,12 +156,12 @@ describe('AbasDeConsulta', () => {
       temConsulta: true,
     })
 
-    await user.click(screen.getByRole('button', { name: /Ações da consulta/ }))
+    await user.click(screen.getByRole('button', { name: /Ações da visão/ }))
     await user.click(await screen.findByRole('menuitem', { name: 'Abrir por padrão' }))
     expect(props.onTornarPadrao).toHaveBeenCalledWith('fav-1')
 
-    await user.click(screen.getByRole('button', { name: /Ações da consulta/ }))
-    await user.click(await screen.findByRole('menuitem', { name: 'Excluir consulta' }))
+    await user.click(screen.getByRole('button', { name: /Ações da visão/ }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Excluir visão' }))
     expect(props.onExcluir).toHaveBeenCalledWith('fav-1')
   })
 
@@ -167,7 +172,7 @@ describe('AbasDeConsulta', () => {
       temConsulta: true,
     })
 
-    await user.click(screen.getByRole('button', { name: /Ações da consulta/ }))
+    await user.click(screen.getByRole('button', { name: /Ações da visão/ }))
     await user.click(await screen.findByRole('menuitem', { name: 'Renomear…' }))
 
     const campo = await screen.findByLabelText('Nome')
@@ -188,6 +193,56 @@ describe('AbasDeConsulta', () => {
 
   it('`Todos` não tem menu — não se apaga a listagem crua', async () => {
     montar({ favoritos: [favorito()], atual: VAZIA, temConsulta: false })
-    expect(screen.queryByRole('button', { name: /Ações da consulta/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Ações da visão/ })).not.toBeInTheDocument()
+  })
+})
+
+describe('cor e contagem da visão (Reface 2.0)', () => {
+  it('a mesma visão tem sempre a mesma cor', () => {
+    expect(corDaVisao('fav-1')).toBe(corDaVisao('fav-1'))
+  })
+
+  it('`Todos` é a tinta, não uma cor no meio das outras', () => {
+    expect(corDaVisao(ABA_TODOS)).toBe('var(--n-900)')
+    expect(corDaVisao('fav-1')).not.toBe('var(--n-900)')
+  })
+
+  it('nenhuma visão nasce chartreuse — o primário não é cor de visão', () => {
+    const cores = Array.from({ length: 40 }, (_, i) => corDaVisao(`fav-${i}`))
+    expect(cores.some((cor) => cor.includes('lime'))).toBe(false)
+  })
+
+  it('a contagem entra na tira e no rótulo assistivo', () => {
+    montar({
+      favoritos: [favorito()],
+      atual: VAZIA,
+      temConsulta: false,
+      contagens: new Map([
+        [ABA_TODOS, 14],
+        ['fav-1', 6],
+      ]),
+    })
+
+    expect(screen.getByRole('tab', { name: /Todos — 14 registro/ })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /Só Stella — 6 registro/ })).toBeInTheDocument()
+    expect(screen.getByText('14')).toBeInTheDocument()
+  })
+
+  it('sem o mapa, a tira não inventa número nenhum', () => {
+    montar({ favoritos: [favorito()], atual: VAZIA, temConsulta: false })
+    expect(screen.getByRole('tab', { name: 'Só Stella' })).toBeInTheDocument()
+  })
+
+  it('o `+` cria visão do que está montado, e morre quando não há o que salvar', async () => {
+    const semNada = montar()
+    expect(screen.getByRole('button', { name: 'Nova visão' })).toBeDisabled()
+    semNada.unmount()
+
+    const { user, props } = montar({ atual: SO_STELLA, temConsulta: true })
+    await user.click(screen.getByRole('button', { name: 'Nova visão' }))
+    await user.type(await screen.findByLabelText('Nome'), 'Atrasadas')
+    await user.click(screen.getByRole('button', { name: 'Gravar' }))
+
+    expect(props.onSalvar).toHaveBeenCalledWith('Atrasadas')
   })
 })

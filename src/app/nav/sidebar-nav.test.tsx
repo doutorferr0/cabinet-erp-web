@@ -62,7 +62,11 @@ describe('SidebarNav', () => {
     setup()
     await esperarBarra()
 
-    const rotulos = [...barra().querySelectorAll('.t-rotulo')].map((n) => n.textContent)
+    // Pelos grupos (`<ul aria-label>`), e não por toda `.t-rotulo`: o monograma
+    // do seletor de empresa (D6) também usa o degrau de rótulo.
+    const rotulos = [...barra().querySelectorAll('span.t-rotulo.truncate')].map(
+      (n) => n.textContent,
+    )
     // FAVORITOS e RECENTES não aparecem vazios — e é isso que sobra aqui,
     // porque o operador desta sessão nunca marcou nem abriu nada.
     expect(rotulos).toEqual(['Hoje', 'Compras', 'Estoque', 'Vendas', 'CRM', 'Pessoas'])

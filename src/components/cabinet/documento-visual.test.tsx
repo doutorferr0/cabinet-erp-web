@@ -73,9 +73,11 @@ describe('DocumentoTotais', () => {
         ajustes={[{ label: 'Desconto', valorCentavos: 10_000, sinal: -1 }]}
       />,
     )
-    const total = screen.getByText('Total:')
-    expect(total.className).toContain('font-mono')
-    expect(total.className).toContain('uppercase')
+    // O rótulo do fecho perdeu os dois-pontos com o 2.0 (#479): ele é
+    // `--t-rotulo`, o único uppercase da régua, e uppercase já separa rótulo de
+    // dado sem pontuação ajudando.
+    const total = screen.getByText('Total')
+    expect(total.className).toContain('t-rotulo')
     // O fecho é o `TotalBox`, e não mais um item da tira separado por régua.
     expect(total.closest('[data-slot="total-box"]')).not.toBeNull()
     // Total derivado: 1000,00 - 100,00 = 900,00
@@ -91,15 +93,18 @@ describe('DocumentoTotais', () => {
     expect(tira?.className).toContain('border')
   })
 
-  // O fecho NÃO fica dentro da tira: se ficasse, a tela sem grade teria um
-  // total de 48px espremido entre dois pares de 14px, e a decisão do #236
-  // apareceria como desalinho em vez de hierarquia.
+  // O fecho NÃO fica dentro da tira: se ficasse, o total ficaria espremido
+  // entre dois pares de 14px, e a decisão do #236 apareceria como desalinho em
+  // vez de hierarquia. Continua valendo com o fecho já em 24px (#479).
   it('o fecho é bloco próprio, irmão da tira e não item dela', () => {
     const { container } = render(<DocumentoTotais subtotalCentavos={100_000} />)
     const fecho = container.querySelector('[data-slot="total-box"]')
     expect(fecho).not.toBeNull()
     expect(fecho?.closest('.rounded-lg')).toBeNull()
-    expect(screen.getByLabelText('Total').firstElementChild?.className).toContain('text-[3rem]')
+    // O valor é MONO tabular, não mais display condensado a 48px: a Bebas saiu
+    // na D1 e §Hierarquia não tem degrau acima de 30px fora do display — e
+    // "mono = dado, sem exceção" (#479).
+    expect(screen.getByLabelText('Total')).toHaveStyle({ fontVariantNumeric: 'tabular-nums' })
   })
 })
 

@@ -63,7 +63,7 @@ afterEach(() => vi.unstubAllGlobals())
 async function abrirPaleta() {
   const user = userEvent.setup()
   const resultado = renderRoute('/', fetchStub)
-  await user.click(await screen.findByRole('button', { name: 'Abrir a paleta de comandos' }))
+  await user.click(await screen.findByRole('button', { name: 'Abrir a busca' }))
   await screen.findByPlaceholderText(/nome\/número de um registro/)
   return { ...resultado, user }
 }

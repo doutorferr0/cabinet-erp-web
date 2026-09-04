@@ -200,6 +200,14 @@ describe('ordem de compra na tela', () => {
     renderRoute('/compras/ordens', servidor() as never)
 
     // Só `expectedAt` esconderia o atraso que a coluna existe para revelar.
-    expect(await screen.findByText('02/10/2026 (era 03/09/2026)')).toBeInTheDocument()
+    //
+    // A D14 trocou a FRASE por três peças: a data que vale, a original riscada
+    // e o rótulo `reagendada`. O `(era …)` corrido obrigava a ler a linha
+    // inteira para saber qual das duas datas conta; a asserção agora cobra as
+    // três, que é o que a tela mostra.
+    expect(await screen.findByText('02/10/2026')).toBeInTheDocument()
+    const original = screen.getByText('03/09/2026')
+    expect(original.tagName).toBe('S')
+    expect(screen.getByText('reagendada')).toBeInTheDocument()
   })
 })

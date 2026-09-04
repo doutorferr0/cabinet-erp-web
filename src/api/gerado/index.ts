@@ -99,6 +99,7 @@ import type {
   ListFinancialTitlesParams,
   ListGoodsReceiptsParams,
   ListLabelLayoutsParams,
+  ListMyViewsParams,
   ListOrderParticipantsParams,
   ListOrderProfessionalHistoryParams,
   ListOrdersParams,
@@ -129,6 +130,8 @@ import type {
   LoginRequest,
   NaoAutenticadoResponse,
   NaoImplementadoResponse,
+  NavCountersDto,
+  OpportunitiesSummaryDto,
   OrderDetailDto,
   OrderFulfillmentDto,
   OrderParticipantsWriteRequest,
@@ -205,17 +208,21 @@ import type {
   PurchaseOrderRescheduleRequest,
   PurchaseOrderSendRequest,
   PurchaseOrderWriteRequest,
+  PurchaseOrdersSummaryDto,
   PurchaseRequestDto,
   PurchaseRequestWriteRequest,
   QuoteDetailDto,
   QuoteVsStockReportDto,
   QuoteWriteRequest,
+  QuotesSummaryDto,
   ReadinessStatus,
   ReleaseOrderItemRequest,
   RoleDetailDto,
   RoleWriteRequest,
   SalesComparisonReportDto,
   SalespersonReportDto,
+  SavedViewDto,
+  SavedViewWriteRequest,
   SemPermissaoResponse,
   ServiceDto,
   ServiceWriteRequest,
@@ -229,6 +236,7 @@ import type {
   StockLocationWriteRequest,
   StockMovementDto,
   StockMovementRequest,
+  StockSummaryDto,
   StockValuationReportDto,
   SupplierMovementReportDto,
   SupportGrantDto,
@@ -13092,6 +13100,483 @@ export const printProductLabels = async (params: PrintProductLabelsParams, optio
   {
     ...options,
     method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getPurchaseOrdersSummaryResponse200 = {
+  data: PurchaseOrdersSummaryDto
+  status: 200
+}
+
+export type getPurchaseOrdersSummaryResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getPurchaseOrdersSummaryResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getPurchaseOrdersSummaryResponseSuccess = (getPurchaseOrdersSummaryResponse200) & {
+  headers: Headers;
+};
+export type getPurchaseOrdersSummaryResponseError = (getPurchaseOrdersSummaryResponse401 | getPurchaseOrdersSummaryResponse403) & {
+  headers: Headers;
+};
+
+export type getPurchaseOrdersSummaryResponse = (getPurchaseOrdersSummaryResponseSuccess | getPurchaseOrdersSummaryResponseError)
+
+export const getGetPurchaseOrdersSummaryUrl = () => {
+
+
+
+
+  return `/api/purchases/orders-summary`
+}
+
+/**
+ * Proposto. Os números da faixa de KPI acima da listagem de ordens de compra, da EMPRESA ATIVA da sessão. Números derivados do movimento — o servidor apura, o front só formata.
+ *
+ * Caminho sob `/api/purchases/`, e não `/api/purchase-orders/summary`, pelo precedente que já está no contrato (`arrival-forecast`, `stock-replenishment`): agregado ganha prefixo próprio em vez de virar irmão de `/{id}`, onde `summary` e um uuid disputam a mesma posição do roteador. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.
+ */
+export const getPurchaseOrdersSummary = async ( options?: Parameters<typeof apiFetch>[1]): Promise<getPurchaseOrdersSummaryResponse> => {
+
+  return apiFetch<getPurchaseOrdersSummaryResponse>(getGetPurchaseOrdersSummaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getQuotesSummaryResponse200 = {
+  data: QuotesSummaryDto
+  status: 200
+}
+
+export type getQuotesSummaryResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getQuotesSummaryResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getQuotesSummaryResponseSuccess = (getQuotesSummaryResponse200) & {
+  headers: Headers;
+};
+export type getQuotesSummaryResponseError = (getQuotesSummaryResponse401 | getQuotesSummaryResponse403) & {
+  headers: Headers;
+};
+
+export type getQuotesSummaryResponse = (getQuotesSummaryResponseSuccess | getQuotesSummaryResponseError)
+
+export const getGetQuotesSummaryUrl = () => {
+
+
+
+
+  return `/api/sales/quotes-summary`
+}
+
+/**
+ * Proposto. Os números da faixa de KPI acima da listagem de orçamentos, da EMPRESA ATIVA da sessão. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.
+ */
+export const getQuotesSummary = async ( options?: Parameters<typeof apiFetch>[1]): Promise<getQuotesSummaryResponse> => {
+
+  return apiFetch<getQuotesSummaryResponse>(getGetQuotesSummaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getStockSummaryResponse200 = {
+  data: StockSummaryDto
+  status: 200
+}
+
+export type getStockSummaryResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getStockSummaryResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getStockSummaryResponseSuccess = (getStockSummaryResponse200) & {
+  headers: Headers;
+};
+export type getStockSummaryResponseError = (getStockSummaryResponse401 | getStockSummaryResponse403) & {
+  headers: Headers;
+};
+
+export type getStockSummaryResponse = (getStockSummaryResponseSuccess | getStockSummaryResponseError)
+
+export const getGetStockSummaryUrl = () => {
+
+
+
+
+  return `/api/stock/summary`
+}
+
+/**
+ * Proposto. Os números da faixa de KPI acima das listagens de estoque (valorizado, parado, movimentação), da EMPRESA ATIVA da sessão. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.
+ */
+export const getStockSummary = async ( options?: Parameters<typeof apiFetch>[1]): Promise<getStockSummaryResponse> => {
+
+  return apiFetch<getStockSummaryResponse>(getGetStockSummaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getOpportunitiesSummaryResponse200 = {
+  data: OpportunitiesSummaryDto
+  status: 200
+}
+
+export type getOpportunitiesSummaryResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getOpportunitiesSummaryResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getOpportunitiesSummaryResponseSuccess = (getOpportunitiesSummaryResponse200) & {
+  headers: Headers;
+};
+export type getOpportunitiesSummaryResponseError = (getOpportunitiesSummaryResponse401 | getOpportunitiesSummaryResponse403) & {
+  headers: Headers;
+};
+
+export type getOpportunitiesSummaryResponse = (getOpportunitiesSummaryResponseSuccess | getOpportunitiesSummaryResponseError)
+
+export const getGetOpportunitiesSummaryUrl = () => {
+
+
+
+
+  return `/api/crm/opportunities-summary`
+}
+
+/**
+ * Proposto. Os números da faixa de KPI acima do funil de oportunidades, da EMPRESA ATIVA da sessão. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.
+ */
+export const getOpportunitiesSummary = async ( options?: Parameters<typeof apiFetch>[1]): Promise<getOpportunitiesSummaryResponse> => {
+
+  return apiFetch<getOpportunitiesSummaryResponse>(getGetOpportunitiesSummaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getNavCountersResponse200 = {
+  data: NavCountersDto
+  status: 200
+}
+
+export type getNavCountersResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getNavCountersResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getNavCountersResponseSuccess = (getNavCountersResponse200) & {
+  headers: Headers;
+};
+export type getNavCountersResponseError = (getNavCountersResponse401 | getNavCountersResponse403) & {
+  headers: Headers;
+};
+
+export type getNavCountersResponse = (getNavCountersResponseSuccess | getNavCountersResponseError)
+
+export const getGetNavCountersUrl = () => {
+
+
+
+
+  return `/api/nav/counters`
+}
+
+/**
+ * Proposto. Os contadores da navegação, do usuário e da EMPRESA ATIVA da sessão, numa leitura só. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.
+ */
+export const getNavCounters = async ( options?: Parameters<typeof apiFetch>[1]): Promise<getNavCountersResponse> => {
+
+  return apiFetch<getNavCountersResponse>(getGetNavCountersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type listMyViewsResponse200 = {
+  data: SavedViewDto[]
+  status: 200
+}
+
+export type listMyViewsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listMyViewsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listMyViewsResponseSuccess = (listMyViewsResponse200) & {
+  headers: Headers;
+};
+export type listMyViewsResponseError = (listMyViewsResponse401 | listMyViewsResponse403) & {
+  headers: Headers;
+};
+
+export type listMyViewsResponse = (listMyViewsResponseSuccess | listMyViewsResponseError)
+
+export const getListMyViewsUrl = (params?: ListMyViewsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/me/views?${stringifiedParams}` : `/api/me/views`
+}
+
+/**
+ * Proposto. Views salvas do USUÁRIO da sessão — nenhuma outra. O grupo FAVORITOS da barra lateral se alimenta daqui, e por isso a leitura é a lista inteira e não uma página: são unidades por tela, e paginar preferência pessoal daria uma barra lateral que continua na página 2.
+ */
+export const listMyViews = async (params?: ListMyViewsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listMyViewsResponse> => {
+
+  return apiFetch<listMyViewsResponse>(getListMyViewsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createMyViewResponse201 = {
+  data: SavedViewDto
+  status: 201
+}
+
+export type createMyViewResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createMyViewResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createMyViewResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createMyViewResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createMyViewResponseSuccess = (createMyViewResponse201) & {
+  headers: Headers;
+};
+export type createMyViewResponseError = (createMyViewResponse400 | createMyViewResponse401 | createMyViewResponse403 | createMyViewResponse409) & {
+  headers: Headers;
+};
+
+export type createMyViewResponse = (createMyViewResponseSuccess | createMyViewResponseError)
+
+export const getCreateMyViewUrl = () => {
+
+
+
+
+  return `/api/me/views`
+}
+
+/**
+ * Proposto. Salva a consulta que está na tela com um nome. **Quem cria decide a estrela**: "Salvar consulta" na listagem manda `favorite: false` (fixar é um segundo gesto, e salvar já fixado encheria a barra lateral de uma vez), e o ★ do item de nav manda `true`, porque ali o gesto É fixar. O servidor não força nenhum dos dois — forçar `false` obrigaria a estrela a fazer POST e PUT por um clique só, com uma janela entre os dois em que a view existe sem aparecer. O que é do servidor é a `position`: a view entra no fim da fila da tela dela.
+ */
+export const createMyView = async (savedViewWriteRequest: SavedViewWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createMyViewResponse> => {
+
+  return apiFetch<createMyViewResponse>(getCreateMyViewUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(savedViewWriteRequest)
+  }
+);}
+
+
+
+export type updateMyViewResponse200 = {
+  data: SavedViewDto
+  status: 200
+}
+
+export type updateMyViewResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type updateMyViewResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type updateMyViewResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type updateMyViewResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type updateMyViewResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type updateMyViewResponseSuccess = (updateMyViewResponse200) & {
+  headers: Headers;
+};
+export type updateMyViewResponseError = (updateMyViewResponse400 | updateMyViewResponse401 | updateMyViewResponse403 | updateMyViewResponse404 | updateMyViewResponse409) & {
+  headers: Headers;
+};
+
+export type updateMyViewResponse = (updateMyViewResponseSuccess | updateMyViewResponseError)
+
+export const getUpdateMyViewUrl = (id: string,) => {
+
+
+
+
+  return `/api/me/views/${id}`
+}
+
+/**
+ * Proposto. Substitui a view INTEIRA — é por aqui que ela é renomeada, muda de cor, ganha ou perde a estrela. **Uma operação só para os quatro gestos**: um `PATCH` de `favorite` pareceria mais barato e criaria uma segunda porta de escrita sobre o mesmo registro, com regra de validação própria para manter em dia.
+ */
+export const updateMyView = async (id: string,
+    savedViewWriteRequest: SavedViewWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<updateMyViewResponse> => {
+
+  return apiFetch<updateMyViewResponse>(getUpdateMyViewUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(savedViewWriteRequest)
+  }
+);}
+
+
+
+export type deleteMyViewResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteMyViewResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type deleteMyViewResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type deleteMyViewResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type deleteMyViewResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type deleteMyViewResponseSuccess = (deleteMyViewResponse204) & {
+  headers: Headers;
+};
+export type deleteMyViewResponseError = (deleteMyViewResponse401 | deleteMyViewResponse403 | deleteMyViewResponse404 | deleteMyViewResponse409) & {
+  headers: Headers;
+};
+
+export type deleteMyViewResponse = (deleteMyViewResponseSuccess | deleteMyViewResponseError)
+
+export const getDeleteMyViewUrl = (id: string,) => {
+
+
+
+
+  return `/api/me/views/${id}`
+}
+
+/**
+ * Proposto. Apaga a view. **É o único DELETE do contrato, e a exceção tem motivo:** a regra do produto é desativar em vez de excluir porque cadastro tem histórico e é referenciado por documento. View salva não é referenciada por nada e é do próprio usuário — desativada, ela viraria lixo permanente na barra lateral de quem pediu para tirá-la de lá.
+ */
+export const deleteMyView = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<deleteMyViewResponse> => {
+
+  return apiFetch<deleteMyViewResponse>(getDeleteMyViewUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
 
 
   }

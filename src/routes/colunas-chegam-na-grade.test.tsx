@@ -1,7 +1,7 @@
 import { stubDeColaboradores } from '@/test/colaboradores'
 import { stubDeParceiros } from '@/test/parceiros'
 import { renderRoute } from '@/test/utils'
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 /**
@@ -67,39 +67,85 @@ describe('a coluna que o operador liga chega à grade', () => {
     expect(await grade().findByRole('columnheader', { name: 'E-mail' })).toBeInTheDocument()
   })
 
-  // O "fixa" sai da GRADE, não do `col: true` do schema. Setor é coluna
-  // declarada pela tela de Colaboradores, então não se desmarca.
-  it('coluna que a tela já desenha aparece travada no seletor', async () => {
+  /**
+   * INVERTIDO na Reface 2.0 (D9), e a inversão é o assunto do caso.
+   *
+   * Antes, TODA coluna que a tela declarava era fixa, e o seletor só servia
+   * para acrescentar — por isso nunca houve o que contar como oculta. O menu
+   * `Colunas · n ocultas` existe justamente para esconder a coluna que não
+   * interessa hoje, então só a IDENTIDADE da linha (a primeira) continua
+   * travada: sem ela a listagem vira um bloco de datas e valores sem sujeito.
+   */
+  it('só a identidade da linha trava; o resto da grade se esconde', async () => {
     const { user } = renderRoute('/cadastros/colaboradores', stubDeColaboradores())
 
     await screen.findByText('Cadastro de Colaboradores')
     await user.click(await screen.findByRole('button', { name: 'Colunas' }))
 
+    // Dentro do popover: com ele NÃO modal, os checkboxes de seleção de linha
+    // da grade também estão na árvore, e o primeiro da tela seria um deles.
+    const popover = document.querySelector('[data-slot="popover-content"]') as HTMLElement
+    const primeira = within(popover).getAllByRole('checkbox')[0] as HTMLElement
+    expect(primeira).toBeChecked()
+    expect(primeira).toBeDisabled()
+
     const setor = await screen.findByLabelText(/^Setor/)
     expect(setor).toBeChecked()
-    expect(setor).toBeDisabled()
+    expect(setor).not.toBeDisabled()
+
+    await user.click(setor)
+    await waitFor(() => {
+      expect(grade().queryByRole('columnheader', { name: /^Setor/ })).toBeNull()
+    })
   })
 
-  // O ponto de cor faz a resposta do seletor ("de onde vem esta coluna")
-  // sobreviver ao fechamento dele. Vale para a coluna que a TELA declara, e não
-  // só para a que o operador ligou.
-  it('Clientes — o cabeçalho marca a coluna com a cor do módulo de origem', async () => {
+  /**
+   * O ponto de cor faz a resposta do seletor ("de onde vem esta coluna")
+   * sobreviver ao fechamento dele — e desde a D8 ele divide o lugar com o
+   * ÍCONE DE TIPO, que é excludente: um cabeçalho mostra um ou outro.
+   *
+   * **A coluna TIPADA fica com o ícone** (mockup §Listagem: a grade se lê pela
+   * forma da coluna antes do rótulo). O ponto continua onde ele responde a
+   * pergunta que ninguém mais responde: a coluna que o operador LIGOU, que não
+   * tem tipo e cuja origem só o seletor sabia. Foi por isso que os dois casos
+   * abaixo trocaram de coluna quando a D14 tipou `Nome` — não por o ponto ter
+   * saído da grade.
+   */
+  it('Clientes — a coluna ligada carrega a cor do módulo de origem', async () => {
+    const { user } = renderRoute('/cadastros/clientes', stubDeParceiros())
+
+    await screen.findByText('Cadastro de Clientes')
+    await user.click(await screen.findByRole('button', { name: 'Colunas' }))
+    await user.click(await screen.findByLabelText(/^E-mail/))
+
+    const email = await grade().findByRole('columnheader', { name: /E-mail/ })
+    expect(email.querySelector('[data-modulo="clientes"]')).not.toBeNull()
+  })
+
+  it('Clientes — a coluna tipada troca o ponto pelo ícone do tipo', async () => {
     renderRoute('/cadastros/clientes', stubDeParceiros())
 
     await screen.findByText('Cadastro de Clientes')
     const nome = await grade().findByRole('columnheader', { name: /Nome/ })
-    expect(nome.querySelector('[data-modulo="clientes"]')).not.toBeNull()
+    expect(nome.querySelector('[data-slot="icone-de-tipo"]')).not.toBeNull()
+    expect(nome.querySelector('[data-modulo]')).toBeNull()
   })
 
   // Colaborador GANHOU cor em 2026-08-17 (PR #188, decisão do user: cor forte
   // em todas as opções de cadastro) — veste o púrpura de Pessoas
   // (`profissionais`). O ponto do cabeçalho acompanha o schema.
-  it('Colaboradores — com a cor de Pessoas, o cabeçalho ganha ponto', async () => {
-    renderRoute('/cadastros/colaboradores', stubDeColaboradores())
+  it('Colaboradores — com a cor de Pessoas, a coluna ligada ganha ponto', async () => {
+    const { user } = renderRoute('/cadastros/colaboradores', stubDeColaboradores())
 
     await screen.findByText('Cadastro de Colaboradores')
-    const nome = await grade().findByRole('columnheader', { name: /Nome/ })
-    expect(nome.querySelector('[data-modulo="profissionais"]')).not.toBeNull()
+    await user.click(await screen.findByRole('button', { name: 'Colunas' }))
+    // `Cargo` saiu da grade na D14 — virou subtítulo da pessoa na célula de
+    // entidade —, então voltou a ser coluna que o operador LIGA, que é
+    // exatamente onde o ponto de módulo ainda responde alguma coisa.
+    await user.click(await screen.findByLabelText(/^Cargo/))
+
+    const cargo = await grade().findByRole('columnheader', { name: /Cargo/ })
+    expect(cargo.querySelector('[data-modulo="profissionais"]')).not.toBeNull()
   })
 
   // `CPF / CNPJ` é `col: true` no schema do cliente e a listagem NÃO o desenha.

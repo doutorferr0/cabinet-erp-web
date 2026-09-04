@@ -139,6 +139,6 @@ describe('listagem no gesto IndexTable', () => {
     // Fundo opaco não é enfeite: sem ele as linhas passam por baixo do
     // cabeçalho fixo e o texto se mistura ao dado. Na 2.0 esse fundo é o TINT
     // `n-50`, que é também a separação entre header e corpo (§Separação).
-    expect(cabecalho?.className).toContain('bg-surface-sunken')
+    expect(cabecalho?.className).toContain('bg-[var(--n-100)]')
   })
 })

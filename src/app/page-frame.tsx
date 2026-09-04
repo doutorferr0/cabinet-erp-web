@@ -1,4 +1,3 @@
-import { BotaoVoltar } from '@/components/cabinet/botao-voltar'
 import { Entrada } from '@/components/cabinet/entrada'
 
 /**
@@ -25,10 +24,10 @@ export function PageFrame({ children }: { children: React.ReactNode }) {
       className="flex min-h-0 flex-1 flex-col rounded-panel border-2 border-border bg-card p-4 shadow-macia"
       data-slot="page-frame"
     >
-      {/* A SAÍDA, antes de tudo que a tela desenha — canto superior esquerdo em
-          toda tela, que é a regra fixa da espec v5. Some sozinho onde não há
-          para onde voltar (ver `BotaoVoltar`). */}
-      <BotaoVoltar />
+      {/* A SAÍDA saiu daqui na 2.0 (D5): ela é a tecla de 32px colada ao
+          título, dentro do `PageHeader`, que agora é o cabeçalho de TODA rota.
+          Montá-la no frame E no cabeçalho daria duas saídas na mesma tela —
+          que é o defeito espelhado do opt-in que a #235 corrigiu. */}
       {children}
     </Entrada>
   )

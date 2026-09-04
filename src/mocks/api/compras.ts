@@ -1696,3 +1696,46 @@ function recortarAoDeposito(
         : Math.max(0, linha.minimumQty - (qtyAvailable + linha.qtyOnOrder)),
   }
 }
+
+// ------------------------------------------------- leitura para os agregados
+
+/**
+ * A ordem de compra REDUZIDA ao que a faixa de KPI pergunta (#479).
+ *
+ * O tipo é estreito de propósito. `agregados.ts` poderia importar `estado` e
+ * somar sozinho — e aí passariam a existir duas leituras de "ordem em aberto",
+ * a da listagem e a do KPI, que divergem no primeiro dia em que uma das duas
+ * aprender sobre cancelamento e a outra não. O número da faixa tem de ser o
+ * MESMO que a grade abaixo dela mostra; a única forma de garantir isso é o
+ * módulo que serve a grade responder também pelo resumo.
+ */
+export interface OrdemParaAgregado {
+  status: OrdemGuardada['status']
+  orderedAt: string
+  expectedAt: string | null
+  totalCents: number
+  /** Nenhuma linha com saldo a chegar — é o que tira a ordem de "em aberto". */
+  recebidaPorInteiro: boolean
+}
+
+export function ordensParaAgregado(tenantId: string): OrdemParaAgregado[] {
+  return daEmpresa(estado.ordens, tenantId).map((ordem) => ({
+    status: ordem.status,
+    orderedAt: ordem.orderedAt,
+    expectedAt: ordem.expectedAt,
+    totalCents: totalDaOrdem(ordem),
+    recebidaPorInteiro: ordem.itens.every((linha) => faltaChegar(ordem, linha) === 0),
+  }))
+}
+
+/**
+ * Recebimentos CONFERIDOS e ainda não lançados — o contador que a navegação
+ * mostra ao lado do galpão.
+ *
+ * `draft` fica de fora porque rascunho é trabalho de quem está com a nota na
+ * mão, não fila de ninguém; `posted` já saiu da fila por definição. O badge
+ * conta o que espera DECISÃO, que é o único número que faz alguém clicar.
+ */
+export function recebimentosPendentes(tenantId: string): number {
+  return daEmpresa(estado.recebimentos, tenantId).filter((r) => r.status === 'checked').length
+}

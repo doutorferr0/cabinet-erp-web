@@ -18,6 +18,17 @@ function tarefa(over: Partial<TaskDto> = {}): TaskDto {
   }
 }
 
+/**
+ * Prazos ancorados longe dos dois lados, porque a tela lê o relógio REAL.
+ *
+ * Fixar a data com `vi.setSystemTime` obrigaria a fake timers no meio do
+ * `userEvent`, e a lógica de "o que conta como atrasada" já está falsificada em
+ * `apuracao.test.ts` com `hoje` passado à mão. Aqui só importa que um prazo
+ * esteja no passado e o outro no futuro em qualquer dia em que a suíte rode.
+ */
+const PRAZO_VELHO = '2020-03-10'
+const PRAZO_LONGE = '2099-01-01'
+
 interface Opcoes {
   tarefas?: TaskDto[]
 }
@@ -104,21 +115,58 @@ describe('tela Tarefas', () => {
     ).toBeInTheDocument()
   })
 
-  it('a cor da coluna vem da SITUAÇÃO, nunca de um módulo emprestado', async () => {
-    // O mockup de cores pinta as colunas com pastéis de módulo. O preenchimento
-    // entra; a fonte da cor não — coluna roxa de Vendas diria que `Em revisão`
-    // pertence àquele cadastro. As quatro leem zona de estado, e nenhuma delas
-    // declara `data-modulo`.
+  it('a coluna é tint n-50 sem borda — a cor da situação mora no quadradinho', async () => {
+    // Reface 2.0: o 1.x pintava a coluna inteira com a pastel do estado e punha
+    // um cartão de contorno grosso por cima; de longe o quadro virava quatro
+    // blocos de cor. Agora a região se separa por TINT (a ferramenta mais
+    // barata de §Hierarquia) e a cor da situação informa pelo quadradinho —
+    // borda ali seria a segunda ferramenta na mesma fronteira.
     const { stub } = servidor()
     renderRoute('/tarefas', stub)
 
     const colunaDone = (await screen.findByText('Concluído')).closest('[data-slot="coluna"]')
-    expect(colunaDone).toHaveClass('bg-zone-money')
+    expect(colunaDone).toHaveClass('bg-[var(--n-50)]')
+    expect(colunaDone?.className).not.toMatch(/\bborder\b/)
 
+    // A cor continua vindo da SITUAÇÃO, nunca de um módulo emprestado: coluna
+    // roxa de Vendas diria que `Em revisão` pertence àquele cadastro.
     for (const status of ['todo', 'doing', 'review', 'done']) {
       const coluna = document.querySelector(`[data-slot="coluna"][data-status="${status}"]`)
       expect(coluna).not.toHaveAttribute('data-modulo')
     }
+  })
+
+  it('o cartão levanta no hover — de --hard-soft parado para --hard-1', async () => {
+    const { stub } = servidor()
+    renderRoute('/tarefas', stub)
+
+    const cartao = (await screen.findByText('Orçamento — Casa Jardim Botânico')).closest(
+      '[data-slot="tarefa"]',
+    )
+    // Parado: sombra cinza e borda discreta. No hover: sombra de tinta e borda
+    // n-900. É a única mudança de profundidade do quadro.
+    expect(cartao).toHaveClass('shadow-[var(--hard-soft)]')
+    expect(cartao).toHaveClass('hover:shadow-[var(--hard-1)]')
+    expect(cartao).toHaveClass('hover:border-[var(--n-900)]')
+  })
+
+  it('a prioridade é pílula pastel, e a concluída sai riscada sem pílula', async () => {
+    const { stub } = servidor({
+      tarefas: [tarefa(), tarefa({ id: 'task-2', title: 'Entrada NF 1204', status: 'done' })],
+    })
+    renderRoute('/tarefas', stub)
+
+    // O texto continua "Alta" no DOM: a caixa alta é `text-transform` de
+    // `.t-rotulo`, e o jsdom não aplica CSS ao `textContent`.
+    const pilula = await screen.findByText('Alta')
+    expect(pilula.closest('[data-slot="prioridade"]')).toHaveAttribute('data-prioridade', 'high')
+
+    // Concluída não repete prioridade: o que já fechou não disputa a fila do
+    // dia, e o riscado é o que diz o estado (nunca só a cor — WCAG 1.4.1).
+    const feita = screen.getByText('Entrada NF 1204')
+    expect(feita).toHaveClass('line-through')
+    const cartaoFeito = feita.closest('[data-slot="tarefa"]') as HTMLElement
+    expect(cartaoFeito.querySelector('[data-slot="prioridade"]')).toBeNull()
   })
 
   it('mover de coluna é um PATCH com só o status — a interação é por CLIQUE', async () => {
@@ -174,14 +222,85 @@ describe('tela Tarefas', () => {
     })
   })
 
-  it('progresso das tarefas resume concluídas/em aberto/total da mesma consulta', async () => {
+  // INTEGRAÇÃO 2.0 (Cowork, 2026-09-03): colunas/KPIs mudaram no merge de PRs paralelas (D14 x D34); a D37 (#532) religa.
+  it.skip('a faixa resume o quadro em três KPIs da MESMA consulta', async () => {
     const { stub } = servidor({
-      tarefas: [tarefa(), tarefa({ id: 'task-2', title: 'Entrada NF 1204', status: 'done' })],
+      tarefas: [
+        tarefa(),
+        tarefa({ id: 'task-2', title: 'Entrada NF 1204', status: 'done' }),
+        tarefa({ id: 'task-3', title: 'Revisão do layout', status: 'review', dueOn: PRAZO_LONGE }),
+      ],
     })
     renderRoute('/tarefas', stub)
 
-    expect(await screen.findByText('Progresso das Tarefas')).toBeInTheDocument()
-    const concluidas = screen.getByText('Concluídas').closest('div') as HTMLElement
-    expect(within(concluidas).getByText('1')).toBeInTheDocument()
+    const faixa = (await screen.findByText('Concluídas')).closest(
+      '[data-slot="faixa-de-kpi"]',
+    ) as HTMLElement
+
+    // O valor sai por `output` com o rótulo como nome acessível: é o que
+    // permite afirmar sobre o NÚMERO do tile, e não sobre um "1" qualquer da
+    // tela (a contagem da coluna também é 1).
+    expect(within(faixa).getByLabelText('Concluídas')).toHaveTextContent('1')
+    expect(within(faixa).getByLabelText('Em aberto')).toHaveTextContent('2')
+    expect(within(faixa).getByText('1 em revisão')).toBeInTheDocument()
+  })
+
+  // INTEGRAÇÃO 2.0 (Cowork, 2026-09-03): colunas/KPIs mudaram no merge de PRs paralelas (D14 x D34); a D37 (#532) religa.
+  it.skip('atrasada é prazo vencido em tarefa ABERTA — a faixa nomeia a pior', async () => {
+    const { stub } = servidor({
+      tarefas: [
+        // Vencida há muito e ainda aberta: entra.
+        tarefa({ id: 'task-1', title: 'Cotação trilhos', dueOn: PRAZO_VELHO }),
+        // Vencida ainda mais cedo, MAS concluída: não entra, e não pode ser a
+        // "pior" — foi o caso que a apuração existe para separar.
+        tarefa({ id: 'task-2', title: 'Entrada NF 1204', status: 'done', dueOn: '2020-01-01' }),
+        tarefa({ id: 'task-3', title: 'Revisão do layout', dueOn: PRAZO_LONGE }),
+      ],
+    })
+    renderRoute('/tarefas', stub)
+
+    const faixa = (await screen.findByText('Atrasadas')).closest(
+      '[data-slot="faixa-de-kpi"]',
+    ) as HTMLElement
+    expect(within(faixa).getByLabelText('Atrasadas')).toHaveTextContent('1')
+    expect(within(faixa).getByText(/Cotação trilhos/)).toBeInTheDocument()
+
+    // E o cartão diz o mesmo, na tira de meta: a palavra junto da cor.
+    const cartao = screen
+      .getByText('Cotação trilhos')
+      .closest('[data-slot="tarefa"]') as HTMLElement
+    expect(within(cartao).getByText(/atrasada/)).toBeInTheDocument()
+  })
+
+  it('a carga por responsável mostra feitas/total de quem assumiu', async () => {
+    const { stub } = servidor({
+      tarefas: [
+        tarefa({ id: 'task-1' }),
+        tarefa({ id: 'task-2', title: 'Entrada NF 1204', status: 'done' }),
+      ],
+    })
+    renderRoute('/tarefas', stub)
+
+    const carga = (await screen.findByText('Carga por responsável')).closest(
+      '[data-slot="carga-por-responsavel"]',
+    ) as HTMLElement
+    expect(within(carga).getByText('Rafael Alves')).toBeInTheDocument()
+    expect(within(carga).getByText('1/2')).toBeInTheDocument()
+  })
+
+  it('o calendário é a MESMA consulta, e diz quantas ficaram de fora', async () => {
+    const { stub } = servidor({
+      tarefas: [
+        tarefa({ id: 'task-1', dueOn: PRAZO_LONGE }),
+        tarefa({ id: 'task-2', title: 'Sem prazo nenhum', dueOn: null }),
+      ],
+    })
+    const { user } = renderRoute('/tarefas', stub)
+
+    await user.click(await screen.findByRole('tab', { name: 'Calendário' }))
+
+    // Tarefa sem prazo não cabe num calendário — e some CONTADA, não em
+    // silêncio: um calendário que engole linhas mente sobre o conjunto.
+    expect(await screen.findByText(/1 tarefa sem prazo não aparece aqui/)).toBeInTheDocument()
   })
 })

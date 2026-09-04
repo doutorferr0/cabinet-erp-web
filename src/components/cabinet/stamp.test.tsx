@@ -1,75 +1,60 @@
-import { Stamp } from '@/components/cabinet/stamp'
+import { Stamp, type StampTom } from '@/components/cabinet/stamp'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 /**
- * Carimbo de situação (DESIGN.md §Stamp): retângulo de 24px, borda 2px, Meta.
+ * STAMP — o alias do `<Badge>` (#471, D3).
  *
- * Os tons NÃO se comportam igual, e essa é a informação: o que está resolvido
- * (`done`) e o que está aberto (`open`) são carimbos PREENCHIDOS — leem-se de
- * longe numa lista —, enquanto anulado e neutro ficam em tinta sobre papel.
- * Um carimbo é a marca que se procura correndo o olho; se os quatro tiverem o
- * mesmo peso, nenhum se destaca.
- *
- * O mapeamento tom → situação continua `[a resolver]`; o componente só recebe
- * tom + rótulo.
+ * A 1.x testava aqui a APARÊNCIA do carimbo: `bg-stamp-open`, `border-2`,
+ * `h-6`, `uppercase`, `tracking-[0.07em]`. Nada disso sobrou — a 2.0 troca a
+ * peça, e a meta da rodada é explícita ("nada cheio, nada com borda"). O que
+ * este arquivo protege agora é o MAPEAMENTO e a compatibilidade do alias, que é
+ * o contrato que as telas ainda dependem até D30.
  */
+const MAPA: Array<[StampTom, string]> = [
+  ['open', 'info'],
+  ['done', 'ok'],
+  ['void', 'bad'],
+  ['neutral', 'mut'],
+]
+
 describe('Stamp', () => {
-  it('aberto e concluído são preenchidos; anulado e neutro, tinta sobre papel', () => {
-    render(
-      <div>
-        <Stamp tom="open" label="aberto" />
-        <Stamp tom="done" label="concluído" />
-        <Stamp tom="void" label="anulado" />
-        <Stamp tom="neutral" label="neutro" />
-      </div>,
-    )
-
-    // Amarelo NUNCA é cor de texto (DESIGN.md §Don'ts): é fundo, com Tinta em
-    // cima — e a BORDA continua Tinta, senão a caixa preta some no amarelo
-    // (é o que o mockup mostra: caixa preta preenchida, não bloco amarelo).
-    const aberto = screen.getByText('aberto')
-    expect(aberto.className).toContain('bg-stamp-open')
-    expect(aberto.className).toContain('text-foreground')
-    expect(aberto.className).toContain('border-border')
-    expect(aberto.className).not.toContain('text-stamp-open')
-    expect(aberto.className).not.toContain('border-stamp-open')
-
-    const concluido = screen.getByText('concluído')
-    expect(concluido.className).toContain('bg-stamp-done')
-    expect(concluido.className).toContain('text-primary-foreground')
-
-    for (const [texto, tom] of [
-      ['anulado', 'void'],
-      ['neutro', 'neutral'],
-    ] as const) {
-      const el = screen.getByText(texto)
-      expect(el.className).toContain(`border-stamp-${tom}`)
-      expect(el.className).toContain(`text-stamp-${tom}`)
-      expect(el.className).toContain('bg-transparent')
+  it('mapeia os quatro tons legados na escala da 2.0', () => {
+    for (const [legado, novo] of MAPA) {
+      const { unmount } = render(<Stamp tom={legado} label={legado} />)
+      expect(screen.getByText(legado), `${legado} → ${novo}`).toHaveAttribute(
+        'data-badge-tom',
+        novo,
+      )
+      unmount()
     }
   })
 
-  it('é retângulo de 24px com borda 2px, sem canto', () => {
-    render(<Stamp tom="open" label="EM ABERTO" />)
-    const el = screen.getByText('EM ABERTO')
-    expect(el.className).toContain('h-6')
-    expect(el.className).toContain('border-2')
-    expect(el.className).not.toContain('rounded')
+  it('mantém data-slot e data-tom legados — alias que muda atributo não é alias', () => {
+    render(<Stamp tom="open" label="ABERTO" />)
+    const el = screen.getByText('ABERTO')
+    // `documento-visual.test.tsx` consulta `data-tom="open"`; telas podem
+    // estilizar por `[data-slot=stamp]`. Os dois sobrevivem à troca de peça.
+    expect(el).toHaveAttribute('data-slot', 'stamp')
+    expect(el).toHaveAttribute('data-tom', 'open')
   })
 
-  it('usa Meta na rampa do DESIGN.md (mono 700, caixa alta, tracking 0.07em)', () => {
-    render(<Stamp tom="open" label="EM ABERTO" />)
-    const el = screen.getByText('EM ABERTO')
-    expect(el.className).toContain('font-mono')
-    expect(el.className).toContain('text-[0.75rem]')
-    expect(el.className).toContain('uppercase')
-    expect(el.className).toContain('tracking-[0.07em]')
-    expect(el.className).toContain('font-bold')
+  it('nenhum dos quatro é preenchido de cor cheia', () => {
+    // O que mudou de verdade: `open` e `done` eram blocos saturados (amarelo
+    // com tinta em cima, verde com branco em cima) e agora são pastel como os
+    // outros dois. O destaque passou do bloco para o ponto.
+    for (const [legado] of MAPA) {
+      const { unmount } = render(<Stamp tom={legado} label={legado} />)
+      const el = screen.getByText(legado)
+      expect(el.className).not.toContain('text-primary-foreground')
+      expect(el.className).not.toContain('text-white')
+      expect(el.className).not.toMatch(/\bborder\b/)
+      unmount()
+    }
   })
 
-  it('expõe o tom em data attribute para teste de tela', () => {
-    render(<Stamp tom="void" label="ANULADO" />)
-    expect(screen.getByText('ANULADO')).toHaveAttribute('data-tom', 'void')
+  it('todo tom escreve o estado por extenso', () => {
+    render(<Stamp tom="void" label="Cancelado" />)
+    expect(screen.getByText('Cancelado')).toBeInTheDocument()
   })
 })

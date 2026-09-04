@@ -71,7 +71,7 @@ describe('listagem no gesto IndexTable', () => {
     await user.click(within(linhaDe('STELLA')).getByRole('checkbox'))
 
     expect(onConsultar).not.toHaveBeenCalled()
-    expect(await screen.findByText('1 linha marcada')).toBeInTheDocument()
+    expect(await screen.findByText('selecionada', { exact: false })).toBeInTheDocument()
   })
 
   it('a barra de seleção NÃO existe antes de haver seleção', async () => {
@@ -102,7 +102,7 @@ describe('listagem no gesto IndexTable', () => {
     await user.click(within(linhaDe('STELLA')).getByRole('checkbox'))
     await user.click(within(linhaDe('LUMINA')).getByRole('checkbox'))
 
-    expect(await screen.findByText('2 linhas marcadas')).toBeInTheDocument()
+    expect(await screen.findByText('selecionadas', { exact: false })).toBeInTheDocument()
     const alterar = screen.getByRole('button', { name: 'Alterar' })
     expect(alterar).toBeDisabled()
     // Botão morto e mudo é lido como defeito — aqui o motivo é o desenho.
@@ -115,7 +115,7 @@ describe('listagem no gesto IndexTable', () => {
     await screen.findByText('STELLA')
     await user.click(screen.getByRole('checkbox', { name: 'Marcar todas as linhas desta página' }))
 
-    expect(await screen.findByText('3 linhas marcadas')).toBeInTheDocument()
+    expect(await screen.findByText('selecionadas', { exact: false })).toBeInTheDocument()
   })
 
   it('Limpar seleção devolve a tela ao estado de leitura', async () => {
@@ -123,7 +123,7 @@ describe('listagem no gesto IndexTable', () => {
 
     await screen.findByText('STELLA')
     await user.click(within(linhaDe('STELLA')).getByRole('checkbox'))
-    await user.click(await screen.findByRole('button', { name: 'Limpar seleção' }))
+    await user.click(await screen.findByRole('button', { name: /Limpar seleção/ }))
 
     await waitFor(() => {
       expect(document.querySelector('[data-slot="barra-de-selecao"]')).toBeNull()
@@ -137,7 +137,8 @@ describe('listagem no gesto IndexTable', () => {
     const cabecalho = screen.getByRole('table').querySelector('thead')
     expect(cabecalho?.className).toContain('sticky')
     // Fundo opaco não é enfeite: sem ele as linhas passam por baixo do
-    // cabeçalho fixo e o texto se mistura ao dado.
-    expect(cabecalho?.className).toContain('bg-card')
+    // cabeçalho fixo e o texto se mistura ao dado. Na 2.0 esse fundo é o TINT
+    // `n-50`, que é também a separação entre header e corpo (§Separação).
+    expect(cabecalho?.className).toContain('bg-surface-sunken')
   })
 })

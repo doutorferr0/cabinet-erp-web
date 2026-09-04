@@ -108,18 +108,29 @@ describe('a regra do desabilitado — tokens', () => {
     expect(css).not.toMatch(/--color-text-disabled\s*:/)
   })
 
-  it('o par superfície+traço existe nos DOIS temas', () => {
-    // Duas ocorrências de cada = bloco claro + bloco `.dark`. Um tema só
-    // significaria estado morto herdando a cor do outro.
-    expect(css.match(/--surface-disabled\s*:/g)).toHaveLength(2)
-    expect(css.match(/--rule-disabled\s*:/g)).toHaveLength(2)
+  it('o par superfície+traço serve os DOIS temas — por derivação, não por cópia', () => {
+    // A guarda pedia DUAS declarações de cada, uma no `:root` e outra no
+    // `.dark`, porque na 1.x o escuro tinha tabela própria: um tema só
+    // significava estado morto herdando a cor do outro.
+    //
+    // Na 2.0 (#469) é o contrário que precisa de guarda. Os dois apontam para
+    // um degrau da escala `--n-*`, que `tokens-2.0.css` inverte no `.dark` — o
+    // escuro cai sozinho, e uma SEGUNDA declaração aqui seria a tabela paralela
+    // que a 2.0 acabou de fechar (foi ela que já divergiu uma vez). Uma
+    // declaração, apontando para a escala: é isso que serve os dois temas.
+    expect(css.match(/--surface-disabled\s*:/g)).toHaveLength(1)
+    expect(css.match(/--rule-disabled\s*:/g)).toHaveLength(1)
+    expect(css).toMatch(/--surface-disabled:\s*var\(--n-\d+\);/)
+    expect(css).toMatch(/--rule-disabled:\s*var\(--n-\d+\);/)
   })
 
   it('a receita apaga fundo e traço, e devolve a tinta do tema', () => {
     const receita = css.slice(css.indexOf('.desabilitado:is('))
-    expect(receita).toMatch(/color:\s*hsl\(var\(--foreground\)\)/)
-    expect(receita).toMatch(/background-color:\s*hsl\(var\(--surface-disabled\)\)/)
-    expect(receita).toMatch(/border-color:\s*hsl\(var\(--rule-disabled\)\)/)
+    // Sem `hsl()` em volta desde a 2.0: os tokens são cor inteira, e envolver
+    // um hex numa função `hsl()` não produz cor nenhuma.
+    expect(receita).toMatch(/color:\s*var\(--foreground\)/)
+    expect(receita).toMatch(/background-color:\s*var\(--surface-disabled\)/)
+    expect(receita).toMatch(/border-color:\s*var\(--rule-disabled\)/)
     // `opacity: 1` explícito — sem ele, o clareamento que RAC e cmdk trazem de
     // fábrica voltaria pela dependência.
     expect(receita).toMatch(/opacity:\s*1/)
@@ -131,7 +142,7 @@ describe('a regra do desabilitado — tokens', () => {
     // `@utility` e todo `border-*` são gerados. Escrita como `@utility`, a
     // receita saiu com o traço PRETO na foto. Se alguém a mover para dentro de
     // um `@layer` ou para cima do `*`, o traço apagado morre em silêncio.
-    const universal = css.indexOf('* {\n  border-color: hsl(var(--border));')
+    const universal = css.indexOf('* {\n  border-color: var(--border);')
     const receita = css.indexOf('.desabilitado:is(')
     expect(universal).toBeGreaterThan(-1)
     expect(receita).toBeGreaterThan(universal)
@@ -157,12 +168,37 @@ describe('a regra do desabilitado — no DOM', () => {
     expect(botao).toHaveAttribute('title', 'Selecione uma linha')
   })
 
+  it('a TECLA morta perde o relevo — botão sem sombra fica rente ao papel', () => {
+    // A §Desabilitado devolve a tinta cheia e apaga fundo e traço, mas a
+    // utility `desabilitado` não mexe em `box-shadow` nem em `transform`: sem
+    // as duas linhas na BASE do `buttonVariants`, o botão morto continuaria
+    // repousando sobre a borda inferior de 2px/3px — uma tecla pronta para ser
+    // apertada, que é exatamente a leitura errada.
+    //
+    // A guarda é de CLASSE e não de pixel porque jsdom não roda o Tailwind:
+    // `getComputedStyle` num `disabled:shadow-none` devolve string vazia, e
+    // medir sombra aqui daria verde para o defeito.
+    renderWithQuery(
+      <Button disabled title="Selecione uma linha">
+        Alterar
+      </Button>,
+    )
+    const botao = screen.getByRole('button', { name: 'Alterar' })
+
+    expect(botao.className).toContain('disabled:shadow-none')
+    expect(botao.className).toContain('disabled:translate-y-0')
+    // `data-[disabled]` cobre o `LinkButton`, que é <a> e não tem `:disabled`.
+    expect(botao.className).toContain('data-[disabled]:shadow-none')
+  })
+
   it('campo morto não clareia o valor que o operador precisa ler', () => {
     renderWithQuery(<Input aria-label="CNPJ" defaultValue="12.345.678/0001-90" disabled />)
     const campo = screen.getByLabelText('CNPJ')
     expect(campo).toBeDisabled()
     expect(campo.className).toContain('desabilitado')
     expect(campo.className).not.toMatch(/opacity-\d/)
+    // Superfície apagada não é sulco: o `--inset` sai junto com o fundo.
+    expect(campo.className).toContain('disabled:shadow-none')
   })
 
   it('checkbox morto apaga o quadrado, não o rótulo', () => {

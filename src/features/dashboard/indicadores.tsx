@@ -1,136 +1,113 @@
-import type { Modulo } from '@/app/modulo'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
-import { NumeroHeroi } from '@/components/cabinet/numero-heroi'
-import { Selo } from '@/components/cabinet/selo'
+import {
+  type EscalaDeKpi,
+  FaixaDeKpi,
+  KpiTile,
+  type TintDeKpi,
+} from '@/components/cabinet/kpi-tile'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useResumoDoDashboard, variacaoDoMes } from '@/data/dashboard-api'
-import { formatMoneyBRL } from '@/lib/formatters'
-import { cn } from '@/lib/utils'
 import { Link } from '@tanstack/react-router'
 
 /**
- * FAIXA DE INDICADORES — os quatro números do topo do Dashboard.
+ * OS QUATRO KPIs DO DASHBOARD — a faixa de tinta da tela.
  *
- * ## Por que cada cartão tem ornamento, se o teto é de 1 por região
+ * ## O que mudou da versão 1.x
  *
- * O teto da memória (§@ornamentos) existe contra POLUIÇÃO: três desenhos
- * disputando a mesma leitura. A fileira de KPIs é o outro caso, o mesmo da
- * fileira da sidebar — cada shape marca um LUGAR diferente (Vendas, Compras,
- * Estoque), e é justamente a variação que faz a fileira se ler como um mapa. É
- * papel de ÍCONE, não de decoração — agora dentro de um `Selo`, que é a caixa
- * que devolve contraste ao shape depois que o fundo do cartão virou pastel.
+ * Os quatro cartões eram peças próprias desta tela: `p-5`, fundo na pastel /02
+ * do módulo, um `Selo` ornamental de 20px, o valor em `NumeroHeroi` (display
+ * CONDENSADO a 38px) e o delta dentro de um chip tonal com borda. Nada disso
+ * sobrevive à 2.0, por três motivos que não são de gosto:
  *
- * A cor vem do `data-modulo` do próprio cartão, e não do módulo da rota: o
- * Dashboard não é módulo nenhum (a tabela de cor travada pelo user cobre oito, e
- * este não é um deles), então cada cartão declara o escopo do número que ele
- * mostra.
- *
- * **Três dos quatro, não os quatro:** o cartão de dinheiro fica sem ornamento,
- * porque o número dele não pertence a módulo — pertence a verde, cor que
- * ornamento não pode usar. Ver o comentário na montagem da lista.
+ * 1. **A peça existe** — `KpiTile` (D11, `#479`) é o cartão de KPI do sistema, e
+ *    é ele que o mockup desenha aqui. Tela nova COMPÕE; reimplementar o cartão
+ *    aqui daria duas âncoras de faixa com medidas diferentes, que é exatamente
+ *    a deriva que a fusão v5 fechou.
+ * 2. **`NumeroHeroi` saiu.** A quinta família (display condensado, 36–48px)
+ *    dependia da Bebas, que a D1 removeu; `--font-display-condensada` passou a
+ *    apontar para a Gambarino, e §Hierarquia não tem degrau acima de 30px fora
+ *    do display. O valor do KPI agora é mono a 24px (`escala="destaque"`), que é
+ *    a medida do mockup. O `kpi-tile.tsx` já anotava que a peça sai "em D15 e
+ *    D20"; esta é a metade D20.
+ * 3. **O ornamento saiu.** §Hierarquia não tem lugar para um shape de 20px
+ *    dentro do cartão, e o que marca o assunto na 2.0 é a TINTA do tile —
+ *    lilac, sky, sand, mint, na ordem do mockup.
  *
  * ## Nem todo número leva a algum lugar
  *
  * Cartão vira link só quando existe tela que mostra AQUELE recorte. Orçamentos e
- * Pedidos têm listagem; estoque crítico não tem tela (o `/estoque` segue vazio,
- * decisão registrada) e o total de vendas do mês também não. Cartão clicável que
- * despeja o operador numa tela vazia é pior que cartão parado — ele aprende que
- * clicar ali não resolve, e para de clicar nos que resolvem.
+ * Pedidos têm listagem; estoque crítico não tem tela e o total de vendas do mês
+ * também não. Cartão clicável que despeja o operador numa tela vazia é pior que
+ * cartão parado — ele aprende que clicar ali não resolve e para de clicar nos
+ * que resolvem.
+ *
+ * O link envolve o tile em vez de virar prop do tile: a borda, a sombra dura e o
+ * padding são do cartão, e um `<a>` com a geometria do cartão duplicaria a
+ * decisão de desenho fora do arquivo que a tomou.
+ *
+ * ## Rodada 5 (D34, #529): a fileira igual virou BENTO
+ *
+ * Os quatro tiles eram do mesmo tamanho, e a fileira não dizia qual número
+ * importa. `pesquisa-estilos-2026-09-02.md` §11 aplica bento *"só em hub e
+ * dashboard"*, com um herói 1,6× — e o mockup nomeia o herói: **`Vendas do
+ * mês`**, a 40px, com a curva a 120px.
+ *
+ * A escolha não é estética. Dos quatro números, três são FILA (o que vence, o
+ * que chega, o que falta) e existem para o operador ir a algum lugar; um é
+ * RESULTADO, e é o que ele confere ao abrir a tela. Fila e resultado com o
+ * mesmo peso obrigam a ler os quatro para descobrir isso.
+ *
+ * **O herói é o primeiro no DOM**, e não o quarto movido por `grid-row` como no
+ * mockup: a ordem de leitura e a de tabulação seguem a visual. Consequência
+ * visível: `Vendas do mês` deixa de ser o último e passa a abrir a fileira.
  */
 
 interface Indicador {
-  /**
-   * Módulo a que o número pertence — dá shape e cor ao ornamento. Ausente no
-   * número que não é de módulo nenhum: ver o cartão de dinheiro abaixo.
-   */
-  modulo?: Modulo
   rotulo: string
-  valor: string
-  apoio: string
+  tint: TintDeKpi
+  /** O herói do bento é o único em `heroi`; os outros três ficam no padrão. */
+  escala: EscalaDeKpi
+  /**
+   * Contagem, em NÚMERO — não `String(n)`. É o que liga a contagem crescente e
+   * o agrupamento de milhar do `KpiTile`. Mutuamente exclusivo com
+   * `valorCentavos`.
+   */
+  valor?: number
+  /** Dinheiro em CENTAVOS. */
+  valorCentavos?: number
+  nota: string
+  delta?: number | null
+  serie?: readonly number[]
   /** Tela que mostra este recorte; ausente = o número não tem para onde levar. */
   href?: string
-  /** Dinheiro leva a zona de valor e escreve em verde (DESIGN.md §Acentos). */
-  dinheiro?: boolean
+  /** O número que é PROBLEMA, não informação: pinta o valor em `--bad`. */
+  alerta?: boolean
 }
 
-function Cartao({ indicador }: { indicador: Indicador }) {
-  const conteudo = (
-    <>
-      {/* O selo sai do meio do texto e vira a âncora do cartão, como no mockup:
-          com o fundo agora colorido, um shape de 20px em linha com o rótulo
-          desaparecia dentro da própria pastel. Fica de fora o cartão de
-          dinheiro — a regra de que ornamento não usa as cores com dono não
-          mudou, e é ela que decide, não o alinhamento da fileira. */}
-      {indicador.modulo ? <Selo shape={indicador.modulo} tamanho="lg" /> : null}
-      <span className="flex min-w-0 flex-col gap-1">
-        <span className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
-          {indicador.rotulo}
-        </span>
-        {/* A voz de QUANTO (PT Mono), e SEM negrito: o `@fontsource` publica só o
-            peso 400 do PT Mono, e `font-bold` sem arquivo de 700 viraria negrito
-            sintético — o browser engorda o traço por conta. Quem dá presença ao
-            número aqui é a largura da mono e a tabularidade, não o peso
-            (decisão do user, 2026-08-13). */}
-        {/* r7 (ref. Devora): a CONTAGEM fala em display condensado grande —
-            número-herói do cartão. Dinheiro continua na voz de QUANTO (mono,
-            regra de 2026-08-13): moeda não troca de voz por moda. */}
-        {indicador.dinheiro ? (
-          <span className="font-mono text-2xl tabular-nums text-money">{indicador.valor}</span>
-        ) : (
-          <NumeroHeroi escala="cartao">{indicador.valor}</NumeroHeroi>
-        )}
-        {/* Delta com sinal vira CHIP tonal — verde soma, coral subtrai. */}
-        {/^[+−-]/.test(indicador.apoio) ? (
-          <span
-            className={cn(
-              'w-fit rounded-item border px-1.5 py-0.5 font-mono text-[0.6875rem] tabular-nums',
-              indicador.apoio.startsWith('+')
-                ? 'border-money/40 bg-zone-money text-money'
-                : 'border-destructive/40 bg-zone-danger text-destructive',
-            )}
-          >
-            {indicador.apoio}
-          </span>
-        ) : (
-          <span className="text-sm text-muted-foreground">{indicador.apoio}</span>
-        )}
-      </span>
-    </>
+function Tile({ indicador }: { indicador: Indicador }) {
+  const tile = (
+    <KpiTile
+      rotulo={indicador.rotulo}
+      {...(indicador.valor !== undefined && { valor: indicador.valor })}
+      {...(indicador.valorCentavos !== undefined && { valorCentavos: indicador.valorCentavos })}
+      {...(indicador.delta !== undefined && { delta: indicador.delta })}
+      {...(indicador.serie && { serie: indicador.serie })}
+      {...(indicador.alerta && { alerta: true })}
+      nota={indicador.nota}
+      tint={indicador.tint}
+      escala={indicador.escala}
+      // `h-full` sempre, e não só sob link: no bento os tiles dividem a linha
+      // por `align-items: stretch`, e um tile que encolhe ao conteúdo deixaria
+      // um degrau na base da fileira.
+      className="h-full"
+    />
   )
 
-  // A pastel /02 do próprio módulo do número — o preenchimento que o mockup
-  // pede. Dinheiro segue na zona de valor, que é a superfície que ele já tinha.
-  // `p-5` (20px), respiro do Dashboard (§@casca-global): o cartão de KPI é a
-  // âncora da fileira, e a folga confirmada no mockup é maior que a densidade
-  // padrão do sistema — a mesma exceção que `Painel` já registra pra tela de
-  // visão.
-  const classe = cn(
-    'flex items-center gap-3 rounded-card border-2 p-5 no-underline',
-    indicador.dinheiro ? 'bg-zone-money' : 'bg-modulo',
-  )
-
-  if (!indicador.href) {
-    return (
-      <div
-        {...(indicador.modulo && { 'data-modulo': indicador.modulo })}
-        data-slot="indicador"
-        className={cn(classe, 'shadow-el1')}
-      >
-        {conteudo}
-      </div>
-    )
-  }
+  if (!indicador.href) return tile
 
   return (
-    <Link
-      to={indicador.href}
-      {...(indicador.modulo && { 'data-modulo': indicador.modulo })}
-      data-slot="indicador"
-      // Peça solta e clicável: leva o pulo do sistema (§Lift), como botão e
-      // cartão de tarefa. Cartão parado não leva.
-      className={cn(classe, 'lift-control border-border focus-visible:focus-ring')}
-    >
-      {conteudo}
+    <Link to={indicador.href} className="flex min-w-0 flex-1 no-underline focus-visible:focus-ring">
+      <span className="flex min-w-0 flex-1 flex-col">{tile}</span>
     </Link>
   )
 }
@@ -139,17 +116,15 @@ export function Indicadores() {
   const query = useResumoDoDashboard()
 
   if (query.isPending) {
+    // O esqueleto herda a assimetria do bento — o herói mais largo e mais alto.
+    // Um esqueleto de quatro caixas iguais prometeria uma fileira que não é a
+    // que vai chegar, e o salto ao chegar seria maior que a espera.
     return (
-      // `auto-fit`/`minmax(208px,1fr)`, nunca `@media` (§@casca-global — regra
-      // de quebra): a fileira espreme antes de quebrar, e quebra sozinha quando
-      // o espaço não cabe mais um cartão de 208px — sem depender de breakpoint
-      // fixo, que erra assim que a gaveta de notificações abre e encolhe o
-      // `<main>`.
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(208px,1fr))] gap-5.5">
-        {['k1', 'k2', 'k3', 'k4'].map((chave) => (
-          <Skeleton key={chave} className="h-[104px] w-full" />
+      <FaixaDeKpi heroi={<Skeleton className="h-[132px] w-full" />}>
+        {['k2', 'k3', 'k4'].map((chave) => (
+          <Skeleton key={chave} className="h-[132px] w-full" />
         ))}
-      </div>
+      </FaixaDeKpi>
     )
   }
 
@@ -165,63 +140,74 @@ export function Indicadores() {
 
   const resumo = query.data
   const variacao = variacaoDoMes(resumo)
+  const anterior = resumo.previousMonthSalesCents
 
+  /**
+   * O HERÓI vem primeiro na lista porque vem primeiro na tela — a lista é a
+   * ordem de leitura, e uma lista que discorda dela precisaria de um índice
+   * mágico ("o quarto é o herói") que ninguém mantém.
+   */
   const indicadores: Indicador[] = [
     {
-      modulo: 'vendas',
+      rotulo: 'Vendas do mês',
+      tint: 'mint',
+      escala: 'heroi',
+      valorCentavos: resumo.monthSalesCents,
+      // Sem base de comparação a tela DIZ isso, em vez de mostrar "+0%": zero
+      // por cima de zero é conta que ninguém pode conferir.
+      nota: variacao === null ? 'sem base de comparação' : 'vs. mês anterior',
+      delta: variacao,
+      // A sparkline do mockup, com os DOIS pontos que o DTO publica
+      // (`previousMonthSalesCents` → `monthSalesCents`). São dois, que é o
+      // mínimo que `Sparkline` desenha, e é a curva de verdade — não uma série
+      // inventada para a linha ficar bonita. Vira curva de doze meses no dia em
+      // que o DTO publicar a série; é acréscimo de campo, não rota nova.
+      //
+      // Mesma guarda do `variacaoDoMes`: base zero não tem tendência, e uma
+      // linha subindo do chão diria "cresceu infinito".
+      ...(anterior === 0 ? {} : { serie: [anterior, resumo.monthSalesCents] }),
+    },
+    {
       rotulo: 'Orçamentos abertos',
-      valor: String(resumo.openQuotes),
-      apoio:
+      tint: 'lilac',
+      escala: 'padrao',
+      valor: resumo.openQuotes,
+      nota:
         resumo.openQuotesDueThisWeek === 1
           ? '1 vence esta semana'
           : `${resumo.openQuotesDueThisWeek} vencem esta semana`,
       href: '/vendas/orcamentos',
     },
     {
-      modulo: 'compras',
       rotulo: 'Pedidos a receber',
-      valor: String(resumo.incomingOrders),
-      apoio:
+      tint: 'sky',
+      escala: 'padrao',
+      valor: resumo.incomingOrders,
+      nota:
         resumo.incomingOrdersToday === 1
           ? '1 chega hoje'
           : `${resumo.incomingOrdersToday} chegam hoje`,
       href: '/compras/pedidos',
     },
     {
-      modulo: 'estoque',
       rotulo: 'Estoque crítico',
-      valor: String(resumo.criticalStockItems),
-      apoio: 'abaixo do mínimo',
-    },
-    {
-      // SEM ornamento, e é decisão: este número não é de módulo nenhum — é
-      // DINHEIRO, e dinheiro é verde, cor que ornamento não pode usar (regra
-      // dura: as três cores com dono estão fora). Emprestar o shape de Produtos
-      // ou de Vendas diria que o total do mês pertence àquele cadastro. Quem
-      // marca o cartão aqui é a zona de valor e o verde do número, que é
-      // exatamente o que o DESIGN.md manda para indicador de dinheiro.
-      rotulo: 'Vendas do mês',
-      valor: formatMoneyBRL(resumo.monthSalesCents),
-      // Sem base de comparação a tela DIZ isso, em vez de mostrar "+0%": zero
-      // por cima de zero é conta que ninguém pode conferir.
-      apoio:
-        variacao === null
-          ? 'sem base de comparação'
-          : `${variacao >= 0 ? '+' : ''}${variacao}% vs mês anterior`,
-      dinheiro: true,
+      tint: 'sand',
+      escala: 'padrao',
+      valor: resumo.criticalStockItems,
+      nota: 'abaixo do mínimo',
+      // O `.kpi.warn` do mockup: o número é problema, e o valor vai para `--bad`
+      // enquanto a tinta do tile continua sendo a do assunto.
+      alerta: resumo.criticalStockItems > 0,
     },
   ]
 
+  const [heroi, ...resto] = indicadores as [Indicador, ...Indicador[]]
+
   return (
-    // `auto-fit`/`minmax(208px,1fr)`, nunca `@media` (§@casca-global — regra
-    // de quebra): a fileira espreme antes de quebrar, e quebra sozinha quando
-    // o espaço não cabe mais um cartão de 208px — sem depender de breakpoint
-    // fixo, que erra assim que a gaveta de notificações abre e encolhe o
-    // `<main>`.
-    <div className="grid grid-cols-[repeat(auto-fit,minmax(208px,1fr))] gap-5.5">
-      {indicadores.map((indicador) => (
-        <Cartao key={indicador.rotulo} indicador={indicador} />
+    <FaixaDeKpi heroi={<Tile indicador={heroi} />}>
+      {resto.map((indicador) => (
+        <Tile key={indicador.rotulo} indicador={indicador} />
       ))}
-    </div>
+    </FaixaDeKpi>
   )
 }

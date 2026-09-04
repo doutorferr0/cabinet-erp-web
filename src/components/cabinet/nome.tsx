@@ -3,24 +3,27 @@ import { cn } from '@/lib/utils'
 /**
  * NOME — o nome próprio de uma entidade, na voz de QUEM.
  *
- * A tipografia do Cabinet divide por SEMÂNTICA, não por tamanho (decisão do
- * user, 2026-08-13, formulada por ele: *"'cliente:' estaria em Sora e o nome do
- * cliente em Newsreader"*). Quatro famílias, quatro papéis:
+ * A tipografia da fase 1.5 dividia por SEMÂNTICA e chegava a quatro famílias
+ * (decisão do user, 2026-08-13): uma para QUEM — nome de cliente, profissional,
+ * fornecedor, empresa, e título de tela —, uma para O QUÊ — nome de produto e
+ * descrição —, Inter para a INTERFACE e uma mono para QUANTO. Esta peça era a
+ * primeira delas.
  *
- * - **quem** — Newsreader: nome de cliente, profissional, fornecedor, empresa;
- *   título de tela e de documento. É esta peça.
- * - **o quê** — Sora: nome de produto, descrição.
- * - **UI** — Inter: rótulo, cabeçalho de coluna, botão, menu, aba.
- * - **quanto** — PT Mono: número, código, data, valor.
+ * **Na 2.0 (#469) são três famílias e a divisão é por PAPEL**: título, interface
+ * e dado. `--font-nome` virou alias da família de título, então o `<Nome>`
+ * continua se lendo diferente do rótulo ao lado; o que sumiu foi a distinção
+ * entre "quem" e "o quê", que custava duas famílias para separar duas colunas
+ * da mesma linha. Quem faz essa separação agora é a cor (n-900 contra n-500) e
+ * o degrau da régua. Reescrever esta peça em `--t-*` é trabalho de D8/D15.
  *
  * **É componente, e não uma classe `font-nome` solta, pelo mesmo motivo do
- * `<Ornamento>`:** nome de entidade aparece em formulário, célula de tabela,
+ * `<Forma>`:** nome de entidade aparece em formulário, célula de tabela,
  * combo, migalha, banda de identidade e diálogo de confirmação. Regra que
  * depende de alguém lembrar da classe falha na terceira tela — e falha MUDA,
  * porque texto na fonte errada não quebra teste nenhum.
  *
- * **O +2px não é enfeite, é correção de hierarquia.** A altura-x do Newsreader
- * é menor que a de Sora e Inter; no MESMO tamanho, o nome do cliente lê como
+ * **O +2px não é enfeite, é correção de hierarquia.** A altura-x da família de
+ * título é menor que a das sans; no MESMO tamanho, o nome do cliente lê como
  * texto secundário e a hierarquia da linha inverte — o rótulo passa a pesar
  * mais que o dado. Medido em render, não deduzido. O ajuste é em `em` e não em
  * px de propósito: a peça entra tanto numa célula de 14px quanto num título de
@@ -66,11 +69,12 @@ export function Nome({ children, peso = 'normal', className }: NomeProps) {
 }
 
 /**
- * PRODUTO — a voz de O QUÊ: nome de produto e descrição, em Sora.
+ * PRODUTO — a voz de O QUÊ: nome de produto e descrição.
  *
  * Mora no mesmo arquivo que o `<Nome>` de propósito: os dois são o PAR que faz
- * a linha da listagem se ler. Numa mesma linha há três famílias — nome em
- * serifa, produto em Sora, número em mono — e foi o produto em
+ * a linha da listagem se ler. Na 1.5 a linha tinha três famílias — nome, produto
+ * e número, cada um na sua —; na 2.0 nome e produto compartilham a de título e
+ * quem os separa é a cor. Foi o produto em
  * `--muted-foreground` que impediu o empate visual: em `--foreground` ele
  * disputa a atenção com o nome do cliente e a linha perde o assunto. Separar as
  * duas peças em dois arquivos convidaria a aplicar uma sem a outra, que é

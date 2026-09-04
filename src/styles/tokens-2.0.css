@@ -1,0 +1,761 @@
+/* =====================================================================
+   CABINET 2.0 — TOKENS (fundação da rodada Reface 2.0, Cowork 2026-09-02)
+   Fonte de verdade: docs/design/mockup-reface-hibrido-2026-09-02.html (aba Tokens)
+   e docs/design/auditoria-reface-2.0-2026-09-02.md (§3, §5, §5a, §5b, §Hierarquia).
+   Este arquivo é ADITIVO: cria os nomes 2.0. Mapear os nomes 1.x para cá e
+   apagar os antigos é a issue D1 (#469). Nenhuma outra issue edita este arquivo
+   sem combinar na #469 — se precisar de token novo, comente lá.
+   ===================================================================== */
+
+/* ---------- fontes 2.0 ---------- */
+@font-face {
+  font-family: "Gambarino";
+  src: url("/fonts/Gambarino-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* ---------- tipografia: 3 papéis ---------- */
+  --font-display: "Gambarino", Georgia, "Times New Roman", serif;
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* ---------- escala de neutros (Geist): cada degrau tem UM papel ---------- */
+  --n-0: #fffefa; /* folha — card, tabela, campo            */
+  --n-50: #f6f4ee; /* folha-2 — header de tabela, zebra, ro  */
+  --n-100: #ece9e1; /* bancada — fundo da aplicação           */
+  --n-200: #dcd7cb; /* hairline — divisor de linha            */
+  --n-300: #c9c3b5; /* borda de controle                      */
+  --n-400: #a9a395; /* disabled, ícone inativo, placeholder   */
+  --n-500: #6d675b; /* meta, rótulo, texto terciário          */
+  --n-700: #4a463d; /* texto secundário                       */
+  --n-900: #16140f; /* tinta — texto, borda dura              */
+  --bancada: var(--n-100);
+  --folha: var(--n-0);
+  --folha-2: var(--n-50);
+  --hairline: var(--n-200);
+  --hairline-2: var(--n-300);
+  --ink: var(--n-900);
+  --ink-2: var(--n-700);
+  --ink-3: var(--n-500);
+  --disabled: var(--n-400);
+
+  /* ---------- 8 matizes × 6 degraus ----------
+     50/100 tint · 200 borda/tint forte · 400 fill · 600 texto no claro · 800 texto forte
+     clarear/escurecer = subir/descer na rampa ou color-mix; nunca hex novo em componente */
+  --lime-50: #f7fad4;
+  --lime-100: #f0f6b0;
+  --lime-200: #e9f27a;
+  --lime-400: #e4f222;
+  --lime-600: #7c8a00;
+  --lime-800: #4f5c00;
+  --indigo-50: #eeedfc;
+  --indigo-100: #dedcf9;
+  --indigo-200: #bdb9f2;
+  --indigo-400: #6d67ee;
+  --indigo-600: #4b45e8;
+  --indigo-800: #2f2aa8;
+  --mint-50: #e6f5ec;
+  --mint-100: #cfeedc;
+  --mint-200: #9fddb9;
+  --mint-400: #3db57a;
+  --mint-600: #0e7a4b;
+  --mint-800: #0a5636;
+  --sky-50: #e7eefb;
+  --sky-100: #d2dff7;
+  --sky-200: #a6c0ef;
+  --sky-400: #4c86e3;
+  --sky-600: #1c5fbf;
+  --sky-800: #144387;
+  --amber-50: #fbf1d6;
+  --amber-100: #f8e3ae;
+  --amber-200: #f1c95e;
+  --amber-400: #e5a712;
+  --amber-600: #9a5b00;
+  --amber-800: #6b3f00;
+  --rose-50: #fbe5e2;
+  --rose-100: #f8cdc8;
+  --rose-200: #f09e95;
+  --rose-400: #e2574a;
+  --rose-600: #b3261e;
+  --rose-800: #7f1a14;
+  --violet-50: #f3e8fa;
+  --violet-100: #e7d1f5;
+  --violet-200: #cfa6eb;
+  --violet-400: #a35fd6;
+  --violet-600: #7a3aae;
+  --violet-800: #55287a;
+  --teal-50: #e2f4f4;
+  --teal-100: #c4e8e8;
+  --teal-200: #8ed2d2;
+  --teal-400: #2fa7a7;
+  --teal-600: #177878;
+  --teal-800: #0f5555;
+
+  /* ---------- acento: CHARTREUSE = FILL, nunca texto ---------- */
+  --main: var(--lime-400);
+  --main-hover: var(--lime-200);
+  --main-active: #d3e00f;
+  --main-soft: var(--lime-50);
+  --main-fg: var(--n-900);
+  --main-text: var(--lime-800); /* o único texto com acento: link, id, "salvar consulta" */
+  --primary: var(--main);
+  --primary-hover: var(--main-hover);
+  --primary-foreground: var(--main-fg);
+  --primary-soft: var(--main-soft);
+  --primary-text: var(--main-text);
+  --ring: #ffd23f; /* foco continua amarelo */
+  --ring-outline: 0 0 0 2px var(--n-900), 0 0 0 5px var(--ring); /* foco sobre primário */
+
+  /* ---------- semântica: matiz fixo, fundo do matiz sobre a FOLHA ----------
+     Um valor só serve aos dois temas, porque `--folha` vira com o tema — é a
+     mesma receita dos tints logo abaixo.
+
+     **O fundo pousa sobre a folha e não sobre `transparent`, e isso foi MEDIDO
+     (#469).** Com alpha, o badge muda de cor conforme o que estiver atrás: o
+     mesmo `--ok-bg` dava 4,54:1 sobre a folha e 3,87:1 sobre a bancada, e as
+     cinco reprovavam na bancada — justamente onde o operador vê o badge fora de
+     um card. Opaco, o par é um só e mede uma vez.
+     `docs/design/medir-contraste.py --conferir` cobra os dez pares. */
+  --ok: var(--mint-600);
+  --ok-bg: color-mix(in oklab, var(--mint-400) 18%, var(--folha));
+  --info: var(--sky-600);
+  --info-bg: color-mix(in oklab, var(--sky-400) 18%, var(--folha));
+  --warn: var(--amber-600);
+  --warn-bg: color-mix(in oklab, var(--amber-400) 22%, var(--folha));
+  --bad: var(--rose-600);
+  --bad-bg: color-mix(in oklab, var(--rose-400) 18%, var(--folha));
+  --mut: var(--n-500);
+  --mut-bg: color-mix(in oklab, var(--n-500) 10%, var(--folha));
+  --money: var(--ok);
+  --money-neg: var(--bad);
+
+  /* ---------- tints por assunto (12% do matiz sobre folha) ----------
+     `var(--folha)` de dentro é substituído no elemento em que ESTA declaração
+     se aplica — o `<html>` —, e os descendentes herdam o valor já resolvido.
+     Funciona porque `.dark` também mora no `<html>`: os dois seletores casam o
+     mesmo elemento. Pôr `data-theme="dark"` num elemento que NÃO seja a raiz
+     (um previsualizador de tema numa parte da página) deixa os tints com a
+     folha do tema de fora — a seção fica escura e os tints, claros. Nesse caso
+     redeclare estas linhas no escopo, como `docs/design/hierarquia.html` faz. */
+  --tint-lilac: color-mix(in oklab, var(--indigo-400) 12%, var(--folha));
+  --tint-mint: color-mix(in oklab, var(--mint-400) 12%, var(--folha));
+  --tint-sky: color-mix(in oklab, var(--sky-400) 12%, var(--folha));
+  --tint-sand: color-mix(in oklab, var(--amber-400) 14%, var(--folha));
+  --tint-rose: color-mix(in oklab, var(--rose-400) 12%, var(--folha));
+  --tint-violet: color-mix(in oklab, var(--violet-400) 12%, var(--folha));
+  --tint-teal: color-mix(in oklab, var(--teal-400) 12%, var(--folha));
+
+  /* ---------- cor de MÓDULO: um matiz por módulo (quadradinho, monograma, KPI, card lateral) ---------- */
+  --mod-hoje: var(--lime-400);
+  --mod-compras: var(--indigo-600);
+  --mod-estoque: var(--mint-600);
+  --mod-vendas: var(--sky-600);
+  --mod-crm: var(--amber-600);
+  --mod-pessoas: var(--violet-600);
+  --mod-relatorios: var(--teal-600);
+  --mod-produtos: var(--mint-600);
+
+  /* ---------- transparências nomeadas (nunca rgba literal) ---------- */
+  --glass: color-mix(in oklab, var(--folha) 72%, transparent); /* + backdrop-filter: blur(10px) */
+  --scrim: color-mix(in oklab, var(--n-900) 45%, transparent);
+  --hover: color-mix(in oklab, var(--n-900) 5%, transparent);
+  --press: color-mix(in oklab, var(--n-900) 9%, transparent);
+
+  /* ---------- canto por natureza ---------- */
+  --r-panel: 10px;
+  --r-card: 8px;
+  --r-ctrl: 6px;
+  --r-data: 4px;
+  --r-item: 4px;
+  --r-chip: 4px;
+  --r-pill: 999px;
+  --radius-panel: var(--r-panel);
+  --radius-card: var(--r-card);
+  --radius-control: var(--r-ctrl);
+  --radius-data: var(--r-data);
+  --radius-item: var(--r-item);
+
+  /* ---------- profundidade: física de papel, sem blur ---------- */
+  --key-1: 0 2px 0 0 var(--n-900); /* botão secundário (tecla)  */
+  --key-2: 0 3px 0 0 var(--n-900); /* botão primário            */
+  --hard-1: 2px 2px 0 0 var(--n-900); /* KPI, card em hover        */
+  --hard-2: 4px 4px 0 0 var(--n-900); /* painel de página          */
+  --hard-3: 6px 6px 0 0 var(--n-900); /* dialog, sheet, ⌘K         */
+  --hard-soft: 3px 3px 0 0 var(--n-300); /* card quieto               */
+  --soft-1: 0 1px 0 rgba(22, 20, 15, 0.06), 0 1px 2px rgba(22, 20, 15, 0.06);
+  --inset: inset 0 1px 2px rgba(22, 20, 15, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  --focus: 0 0 0 3px var(--ring);
+
+  /* ---------- espaço (§Hierarquia) ---------- */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+
+  /* ---------- §HIERARQUIA — TIPO como SHORTHAND `font:` ----------
+     Os mesmos onze degraus das classes `.t-*` lá embaixo, em forma de token.
+     A classe serve à marcação (`<h2 class="t-secao">`); o token serve ao
+     componente que já tem classe própria e só precisa da voz
+     (`style={{ font: 'var(--t-ui)' }}`, `font: var(--t-dado)` numa utility).
+
+     São SHORTHAND de propósito. Três tokens soltos — tamanho, peso, família —
+     deixariam aplicar meio degrau (tamanho novo com peso velho), que é
+     exatamente o defeito que a régua existe para impedir. A COR não entra na
+     shorthand porque `font:` não a carrega: quem a define é a classe `.t-*` ou
+     o consumidor, dentro dos três degraus permitidos (n-900 · n-700 · n-500).
+
+     `identidade-visual.test.ts` confere que token e classe não divergem. */
+  /* O TAMANHO TAMBÉM SOZINHO, e não é conveniência: é o que permite alimentar
+     COMPONENTE DE TERCEIRO sem escrever pixel na mão (pedido de D23, #469 — o
+     Gantt do SVAR recebe a tipografia por variável própria e não aceita a
+     shorthand inteira). Sem isto a saída seria um literal na tela, que é
+     exatamente o que a régua §Hierarquia proíbe.
+     Peso e família continuam vindo de `--font-*`, que já são token. Os valores
+     abaixo repetem o que está na shorthand, e `identidade-visual.test.ts` confere
+     que as duas formas não divergem — a mesma disciplina da pilha de fontes. */
+  --t-display-size: 30px;
+  --t-pagina-size: 28px;
+  --t-registro-size: 24px;
+  --t-secao-size: 20px;
+  --t-bloco-size: 13.5px;
+  --t-corpo-size: 13.5px;
+  --t-ui-size: 13px;
+  --t-meta-size: 12px;
+  --t-rotulo-size: 10.5px;
+  --t-dado-size: 12.5px;
+  --t-dado-meta-size: 11px;
+
+  --t-display: 400 30px / 1.05 var(--font-display);
+  --t-pagina: 400 28px / 1.1 var(--font-display);
+  --t-registro: 400 24px / 1.1 var(--font-display);
+  --t-secao: 400 20px / 1.2 var(--font-display);
+  --t-bloco: 600 13.5px / 1.3 var(--font-sans);
+  --t-corpo: 400 13.5px / 1.45 var(--font-sans);
+  --t-ui: 500 13px / 1.3 var(--font-sans);
+  --t-meta: 400 12px / 1.35 var(--font-sans);
+  --t-rotulo: 600 10.5px / 1.2 var(--font-sans);
+  --t-dado: 500 12.5px / 1.3 var(--font-mono);
+  --t-dado-meta: 400 11px / 1.3 var(--font-mono);
+
+  /* ---------- movimento ---------- */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-1: 120ms;
+  --dur-2: 200ms;
+  --dur-3: 320ms;
+  /* A MOLA, em `linear()` de 30 pontos: x(t) da mola subamortecida (ζ = 0,75)
+     amostrada até 360 ms, com 2,8% de passada do alvo no meio do caminho — o
+     "peso" que distingue uma mola de um fade. Uma bezier de quatro pontos não
+     representa ultrapassar o alvo e voltar.
+
+     São os MESMOS pontos que a utility `pop-spring` do `index.css` já usa. Aqui
+     eles viram token porque a próxima peça que solta (barra de lote, dica que
+     aparece por cima) copiaria os trinta números de novo — e cópia de curva é
+     onde duas peças começam a se mover diferente sem ninguém decidir isso. */
+  --spring: linear(
+    0,
+    0.027,
+    0.096,
+    0.189,
+    0.295,
+    0.404,
+    0.51,
+    0.608,
+    0.695,
+    0.771,
+    0.835,
+    0.888,
+    0.93,
+    0.962,
+    0.987,
+    1.004,
+    1.016,
+    1.023,
+    1.027,
+    1.028,
+    1.028,
+    1.026,
+    1.023,
+    1.02,
+    1.017,
+    1.014,
+    1.011,
+    1.009,
+    1.007,
+    1
+  );
+
+  /* ---------- casca ---------- */
+  --nav-w: 236px;
+  --top-h: 56px;
+}
+
+/* ---------- tema escuro: MESMOS nomes, escala invertida ---------- */
+.dark,
+[data-theme="dark"] {
+  --n-0: #171613;
+  --n-50: #1e1c18;
+  --n-100: #24221d;
+  --n-200: #302e28;
+  --n-300: #3e3b33;
+  --n-400: #625e53;
+  --n-500: #948f82;
+  --n-700: #cbc6b9;
+  --n-900: #f3f1ea;
+  --main-soft: color-mix(in oklab, var(--lime-400) 14%, var(--n-50));
+  --main-text: var(--lime-200);
+  --main-fg: #16140f; /* chartreuse é igual nos dois temas: tinta preta em cima */
+  /* SEMÂNTICA NO ESCURO: sobe DOIS degraus, não um. A auditoria pedia 600→400,
+     e o 400 não passa contra o próprio fundo — o badge de info dava 4,01:1 e o
+     de erro 3,98:1, medidos com o fundo já composto sobre a folha escura. No
+     200 os cinco ficam entre 7 e 8,7:1. Subir na rampa é o mecanismo previsto
+     (nunca hex novo); o que mudou foi quantos degraus, e quem decidiu foi a
+     medição. `--mut` sobe junto, para o segundo degrau de tinta. */
+  --ok: var(--mint-200);
+  --info: var(--sky-200);
+  --warn: var(--amber-200);
+  --bad: var(--rose-200);
+  --mut: var(--n-700);
+  /* Cor de MÓDULO no escuro: o degrau 600 é tinta feita para papel claro e
+     sobre a folha escura ele afunda (indigo-600 sobre n-0 dá 3,4:1). Desce
+     para o 400, que é a mesma inversão que a semântica faz logo acima — o
+     matiz do módulo não muda, só a luz. `hoje` é chartreuse nos dois temas
+     pelo mesmo motivo do acento: ele é FILL, e leva tinta escura em cima. */
+  --mod-compras: var(--indigo-400);
+  --mod-estoque: var(--mint-400);
+  --mod-vendas: var(--sky-400);
+  --mod-crm: var(--amber-400);
+  --mod-pessoas: var(--violet-400);
+  --mod-relatorios: var(--teal-400);
+  --mod-produtos: var(--mint-400);
+  --key-1: 0 2px 0 0 var(--n-300);
+  --key-2: 0 3px 0 0 var(--n-400);
+  --hard-1: 2px 2px 0 0 var(--n-300);
+  --hard-2: 4px 4px 0 0 var(--n-300);
+  --hard-3: 6px 6px 0 0 var(--n-400);
+  --hard-soft: 3px 3px 0 0 var(--n-200);
+  --inset: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+  --soft-1: 0 1px 0 rgba(0, 0, 0, 0.4);
+  --glass: color-mix(in oklab, var(--n-50) 72%, transparent);
+  color-scheme: dark;
+}
+
+/* =====================================================================
+   RODADA 5 (#527) — a paleta em OKLCH, com o hex acima como FALLBACK.
+
+   Por que existe: as rampas hex foram escolhidas a olho, e por isso o degrau
+   400 não pesa o mesmo em todo matiz — `amber-400` é perceptivelmente mais
+   claro que `indigo-400`, então "400 = fill" prometia uma constância que a
+   paleta não tinha. Em OKLCH o degrau É a luminosidade: `L` igual em todos os
+   oito matizes, `C` por degrau, só `H` muda. O escuro dos neutros vira
+   aritmética — mesmo H e C, `L` espelhada.
+
+   **O hex de cima não sai.** Ele fica como fallback para quem não tem `oklch()`
+   (navegador anterior a 2023) e, mais importante, como REFERÊNCIA: as duas
+   metades têm de publicar a mesma paleta, e `medir-contraste.py` reprova se
+   alguma se afastar da outra mais que 0,05 em OKLab.
+
+   **Uma L saiu do mockup e foi MEDIDA para baixo.** A Rodada 5 propunha
+   `--n-500` em `L .55`; ali `.t-dado-meta` dava 4,38:1, `.t-rotulo` 3,95:1 e o
+   badge `mut` 4,20:1 — os três abaixo do piso de texto, e os três no par que a
+   régua §Hierarquia nomeia como onde o 1.x já reprovava. Em `L .51` (que é,
+   sem coincidência, a luminosidade do hex que D1 mediu) eles ficam em 5,19,
+   4,68 e 4,92. O mecanismo previsto é este: ajustar a L do degrau, nunca
+   inventar hex no componente.
+
+   **25 destes 57 valores ficam fora do gamut sRGB** — chartreuse inteiro, os
+   50/100 dos matizes quentes e os 600/800 dos frios. Não é defeito: é o que
+   OKLCH permite pedir, e cada navegador mapeia para a tela que tem. Em sRGB o
+   resultado fica junto do hex de cima (é o que a conferência acima cobra); em
+   tela P3 sai mais saturado, que é o ganho. `medir-contraste.py --conferir`
+   imprime a lista, porque contraste medido em sRGB é o piso, não a promessa.
+   ===================================================================== */
+@supports (color: oklch(0.5 0.1 100)) {
+  :root {
+    /* 50 · 100 · 200 · 400 · 600 · 800 — L igual por degrau nos oito matizes */
+    --lime-50: oklch(0.98 0.05 112);
+    --lime-100: oklch(0.96 0.1 112);
+    --lime-200: oklch(0.94 0.17 112);
+    --lime-400: oklch(0.92 0.22 112);
+    --lime-600: oklch(0.58 0.15 112);
+    --lime-800: oklch(0.45 0.12 112);
+    --indigo-50: oklch(0.96 0.03 275);
+    --indigo-100: oklch(0.92 0.06 275);
+    --indigo-200: oklch(0.84 0.11 275);
+    --indigo-400: oklch(0.62 0.19 275);
+    --indigo-600: oklch(0.5 0.2 275);
+    --indigo-800: oklch(0.38 0.16 275);
+    --mint-50: oklch(0.96 0.03 155);
+    --mint-100: oklch(0.92 0.06 155);
+    --mint-200: oklch(0.84 0.11 155);
+    --mint-400: oklch(0.68 0.16 155);
+    --mint-600: oklch(0.5 0.13 155);
+    --mint-800: oklch(0.38 0.1 155);
+    --sky-50: oklch(0.96 0.02 255);
+    --sky-100: oklch(0.92 0.05 255);
+    --sky-200: oklch(0.84 0.1 255);
+    --sky-400: oklch(0.64 0.17 255);
+    --sky-600: oklch(0.5 0.16 255);
+    --sky-800: oklch(0.38 0.13 255);
+    --amber-50: oklch(0.96 0.04 80);
+    --amber-100: oklch(0.92 0.08 80);
+    --amber-200: oklch(0.84 0.14 80);
+    --amber-400: oklch(0.74 0.16 75);
+    --amber-600: oklch(0.5 0.12 70);
+    --amber-800: oklch(0.38 0.09 70);
+    --rose-50: oklch(0.95 0.03 25);
+    --rose-100: oklch(0.9 0.06 25);
+    --rose-200: oklch(0.8 0.12 25);
+    --rose-400: oklch(0.62 0.19 25);
+    --rose-600: oklch(0.5 0.18 25);
+    --rose-800: oklch(0.38 0.14 25);
+    --violet-50: oklch(0.96 0.03 305);
+    --violet-100: oklch(0.92 0.06 305);
+    --violet-200: oklch(0.84 0.11 305);
+    --violet-400: oklch(0.62 0.18 305);
+    --violet-600: oklch(0.5 0.17 305);
+    --violet-800: oklch(0.38 0.13 305);
+    --teal-50: oklch(0.96 0.03 195);
+    --teal-100: oklch(0.92 0.06 195);
+    --teal-200: oklch(0.84 0.1 195);
+    --teal-400: oklch(0.66 0.12 195);
+    --teal-600: oklch(0.5 0.1 195);
+    --teal-800: oklch(0.38 0.08 195);
+    /* neutros: H 85 (o papel quente), C mínimo — a escala é só luz */
+    --n-0: oklch(0.995 0.006 90);
+    --n-50: oklch(0.965 0.009 85);
+    --n-100: oklch(0.93 0.012 85);
+    --n-200: oklch(0.875 0.014 85);
+    --n-300: oklch(0.8 0.016 85);
+    --n-400: oklch(0.68 0.014 85);
+    --n-500: oklch(0.51 0.014 85); /* .55 no mockup; a medição desceu — ver acima */
+    --n-700: oklch(0.38 0.012 85);
+    --n-900: oklch(0.18 0.012 85);
+  }
+
+  /* O escuro precisa estar AQUI dentro, e não é redundância: `:root` e `.dark`
+     têm a mesma especificidade, então o `:root` deste bloco — que vem depois no
+     arquivo — venceria os neutros escuros declarados lá em cima. Sem estas nove
+     linhas, o tema escuro voltaria ao papel claro em todo navegador com
+     `oklch()`. Os demais tokens que `.dark` redefine são `var()` para as rampas
+     e seguem certos sem repetição. */
+  .dark,
+  [data-theme="dark"] {
+    --n-0: oklch(0.19 0.008 85);
+    --n-50: oklch(0.22 0.009 85);
+    --n-100: oklch(0.25 0.01 85);
+    --n-200: oklch(0.3 0.011 85);
+    --n-300: oklch(0.36 0.012 85);
+    --n-400: oklch(0.48 0.012 85);
+    --n-500: oklch(0.64 0.012 85);
+    --n-700: oklch(0.82 0.01 85);
+    --n-900: oklch(0.96 0.008 85);
+  }
+}
+
+/* =====================================================================
+   §HIERARQUIA — 11 degraus de tipo. Classes utilitárias; PROIBIDO font-size literal
+   em componente. Peso não é hierarquia em Gambarino (peso único): tamanho é.
+   ===================================================================== */
+.t-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1.05;
+  color: var(--n-900);
+  text-wrap: balance;
+}
+.t-pagina {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 1.1;
+  color: var(--n-900);
+  text-wrap: balance;
+}
+.t-registro {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 1.1;
+  color: var(--n-900);
+}
+.t-secao {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 1.2;
+  color: var(--n-900);
+}
+.t-bloco {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 13.5px;
+  line-height: 1.3;
+  color: var(--n-900);
+}
+.t-corpo {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--n-900);
+}
+.t-ui {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--n-900);
+}
+.t-meta {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--n-500);
+}
+.t-rotulo {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 10.5px;
+  line-height: 1.2;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--n-500);
+}
+.t-dado {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 12.5px;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.01em;
+  color: var(--n-900);
+}
+.t-dado-meta {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 11px;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+  color: var(--n-500);
+}
+
+/* ---------- movimento: keyframes com propósito (micro, ≤320ms) ---------- */
+@keyframes cab-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, currentColor 45%, transparent);
+  }
+  60% {
+    box-shadow: 0 0 0 5px transparent;
+  }
+}
+@keyframes cab-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes cab-draw {
+  from {
+    stroke-dashoffset: 120;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes cab-fill {
+  from {
+    width: 0;
+  }
+}
+@keyframes cab-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cab-motion,
+  .cab-motion * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* =====================================================================
+   RODADA 5 (#527) — BANCADA TONAL POR MÓDULO
+
+   A bancada de cada módulo carrega 4% do matiz do módulo (Boletim, 3%); a
+   FOLHA continua neutra, e isso é a regra, não um detalhe de gosto: dado nunca
+   é tingido. Quem confere que `--folha` não se move é
+   `src/styles/rodada-5.test.ts`.
+
+   Redefinir `--bancada` sozinho não pintaria nada — quem a utility
+   `bg-paper-grid` lê é `--background`, o alias 1.x. As duas linhas andam
+   juntas por isso: no escopo do módulo o alias passa a apontar para a bancada
+   tonal, que é exatamente o que ele significa.
+
+   **As chaves são as que o shell EMITE, não as da nomenclatura 2.0.**
+   `src/app/modulo.ts` produz nove valores (`boletim`, `clientes`,
+   `fornecedores`, `profissionais`, `produtos`, `estoque`, `vendas`, `compras`,
+   `crm`); a 2.0 nomeia os matizes por família (`--mod-hoje`, `--mod-pessoas`,
+   `--mod-relatorios`). Escrever `[data-modulo="hoje"]` daria CSS que nunca
+   casa — Boletim é o Hoje, e os três papéis de parceiro são Pessoas.
+   `--mod-relatorios` fica sem seletor porque relatório mora dentro de Estoque
+   e não tem `data-modulo` próprio; ele volta a ter quando a rota tiver.
+   ===================================================================== */
+[data-modulo="boletim"] {
+  --bancada: color-mix(in oklab, var(--mod-hoje) 3%, var(--n-100));
+  --background: var(--bancada);
+}
+[data-modulo="compras"] {
+  --bancada: color-mix(in oklab, var(--mod-compras) 4%, var(--n-100));
+  --background: var(--bancada);
+}
+[data-modulo="estoque"] {
+  --bancada: color-mix(in oklab, var(--mod-estoque) 4%, var(--n-100));
+  --background: var(--bancada);
+}
+[data-modulo="vendas"] {
+  --bancada: color-mix(in oklab, var(--mod-vendas) 4%, var(--n-100));
+  --background: var(--bancada);
+}
+[data-modulo="crm"] {
+  --bancada: color-mix(in oklab, var(--mod-crm) 4%, var(--n-100));
+  --background: var(--bancada);
+}
+[data-modulo="produtos"] {
+  --bancada: color-mix(in oklab, var(--mod-produtos) 4%, var(--n-100));
+  --background: var(--bancada);
+}
+[data-modulo="clientes"] {
+  --bancada: color-mix(in oklab, var(--mod-pessoas) 4%, var(--n-100));
+  --background: var(--bancada);
+}
+[data-modulo="fornecedores"] {
+  --bancada: color-mix(in oklab, var(--mod-pessoas) 4%, var(--n-100));
+  --background: var(--bancada);
+}
+[data-modulo="profissionais"] {
+  --bancada: color-mix(in oklab, var(--mod-pessoas) 4%, var(--n-100));
+  --background: var(--bancada);
+}
+
+/* =====================================================================
+   RODADA 5 (#527) — GRÃO DE PAPEL
+
+   `feTurbulence` a 3,5% sustenta a metáfora do papel e tira o ar de vetor
+   chapado. **Só na bancada**: sob a folha ele viraria ruído em cima do dado.
+
+   Mora no `::before` da bancada e não no `body`, e a diferença é medida: a
+   bancada é o `<main>`, que pinta fundo opaco (`bg-paper-grid` →
+   `background-color: var(--background)`), então um `body::before` com
+   `z-index: -1` ficaria ESCONDIDO atrás dela, e com z-index positivo cobriria
+   também as folhas — as duas metades do que a régua proíbe. No pseudo-elemento
+   da própria bancada o grão fica acima do fundo dela e abaixo de tudo que a
+   tela montar, que é o lugar certo por construção.
+
+   `multiply` no claro (o grão ESCURECE o papel) e `screen` no escuro (ali ele
+   clareia, senão some). Desliga inteiro em `prefers-reduced-transparency`.
+   ===================================================================== */
+main.bg-paper-grid {
+  position: relative;
+  isolation: isolate;
+}
+main.bg-paper-grid::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .9 0'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>");
+}
+main.bg-paper-grid > * {
+  position: relative;
+  z-index: 1;
+}
+.dark main.bg-paper-grid::before,
+[data-theme="dark"] main.bg-paper-grid::before {
+  opacity: 0.05;
+  mix-blend-mode: screen;
+}
+/* `prefers-reduced-transparency` é Media Queries 5 e está implementada em
+   Chrome desde 2024; a lista de features do biome é que ainda não a conhece.
+   Suprimir aqui é mais honesto que trocar por `prefers-reduced-motion`: quem
+   pede menos transparência está pedindo exatamente isto — a textura por cima
+   do fundo —, e movimento não tem nada com o assunto. */
+/* biome-ignore lint/correctness/noUnknownMediaFeatureName: Media Queries 5, ainda ausente da lista do biome */
+@media (prefers-reduced-transparency: reduce) {
+  main.bg-paper-grid::before {
+    display: none;
+  }
+}
+
+/* =====================================================================
+   RODADA 5 (#527) — MOVIMENTO DE ARTESÃO
+
+   A regra que governa as durações: **saída mais rápida que entrada**. Quem sai
+   já foi decidido pelo operador e atrasá-lo custa a próxima ação; quem entra
+   precisa ser lido. Daí 90 ms contra 160 ms na troca de rota.
+
+   `cab-pop` é a peça que SOLTA — barra de lote, dica que aparece por cima —, e
+   é a única que usa a mola. Os outros cinco `cab-*` (rise, draw, fill, pulse,
+   fade) já vieram com a fundação.
+   ===================================================================== */
+@keyframes cab-pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* TROCA DE ROTA (View Transitions). O `__root` chama
+   `document.startViewTransition` guardado por `prefers-reduced-motion` e por
+   `document.readyState`; o desenho da transição é este, e mora no CSS porque é
+   desenho.
+
+   `titulo-da-pagina` é o SHARED ELEMENT: o `h1` do `PageHeader` na listagem é
+   o mesmo objeto do `h1` da ficha, e o browser o move em vez de trocá-lo. Quem
+   põe o `view-transition-name` é o `__root`, e só quando existe UM `h1` na
+   tela — dois nós com o mesmo nome abortam a transição inteira, calada.
+
+   Safari sem suporte não recebe nada disto: sem `startViewTransition` a
+   navegação acontece igual, sem transição. */
+::view-transition-old(root) {
+  animation: cab-fade 90ms var(--ease) reverse;
+}
+::view-transition-new(root) {
+  animation: cab-fade 160ms var(--ease-out);
+}
+::view-transition-old(titulo-da-pagina),
+::view-transition-new(titulo-da-pagina) {
+  animation-duration: var(--dur-2);
+  animation-timing-function: var(--ease-out);
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

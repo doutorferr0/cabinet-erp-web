@@ -1,5 +1,4 @@
 import type { Modulo } from '@/app/modulo'
-import type { ShapeDeLugar } from '@/components/cabinet/ornamento'
 import { RECURSOS, type RecursoDaEmpresa } from '@/data/recursos-da-empresa'
 import {
   ArrowLeftRight,
@@ -12,6 +11,7 @@ import {
   GanttChart,
   HandCoins,
   Home,
+  Inbox,
   LayoutDashboard,
   type LucideIcon,
   Package,
@@ -84,13 +84,17 @@ export interface NavItem {
   externo?: true
 
   /**
-   * Cor e desenho de uma tela que NÃO tem módulo próprio.
+   * Cor de uma tela que NÃO tem módulo próprio.
    *
-   * O normal é a sidebar tirar os dois de `moduloDaRota(item.url)`. Três telas
+   * O normal é a sidebar tirar a cor de `moduloDaRota(item.url)`. Três telas
    * ficam de fora da tabela travada pelo user — Dashboard, Planner e
-   * Colaboradores — e apareciam com ícone lucide cinza no meio de uma fileira
-   * colorida. `mockup-dashboard-cores.html` resolveu sem inventar a nona cor:
-   * elas EMPRESTAM o par de um vizinho e se distinguem pelo desenho.
+   * Colaboradores — e apareciam cinzas no meio de uma fileira colorida.
+   * `mockup-dashboard-cores.html` resolveu sem inventar a nona cor: elas
+   * EMPRESTAM o par de um vizinho.
+   *
+   * O `shape` que acompanhava saiu na D35: o desenho do sistema é a `<Forma>`,
+   * que diz MÓDULO, e distinguir três telas do mesmo módulo é serviço do ícone
+   * lucide de cada item — não de uma peça de identidade em 18px.
    *
    * Fica na entrada do menu, e não em `moduloDaRota`, de propósito: aquela
    * função responde "de que módulo é a TELA no ar" e o shell a usa para pintar
@@ -98,7 +102,7 @@ export interface NavItem {
    * coral e faria a banda de identidade anunciar o módulo errado. O empréstimo
    * é do ITEM DE MENU, e o alcance dele para no item.
    */
-  aparencia?: { modulo: Modulo; shape: ShapeDeLugar }
+  aparencia?: { modulo: Modulo }
 
   /**
    * Tela que AINDA NÃO EXISTE — aparece na barra, apagada, com selo, e não
@@ -226,14 +230,39 @@ export const navSecoes: NavSecao[] = [
             descricao: 'O que está em curso agora: números do dia e o que pede atenção.',
             // Coral do Boletim nas três: a seção da VISÃO fala do mesmo assunto
             // que ele — o dia. Desenhos distintos é o que as separa.
-            aparencia: { modulo: 'boletim', shape: 'dashboard' },
+            aparencia: { modulo: 'boletim' },
+          },
+          {
+            /**
+             * CAIXA DE ENTRADA — o que chegou para VOCÊ hoje.
+             *
+             * Fica em `Hoje` e logo depois do Dashboard porque responde a mesma
+             * pergunta do grupo com um recorte a menos: o Dashboard mostra o dia
+             * da empresa, esta mostra o pedaço do dia que tem seu nome. Antes de
+             * D7 isto não era tela nenhuma — era um sino na appbar, e o que um
+             * sino abre não entra em menu, não tem endereço e não se acha pela
+             * paleta.
+             */
+            title: 'Caixa de entrada',
+            url: '/inbox',
+            icon: Inbox,
+            descricao:
+              'O que chegou para você: menções, atribuições e prazos, com o registro a um clique.',
+            // SEM `aparencia`, e é o mesmo blocker da Agenda mais abaixo: emprestar
+            // cor exige um `ShapeDeLugar` PRÓPRIO em
+            // `src/components/cabinet/ornamento.tsx` — componente compartilhado,
+            // fora da zona de D7, e com ritual de medição de cobertura para o
+            // desenho novo. Reusar o `dashboard` não é opção: `navigation.test.ts`
+            // exige desenhos distintos entre quem empresta, e a razão está escrita
+            // lá — mesma cor com mesmo desenho faz a fileira da sidebar deixar de
+            // ser um mapa. Fica no ícone lucide puro até haver decisão do user.
           },
           {
             title: 'Tarefas',
             url: '/tarefas',
             icon: SquareKanban,
             descricao: 'O quadro do que precisa ser feito, em colunas por andamento.',
-            aparencia: { modulo: 'boletim', shape: 'tarefas' },
+            aparencia: { modulo: 'boletim' },
           },
           {
             /**
@@ -257,10 +286,9 @@ export const navSecoes: NavSecao[] = [
             url: '/agenda',
             icon: CalendarDays,
             descricao: 'Compromissos do mês e agenda do dia, num calendário só.',
-            // Blocker: a agenda precisa de um ShapeDeLugar em
-            // src/components/cabinet/ornamento.tsx (componente compartilhado).
-            // Sem decisão do user, fica com o ícone lucide puro para não
-            // improvisar uma cor/shape (regra da issue #230).
+            // O blocker de shape que morava aqui (#230) saiu com a D35: todo
+            // item da barra usa o lucide dele, e ninguém mais precisa de
+            // decisão do user para um desenho próprio.
           },
         ],
       },
@@ -276,7 +304,7 @@ export const navSecoes: NavSecao[] = [
             icon: GanttChart,
             descricao:
               'O que ainda vai acontecer, na linha do tempo: prazos, entregas e reagendamentos.',
-            aparencia: { modulo: 'boletim', shape: 'planner' },
+            aparencia: { modulo: 'boletim' },
           },
           {
             title: 'Relatórios',
@@ -629,7 +657,7 @@ export const navSecoes: NavSecao[] = [
             recurso: RECURSOS.employees,
             // Par de Clientes: é o cadastro de PESSOA vizinho. O desenho é que
             // separa — corpo dentro de moldura, a pessoa de dentro.
-            aparencia: { modulo: 'clientes', shape: 'colaboradores' },
+            aparencia: { modulo: 'clientes' },
           },
         ],
       },

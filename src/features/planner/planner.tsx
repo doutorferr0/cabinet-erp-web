@@ -18,7 +18,10 @@ import { Gantt } from '@svar-ui/react-gantt'
 // especificador é `style.css` e não `all.css` — este último traz grid, editor,
 // menu e toolbar da suíte SVAR, que o planner não monta.
 import '@svar-ui/react-gantt/style.css'
-import { useCallback, useMemo, useState } from 'react'
+// A PELE 2.0 do gantt, depois da folha do vendor — ordem importa: o que está
+// aqui sobrescreve o que veio de lá. Ver o cabeçalho do arquivo.
+import './gantt-2.0.css'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import {
   type EventoDeTarefa,
   TIPOS,
@@ -28,6 +31,7 @@ import {
   tarefasDoPlano,
   totalDeItens,
 } from './dados-do-gantt'
+import { LinhaDoHoje } from './linha-do-hoje'
 
 /**
  * PLANNER — o gantt do projeto, em LEITURA, agora sobre `@svar-ui/react-gantt`.
@@ -83,7 +87,12 @@ import {
  */
 
 /** Nomes de mês em pt-BR — o SVAR não traz locale nosso. */
-const MES = new Intl.DateTimeFormat('pt-BR', { month: 'short', year: '2-digit' })
+const MES = new Intl.DateTimeFormat('pt-BR', { month: 'short' })
+
+/** `jan` — sem o ponto que o `Intl` põe e sem o ano, que é a faixa de cima. */
+function mesCurto(data: Date): string {
+  return MES.format(data).replace('.', '')
+}
 
 /**
  * Duas faixas no cabeçalho: ano e mês.
@@ -91,10 +100,19 @@ const MES = new Intl.DateTimeFormat('pt-BR', { month: 'short', year: '2-digit' }
  * A spec pede "13 colunas, ex. jan'26–jan'27". Uma faixa só de `mar 26` repete
  * o ano treze vezes; separar em ano + mês devolve a leitura do mockup e libera
  * a linha de baixo para o mês curto.
+ *
+ * **As duas faixas são FUNÇÃO, e a de cima não era.** `format: 'yyyy'` estava
+ * escrito como se o SVAR aceitasse o padrão do Java/date-fns; ele usa `%`
+ * (`%F %Y` é o default dele), então `yyyy` não casava nada e a faixa do ano
+ * imprimia as quatro letras `yyyy` — literalmente, em toda a largura do quadro,
+ * onde deveria estar `2026`. Medido no navegador em 02/09/2026, e é o tipo de
+ * defeito que passa por "ainda carregando" para quem olha de longe. Função em
+ * vez de `%Y` porque, resolvido assim, o formato deixa de depender de qual
+ * dialeto de máscara a lib fala nesta versão.
  */
 const ESCALAS = [
-  { unit: 'year' as const, step: 1, format: 'yyyy' },
-  { unit: 'month' as const, step: 1, format: (data: Date) => MES.format(data) },
+  { unit: 'year' as const, step: 1, format: (data: Date) => String(data.getFullYear()) },
+  { unit: 'month' as const, step: 1, format: mesCurto },
 ]
 
 /**
@@ -111,15 +129,61 @@ function BarraDoItem({ data }: { data: { text?: string; tipo?: PlanItemDtoKind }
     <span
       data-slot="barra-do-plano"
       {...(tipo ? { 'data-modulo': tipo.modulo } : {})}
-      className="flex h-full items-center overflow-hidden bg-modulo px-2 text-left"
+      className="flex h-full items-center overflow-hidden bg-modulo px-[var(--s-2)] text-left"
       aria-label={tipo ? `${tipo.rotulo}: ${data.text ?? ''}` : (data.text ?? '')}
     >
-      <span className="truncate text-sm font-semibold">{data.text}</span>
+      {/* `t-ui`, não `text-sm font-semibold`: o texto da barra é rótulo de
+          objeto, o mesmo papel do nome de entidade numa listagem, e §Hierarquia
+          dá um degrau só a esse papel. O negrito de antes competia com o título
+          da página sem ganhar nada — a barra já se destaca pelo tint. */}
+      <span className="t-ui truncate">{data.text}</span>
+    </span>
+  )
+}
+
+/**
+ * A LATERAL — cada linha do plano lida como ENTIDADE, não como célula.
+ *
+ * A auditoria §2.2 define a célula de entidade do sistema 2.0 como "monograma +
+ * nome + subtítulo", e a linha da esquerda do gantt é exatamente isso: um
+ * objeto do plano, com um tipo que tem cor. O quadradinho de módulo é o mesmo
+ * canal que a sidebar usa para dizer de que família é um item — e é ele que
+ * amarra a linha da esquerda à barra da direita, que já vinha tintada pelo
+ * mesmo `data-modulo`.
+ *
+ * **A fase não ganha quadradinho de propósito.** Ela não é de módulo nenhum: é
+ * o agrupador. O que a distingue é o peso (`t-bloco`, Inter 600) contra o
+ * `t-ui` (Inter 500) dos filhos — hierarquia por peso dentro do Inter, que é a
+ * regra da §Hierarquia, e não por tamanho.
+ *
+ * O recuo dos filhos é o `--s-3` (12px), múltiplo de 4 como todo o resto.
+ */
+function CelulaDaFase({ row }: { row: { text?: string; type?: string; tipo?: PlanItemDtoKind } }) {
+  const fase = row.type === 'summary'
+  const tipo = row.tipo ? TIPOS[row.tipo] : null
+
+  return (
+    <span
+      className="flex min-w-0 items-center gap-[var(--s-2)]"
+      style={fase ? undefined : { paddingLeft: 'var(--s-3)' }}
+    >
+      {tipo ? (
+        <span
+          data-modulo={tipo.modulo}
+          aria-hidden="true"
+          className="size-2 shrink-0 bg-modulo-cheia"
+        />
+      ) : null}
+      <span className={`${fase ? 't-bloco' : 't-ui'} truncate`}>{row.text}</span>
+      {tipo ? <span className="sr-only">{tipo.rotulo}</span> : null}
     </span>
   )
 }
 
 export function PlannerTela() {
+  // O quadro precisa de referência porque a linha do hoje é medida a partir
+  // dele — ver `linha-do-hoje.tsx`.
+  const quadro = useRef<HTMLDivElement>(null)
   const [filtro, setFiltro] = useState<FiltroDeProjeto>(FILTROS.emCurso)
   const [projetoEscolhido, setProjetoEscolhido] = useState<string | null>(null)
 
@@ -163,17 +227,21 @@ export function PlannerTela() {
 
   return (
     <div className="flex flex-col gap-8">
-      <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-rule-strong border-b pb-3">
-        <div>
-          <h1 className="font-nome text-3xl font-bold">Planner</h1>
-          <p className="text-sm text-muted-foreground">As fases do projeto na linha do tempo.</p>
+      {/* Fronteira entre regiões da página = ESPAÇO, sem linha (§Hierarquia).
+          A borda inferior de 2px que morava aqui era a segunda ferramenta na
+          mesma fronteira: o `gap` do container já separava, e a linha só
+          somava peso à tela que a auditoria §1.1 chama de xadrez. */}
+      <header className="flex flex-wrap items-end justify-between gap-x-[var(--s-4)] gap-y-[var(--s-2)]">
+        <div className="flex flex-col gap-[var(--s-1)]">
+          <h1 className="t-pagina">Planner</h1>
+          <p className="t-meta">As fases do projeto na linha do tempo.</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="flex items-center gap-2 font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em]">
+        <div className="flex flex-wrap items-center gap-[var(--s-2)]">
+          <label className="t-rotulo flex items-center gap-[var(--s-2)]">
             Projeto
             <select
-              className="h-9 border-2 border-input bg-card px-2.5 font-sans text-sm normal-case tracking-normal outline-none focus-visible:focus-ring"
+              className="t-ui h-9 border border-input bg-card px-[var(--s-3)] normal-case tracking-normal outline-none focus-visible:focus-ring"
               value={projetoId ?? ''}
               onChange={(evento) => setProjetoEscolhido(evento.target.value)}
               disabled={projetos.isPending || (projetos.data?.length ?? 0) === 0}
@@ -233,29 +301,33 @@ export function PlannerTela() {
       projetos.isPending || (projetoId !== null && plano.isPending) ? (
         <Skeleton className="h-64 w-full" />
       ) : projetoId === null ? (
-        <p className="rounded-panel border-2 bg-card p-6 text-center text-sm text-muted-foreground">
+        <p className="t-meta rounded-panel border border-[var(--n-300)] bg-card p-[var(--s-5)] text-center shadow-[var(--hard-soft)]">
           Nenhum projeto neste recorte.
         </p>
       ) : !janela ? (
-        <p className="rounded-panel border-2 bg-card p-6 text-center text-sm text-muted-foreground">
+        <p className="t-meta rounded-panel border border-[var(--n-300)] bg-card p-[var(--s-5)] text-center shadow-[var(--hard-soft)]">
           Este projeto ainda não tem fases planejadas.
         </p>
       ) : (
         <>
           {plano.data ? <AndamentoDoProjeto plano={plano.data} /> : null}
           {/*
-            A moldura é NOSSA e o miolo é da lib. O `rounded-panel border-2` é o
-            mesmo da versão anterior e da folha das outras telas da seção — sem
-            ele o gantt apareceria como um retângulo estrangeiro no meio da
-            página, que é exatamente o que a issue quis evitar ao recusar a
-            suíte SVAR inteira.
+            A moldura é NOSSA e o miolo é da lib — isso não muda. O que muda é o
+            PESO dela: era `border-2` preto, e a auditoria §1.1 mede esse traço
+            como a causa do xadrez ("botão, aba, campo, chip e linha pesam
+            igual → nada tem prioridade"). Aqui ele custava caro em dobro,
+            porque a moldura preta encostava na grade do gantt e as duas viravam
+            uma coisa só. Vira CARD QUIETO: borda n-300 + `--hard-soft`, que é a
+            ferramenta 4 da §Hierarquia para "objeto sobre o plano" quando o
+            objeto não é o dono da tela. A sombra dura de tinta desta página
+            fica com o painel Andamento, e é uma só.
 
-            `data-secao="dashboard"` mantém o Planner na cor da seção (laranja
-            `#FF6B2C`, s120): quem lê a cor sabe em que parte do sistema está, e
-            a troca de motor não pode mudar isso.
+            `data-secao="dashboard"` mantém o Planner na cor da seção: quem lê a
+            cor sabe em que parte do sistema está, e nem a troca de motor nem a
+            troca de pele podem mudar isso.
           */}
           {conhecido && readOnly ? (
-            <p data-slot="planner-somente-leitura" className="text-sm text-muted-foreground">
+            <p data-slot="planner-somente-leitura" className="t-meta">
               Somente leitura: seu papel nesta empresa não reagenda o plano.
             </p>
           ) : null}
@@ -264,7 +336,7 @@ export function PlannerTela() {
               `detail` do problem+json diz o motivo — data invertida, papel que
               não alcança —, e sem ele a barra voltaria sozinha e sem palavra. */}
           {reagendar.isError ? (
-            <p role="alert" data-slot="planner-erro" className="text-sm text-destructive">
+            <p role="alert" data-slot="planner-erro" className="t-corpo text-destructive">
               {reagendar.error instanceof ErroDaApi
                 ? (reagendar.error.detail ?? reagendar.error.message)
                 : 'Falha ao reagendar o item do plano.'}
@@ -272,9 +344,10 @@ export function PlannerTela() {
           ) : null}
 
           <div
+            ref={quadro}
             data-secao="dashboard"
             data-slot="gantt"
-            className="overflow-hidden rounded-panel border-2 bg-card"
+            className="relative overflow-hidden rounded-panel border border-[var(--n-300)] bg-card shadow-[var(--hard-soft)]"
           >
             <Gantt
               readonly={travado}
@@ -285,14 +358,26 @@ export function PlannerTela() {
               taskTemplate={BarraDoItem}
               // Uma coluna só, a de nome — a versão anterior também mostrava
               // fase e nome e nada mais. `Duração` e `Início` do padrão do SVAR
-              // repetiriam o que a própria barra já diz na horizontal.
-              columns={[{ id: 'text', header: 'Fase', flexgrow: 1 }]}
-              // A linha do AGORA, que o gantt caseiro desenhava à mão. Sem
-              // `css`: uma classe própria aqui não teria folha de estilo — o
-              // `index.css` é de outra zona — e classe que não pinta nada se lê
-              // como pintada. Fica o marcador do SVAR, que já vem estilizado.
-              markers={[{ start: new Date(), text: 'Hoje' }]}
+              // repetiriam o que a própria barra já diz na horizontal. O que
+              // mudou é a CÉLULA: ver `CelulaDaFase`.
+              columns={[{ id: 'text', header: 'Fase', flexgrow: 1, cell: CelulaDaFase }]}
+              // A grade FICA nas duas direções, e o que muda é o peso dela: a
+              // auditoria §1.1 condena o xadrez de traço PRETO, não a grade —
+              // num gantt a linha horizontal é o que liga a barra ao nome dela
+              // seiscentos pixels à esquerda, e tirá-la troca um problema de
+              // ruído por um de leitura. Em hairline n-200 (ver
+              // `gantt-2.0.css`) ela orienta sem pesar.
+              cellBorders="full"
+              // 40px, não os 38 do padrão do SVAR: a régua da rodada é o
+              // múltiplo de 4, e a captura com `?grid` mostra a linha da grade
+              // andando junto com as do quadro em vez de deslizar 2px por
+              // linha.
+              cellHeight={40}
+              // NADA de `markers` aqui: é recurso PRO e a store o zera no
+              // `init`. A linha do hoje é desenhada por `<LinhaDoHoje>`, logo
+              // abaixo — o porquê inteiro está no cabeçalho daquele arquivo.
             />
+            {janela ? <LinhaDoHoje janela={janela} quadro={quadro} /> : null}
           </div>
         </>
       )}
@@ -343,8 +428,8 @@ function Grandeza({ rotulo, valor }: { rotulo: string; valor: number }) {
       <span className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
         {rotulo}
       </span>
-      {/* A voz de QUANTO (PT Mono), e SEM negrito: o `@fontsource` publica só o
-          peso 400 do PT Mono, e `font-bold` sem arquivo de 700 viraria negrito
+      {/* A voz de QUANTO (mono), e SEM negrito: o `@fontsource` publica só os
+          pesos 400 e 500, e `font-bold` sem arquivo de 700 viraria negrito
           sintético — o browser engorda o traço por conta. Quem dá presença ao
           número aqui é a largura da mono e a tabularidade, não o peso
           (decisão do user, 2026-08-13). */}

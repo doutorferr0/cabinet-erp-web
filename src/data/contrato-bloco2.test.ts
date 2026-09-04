@@ -169,7 +169,21 @@ describe('contatos — sub-recurso, e não uma lista dentro do parceiro', () => 
     // legível no documento antigo que o citou; apagado, a linha do pedido
     // apontaria para ninguém.
     const verbos = new Set(Object.values(doc.paths).flatMap((p) => Object.keys(p)))
-    expect([...verbos].sort()).toEqual(['get', 'patch', 'post', 'put'])
+    // INTEGRAÇÃO 2.0 (Cowork, 2026-09-03): a D13 (#481, saved_views) publicou
+    // `DELETE /api/me/views/{id}` — preferência PESSOAL do operador, não registro
+    // do negócio. É a única exceção à regra "desativação é lógica" e está
+    // marcada `Proposto`; decidir se fica DELETE ou vira PATCH {ativo:false} é
+    // do user (registrado na #532). Qualquer OUTRO delete continua reprovando.
+    const comDelete = Object.entries(contrato.paths ?? {})
+      .filter(([, item]) => 'delete' in (item as object))
+      .map(([caminho]) => caminho)
+    expect(comDelete).toEqual(['/api/me/views/{id}'])
+    expect([...verbos].filter((v) => v !== 'delete').sort()).toEqual([
+      'get',
+      'patch',
+      'post',
+      'put',
+    ])
     expect(schemas.PartnerContactWriteRequest?.required).toContain('active')
   })
 })

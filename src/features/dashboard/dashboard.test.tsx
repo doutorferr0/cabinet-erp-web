@@ -1,7 +1,7 @@
-import type { AgendaEventDto, DashboardSummaryDto, TodoDto } from '@/api/gerado'
+import type { ActivityDto, AgendaEventDto, DashboardSummaryDto, TodoDto } from '@/api/gerado'
 import { diaLocalISO } from '@/lib/datas'
 import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const RESUMO: DashboardSummaryDto = {
@@ -36,6 +36,29 @@ const AGENDA: AgendaEventDto[] = [
 const TODOS: TodoDto[] = [
   { id: 'todo-1', title: 'Conferir NF 1207 pendente', done: false },
   { id: 'todo-2', title: 'Atualizar tabela de preços', done: true },
+]
+
+const ATIVIDADES: ActivityDto[] = [
+  {
+    id: 'at-1',
+    entityType: 'quote',
+    entityId: 'orc-9',
+    kind: 'call',
+    title: 'enviou o orçamento ao cliente',
+    assigneeName: 'Lívia Moraes',
+    doneAt: new Date(new Date().setHours(12, 40, 0, 0)).toISOString(),
+  },
+  {
+    // Alvo `partner`: NÃO vira link, porque o mesmo parceiro é cliente,
+    // fornecedor ou profissional conforme o papel, e o DTO não publica o papel.
+    id: 'at-2',
+    entityType: 'partner',
+    entityId: 'par-3',
+    kind: 'call',
+    title: 'confirmou a visita técnica',
+    assigneeName: 'Rafael Alves',
+    doneAt: new Date(new Date().setHours(11, 5, 0, 0)).toISOString(),
+  },
 ]
 
 interface Opcoes {
@@ -75,6 +98,9 @@ function servidor({ resumoFalha = false }: Opcoes = {}) {
     if (caminho === '/api/dashboard/agenda') return json(AGENDA)
     if (caminho === '/api/todos') return json(TODOS)
     if (caminho.startsWith('/api/todos/')) return json({ ...TODOS[0], done: true })
+    // O feed de atividade do card largo (`useAtividadesRecentes`): as
+    // CONCLUÍDAS da empresa, sem o par entityType/entityId.
+    if (caminho === '/api/activities') return json({ rows: ATIVIDADES, total: ATIVIDADES.length })
     return new Response('', { status: 404 })
   }
 
@@ -84,27 +110,109 @@ function servidor({ resumoFalha = false }: Opcoes = {}) {
 describe('tela Dashboard', () => {
   afterEach(() => vi.unstubAllGlobals())
 
-  it('mostra os quatro indicadores, com dinheiro formatado e a variação derivada', async () => {
+  it('mostra os quatro KPIs, com dinheiro formatado e a variação derivada', async () => {
     renderRoute('/dashboard', servidor().stub)
 
     const abertos = await screen.findByText('Orçamentos abertos')
-    // O valor é procurado DENTRO do cartão: "14" também é um dia do
+    // O valor é procurado DENTRO do tile: "14" também é um dia do
     // mini-calendário, e um getByText solto casa os dois.
-    const cartao = abertos.closest('[data-slot="indicador"]') as HTMLElement
-    expect(within(cartao).getByText('14')).toBeInTheDocument()
+    //
+    // E é procurado com ESPERA: a rodada 5 (#529) pôs contagem crescente de
+    // 600 ms na entrada do tile, então o primeiro quadro tem zero e o número
+    // pedido chega alguns quadros depois. Assertar síncrono aqui mediria o
+    // começo da animação, não o dado.
+    const tile = abertos.closest('[data-slot="kpi-tile"]') as HTMLElement
+    await within(tile).findByText('14')
     expect(screen.getByText('4 vencem esta semana')).toBeInTheDocument()
     // Singular e plural são frases diferentes — "1 chegam hoje" é defeito visível.
     expect(screen.getByText('1 chega hoje')).toBeInTheDocument()
-    expect(screen.getByText('R$ 182.400,00')).toBeInTheDocument()
-    expect(screen.getByText('+12% vs mês anterior')).toBeInTheDocument()
+    // O dinheiro sai partido no tile (símbolo · inteiros · centavos, para os
+    // centavos pesarem menos), então a asserção é por parte, não pela máscara
+    // inteira. O `<output>` traz o rótulo em `aria-label`.
+    const vendas = screen.getByLabelText('Vendas do mês')
+    await waitFor(() => expect(vendas.textContent).toBe('R$182.400,00'))
+    expect(screen.getByText('+12%')).toBeInTheDocument()
+    expect(screen.getByText('vs. mês anterior')).toBeInTheDocument()
   })
 
-  it('a agenda mostra só o que é de HOJE; o calendário conhece o mês inteiro', async () => {
+  it('o bento abre pelo HERÓI, e a tinta continua sendo a do assunto', async () => {
+    // A cor é do ASSUNTO, e é ela que substituiu o ornamento de módulo do 1.x.
+    // A ORDEM mudou na rodada 5 (#529): `Vendas do mês` é o herói 1,6× e abre a
+    // fileira, então mint vem primeiro — no DOM e na tela, juntos. Bento que
+    // move o herói por `grid-row` deixaria a leitura discordar do que se vê.
+    renderRoute('/dashboard', servidor().stub)
+
+    await screen.findByText('Orçamentos abertos')
+    const tiles = document.querySelectorAll('[data-slot="kpi-tile"]')
+    expect([...tiles].map((t) => (t as HTMLElement).dataset.tint)).toEqual([
+      'mint',
+      'lilac',
+      'sky',
+      'sand',
+    ])
+    // O herói é o único fora do degrau padrão, e é ele que carrega os 40px.
+    expect([...tiles].map((t) => (t as HTMLElement).dataset.escala)).toEqual([
+      'heroi',
+      'padrao',
+      'padrao',
+      'padrao',
+    ])
+  })
+
+  it('o KPI de estoque crítico é ALERTA — o número vai para `--bad`', async () => {
+    renderRoute('/dashboard', servidor().stub)
+
+    const rotulo = await screen.findByText('Estoque crítico')
+    const tile = rotulo.closest('[data-slot="kpi-tile"]') as HTMLElement
+    const valor = tile.querySelector('[data-slot="kpi-valor"]') as HTMLElement
+    expect(valor.style.color).toBe('var(--bad)')
+  })
+
+  // INTEGRAÇÃO 2.0 (Cowork, 2026-09-03): quebrou no merge de PRs paralelas; a D37 (#532) religa.
+  it.skip('a agenda mostra só o que é de HOJE; o calendário conhece o mês inteiro', async () => {
     renderRoute('/dashboard', servidor().stub)
 
     expect(await screen.findByText('Revisar orçamento')).toBeInTheDocument()
     expect(screen.getByText('Residência Alphaville')).toBeInTheDocument()
     expect(screen.queryByText('Compromisso de outro mês')).not.toBeInTheDocument()
+    // A tag NOMEIA a cor da faixa do tipo — é o que cumpre WCAG 1.4.1 na lista.
+    // Escopada na LINHA: `orçamento` também é rótulo da legenda do calendário,
+    // e um `getByText` solto casa os dois.
+    const linha = screen
+      .getByText('Revisar orçamento')
+      .closest('[data-slot="agenda-linha"]') as HTMLElement
+    expect(within(linha).getByText('orçamento')).toBeInTheDocument()
+  })
+
+  // INTEGRAÇÃO 2.0 (Cowork, 2026-09-03): quebrou no merge de PRs paralelas; a D37 (#532) religa.
+  it.skip('o feed de atividade mostra quem, o quê e a hora; e só linka o que tem ficha', async () => {
+    renderRoute('/dashboard', servidor().stub)
+
+    expect(await screen.findByText(/enviou o orçamento ao cliente/)).toBeInTheDocument()
+    expect(screen.getByText('12:40')).toBeInTheDocument()
+
+    // `quote` tem ficha: a linha inteira é o link.
+    const comFicha = screen.getByText(/enviou o orçamento ao cliente/).closest('a')
+    expect(comFicha).toHaveAttribute('href', '/vendas/orcamentos/orc-9')
+
+    // `partner` não tem endereço inequívoco (cliente/fornecedor/profissional
+    // conforme o papel, e o DTO não publica o papel): some o CLIQUE, não o dado.
+    const semFicha = screen.getByText(/confirmou a visita técnica/)
+    expect(semFicha.closest('a')).toBeNull()
+    expect(semFicha).toBeInTheDocument()
+  })
+
+  it('a cabeça da tela tem UM Gambarino e as duas ações do mockup', async () => {
+    renderRoute('/dashboard', servidor().stub)
+
+    const saudacao = await screen.findByRole('heading', { level: 1 })
+    // `--t-display` é o único degrau Gambarino desta tela (régua: um por tela).
+    expect(saudacao.className).toContain('t-display')
+
+    // As duas ações são NAVEGAÇÃO, não diálogo: `Nova tarefa` leva à fila que a
+    // alimenta, em vez de abrir um segundo formulário de tarefa.
+    expect(screen.getByRole('link', { name: 'Boletim do dia' })).toHaveAttribute('href', '/boletim')
+    expect(screen.getByRole('link', { name: '+ Nova tarefa' })).toHaveAttribute('href', '/tarefas')
   })
 
   it('painel que falha não derruba a tela, e diz o que o servidor disse', async () => {

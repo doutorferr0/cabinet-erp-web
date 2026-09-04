@@ -1,7 +1,9 @@
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
+import type { TipoDeColuna } from '@/components/cabinet/listagem/celulas-tipadas'
 import type { ModuloCor } from '@/components/cabinet/modulo-cores'
+import { Money } from '@/components/cabinet/money'
 import type { CampoCadastro, EntidadeCadastro } from '@/features/cadastro/modulos'
-import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
+import { formatDateBR } from '@/lib/formatters'
 import type { ColumnDef } from '@tanstack/react-table'
 import type { ReactNode } from 'react'
 import { idDoFiltro, moduloDoFiltro } from './modulos-da-consulta'
@@ -110,9 +112,28 @@ export function PontoDoModulo({ cor }: { cor: ModuloCor | undefined }) {
 function celula(campo: CampoCadastro, valor: unknown): ReactNode {
   if (valor === null || valor === undefined || valor === '') return '—'
   if (typeof valor === 'boolean') return <CelulaAtivo ativo={valor} />
-  if (campo.grana && typeof valor === 'number') return formatMoneyBRL(valor)
+  // `<Money>` no lugar da string do `Intl` (#471, D3): o `R$` recua para peso
+  // 400 e tinta secundária, e o número fica em mono tabular — sem isso a coluna
+  // de valores não alinha na vertical, que é o único motivo de ela existir.
+  if (campo.grana && typeof valor === 'number') return <Money valor={valor} />
+
   if (campo.t === 'data' && typeof valor === 'string') return formatDateBR(valor)
   return String(valor)
+}
+
+/**
+ * O TIPO da coluna extra, deduzido do que o schema já diz sobre o campo.
+ *
+ * A coluna extra nasce do schema de módulos, não da tela — então ninguém pode
+ * declarar o tipo à mão nela. Deduzir aqui é o que faz a coluna que o operador
+ * LIGA sair com a mesma moldura da coluna que a tela declarou: mesma família de
+ * dado à direita, mesma data em mono. Sem isto, ligar uma coluna de valor daria
+ * um número em Inter ao lado de outro em mono, na mesma grade.
+ */
+function tipoDoCampo(campo: CampoCadastro): TipoDeColuna | undefined {
+  if (campo.grana) return 'dinheiro'
+  if (campo.t === 'data') return 'data'
+  return undefined
 }
 
 /**
@@ -134,13 +155,19 @@ export function colunasDaGrade<T>(
   return camposOpcionais(entidade, declaradas).flatMap((campo) => {
     const id = idDaColuna(entidade, campo) as string
     if (!extras.includes(id)) return []
+    const tipo = tipoDoCampo(campo)
     return [
       {
         id,
         accessorKey: id,
         header: campo.r,
         enableSorting: ordenavel(id),
-        ...(campo.grana ? { meta: { numeric: true } } : {}),
+        // A coluna extra continua desenhando o próprio conteúdo (`celula`
+        // trata booleano, ausência e formato); o `tipo` lhe dá a MOLDURA —
+        // mono, alinhamento e o ícone do cabeçalho.
+        ...(campo.grana || tipo
+          ? { meta: { ...(campo.grana ? { numeric: true } : {}), ...(tipo ? { tipo } : {}) } }
+          : {}),
         cell: ({ getValue }) => celula(campo, getValue()),
       } as ColumnDef<T>,
     ]

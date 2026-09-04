@@ -1,4 +1,4 @@
-import { FormGrid } from '@/components/cabinet/form-grid'
+import { FormGrid, FormRow } from '@/components/cabinet/form-grid'
 import { Form } from '@/components/ui/form'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -38,22 +38,24 @@ describe('FormGrid — faixa de seção', () => {
     render(<Harness />)
 
     const rotulo = screen.getByText('SALA DE ESTAR')
-    // Rótulo em Meta (mono 0.75rem, caixa alta, tracking 0.06em).
-    expect(rotulo.className).toContain('font-mono')
-    expect(rotulo.className).toContain('text-[0.75rem]')
-    expect(rotulo.className).toContain('uppercase')
-    expect(rotulo.className).toContain('tracking-[0.06em]')
+    // D16: os quatro utilitários soltos (mono, 0.75rem, uppercase, tracking)
+    // eram o degrau `--t-rotulo` escrito à mão em cada consumidor — que é
+    // exatamente o que a §Hierarquia proíbe ("proibido `font-size` literal em
+    // componente"). Agora é a classe, e o degrau tem um dono só.
+    expect(rotulo.className).toContain('t-rotulo')
 
     // Uma única célula cobre colunas + a coluna do botão de remover.
     const celula = rotulo.closest('td')
     expect(celula?.getAttribute('colspan')).toBe('2')
 
-    // Corte mais forte que a malha: réguas 2px pretas acima E abaixo (a malha é
-    // fio de 1px — a faixa precisa ser visivelmente outra coisa), fundo Bancada.
+    // D16: a linha de grupo se separa por TINT, não por régua dupla de 2px. A
+    // §Hierarquia nomeia o caso — "tint separa região por natureza (header de
+    // tabela, rodapé de totais, linha de grupo)" — e proíbe duas ferramentas na
+    // mesma fronteira: a hairline entre linhas já existe, então a faixa preta
+    // era a segunda.
     const linha = rotulo.closest('tr')
-    expect(linha?.className).toContain('border-y-2')
-    expect(linha?.className).toContain('border-border')
-    expect(linha?.className).toContain('bg-muted')
+    expect(linha?.className).not.toContain('border-y-2')
+    expect(linha?.className).toContain('[background:var(--n-50)]')
   })
 
   it('linha sem valor na sectionKey continua linha normal editável', () => {
@@ -127,12 +129,53 @@ describe('FormGrid — foco da célula editável', () => {
     }
   })
 
-  it('a grade mora na mesma caixa preta 2px da listagem, sem canto', () => {
+  // D16: a caixa preta de 2px saiu. A grade vive DENTRO de um `FormBlock`, que
+  // já é um card; card dentro de card é o terceiro nível que a §Hierarquia
+  // proíbe. Sobra a ferramenta mais barata que resolve — uma hairline em volta.
+  it('a grade se fecha por hairline, não por caixa preta', () => {
     const { container } = render(<HarnessFoco />)
 
     const caixa = container.querySelector('[data-slot="form-grid-box"]')
-    expect(caixa?.className).toContain('border-2')
-    expect(caixa?.className).not.toContain('rounded')
+    expect(caixa?.className).not.toContain('border-2')
+    expect(caixa?.className).toContain('[border-color:var(--n-200)]')
+  })
+})
+
+/**
+ * FormRow (D16) — a fileira de campos do mockup (`.fr.c2/.c3/.c4`).
+ *
+ * Ela é o que a espec da issue chama de "`FormGrid colunas={2|3|4}`"; o nome
+ * mudou porque `FormGrid` já era, neste arquivo, a grade de ITENS de doze telas.
+ * O comportamento é o pedido: gap `--s-3` e quebra por `auto-fit`.
+ */
+describe('FormRow', () => {
+  it('separa irmãos por gap, e o gap é um degrau da escala', () => {
+    const { container } = render(
+      <FormRow colunas={3}>
+        <input aria-label="A" />
+        <input aria-label="B" />
+      </FormRow>,
+    )
+
+    const fileira = container.querySelector('[data-slot="form-row"]')
+    expect(fileira?.className).toContain('gap-[var(--s-3)]')
+    // Regra 1 da §Hierarquia: irmãos = `gap`, nunca `margin` por elemento.
+    expect(screen.getByLabelText('A').className).not.toContain('m-')
+  })
+
+  it('quebra por `auto-fit`, nunca por media query', () => {
+    const { container } = render(
+      <FormRow colunas={4}>
+        <input aria-label="A" />
+      </FormRow>,
+    )
+
+    const fileira = container.querySelector('[data-slot="form-row"]') as HTMLElement
+    // `auto-fit` mede o CONTÊINER. Media query mediria a JANELA — e o campo vive
+    // dentro de uma coluna de 320px numa ficha de duas colunas.
+    expect(fileira.style.gridTemplateColumns).toContain('auto-fit')
+    expect(fileira.className).not.toMatch(/\bsm:|\bmd:|\blg:/)
+    expect(fileira).toHaveAttribute('data-colunas', '4')
   })
 })
 
@@ -192,10 +235,10 @@ describe('FormGrid — totais no pé da grade', () => {
     const total = screen.getByLabelText('Total')
     expect(total.closest('table')).toBeNull()
     expect(total.closest('[data-slot="total-box"]')).not.toBeNull()
-    // 48px em display condensado — o maior dado da tela.
-    const valor = total.firstElementChild
-    expect(valor?.className).toContain('font-[family-name:var(--font-display-condensada)]')
-    expect(valor?.className).toContain('text-[3rem]')
+    // MONO tabular na escala de destaque — o maior DADO da tela. Era 48px em
+    // display condensado até a #479: a Bebas que tornava a medida possível saiu
+    // na D1, e mono é o que a régua manda para dado.
+    expect(total).toHaveStyle({ fontVariantNumeric: 'tabular-nums' })
 
     // SubTotal continua fileira, e continua na medida da malha.
     const subtotal = screen.getByLabelText('SubTotal')
@@ -260,16 +303,16 @@ describe('FormGrid — zona de dinheiro nos totais', () => {
     expect(desconto.className).not.toContain('text-money')
   })
 
-  it('o fecho leva a borda de 3px, o lima e a sombra dura do documento', () => {
+  it('o fecho é card de tinta com relevo duro, na tinta de dinheiro', () => {
     render(<HarnessZona />)
 
-    const caixa = screen.getByLabelText('Total').closest('[data-slot="total-box"]')
-    expect(caixa?.className).toContain('border-[3px]')
-    expect(caixa?.className).toContain('border-rule-strong')
-    // Mesma tinta de dinheiro que a fileira de total tinha — o fecho não
-    // estreia par de cor que ninguém mediu.
-    expect(caixa?.className).toContain('bg-fill-money')
-    expect(caixa?.className).toContain('shadow-el3')
+    // #479: o fecho virou `KpiTile`. Borda de tinta 1,5px + `--hard-1` no lugar
+    // dos 3px + `shadow-el3` — o fecho e o KPI sempre foram a mesma peça dita
+    // duas vezes, e as diferenças entre elas nunca tinham sido decididas.
+    const caixa = screen.getByLabelText('Total').closest('[data-slot="total-box"]') as HTMLElement
+    expect(caixa).toHaveAttribute('data-tint', 'mint')
+    expect(caixa.style.border).toContain('var(--n-900)')
+    expect(caixa.style.boxShadow).toBe('var(--hard-1)')
   })
 
   it('célula comum da malha NÃO usa a cor de dinheiro', () => {
@@ -284,9 +327,9 @@ describe('FormGrid — zona de dinheiro nos totais', () => {
 /**
  * A VOZ da coluna. A célula editável é um `<input>`, e `<input>` não aceita
  * filho — `<Nome>` e `<Produto>` não entram aqui. Sem a prop, a mesma
- * descrição de produto que a listagem mostra em Sora aparecia em Inter dentro
- * da grade do documento, e a regra semântica virava "vale onde é texto, não
- * vale onde é campo".
+ * descrição de produto que a listagem mostra na voz de O QUÊ aparecia em Inter
+ * dentro da grade do documento, e a regra semântica virava "vale onde é texto,
+ * não vale onde é campo".
  */
 describe('FormGrid — voz da coluna', () => {
   function HarnessDeVoz() {
@@ -310,7 +353,7 @@ describe('FormGrid — voz da coluna', () => {
     )
   }
 
-  it('produto fala em Sora, nome em serifada, e o resto continua em UI', () => {
+  it('produto e nome falam nas vozes próprias, e o resto continua em UI', () => {
     render(<HarnessDeVoz />)
 
     expect(screen.getByLabelText(/Descrição do Produto/).className).toContain('font-display')

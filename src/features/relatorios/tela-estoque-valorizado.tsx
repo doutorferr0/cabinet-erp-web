@@ -7,12 +7,19 @@ import {
   useEstoqueValorizado,
 } from '@/data/relatorios-api'
 import {
+  type AgrupamentoDeRelatorio,
+  numeroDaQuantidade,
+  somar,
+} from '@/features/relatorios/agrupamento'
+import {
   type ColunaDeRelatorio,
   EscolhaDeDeposito,
+  FaixaDeKpis,
   FiltroDeMarcar,
-  GradeDoResumo,
+  Kpi,
   MolduraDeRelatorio,
-  NumeroDoResumo,
+  RotuloDeFiltro,
+  TETO_DE_PAGINA,
 } from '@/features/relatorios/moldura-de-relatorio'
 import { formatInstanteBR, formatMoneyBRL, formatQuantidade } from '@/lib/formatters'
 import { useState } from 'react'
@@ -38,8 +45,30 @@ import { useState } from 'react'
  * ## Item sem preço é o dado mais importante do resumo
  *
  * `withoutPriceCount` mede a confiança no total: 3 de 4000 é ruído, 900 de 4000
- * quer dizer que o valor lá em cima não significa nada. Por isso ele é um número
- * do resumo com a dica ao lado, e não uma nota de rodapé.
+ * quer dizer que o valor lá em cima não significa nada. Por isso ele é um KPI
+ * com a dica ao lado, e não uma nota de rodapé.
+ *
+ * ## Agrupar por DEPÓSITO não existe, e não é esquecimento (web#493 · D25)
+ *
+ * A issue pedia a quebra por depósito. `StockValuationRowDto` não tem depósito:
+ * ele é RECORTE (`?warehouseId=`, ecoado no envelope), não campo de linha — é o
+ * mesmo motivo do aviso do eco que a moldura já desenhava. Agrupar por ele
+ * exigiria campo novo no DTO, o que é PR de contrato.
+ *
+ * As quebras entregues usam campos que a linha TEM: tipo de produto e a
+ * comparação com o mínimo. O seletor recebe depósito de graça no dia em que o
+ * contrato publicar o campo.
+ *
+ * ## "Custo médio" e "variação no mês" também não existem
+ *
+ * O enum de `valuationBasis` só tem `sale_price`: um KPI chamado custo médio
+ * calculado sobre preço de VENDA seria um número certo com nome errado. E não há
+ * dado histórico em canto nenhum do envelope — variação exigiria uma segunda
+ * apuração que o contrato não publica.
+ *
+ * No lugar deles, dois números que saem do `summary` sem inventar nada: o VALOR
+ * MÉDIO POR ITEM (com a base dita na dica) e o ABAIXO DO MÍNIMO, que é o que
+ * decide compra.
  */
 
 const PAGE_SIZE = 50
@@ -55,6 +84,7 @@ export function TelaEstoqueValorizado() {
     page: 1,
     pageSize: PAGE_SIZE,
   })
+  const [agrupamento, setAgrupamento] = useState<string | null>(null)
 
   const depositos = useDepositos()
   const tipos = useLookupOptions('tipoProduto')
@@ -66,9 +96,21 @@ export function TelaEstoqueValorizado() {
     setConsulta((atual) => ({ ...atual, ...mudanca, page: 1 }))
   }
 
+  // Agrupar é do CLIENTE — o contrato não publica `groupBy`. Então a quebra pede
+  // o máximo que cabe numa resposta, e a moldura diz quando o teto cortou.
+  function trocarAgrupamento(id: string | null) {
+    setAgrupamento(id)
+    setConsulta((atual) => ({
+      ...atual,
+      page: 1,
+      pageSize: id ? TETO_DE_PAGINA : PAGE_SIZE,
+    }))
+  }
+
   const envelope = relatorio.data
   const recorte = recorteDoEnvelope(consulta.warehouseId, envelope?.warehouseId)
   const nomeDoDeposito = depositos.data?.find((d) => d.id === consulta.warehouseId)?.name
+  const resumo = envelope?.summary
 
   return (
     <MolduraDeRelatorio<StockValuationRowDto>
@@ -78,6 +120,7 @@ export function TelaEstoqueValorizado() {
           ? `Foto de ${formatInstanteBR(envelope.asOf)} — a preço de venda.`
           : 'Quanto vale o que está em casa, agora.'
       }
+      baseDoArquivo="estoque-valorizado"
       filtros={
         <>
           <EscolhaDeDeposito
@@ -86,12 +129,10 @@ export function TelaEstoqueValorizado() {
             aoTrocar={(warehouseId) => trocar({ warehouseId })}
           />
 
-          <label className="flex flex-col gap-1">
-            <span className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em]">
-              Tipo de produto
-            </span>
+          <label className="flex flex-col gap-[var(--s-1)]">
+            <RotuloDeFiltro>Tipo de produto</RotuloDeFiltro>
             <select
-              className="h-9 border-2 border-input bg-card px-2.5 text-sm outline-none focus-visible:focus-ring"
+              className="t-ui h-9 border-2 border-input bg-card px-2.5 outline-none focus-visible:focus-ring"
               value={consulta.productGroup ?? ''}
               onChange={(evento) => trocar({ productGroup: evento.target.value || null })}
             >
@@ -116,30 +157,55 @@ export function TelaEstoqueValorizado() {
           />
         </>
       }
-      resumo={
-        envelope ? (
-          <GradeDoResumo>
-            <NumeroDoResumo
+      kpis={
+        resumo ? (
+          <FaixaDeKpis>
+            {/*
+              O que qualifica o total é quanto ficou de FORA dele. Com
+              `withoutPriceCount` em zero a soma cobre o recorte; acima disso o
+              número é um PISO, e a dica diz por quanto. O tom fica neutro de
+              propósito: o valor do estoque não é um número ruim por haver item
+              sem preço — quem é ruim é a cobertura, e ela está escrita.
+            */}
+            <Kpi
               rotulo="Valor do estoque"
-              valor={formatMoneyBRL(envelope.summary.valueCents)}
-              dica="Só os itens COM preço entram nesta soma."
+              valor={formatMoneyBRL(resumo.valueCents)}
+              dica={
+                resumo.withoutPriceCount > 0
+                  ? `${resumo.withoutPriceCount} ${resumo.withoutPriceCount === 1 ? 'item ficou de fora' : 'itens ficaram de fora'} por não ter preço.`
+                  : 'Todos os itens do recorte têm preço — a soma cobre o recorte inteiro.'
+              }
             />
-            <NumeroDoResumo rotulo="Itens" valor={String(envelope.summary.itemCount)} />
-            <NumeroDoResumo
+            <Kpi
+              rotulo="SKUs"
+              valor={String(resumo.itemCount)}
+              dica="Variantes no recorte — o denominador do valor médio."
+            />
+            <Kpi
+              rotulo="Valor médio por item"
+              valor={
+                resumo.itemCount > 0
+                  ? formatMoneyBRL(Math.round(resumo.valueCents / resumo.itemCount))
+                  : '—'
+              }
+              dica="A preço de venda — é a única base que o contrato publica hoje."
+            />
+            <Kpi
               rotulo="Abaixo do mínimo"
-              valor={String(envelope.summary.belowMinimumCount)}
+              valor={String(resumo.belowMinimumCount)}
+              tom={resumo.belowMinimumCount > 0 ? 'warn' : 'neutro'}
+              dica="Repor antes de faltar."
             />
-            <NumeroDoResumo
-              rotulo="Sem preço"
-              valor={String(envelope.summary.withoutPriceCount)}
-              dica="Ficaram de fora do valor — é a medida da confiança no total."
-            />
-          </GradeDoResumo>
+          </FaixaDeKpis>
         ) : null
       }
       colunas={COLUNAS}
       linhas={envelope?.rows ?? []}
       chaveDaLinha={(linha) => linha.variantId}
+      agrupamentos={AGRUPAMENTOS}
+      agrupamentoAtivo={agrupamento}
+      aoTrocarAgrupamento={trocarAgrupamento}
+      tomDaLinha={(linha) => (linha.belowMinimum ? 'warn' : 'neutro')}
       carregando={relatorio.isPending}
       erro={relatorio.isError ? relatorio.error : null}
       refazer={() => relatorio.refetch()}
@@ -174,10 +240,34 @@ function quantidade(texto: string): string {
   return Number.isFinite(numero) ? formatQuantidade(numero) : texto
 }
 
+/** O TIPO nulo é caso REAL: o cadastro mínimo do legado não exigia tipo. */
+const SEM_TIPO = 'Sem tipo'
+
+const AGRUPAMENTOS: readonly AgrupamentoDeRelatorio<StockValuationRowDto>[] = [
+  {
+    id: 'productGroup',
+    rotulo: 'Tipo de produto',
+    chave: (linha) => linha.productGroup ?? SEM_TIPO,
+    // Sem `ordem`: os grupos saem na ordem de aparição, que é a ordem que o
+    // servidor mandou. Ordenar por nome aqui desfaria o `sortBy` que o operador
+    // acabou de clicar no cabeçalho.
+  },
+  {
+    id: 'belowMinimum',
+    rotulo: 'Abaixo do mínimo',
+    chave: (linha) => (linha.belowMinimum ? 'Abaixo do mínimo' : 'Dentro do mínimo'),
+    ordem: ['Abaixo do mínimo', 'Dentro do mínimo'],
+    tom: (chave) => (chave === 'Abaixo do mínimo' ? 'warn' : 'neutro'),
+  },
+]
+
 /**
  * As colunas. `ordenaPor` só nas quatro da whitelist do contrato (`valueCents`,
  * `quantity`, `minStock`, `description`) — cabeçalho clicável fora dela seria um
  * botão que responde 400.
+ *
+ * `soma` só onde somar significa algo: saldo e valor. Mínimo cadastrado e preço
+ * unitário não somam — um "total de preços unitários" é um número sem pergunta.
  */
 const COLUNAS: ColunaDeRelatorio<StockValuationRowDto>[] = [
   {
@@ -189,8 +279,7 @@ const COLUNAS: ColunaDeRelatorio<StockValuationRowDto>[] = [
   {
     id: 'productGroup',
     titulo: 'Tipo',
-    // Nulo é caso REAL, não ausência de dado: o cadastro mínimo do legado não
-    // exigia tipo. Traço em vez de vazio para a coluna não parecer quebrada.
+    // Traço em vez de vazio para a coluna não parecer quebrada.
     celula: (linha) => linha.productGroup ?? '—',
   },
   {
@@ -199,6 +288,10 @@ const COLUNAS: ColunaDeRelatorio<StockValuationRowDto>[] = [
     ordenaPor: 'quantity',
     numerica: true,
     celula: (linha) => quantidade(linha.quantity),
+    soma: (linhas) => {
+      const total = somar(linhas, (linha) => numeroDaQuantidade(linha.quantity))
+      return total === null ? '' : formatQuantidade(total)
+    },
   },
   {
     id: 'minStock',
@@ -227,10 +320,23 @@ const COLUNAS: ColunaDeRelatorio<StockValuationRowDto>[] = [
       linha.valueCents === null || linha.valueCents === undefined
         ? '—'
         : formatMoneyBRL(linha.valueCents),
+    soma: (linhas) => {
+      const total = somar(linhas, (linha) => linha.valueCents)
+      // Nulo é grupo INTEIRO sem preço — "R$ 0,00" afirmaria que ele não vale
+      // nada, quando o que se sabe é que não se sabe.
+      return total === null ? '—' : formatMoneyBRL(total)
+    },
   },
   {
     id: 'belowMinimum',
     titulo: 'Abaixo do mínimo',
-    celula: (linha) => (linha.belowMinimum ? 'sim' : ''),
+    celula: (linha) =>
+      linha.belowMinimum ? (
+        <span className="text-warn">sim</span>
+      ) : (
+        <span aria-hidden="true">—</span>
+      ),
+    // `celula` devolve marcação: sem `texto`, o CSV sairia com `[object Object]`.
+    texto: (linha) => (linha.belowMinimum ? 'sim' : ''),
   },
 ]

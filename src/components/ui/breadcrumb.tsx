@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils'
-import { ChevronRightIcon, MoreHorizontalIcon } from 'lucide-react'
+import { MoreHorizontalIcon } from 'lucide-react'
 import type * as React from 'react'
 import {
   Breadcrumb as BreadcrumbPrimitive,
@@ -17,8 +17,14 @@ import {
  * Copiado do staging `neobrutalism-aria/` (variante React Aria, MIT), com o
  * mapa de tokens do README aplicado. O que mudou em relação ao original:
  *
- * - **mono no lugar de `font-head`** — migalha é identificador de lugar, e
- *   identificador fala em Mono neste sistema (DESIGN.md §Typography);
+ * - **`.t-ui` no lugar de `font-head`** (Reface 2.0 · D5) — a migalha do 1.x era
+ *   Mono em caixa alta, e as duas coisas contradizem a §Hierarquia: mono é
+ *   DADO (o que se copia, compara ou soma) e caixa alta é exclusiva de
+ *   `--t-rotulo`. Nome de seção não é nenhum dos dois — é item de navegação, e
+ *   item de navegação é `--t-ui`. A hierarquia entre os degraus passa a sair da
+ *   COR (n-500 acima, n-900 no atual), como manda a régua;
+ * - **separador `/` no lugar do chevron** — o mockup 2.0 usa a barra, e ela
+ *   custa um caractere onde o ícone custava um SVG de 14px por degrau;
  * - **anel de foco amarelo** — o link deles não tinha estilo de foco NENHUM.
  *   Migalha é navegação: sem indicador, quem anda de Tab não sabe onde está;
  * - **`cn-rtl-flip` removido** — classe do design system deles, sem
@@ -48,7 +54,9 @@ function BreadcrumbList<T extends object>({ className, ...props }: BreadcrumbsPr
     <BreadcrumbsPrimitive
       data-slot="breadcrumb-list"
       className={cn(
-        'flex flex-wrap items-center gap-1.5 wrap-break-word font-mono text-xs uppercase tracking-[0.07em] text-muted-foreground',
+        // `!` na cor: `.t-ui` é regra sem `@layer` e vence a utility (que vive em
+        // `@layer utilities`). Sem ele a fileira inteira sai em n-900.
+        't-ui flex flex-wrap items-center gap-1.5 wrap-break-word text-muted-foreground!',
         className,
       )}
       {...props}
@@ -78,9 +86,9 @@ function BreadcrumbItem({
               data-slot="breadcrumb-separator"
               role="presentation"
               aria-hidden="true"
-              className={cn('[&>svg]:size-3.5', separatorClassName)}
+              className={cn(separatorClassName)}
             >
-              <ChevronRightIcon />
+              /
             </span>
           )}
         </>
@@ -95,8 +103,8 @@ function BreadcrumbLink({ className, ...props }: LinkProps) {
       data-slot="breadcrumb-link"
       className={composeRenderProps(className, (className) =>
         cn(
-          'cursor-pointer rounded-item font-semibold no-underline outline-none transition-colors',
-          'hover:text-foreground hover:underline',
+          'cursor-pointer rounded-item no-underline outline-none transition-colors',
+          'hover:text-foreground!',
           // O original não estilizava foco. Aqui o anel é obrigatório: migalha
           // é caminho de volta, e caminho de volta tem que ser alcançável.
           'focus-visible:focus-ring',
@@ -118,7 +126,10 @@ function BreadcrumbPage({ className, ...props }: React.ComponentProps<'span'>) {
       // `useFocusableInteractive`. A página atual é TEXTO, e `aria-current`
       // sozinho já diz que é o nó em que o operador está, que é a informação.
       aria-current="page"
-      className={cn('font-bold text-foreground', className)}
+      // Tinta, e não `font-bold`: dentro de Inter a hierarquia é peso E cor, e
+      // aqui o peso já é o 500 de `.t-ui` na fileira inteira — subir para 700
+      // só no último faria o degrau atual parecer de outro degrau da escala.
+      className={cn('text-foreground!', className)}
       {...props}
     />
   )

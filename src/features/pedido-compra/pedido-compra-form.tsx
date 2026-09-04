@@ -1,9 +1,8 @@
-import type { OrderDto, PartnerDto, PurchaseRequestDto } from '@/api/gerado'
+import type { OrderDto, PurchaseRequestDto } from '@/api/gerado'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { DocumentoBloco } from '@/components/cabinet/documento'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { DateField, TextareaField } from '@/components/cabinet/form-controls'
-import { FormGrid, type FormGridRow } from '@/components/cabinet/form-grid'
 import { Nome } from '@/components/cabinet/nome'
 import { posGravar } from '@/components/cabinet/pos-gravar'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
@@ -14,23 +13,20 @@ import {
   DESTINO_ROTULO,
   type ItemDoPedidoDeCompra,
   type PedidoDeCompra,
-  ROTULOS_DE_DESTINO,
-  SITUACAO_DA_LINHA,
   SITUACAO_DO_PEDIDO,
   destinoDoRotulo,
   fornecedoresComLinhaAberta,
   useCancelarPedidoDeCompra,
   useGravarPedidoDeCompra,
 } from '@/data/compras-api'
-import { tabelas } from '@/data/tabelas'
 import { formatDateBR } from '@/lib/formatters'
-import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
 import { useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Building2, FileText, Hash, List, Package, Search, ShoppingCart } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Building2, FileText, Hash, List, Search, ShoppingCart } from 'lucide-react'
+import { useState } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { z } from 'zod'
+import { ItensDoPedido } from './itens-do-pedido'
 
 /**
  * PEDIDO DE COMPRA — a NECESSIDADE, não o combinado.
@@ -51,7 +47,7 @@ import { z } from 'zod'
  */
 
 /** Uma linha como a GRADE a guarda: `destino` em português, o resto igual. */
-interface LinhaNoFormulario {
+export interface LinhaNoFormulario {
   linha: number
   varianteId: string | null
   descricao: string
@@ -161,16 +157,6 @@ export function doFormulario(valores: PedidoNoFormulario): PedidoDeCompra {
   }
 }
 
-const colunasDeFornecedor: ColumnDef<PartnerDto>[] = [
-  { accessorKey: 'code', header: 'Código' },
-  {
-    accessorKey: 'legalName',
-    header: 'Fornecedor',
-    cell: ({ getValue }) => <Nome>{getValue<string>()}</Nome>,
-  },
-  { accessorKey: 'document', header: 'Documento' },
-]
-
 const colunasDePedidoDeVenda: ColumnDef<OrderDto>[] = [
   { accessorKey: 'number', header: 'Número' },
   {
@@ -265,131 +251,21 @@ function BlocoDoPedidoDeVenda({ readOnly }: { readOnly: boolean }) {
  * novo — a `FormGrid` não tem ação por linha, e inventá-la aqui seria mexer no
  * componente compartilhado por causa de uma tela só.
  */
-function BotaoIncluirItem({ onInserir }: { onInserir: (fornecedor: PartnerDto) => void }) {
-  const [buscaAberta, setBuscaAberta] = useState(false)
-  useEffect(() => bindShortcut(SHORTCUTS.produto, () => setBuscaAberta(true)))
-
-  return (
-    <>
-      <Button type="button" variant="outline" size="sm" onClick={() => setBuscaAberta(true)}>
-        <Package className="size-4" /> Produto <kbd>{shortcutLabel(SHORTCUTS.produto)}</kbd>
-      </Button>
-      <SearchDialog
-        open={buscaAberta}
-        onOpenChange={setBuscaAberta}
-        title="De qual fornecedor é esta linha?"
-        columns={colunasDeFornecedor}
-        queryKey={['fornecedores', 'linha-do-pedido-de-compra']}
-        fetcher={(state) => data.fornecedores.list(state)}
-        onSelect={onInserir}
-      />
-    </>
-  )
-}
-
-function GradeItens() {
-  const itens = (useWatch({ name: 'itens' }) as LinhaNoFormulario[] | undefined) ?? []
-
-  return (
-    <FormGrid
-      name="itens"
-      hideAdd
-      actions={(append) => (
-        <BotaoIncluirItem
-          onInserir={(fornecedor) =>
-            append({
-              linha: itens.length + 1,
-              varianteId: null,
-              descricao: '',
-              acabamento: '',
-              tamanho: '',
-              unidade: 'UN',
-              quantidade: '',
-              destinoRotulo: DESTINO_ROTULO.stock,
-              fornecedorId: fornecedor.id,
-              fornecedor: fornecedor.legalName ?? '',
-              linhaDoPedidoDeVenda: null,
-              ordemId: null,
-              ordemNumero: null,
-              situacao: 'open',
-              observacao: '',
-            })
-          }
-        />
-      )}
-      columns={[
-        { key: 'descricao', label: 'Descrição', voz: 'produto' },
-        { key: 'acabamento', label: 'Acab.', type: 'select', options: tabelas.acabamentos },
-        { key: 'tamanho', label: 'Tamanho' },
-        { key: 'quantidade', label: 'Quantidade' },
-        { key: 'unidade', label: 'Unidade', type: 'select', options: tabelas.unidades },
-        {
-          key: 'destinoRotulo',
-          label: 'Destino',
-          type: 'select',
-          options: ROTULOS_DE_DESTINO,
-        },
-        {
-          // ECO, não campo: a chave é o `fornecedorId` que a busca gravou.
-          key: 'fornecedor',
-          label: 'Fornecedor',
-          type: 'computed',
-          compute: (row: FormGridRow) => String(row.fornecedor ?? '') || '—',
-        },
-        {
-          key: 'situacao',
-          label: 'Situação',
-          type: 'computed',
-          compute: (row: FormGridRow) =>
-            SITUACAO_DA_LINHA[row.situacao as ItemDoPedidoDeCompra['situacao']] ?? '—',
-        },
-        {
-          // A rastreabilidade para o outro lado: qual ordem levou esta linha.
-          key: 'ordemNumero',
-          label: 'Ordem',
-          type: 'computed',
-          compute: (row: FormGridRow) => String(row.ordemNumero ?? '') || '—',
-        },
-      ]}
-      newRow={{
-        linha: 0,
-        varianteId: null,
-        descricao: '',
-        acabamento: '',
-        tamanho: '',
-        unidade: 'UN',
-        quantidade: '',
-        destinoRotulo: DESTINO_ROTULO.stock,
-        fornecedorId: '',
-        fornecedor: '',
-        linhaDoPedidoDeVenda: null,
-        ordemId: null,
-        ordemNumero: null,
-        situacao: 'open',
-        observacao: '',
-      }}
-    />
-  )
-}
-
-/**
- * A PONTE pedido → ordem, um botão por FORNECEDOR com linha aberta.
- *
- * É o "Ordem de Compra" do legado, e ele não podia continuar sendo um
- * `navigate` para a listagem: a ordem tem UM fornecedor, então o gesto só
- * existe depois de escolhido qual. O botão leva o pedido e o fornecedor na URL,
- * e a tela da ordem monta as linhas abertas daquele fornecedor já com a origem
- * amarrada.
- *
- * Some quando não há linha aberta — pedido já todo em ordem não tem o que
- * gerar, e oferecer o gesto ali daria uma ordem vazia, ou um 409
- * `item-ja-em-ordem` num gesto que a tela tinha acabado de permitir.
- */
 function PonteParaOrdem({ pedido }: { pedido: PedidoDeCompra }) {
   const navigate = useNavigate()
   const fornecedores = fornecedoresComLinhaAberta(pedido)
 
-  if (!pedido.id || pedido.situacao === 'cancelled' || fornecedores.length === 0) return null
+  /**
+   * COM UM FORNECEDOR SÓ a ponte não aparece: quem leva ao próximo passo é a
+   * primária do cabeçalho (D19, #487), e dois botões com o mesmo destino na
+   * mesma tela é a duplicação que a rodada existe para desfazer.
+   *
+   * Com dois ou mais ela continua aqui, e isso não é inconsistência: a próxima
+   * ação é UMA, e o pedido com três fornecedores em aberto não tem uma próxima
+   * ordem — tem três. Escolher a primeira por ordem alfabética seria a tela
+   * decidindo de quem se compra.
+   */
+  if (!pedido.id || pedido.situacao === 'cancelled' || fornecedores.length <= 1) return null
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -503,7 +379,7 @@ export function PedidoCompraForm({
           icone={List}
           nota="o que se está comprando, e de quem"
         >
-          <GradeItens />
+          <ItensDoPedido />
         </Secao>
 
         <Secao

@@ -22,7 +22,7 @@ const SIDEBAR_COOKIE_NAME = 'sidebar_state'
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = '16rem'
 const SIDEBAR_WIDTH_MOBILE = '18rem'
-// 3.5rem, não 3rem: a coluna colapsada precisa caber um ornamento que se
+// 3.5rem, não 3rem: a coluna colapsada precisa caber um ícone que se
 // leia como marca do módulo. Em 3rem o botão fechava em 32px e o shape
 // sobrava 16px de área útil — tamanho de ícone de aviso, não de módulo.
 const SIDEBAR_WIDTH_ICON = '3.5rem'
@@ -53,6 +53,27 @@ function useSidebar() {
   }
 
   return context
+}
+
+/**
+ * O contexto da barra QUANDO ELE EXISTE — e o padrão quando não existe.
+ *
+ * A barra do Cabinet deixou de ser a `<Sidebar>` do shadcn na Reface 2.0: quem
+ * navega agora é `src/app/nav/sidebar-nav.tsx`, que não monta `SidebarProvider`
+ * nenhum. As PEÇAS daqui continuam em uso — o `CompanySwitcher` é montado com
+ * `SidebarMenuButton` e mora dentro da barra nova —, e sem esta função elas
+ * derrubariam a aplicação inteira com *"must be used within a
+ * SidebarProvider"*.
+ *
+ * O `useSidebar` continua estourando de propósito: quem pede o contexto para
+ * ABRIR ou FECHAR a barra (`SidebarTrigger`, `SidebarRail`) precisa mesmo de um
+ * provider, e um padrão silencioso ali daria um botão que não faz nada. Quem só
+ * pergunta "estou colapsado?" para escolher entre texto e ícone tem resposta
+ * boa sem provider: expandido, e não é telefone.
+ */
+function useSidebarSeHouver(): Pick<SidebarContextProps, 'isMobile' | 'state'> {
+  const context = React.useContext(SidebarContext)
+  return context ?? { isMobile: false, state: 'expanded' }
 }
 
 function SidebarProvider({
@@ -501,7 +522,7 @@ function SidebarMenuButton({
    */
   hoverCard?: React.ReactNode
 } & VariantProps<typeof sidebarMenuButtonVariants>) {
-  const { isMobile, state } = useSidebar()
+  const { isMobile, state } = useSidebarSeHouver()
   const shared = {
     'data-slot': 'sidebar-menu-button',
     'data-sidebar': 'menu-button',

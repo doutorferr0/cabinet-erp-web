@@ -21,6 +21,30 @@ import { TriangleAlert } from 'lucide-react'
  * da AÇÃO (vincular ao cadastro que já existe, no 409). O que a peça dá é a
  * caixa: zona, ícone e o lugar do erro.
  *
+ * ## Faixa, e só faixa (D29)
+ *
+ * Era `border-2` **mais** fundo tingido. §Hierarquia manda UMA ferramenta de
+ * separação por fronteira, e o tint já é a ferramenta certa aqui: o aviso é uma
+ * REGIÃO de natureza diferente dentro da tela, não um objeto solto sobre o
+ * plano. Com a caixa preta por cima do amarelo ele lia como card — e card é o
+ * que o formulário ao lado já é, então a tela ficava com dois objetos do mesmo
+ * peso onde um deles é só um recado.
+ *
+ * ## Por que `--warn-bg`, e não o alias `zone-warn`
+ *
+ * A espec da D29 nomeia `--warn-bg`, e o nome importa porque os dois âmbares do
+ * 2.0 não são a mesma tinta: `--tint-sand` (para onde a D1 aponta o
+ * `--zone-warn` da 1.x) é OPACO, 14% de âmbar já misturado com a folha;
+ * `--warn-bg` é ALPHA, 22% sobre o que estiver atrás. A diferença aparece onde
+ * este aviso de fato mora — ele tanto entra dentro do formulário (folha) quanto
+ * flutua sobre a bancada, e o tint opaco carrega a folha junto, desenhando um
+ * retângulo branco-amarelado sobre o fundo escuro da bancada. Alpha é também o
+ * que faz um valor só servir aos dois temas, que é a razão declarada de a
+ * semântica do 2.0 ser alpha.
+ *
+ * Escrito como `bg-[var(--warn-bg)]` porque o token é da rodada 2.0 e ainda não
+ * tem utility no `@theme` — quem cria utility é o `index.css`, zona da D1.
+ *
  * ## A cor é a de PENDÊNCIA, e é literal
  *
  * Zona de pendência (amarela) porque é exatamente isso: falta caminho no
@@ -46,14 +70,14 @@ export function AvisoDeCobertura({
     <div
       data-slot="aviso-de-cobertura"
       className={cn(
-        'flex max-w-prose items-start gap-2 border-2 border-border bg-zone-warn px-3 py-2',
+        'flex max-w-prose items-start gap-2 rounded-item bg-[var(--warn-bg)] px-3 py-2 t-corpo',
         className,
       )}
     >
       {/* Decoração: quem informa é a frase ao lado. O desenho serve para o olho
           achar a caixa de longe, depois de já ter aprendido o que ela é. */}
       <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-      <div className="flex flex-col gap-1 text-sm">
+      <div className="flex flex-col gap-1">
         {children}
         {erro}
       </div>

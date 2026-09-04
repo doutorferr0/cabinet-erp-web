@@ -1,0 +1,28 @@
+/* Overlay de grade de 8px (§Hierarquia). Ativar: `?grid` na URL, em dev — o
+   `__root` põe `data-grid` no `<html>` e IMPORTA este arquivo sob demanda, para
+   que ele não entre no bundle de produção. Toda captura de PR de tela vai com o
+   overlay ligado, provando alinhamento em múltiplos de 4.
+
+   Cópia de `docs/design/grid.css`, que é onde a régua o publica para quem lê a
+   documentação sem rodar o app. É cópia e não import porque o Vite não serve
+   `docs/` — mudou um, muda o outro (#469).
+
+   A tinta é a rose-400 da rampa (`#e2574a`) escrita literal de propósito: o
+   overlay tem de continuar visível quando o que está sendo depurado é
+   justamente um token de cor. */
+html[data-grid] body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 99999;
+  background-image: linear-gradient(
+      to right,
+      color-mix(in oklab, #e2574a 22%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(to bottom, color-mix(in oklab, #e2574a 22%, transparent) 1px, transparent 1px),
+    linear-gradient(to right, color-mix(in oklab, #e2574a 9%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, #e2574a 9%, transparent) 1px, transparent 1px);
+  background-size: 32px 32px, 32px 32px, 8px 8px, 8px 8px;
+}

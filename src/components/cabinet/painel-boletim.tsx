@@ -1,41 +1,55 @@
-import { cn } from '@/lib/utils'
+import { COR_DE_ZONA, DCard, MarcaDeCard } from '@/components/cabinet/painel'
 
 export type CorDoPainel = 'boletim' | 'foco' | 'cadastros'
 
 /**
- * A cor da moldura vem de UMA de duas fontes, nunca de literal na classe.
+ * A cor da região, agora em token 2.0 e num quadradinho de 8px.
  *
- * - **`modulo`** — a região fala de um módulo do sistema, e a moldura lê o
- *   `--modulo-01` daquele par pelo `border-double-modulo`. `cadastros` empresta
- *   o azure do Estoque pelo mesmo mecanismo de `aparencia` que já rege
- *   Dashboard (empresta Boletim) e Colaboradores (empresta Clientes) em
- *   `navigation.ts` — nenhuma nona cor inventada.
- * - **`tinta`** — a região é um ESTADO, não um módulo: pendência lê a zona
- *   `warn`, que é a família que já significa foco no repo.
- *
- * Literal de cor na classe (era `border-[hsl(206,100%,50%)]`) sai porque a
- * recalibração de paleta e o modo escuro mexem no token, não no consumidor: o
- * hex ficaria parado enquanto o resto da tela andasse.
+ * Os três empregos não mudaram — movimento é o assunto da folha, pendência é
+ * ESTADO e cadastros é o inventário —, mudou de onde a cor vem e quanta área ela
+ * pinta. `boletim` lê `--mod-hoje` (o matiz do grupo "Hoje" na sidebar 2.0, que
+ * é onde a folha do dia mora), pendência lê a zona `warn` e cadastros
+ * `--mod-estoque` — o mesmo empréstimo de antes, agora sem passar pela tripla
+ * HSL do 1.x.
  */
-const CORES: Record<CorDoPainel, { modulo?: string; classe: string }> = {
-  boletim: { modulo: 'boletim', classe: 'border-double-modulo' },
-  foco: { classe: 'border-2 border-warn outline outline-1 outline-warn outline-offset-[3px]' },
-  cadastros: { modulo: 'estoque', classe: 'border-double-modulo' },
+const CORES: Record<CorDoPainel, string> = {
+  boletim: 'var(--mod-hoje)',
+  foco: COR_DE_ZONA.warn,
+  cadastros: 'var(--mod-estoque)',
 }
 
 /**
- * PainelBoletim — moldura dupla colorida com legend vazado na borda
- * (REFACE Boletim, decisão user 2026-08-07).
+ * PAINEL DO BOLETIM — na Reface 2.0, um `DCard` quieto, como painel e seção.
  *
- * A cor da moldura varia por região: laranja do Boletim no movimento,
- * amarelo de foco nas pendências, azul nos cadastros. Interior com papel
- * quadriculado (bg-paper-grid).
+ * ## O que era, e por que nada disso sobreviveu
  *
- * **A legenda é a MESMA do `FormBlock`** — Meta (mono, caixa alta pequena) em
- * `text-strong`. Os dois componentes falam a mesma gramática de compartimento e
- * divergir na tinta da legenda faria a tela de Boletim parecer de outro sistema.
+ * Era um `fieldset` com moldura DUPLA colorida (borda de 2px + filete externo
+ * de 1px com offset), `legend` vazado na borda, interior em papel quadriculado
+ * e a cor da região pintando os quatro lados. Três painéis desses lado a lado
+ * na folha do dia davam três molduras coloridas competindo com o dado que elas
+ * cercam — e §Hierarquia (issue-mãe #469) recusa isso por três regras de uma vez:
  *
- * Depois do Boletim, este componente propaga para Dashboard e Planner.
+ * - **Card = borda `n-300` + `--hard-soft`** (ou tinta + `--hard-1/2`, e a
+ *   tinta é dos KPIs). Moldura colorida de 2px não é nenhum dos dois.
+ * - **Uma ferramenta por fronteira.** Moldura + filete externo eram duas linhas
+ *   na MESMA fronteira, encostadas — o caso que a régua nomeia palavra por
+ *   palavra.
+ * - **Máximo 2 níveis de card, e dentro de um card só espaço, hairline e
+ *   tint.** O papel quadriculado era textura de fundo dentro do card, um quarto
+ *   vocabulário de separação que a régua não tem.
+ *
+ * ## Deixou de ser `fieldset`, e isso é conserto de semântica
+ *
+ * `fieldset`/`legend` anuncia GRUPO DE CONTROLES ao leitor de tela. As três
+ * regiões da folha do dia são tabelas de leitura — nenhum campo, nenhum
+ * controle. O argumento é o mesmo que `painel.tsx` já escrevia para não usar
+ * `FormBlock`, e ele valia aqui desde sempre; o que faltava era alguém aplicar.
+ * A legenda passa a ser o título do card (`.t-bloco`, `h3`), que é o que ela
+ * sempre foi na tela.
+ *
+ * O corpo vai SEM padding: as três regiões são tabelas, e célula de tabela já
+ * tem o padding dela. Padding no corpo recuaria a hairline das linhas e cada
+ * régua da tabela viraria um traço solto dentro da caixa.
  */
 export function PainelBoletim({
   cor,
@@ -48,19 +62,17 @@ export function PainelBoletim({
   className?: string
   children: React.ReactNode
 }) {
-  const cfg = CORES[cor]
-
   return (
-    <fieldset
-      {...(cfg.modulo ? { 'data-modulo': cfg.modulo } : {})}
-      className={cn('rounded-lg bg-paper-grid p-3', cfg.classe, className)}
+    <DCard
+      data-slot="painel-boletim"
+      data-regiao={cor}
+      // Sem `legend` não há cabeçalho — e é o certo: cabeçalho vazio ocuparia
+      // 41px de altura dizendo nada, e um quadradinho sem rótulo ao lado é cor
+      // que o operador não tem como nomear (WCAG 1.4.1).
+      {...(legend ? { titulo: legend, marca: <MarcaDeCard cor={CORES[cor]} /> } : {})}
+      {...(className ? { className } : {})}
     >
-      {legend ? (
-        <legend className="px-1 font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-text-strong">
-          {legend}
-        </legend>
-      ) : null}
       {children}
-    </fieldset>
+    </DCard>
   )
 }

@@ -71,7 +71,7 @@ function Campo({
   maxLength?: number
 }) {
   return (
-    <div className={`flex flex-col gap-1 ${className ?? ''}`}>
+    <div className={`flex flex-col gap-[var(--s-1)] ${className ?? ''}`}>
       <Label htmlFor={id}>{label}</Label>
       <Input
         id={id}
@@ -162,13 +162,13 @@ export function TimbreFormDialog({
         <DialogTitle>Timbre de {timbre.data?.name ?? 'empresa ativa'}</DialogTitle>
       </DialogHeader>
 
-      <div className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto">
-        <p className="text-muted-foreground text-sm leading-snug">
+      <div className="flex max-h-[60vh] flex-col gap-[var(--s-4)] overflow-y-auto">
+        <p className="t-meta">
           É o que o cabeçalho de todo documento impresso carimba. A razão social é o nome{' '}
           <strong>registrado</strong> — não é o fantasia, que fica no cadastro da empresa.
         </p>
 
-        <div className="grid grid-cols-6 gap-3">
+        <div className="grid grid-cols-6 gap-[var(--s-3)]">
           <Campo
             id="timbre-legal"
             label="Razão social"

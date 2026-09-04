@@ -220,11 +220,11 @@ describe('apodrecimento no quadro', () => {
     await screen.findByText('Quase la')
     const perto = cartaoDe('Quase la').querySelector('[data-slot="apodrecimento"]')
     expect(perto?.getAttribute('data-estado')).toBe('perto')
-    expect(cartaoDe('Quase la').className).not.toContain('bg-zone-danger')
+    expect(cartaoDe('Quase la').className).not.toContain('bg-[var(--tint-rose)]')
 
     const podre = cartaoDe('Podre').querySelector('[data-slot="apodrecimento"]')
     expect(podre?.getAttribute('data-estado')).toBe('apodrecido')
-    expect(cartaoDe('Podre').className).toContain('bg-zone-danger')
+    expect(cartaoDe('Podre').className).toContain('bg-[var(--tint-rose)]')
   })
 
   /** O selo sozinho seria um número mudo — a frase inteira vai junto. */

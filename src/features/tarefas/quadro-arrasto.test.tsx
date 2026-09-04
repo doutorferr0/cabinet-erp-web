@@ -155,7 +155,11 @@ describe('quadro de tarefas: o arrasto', () => {
     // nativos e caem fora do lote do `act`, então a classe aparece no render
     // seguinte, não no mesmo tique.
     await waitFor(() => expect(andamento).toHaveAttribute('data-sob-voo'))
-    expect(andamento.className).toContain('shadow-el2')
+    // Reface 2.0: o realce é ANEL de tinta, não mais um degrau de elevação.
+    // Borda mudaria a largura da coluna e o quadro inteiro andaria de lado
+    // quando o cartão passa por cima; o anel desenha por fora da caixa.
+    expect(andamento.className).toContain('ring-2')
+    expect(andamento.className).toContain('ring-[var(--n-900)]')
     // O cartão em trânsito some pela metade, senão o operador vê duas cópias.
     expect(cartaoDe('Medir a sala')).toHaveAttribute('data-arrastando')
 

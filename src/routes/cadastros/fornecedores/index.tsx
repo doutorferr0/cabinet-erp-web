@@ -1,6 +1,7 @@
 import type { PartnerDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
+import type { OpcaoDeAgrupamento } from '@/components/cabinet/data-table'
 import { Nome } from '@/components/cabinet/nome'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
@@ -34,6 +35,7 @@ const columns: ColumnDef<PartnerDto>[] = [
     accessorKey: 'code',
     header: 'Código',
     cell: ({ getValue }) => getValue<string | null>() ?? '—',
+    meta: { tipo: 'id' },
   },
   {
     accessorKey: 'tradeName',
@@ -47,6 +49,7 @@ const columns: ColumnDef<PartnerDto>[] = [
     accessorKey: 'legalName',
     header: 'Razão Social',
     cell: ({ getValue }) => <Nome>{getValue<string>()}</Nome>,
+    meta: { tipo: 'entidade' },
   },
   {
     accessorKey: 'active',
@@ -90,6 +93,29 @@ const camposFiltraveis: readonly CampoFiltravel[] = [
     normalizar: somenteDigitos,
   },
   { id: 'active', rotulo: 'Ativo', variante: 'boolean', icon: CircleCheck },
+]
+
+/**
+ * Cadastro DESATIVADO (padrão 8: nunca se apaga de verdade) passa a se
+ * anunciar na própria linha, em vez de depender da coluna `Ativo` no fim dela
+ * — que é onde o olho chega por último numa varredura.
+ */
+function decoracaoDoParceiro(p: PartnerDto) {
+  return p.active ? undefined : ('muted' as const)
+}
+
+/**
+ * `Situação` é o único agrupamento desta tela, e é o que responde às três
+ * consultas que o operador faz aqui — os ativos, os inativos, todos. Tinge a
+ * faixa porque é ESTADO; agrupar por nome próprio não teria cor.
+ */
+const AGRUPAMENTOS: readonly OpcaoDeAgrupamento<PartnerDto>[] = [
+  {
+    id: 'active',
+    rotulo: 'Situação',
+    valorDaLinha: (p) => (p.active ? 'Ativo' : 'Inativo'),
+    tomDoValor: (valor) => (valor === 'Ativo' ? 'done' : 'void'),
+  },
 ]
 
 function FornecedoresPage() {
@@ -142,6 +168,8 @@ function FornecedoresPage() {
       columns={columns}
       queryKey={['fornecedores']}
       fetcher={data.fornecedores.list}
+      decoracao={decoracaoDoParceiro}
+      agrupamentos={AGRUPAMENTOS}
       actions={actions}
       filtros={camposFiltraveis}
       // Filtro POR MÓDULO (#104): o mesmo schema que desenha o formulário e a

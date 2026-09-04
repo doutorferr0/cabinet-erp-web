@@ -5,7 +5,7 @@ import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import { type Produto, produtos } from '@/mocks/produtos'
 import { renderWithQuery } from '@/test/utils'
 import type { ColumnDef } from '@tanstack/react-table'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import type userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 
@@ -29,6 +29,19 @@ const columns: ColumnDef<Produto>[] = [
   { accessorKey: 'marca', header: 'Marca' },
 ]
 
+/**
+ * O rodapé da 2.0 não é mais uma frase só: à esquerda "n de N registros · soma"
+ * com os números em mono (elementos próprios), à direita a FAIXA "1–20 de 340".
+ * Por isso a asserção é por conteúdo do bloco, e não por nó de texto — o texto
+ * está partido entre `<span>`s de propósito, que é o que faz o número alinhar.
+ */
+function contagem() {
+  return screen.getByTestId('contagem-da-grade')
+}
+function faixa() {
+  return screen.getByTestId('faixa-da-pagina')
+}
+
 function setup(pageSizeOptions = [10, 20]) {
   return renderWithQuery(
     <VitraDataTable
@@ -49,8 +62,8 @@ describe('VitraDataTable', () => {
 
     // delayMs=0, mas a promessa ainda é assíncrona.
     expect(await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')).toBeInTheDocument()
-    expect(screen.getByText('45 registros')).toBeInTheDocument()
-    expect(screen.getByText('Página 1 de 5')).toBeInTheDocument()
+    expect(contagem()).toHaveTextContent('de 45 registros')
+    expect(faixa()).toHaveTextContent('1–10 de 45')
   })
 
   it('busca filtra registros via provider', async () => {
@@ -64,18 +77,18 @@ describe('VitraDataTable', () => {
     await waitFor(() => {
       expect(screen.queryByText('PENDENTE REDONDO ALUMÍNIO PRETO')).not.toBeInTheDocument()
     })
-    expect(screen.getByText('5 registros')).toBeInTheDocument()
+    expect(contagem()).toHaveTextContent('5 de 5 registros')
   })
 
   it('paginação troca os registros exibidos', async () => {
     const { user } = setup([3])
 
-    await screen.findByText('Página 1 de 15')
+    await waitFor(() => expect(faixa()).toHaveTextContent('1–3 de 45'))
     const firstPageText = screen.getAllByRole('row')[1]?.textContent
 
-    await user.click(screen.getByRole('button', { name: 'Próxima' }))
+    await user.click(screen.getByRole('button', { name: 'Próxima página' }))
 
-    await screen.findByText('Página 2 de 15')
+    await waitFor(() => expect(faixa()).toHaveTextContent('4–6 de 45'))
     await waitFor(() => {
       expect(screen.getAllByRole('row')[1]?.textContent).not.toBe(firstPageText)
     })
@@ -183,37 +196,43 @@ describe('VitraDataTable', () => {
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
     const head = screen.getByRole('columnheader', { name: /Marca/ })
 
+    // `within(head)`: com a barra 2.0 a ordenação também aparece na barra
+    // (`Ordenar: Marca ↑`), e um `getByRole` solto passaria a achar os dois.
+    const ordenar = within(head).getByRole('button', { name: /Marca/ })
+
     expect(head).toHaveAttribute('aria-sort', 'none')
-    await user.click(screen.getByRole('button', { name: /Marca/ }))
+    await user.click(ordenar)
     await waitFor(() => expect(head).toHaveAttribute('aria-sort', 'ascending'))
-    await user.click(screen.getByRole('button', { name: /Marca/ }))
+    await user.click(ordenar)
     await waitFor(() => expect(head).toHaveAttribute('aria-sort', 'descending'))
   })
 
-  // Radius 0 é lei (DESIGN.md): o select do rodapé ficou de fora da fase 1 e era
-  // o único canto arredondado dentro da caixa da listagem.
-  it('select do rodapé usa a caixa preta 2px, sem canto arredondado', async () => {
+  // O select do rodapé segue o controle da 2.0: traço fino em `n-300` e o raio
+  // de controle. A caixa preta de 2px saiu da grade inteira — ela empatava com
+  // a borda da própria tabela, e nada se destacava de nada.
+  it('select do rodapé é controle fino, não caixa de 2px', async () => {
     setup()
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
-    const select = screen.getByLabelText('Por página:')
-    expect(select.className).toContain('border-2')
-    expect(select.className).not.toContain('rounded')
+    const select = screen.getByLabelText('Por página')
+    expect(select.className).toContain('border-input')
+    expect(select.className).not.toContain('border-2')
   })
 
-  it('cabeçalho é BARRA PRETA em 38px: papel preto, tinta clara (fusão v5)', async () => {
+  it('cabeçalho é RÓTULO sobre tint, não barra preta', async () => {
     setup()
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
     const head = screen.getByRole('columnheader', { name: 'Marca' })
     expect(head.className).toContain('h-[38px]')
-    // Fusão v5 (decisão do user, 2026-08-19): com o rótulo de campo rebaixado
-    // a sussurro, o topo da grade vira a única peça escura da malha — âncora
-    // que separa cabeçalho de dado sem precisar de régua de 3px.
-    expect(head.className).toContain('bg-primary')
-    expect(head.className).toContain('text-primary-foreground')
-    expect(head.className).not.toContain('bg-neutral')
-    expect(head.className).toContain('font-mono')
-    expect(head.className).toContain('uppercase')
-    expect(head.className).toContain('tracking-[0.12em]')
+    // Reface 2.0: header de tabela é REGIÃO de outra natureza, e a §Separação
+    // nomeia tint para isso. A barra preta atravessando a tela era a peça mais
+    // pesada de uma listagem cujo assunto é o dado.
+    expect(head.className).toContain('bg-surface-sunken')
+    expect(head.className).not.toContain('bg-primary')
+    // O degrau tipográfico vem da classe da §Hierarquia — `font-size` literal em
+    // componente é proibido, e três lugares copiando 10.5px divergem no
+    // primeiro ajuste.
+    expect(head.className).toContain('t-rotulo')
+    expect(head.className).not.toContain('text-[10px]')
   })
 
   it('coluna numeric alinha à direita com numerais tabulares', async () => {
@@ -239,21 +258,21 @@ describe('VitraDataTable', () => {
     expect(celula?.className).toContain('text-right')
   })
 
-  it('linha selecionada é violeta cheio, e o estado não depende só de cor', async () => {
+  it('linha selecionada é tint com faixa, e o estado não depende só de cor', async () => {
     const { user } = setup()
     const descricao = await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
     await user.click(descricao)
     const linha = descricao.closest('tr')
 
-    // Violeta é a cor da AÇÃO, e a linha selecionada é sobre o que as ações da
-    // barra vão agir. O marcador amarelo saiu junto: amarelo virou foco, e foco
-    // e seleção são estados diferentes que precisam de sinais diferentes.
-    expect(linha?.className).toContain('[&>td]:bg-primary')
-    expect(linha?.className).toContain('[&>td]:text-primary-foreground')
-    expect(linha?.className).not.toContain('anchor')
+    // Reface 2.0: `--primary-soft` de fundo mais a faixa de 3px em chartreuse na
+    // borda esquerda. O violeta cheio da 1.x lavava o dado da linha justo quando
+    // o operador confere o que marcou — e conferir é o que ele faz ali.
+    expect(linha?.className).toContain('--primary-soft')
+    expect(linha?.className).toContain('inset_3px_0_0_0')
+    expect(linha?.className).not.toContain('[&>td]:bg-primary]')
 
-    // Cor sozinha não basta (WCAG 1.4.1): peso e `aria-selected` dizem o mesmo.
-    expect(linha?.className).toContain('font-semibold')
+    // Cor sozinha não basta (WCAG 1.4.1): a faixa é forma, e `aria-selected`
+    // diz o mesmo a quem ouve.
     expect(linha).toHaveAttribute('aria-selected', 'true')
   })
 
@@ -268,19 +287,20 @@ describe('VitraDataTable', () => {
       />,
     )
 
-    await screen.findByText('Página 1 de 15')
+    await waitFor(() => expect(faixa()).toHaveTextContent('1–3 de 45'))
     // Primeira célula da primeira linha de dados: número em Meta, à direita.
     const primeiraLinha = screen.getAllByRole('row')[1]
     const numero = primeiraLinha?.querySelector('td')
     expect(numero?.textContent).toBe('1')
     expect(numero?.className).toContain('w-10')
-    expect(numero?.className).toContain('font-mono')
-    expect(numero?.className).toContain('text-[11px]')
+    // A numeração é DADO-META (mono 400 · 11 · tabular), pela classe da
+    // §Hierarquia — literal de tamanho em componente é proibido na 2.0.
+    expect(numero?.className).toContain('t-dado-meta')
     expect(numero?.className).toContain('text-right')
 
     // A numeração é da consulta, não da página: "linha 4" na página 2.
-    await user.click(screen.getByRole('button', { name: 'Próxima' }))
-    await screen.findByText('Página 2 de 15')
+    await user.click(screen.getByRole('button', { name: 'Próxima página' }))
+    await waitFor(() => expect(faixa()).toHaveTextContent('4–6 de 45'))
     const primeiraPagina2 = screen.getAllByRole('row')[1]
     expect(primeiraPagina2?.querySelector('td')?.textContent).toBe('4')
   })
@@ -453,13 +473,13 @@ describe('VitraDataTable — filtro estruturado', () => {
   it('o filtro chega ao provider e estreita a listagem', async () => {
     const { user } = setupComFiltro()
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
-    expect(screen.getByText('45 registros')).toBeInTheDocument()
+    expect(contagem()).toHaveTextContent('de 45 registros')
 
     await montarPilula(user, 'Marca', 'stella')
 
     // Debounce de 300ms, como o da busca: a consulta sai com a frase pronta.
     // 12 marcas cíclicas sobre 44 linhas geradas — STELLA cai em 4 delas.
-    expect(await screen.findByText('4 registros')).toBeInTheDocument()
+    await waitFor(() => expect(contagem()).toHaveTextContent('4 de 4 registros'))
     expect(screen.getAllByText('STELLA')).toHaveLength(4)
   })
 
@@ -540,11 +560,11 @@ describe('VitraDataTable — consultas salvas em abas', () => {
     // Volta para `Todos` e reaplica pela aba: é o ciclo completo da consulta
     // salva, sem passar por popover nenhum.
     await user.click(screen.getByRole('tab', { name: 'Todos' }))
-    expect(await screen.findByText('45 registros')).toBeInTheDocument()
+    await waitFor(() => expect(contagem()).toHaveTextContent('de 45 registros'))
     expect(screen.getByRole('tab', { name: 'Todos' })).toHaveAttribute('aria-selected', 'true')
 
     await user.click(screen.getByRole('tab', { name: 'Só Stella' }))
-    expect(await screen.findByText('4 registros')).toBeInTheDocument()
+    await waitFor(() => expect(contagem()).toHaveTextContent('4 de 4 registros'))
   })
 
   it('mexer no filtro de uma consulta salva APAGA a aba dela', async () => {
@@ -563,7 +583,7 @@ describe('VitraDataTable — consultas salvas em abas', () => {
         'false',
       )
     })
-    expect(await screen.findByText('45 registros')).toBeInTheDocument()
+    await waitFor(() => expect(contagem()).toHaveTextContent('de 45 registros'))
   })
 
   it('a consulta PADRÃO abre a tela sozinha — o caso de todo dia é zero clique', async () => {
@@ -594,7 +614,7 @@ describe('VitraDataTable — consultas salvas em abas', () => {
 
     setupComFavoritos(['produtos-padrao'])
 
-    expect(await screen.findByText('4 registros')).toBeInTheDocument()
+    await waitFor(() => expect(contagem()).toHaveTextContent('4 de 4 registros'))
   })
 
   it('cada tela tem as suas — a consulta de Produtos não aparece em outra listagem', async () => {
@@ -680,26 +700,29 @@ describe('VitraDataTable — visões', () => {
     setupComVisao()
 
     expect(await screen.findByText('45 cartões')).toBeInTheDocument()
-    expect(screen.getByText('45 registros')).toBeInTheDocument()
-    expect(screen.queryByText(/Página 1 de/)).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('Por página:')).not.toBeInTheDocument()
+    expect(contagem()).toHaveTextContent('de 45 registros')
+    expect(screen.queryByTestId('faixa-da-pagina')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Por página')).not.toBeInTheDocument()
   })
 
   it('o `Agrupar por` só existe na visão que agrupa', async () => {
     const { user } = setupComVisao()
 
-    expect(await screen.findByLabelText('Agrupar por:')).toBeInTheDocument()
+    // Na barra 2.0 o agrupamento é um CHIP, como o filtro: os dois são
+    // condições sobre a lista, e o chip diz por qual campo sem abrir nada.
+    expect(await screen.findByRole('button', { name: /^Agrupado por/ })).toBeInTheDocument()
     await user.click(screen.getByRole('radio', { name: 'Lista' }))
 
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
-    expect(screen.queryByLabelText('Agrupar por:')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Agrup/ })).not.toBeInTheDocument()
   })
 
   it('o agrupamento escolhido chega à visão', async () => {
     const { user } = setupComVisao()
 
     expect(await screen.findByText('agrupado por marca')).toBeInTheDocument()
-    await user.selectOptions(screen.getByLabelText('Agrupar por:'), 'nossoCodigo')
+    await user.click(screen.getByRole('button', { name: /^Agrupado por/ }))
+    await user.click(await screen.findByRole('button', { name: 'Código' }))
     expect(await screen.findByText('agrupado por nossoCodigo')).toBeInTheDocument()
   })
 
@@ -747,16 +770,16 @@ describe('VitraDataTable — densidade', () => {
     expect(tabela().className).toContain('tabular-nums')
   })
 
-  it('compacta encolhe a linha, e padrão devolve', async () => {
+  it('compacta encolhe a linha, e confortável devolve', async () => {
     const { user } = setup()
 
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
     expect(tabela().className).not.toContain('[&_td]:h-10')
 
-    await user.selectOptions(screen.getByLabelText('Linha:'), 'compacta')
+    await user.click(screen.getByRole('button', { name: 'Compacta' }))
     expect(tabela().className).toContain('[&_td]:h-10')
 
-    await user.selectOptions(screen.getByLabelText('Linha:'), 'padrao')
+    await user.click(screen.getByRole('button', { name: 'Confortável' }))
     expect(tabela().className).not.toContain('[&_td]:h-10')
   })
 
@@ -776,7 +799,7 @@ describe('VitraDataTable — densidade', () => {
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
     const antes = consultas
 
-    await user.selectOptions(screen.getByLabelText('Linha:'), 'compacta')
+    await user.click(screen.getByRole('button', { name: 'Compacta' }))
     expect(consultas).toBe(antes)
   })
 
@@ -784,7 +807,7 @@ describe('VitraDataTable — densidade', () => {
     const { user } = setupComFavoritos()
 
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
-    await user.selectOptions(screen.getByLabelText('Linha:'), 'compacta')
+    await user.click(screen.getByRole('button', { name: 'Compacta' }))
 
     await user.click(screen.getByRole('button', { name: /Salvar consulta/ }))
     await user.type(screen.getByLabelText('Nome'), 'Apertada')
@@ -793,8 +816,8 @@ describe('VitraDataTable — densidade', () => {
     const guardado = JSON.parse(localStorage.getItem('cabinet.consultas-favoritas.v1') ?? '{}')
     expect(guardado['produtos-fav']?.[0]).toMatchObject({ densidade: 'compacta' })
 
-    // Volta ao padrão e reaplica o favorito: a densidade tem de voltar junto.
-    await user.selectOptions(screen.getByLabelText('Linha:'), 'padrao')
+    // Volta ao confortável e reaplica o favorito: a densidade tem de voltar junto.
+    await user.click(screen.getByRole('button', { name: 'Confortável' }))
     await user.click(screen.getByRole('tab', { name: 'Apertada' }))
 
     expect(tabela().className).toContain('[&_td]:h-10')
@@ -813,7 +836,7 @@ describe('VitraDataTable — densidade', () => {
     const { user } = setupComFavoritos()
 
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
-    await user.selectOptions(screen.getByLabelText('Linha:'), 'compacta')
+    await user.click(screen.getByRole('button', { name: 'Compacta' }))
 
     await user.click(screen.getByRole('tab', { name: 'De antes' }))
 

@@ -13,6 +13,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Segmented, SegmentedItem } from '@/components/ui/segmented'
 import { Textarea } from '@/components/ui/textarea'
 import { type LookupKind, useLookupOptions } from '@/data/lookups-api'
 import { cn } from '@/lib/utils'
@@ -27,12 +28,51 @@ interface BaseProps {
   name: string
   label: string
   className?: string
+  /** Marca `*` em `--bad` no rótulo (Reface 2.0 #470). */
+  obrigatorio?: boolean | undefined
+  /** Ajuda curta ao lado do rótulo, em n-500 — "sem máscara", "opcional". */
+  hint?: string | undefined
 }
+
+/**
+ * O rótulo do campo, com as marcas do mockup 2.0 (`*` obrigatório e a ajuda
+ * curta) já ligadas ao `Label`. Existe para os campos não repetirem o spread em
+ * cinco lugares — e para a marca ser a MESMA em todos: obrigatoriedade dita em
+ * dois vocabulários diferentes na mesma tela é pior do que não dizê-la.
+ */
+function Rotulo({ label, obrigatorio, hint }: Pick<BaseProps, 'label' | 'obrigatorio' | 'hint'>) {
+  return (
+    <FormLabel
+      {...(obrigatorio !== undefined && { obrigatorio })}
+      {...(hint !== undefined && { hint })}
+    >
+      {label}
+    </FormLabel>
+  )
+}
+
+/**
+ * A caixa dos `<select>` nativos do formulário: o mesmo sulco do `Input` —
+ * borda 1px de controle, `--inset`, 34px de altura, foco em tinta + anel único.
+ * A caixa preta de 2px que os três selects carregavam saiu com a #470.
+ *
+ * **Exportada de propósito.** A varredura da #470 achou 34 `<select>`/`<input>`
+ * escritos à mão com `border-2 border-input` em 21 arquivos de `src/features`,
+ * `src/app` e `src/components/cabinet` — todos fora da zona desta issue, e
+ * todos com a caixa preta que a rodada mandou apagar. Quem os alcança são as
+ * issues de tela (D16, D20, D24, D25, D27, D28); esta constante existe para que
+ * elas TROQUEM a classe pela receita em vez de escrever a nova à mão e o
+ * sistema ganhar uma segunda definição de campo. Registrado na #470.
+ */
+export const CAIXA_DE_SELECT =
+  'desabilitado t-corpo flex h-[34px] w-full rounded-[var(--r-ctrl)] border border-[color:var(--n-300)] bg-[color:var(--n-0)] px-2.5 shadow-[var(--inset)] outline-none transition-colors focus-visible:border-[color:var(--n-900)] focus-visible:focus-ring disabled:shadow-none'
 
 export function TextField({
   name,
   label,
   className,
+  obrigatorio,
+  hint,
   voz,
   ...inputProps
 }: BaseProps &
@@ -55,7 +95,7 @@ export function TextField({
       name={name}
       render={({ field }) => (
         <FormItem className={className}>
-          <FormLabel>{label}</FormLabel>
+          <Rotulo label={label} obrigatorio={obrigatorio} hint={hint} />
           <FormControl>
             <Input
               {...inputProps}
@@ -75,6 +115,8 @@ export function TextareaField({
   name,
   label,
   className,
+  obrigatorio,
+  hint,
   ...textareaProps
 }: BaseProps & Omit<React.ComponentProps<typeof Textarea>, 'name'>) {
   return (
@@ -82,7 +124,7 @@ export function TextareaField({
       name={name}
       render={({ field }) => (
         <FormItem className={className}>
-          <FormLabel>{label}</FormLabel>
+          <Rotulo label={label} obrigatorio={obrigatorio} hint={hint} />
           <FormControl>
             <Textarea {...textareaProps} {...field} value={field.value ?? ''} />
           </FormControl>
@@ -94,13 +136,13 @@ export function TextareaField({
 }
 
 /** Data: ISO (yyyy-mm-dd) no dado; input type="date" na borda. */
-export function DateField({ name, label, className }: BaseProps) {
+export function DateField({ name, label, className, obrigatorio, hint }: BaseProps) {
   return (
     <FormField
       name={name}
       render={({ field }) => (
         <FormItem className={className}>
-          <FormLabel>{label}</FormLabel>
+          <Rotulo label={label} obrigatorio={obrigatorio} hint={hint} />
           <FormControl>
             <Input type="date" {...field} value={field.value ?? ''} />
           </FormControl>
@@ -112,14 +154,14 @@ export function DateField({ name, label, className }: BaseProps) {
 }
 
 /** Dinheiro: centavos (int) no dado; digitação em reais na borda. */
-export function MoneyField({ name, label, className }: BaseProps) {
+export function MoneyField({ name, label, className, obrigatorio, hint }: BaseProps) {
   const { setValue, getValues } = useFormContext()
   return (
     <FormField
       name={name}
       render={({ field }) => (
         <FormItem className={className}>
-          <FormLabel>{label}</FormLabel>
+          <Rotulo label={label} obrigatorio={obrigatorio} hint={hint} />
           <FormControl>
             <Input
               inputMode="decimal"
@@ -178,20 +220,17 @@ export function SelectField({
   label,
   options,
   className,
+  obrigatorio,
+  hint,
 }: BaseProps & { options: readonly string[] }) {
   return (
     <FormField
       name={name}
       render={({ field }) => (
         <FormItem className={className}>
-          <FormLabel>{label}</FormLabel>
+          <Rotulo label={label} obrigatorio={obrigatorio} hint={hint} />
           <FormControl>
-            <select
-              // Sem sombra: campo é coplanar com a folha (Regra da Linha Antes da Sombra).
-              className="flex h-9 w-full border-2 border-input bg-card px-2.5 py-1 text-sm outline-none focus-visible:focus-ring"
-              {...field}
-              value={field.value ?? ''}
-            >
+            <select className={CAIXA_DE_SELECT} {...field} value={field.value ?? ''}>
               <option value="">Selecione…</option>
               {options.map((o) => (
                 <option key={o} value={o}>
@@ -240,6 +279,8 @@ export function SelectIdField({
   carregando = false,
   vazio = 'Selecione…',
   className,
+  obrigatorio,
+  hint,
 }: BaseProps & {
   opcoes: readonly EscolhaPorId[]
   /** Par id→nome do registro aberto, para o valor nunca sumir da lista. */
@@ -259,10 +300,10 @@ export function SelectIdField({
       name={name}
       render={({ field }) => (
         <FormItem className={className}>
-          <FormLabel>{label}</FormLabel>
+          <Rotulo label={label} obrigatorio={obrigatorio} hint={hint} />
           <FormControl>
             <select
-              className="flex h-9 w-full border-2 border-input bg-card px-2.5 py-1 text-sm outline-none focus-visible:focus-ring"
+              className={CAIXA_DE_SELECT}
               disabled={carregando}
               {...field}
               value={field.value ?? ''}
@@ -326,6 +367,8 @@ export function LookupSelectField({
   kind,
   className,
   rotuloDe,
+  obrigatorio,
+  hint,
 }: BaseProps & { kind: LookupKind; rotuloDe?: string }) {
   const { options, truncada, carregando, erro } = useLookupOptions(kind)
   const rotulo = useRotuloIrmao(rotuloDe)
@@ -352,10 +395,10 @@ export function LookupSelectField({
 
         return (
           <FormItem className={className}>
-            <FormLabel>{label}</FormLabel>
+            <Rotulo label={label} obrigatorio={obrigatorio} hint={hint} />
             <FormControl>
               <select
-                className="flex h-9 w-full border-2 border-input bg-card px-2.5 py-1 text-sm outline-none focus-visible:focus-ring"
+                className={CAIXA_DE_SELECT}
                 {...field}
                 value={atual}
                 disabled={field.disabled || carregando}
@@ -403,6 +446,8 @@ export function LookupField({
   className,
   hideQuickAdd,
   rotuloDe,
+  obrigatorio,
+  hint,
 }: BaseProps & { kind: LookupKind; hideQuickAdd?: boolean; rotuloDe?: string }) {
   const rotulo = useRotuloIrmao(rotuloDe)
   return (
@@ -410,7 +455,7 @@ export function LookupField({
       name={name}
       render={({ field }) => (
         <FormItem className={className}>
-          <FormLabel>{label}</FormLabel>
+          <Rotulo label={label} obrigatorio={obrigatorio} hint={hint} />
           <FormControl>
             <LookupCombo
               kind={kind}
@@ -442,6 +487,8 @@ export function EspecificadorField({
   className,
   rotuloDe,
   excluir,
+  obrigatorio,
+  hint,
 }: BaseProps & { rotuloDe?: string; excluir?: string | undefined }) {
   const rotulo = useRotuloIrmao(rotuloDe)
   return (
@@ -449,7 +496,7 @@ export function EspecificadorField({
       name={name}
       render={({ field }) => (
         <FormItem className={className}>
-          <FormLabel>{label}</FormLabel>
+          <Rotulo label={label} obrigatorio={obrigatorio} hint={hint} />
           <FormControl>
             <EspecificadorCombo
               value={field.value ?? null}
@@ -471,6 +518,8 @@ export function RadioField({
   label,
   options,
   className,
+  obrigatorio,
+  hint,
 }: BaseProps & { options: readonly { value: string; label: string }[] }) {
   return (
     <FormField
@@ -486,7 +535,13 @@ export function RadioField({
         const { error } = useFormField()
         return (
           <FormItem className={className}>
-            <Label className={cn(error && 'border-destructive text-destructive')}>{label}</Label>
+            <Label
+              className={cn(error && 'text-destructive')}
+              {...(obrigatorio !== undefined && { obrigatorio })}
+              {...(hint !== undefined && { hint })}
+            >
+              {label}
+            </Label>
             <FormControl>
               <RadioGroup
                 className="flex flex-row flex-wrap gap-4"
@@ -501,6 +556,62 @@ export function RadioField({
                   </RadioGroupItem>
                 ))}
               </RadioGroup>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )
+      }}
+    />
+  )
+}
+
+/**
+ * ESCOLHA DE MODO em faixa segmentada (Reface 2.0, issue #470).
+ *
+ * Mesma gramática do `RadioField` — escolha exclusiva, um valor no form —, e a
+ * diferença é a natureza da escolha, não a mecânica: `RadioField` é para
+ * atributo do registro que se lê em coluna ("Pessoa física / jurídica"), este é
+ * para o MODO em que se olha a coisa ("Entrada / Saída / Ajuste", "Lista /
+ * Quadro"). Três radios para trocar de visão gastariam três linhas e uma
+ * leitura vertical num controle que o operador aciona o tempo todo.
+ *
+ * O rótulo é visual: um `<FormLabel htmlFor>` apontaria para o
+ * `<div role="radiogroup">`, que não é elemento "labelable" — o Chrome acusa
+ * `Incorrect use of <label for=FORM_ELEMENT>`. Quem dá o nome acessível ao
+ * grupo é o `aria-label`, e o `<Label>` ainda lê o mesmo `error` que
+ * `FormLabel` leria, senão este seria o único campo mudo quando a validação
+ * falha.
+ */
+export function SegmentedField({
+  name,
+  label,
+  options,
+  className,
+  obrigatorio,
+  hint,
+}: BaseProps & { options: readonly { value: string; label: string }[] }) {
+  return (
+    <FormField
+      name={name}
+      render={({ field }) => {
+        const { error } = useFormField()
+        return (
+          <FormItem className={className}>
+            <Label
+              className={cn(error && 'text-destructive')}
+              {...(obrigatorio !== undefined && { obrigatorio })}
+              {...(hint !== undefined && { hint })}
+            >
+              {label}
+            </Label>
+            <FormControl>
+              <Segmented value={field.value ?? ''} onChange={field.onChange} aria-label={label}>
+                {options.map((o) => (
+                  <SegmentedItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SegmentedItem>
+                ))}
+              </Segmented>
             </FormControl>
             <FormMessage />
           </FormItem>

@@ -1,13 +1,16 @@
+import type { ParDoCartao } from '@/components/cabinet/cartao-lateral'
 import {
   ErroDeCarregamento,
   EsqueletoDeCarregamento,
 } from '@/components/cabinet/estado-de-consulta'
-import { FichaDeCadastro } from '@/components/cabinet/ficha/ficha-de-cadastro'
+import { usePedidosComLinhaAberta } from '@/data/compras-api'
 import { useRotulosDeApoio } from '@/data/lookups-api'
+import { FichaDeRegistro } from '@/features/cadastro/ficha-de-registro'
 import { camposDoContrato, fornecedor as esquema } from '@/features/cadastro/modulos'
 import { FornecedorForm } from '@/features/fornecedor/fornecedor-form'
 import { CoberturaParceiro } from '@/features/parceiro/cobertura-parceiro'
 import { ContatosDoParceiro } from '@/features/parceiro/contatos-do-parceiro'
+import { papeisDoParceiro, resumoDoParceiro } from '@/features/parceiro/ficha-resumo'
 import { HierarquiaParceiro } from '@/features/parceiro/hierarquia'
 import { papelFornecedor } from '@/features/parceiro/papeis/fornecedor'
 import { registroParaFicha } from '@/features/parceiro/registro-para-ficha'
@@ -31,6 +34,21 @@ function FornecedorEditPage() {
   const navigate = useNavigate()
   const { query, isNovo, registro, ausentesNaFicha, gravar, incluir, vincular, jaExiste } =
     usarParceiro(papelFornecedor, fornecedorId)
+  // A única metade de "em aberto" que o contrato deixa provar:
+  // `/api/purchase-requests` filtra por `supplierId` + `onlyOpenItems`. Do lado
+  // do cliente não existe filtro por parceiro — ver `ficha-resumo.tsx`.
+  const { data: pedidosAbertos } = usePedidosComLinhaAberta(
+    isNovo ? '' : fornecedorId,
+    !isNovo && readOnly,
+  )
+  const emAberto: ParDoCartao[] = pedidosAbertos?.length
+    ? [
+        {
+          rotulo: 'Pedidos de compra em aberto',
+          valor: <span className="t-dado">{pedidosAbertos.length}</span>,
+        },
+      ]
+    : []
 
   if ((!isNovo && query.isPending) || carregandoApoio) {
     return <EsqueletoDeCarregamento />
@@ -96,12 +114,20 @@ function FornecedorEditPage() {
 
   if (readOnly && !isNovo) {
     return (
-      <FichaDeCadastro
+      <FichaDeRegistro
         entidade={esquema}
         {...(rotulos ? { rotulos } : {})}
         registro={registroParaFicha(registro, esquema, ausentesNaFicha)}
-        titulo="Cadastro de Fornecedores"
-        contexto={registro.nomeFantasia}
+        titulo="Fornecedor"
+        nome={registro.nomeFantasia}
+        {...(query.data?.code ? { id: query.data.code } : {})}
+        meta={papeisDoParceiro(query.data)}
+        ativo={registro.ativo}
+        // `Ativar`/`Desativar` é `PUT /api/partners/{id}` com o `active`
+        // invertido — o mesmo caminho do Gravar, e por isso a mesma mutação.
+        aoAlternarAtivo={() => gravar.mutate({ ...registro, ativo: !registro.ativo })}
+        alternando={gravar.isPending}
+        resumo={resumoDoParceiro(emAberto)}
         aviso={aviso}
         abaixo={
           <>

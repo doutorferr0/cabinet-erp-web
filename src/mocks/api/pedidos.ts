@@ -1329,3 +1329,16 @@ function recusaDeEnum(url: URL) {
   }
   return null
 }
+
+// ------------------------------------------------- leitura para os agregados
+
+/**
+ * Pedidos de venda ABERTOS — o contador que a navegação mostra (#479).
+ *
+ * Contagem, e não o documento: a nav não publica valor nenhum, e devolver a
+ * lista daqui convidaria o próximo a somar dinheiro no badge. `active` é a
+ * única situação aberta; `concluded` e `cancelled` saíram da fila.
+ */
+export function pedidosAbertos(): number {
+  return estado.linhas.filter((p) => p.situacao === 'active').length
+}

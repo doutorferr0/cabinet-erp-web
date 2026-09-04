@@ -1345,6 +1345,48 @@ const SUPORTE_DA_PLATAFORMA: readonly RotaNoMock[] = (
 }))
 
 /**
+ * OS CINCO AGREGADOS DE KPI (D11, #479) — a primeira família a nascer DEPOIS do
+ * congelamento do Node, e por isso a primeira `spring-pendente` de verdade.
+ *
+ * As cinco são caminho NOVO publicado aqui hoje: `/api/purchases/orders-summary`,
+ * `/api/sales/quotes-summary`, `/api/stock/summary`,
+ * `/api/crm/opportunities-summary` e `/api/nav/counters`. A cópia do contrato do
+ * `cabinet-erp-api` não as conhece, então lá elas caem no `setNotFoundHandler` e
+ * respondem **404 `Este caminho não existe no contrato`** — `sem-contrato`, não
+ * `sem-handler`, e a diferença é o próximo passo que o console imprime.
+ *
+ * **A época, porém, não é `node-congelado`.** O `sync:contract` de lá fecharia a
+ * janela do 404, mas o handler que viria depois não vem: o Node parou em
+ * 2026-08-28 e quem serve estas cinco é o Spring. Declarar `node-congelado`
+ * mandaria alguém abrir o `servidor.ts` de um repositório que não fecha mais
+ * lacuna nenhuma — que é exatamente o erro que `EpocaDoServidor` existe para
+ * impedir, e é por isso que o recenseamento fechado de `rotas-do-backend.test.ts`
+ * reprova quem tentar.
+ *
+ * **Elas TÊM handler de mock desde o mesmo commit** (`src/mocks/api/agregados.ts`).
+ * Isso não é detalhe: rota declarada mockada sem handler cai no fallback da SPA
+ * e devolve `index.html` com **200** — o pior caso que este arquivo descreve, e
+ * o que a entrega (G4) e o recebimento (G3) já pagaram. Aqui a faixa de KPI
+ * responde nos dois ambientes desde o primeiro dia.
+ */
+const AGREGADOS_DE_KPI: readonly RotaNoMock[] = (
+  [
+    '/api/purchases/orders-summary',
+    '/api/sales/quotes-summary',
+    '/api/stock/summary',
+    '/api/crm/opportunities-summary',
+    '/api/nav/counters',
+  ] as const
+).map((caminho) => ({
+  metodo: 'get' as const,
+  caminho,
+  motivo:
+    'agregado de KPI publicado NESTE repo pela #479 (D11) — a cópia do contrato do api ainda não conhece o caminho, e quem vai servi-lo é o Spring, não o Node parado',
+  natureza: 'sem-contrato' as const,
+  servidor: 'spring-pendente' as const,
+}))
+
+/**
  * O reagendamento do Planner (`web#XXX`), publicado NESTE PR.
  *
  * `sem-contrato`, e sem precisar de par local para afirmá-lo: o caminho nasce
@@ -1456,6 +1498,7 @@ export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
     natureza: 'sem-contrato',
     servidor: 'node-congelado',
   },
+  ...AGREGADOS_DE_KPI,
 ]
 
 /**

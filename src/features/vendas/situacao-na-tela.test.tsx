@@ -220,18 +220,24 @@ describe('a situação da entrega no documento de venda', () => {
     expect(linha).toHaveTextContent('02/09/2026')
   })
 
-  it('leva o pedido JUNTO para o quadro de cargas', async () => {
+  /**
+   * O QUADRO DE CARGAS MORREU (D12) e `/vendas/cargas` virou redirecionamento.
+   *
+   * O botão continua levando o pedido JUNTO — e agora ele chega mais longe: com
+   * o id na mão, o destino é a ficha do próprio pedido, em vez de um cartão a
+   * ser procurado numa coluna. O que o teste vigia continua sendo o mesmo: a
+   * escolha feita aqui não se perde no caminho.
+   */
+  it('leva o pedido JUNTO ao sair da situação da entrega', async () => {
     const { user, router } = await abrirPedido(servidor())
 
     await user.click(await screen.findByTestId('ir-para-cargas'))
 
-    await waitFor(() => expect(router.state.location.pathname).toBe('/vendas/cargas'))
-    expect(router.state.location.search).toEqual({ pedido: ID })
-
-    // E a carga abre de verdade: a fila deste servidor está VAZIA, então sem o
-    // `?pedido=` o operador veria "escolha uma carga acima" e nada mais.
-    expect(await screen.findByText(/Pedido 30991 · situação/)).toBeVisible()
-  })
+    await waitFor(() => expect(router.state.location.pathname).toBe(`/vendas/pedidos/${ID}`))
+    // Timeout próprio: o destino agora é a FICHA, e ela remonta o documento
+    // inteiro depois do redirecionamento — os 15s padrão eram para uma tela que
+    // só listava a fila.
+  }, 30_000)
 
   it('em Incluir não pergunta a situação de documento que não existe', async () => {
     const vistos: string[] = []

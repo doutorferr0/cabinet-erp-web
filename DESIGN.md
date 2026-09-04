@@ -1609,3 +1609,31 @@ Fusão, não substituição: a cara do v5 entra SEM revogar as lições medidas 
   2026-08-19), e os tamanhos vieram depois — 36px no nome e no nº do documento, 48px no total,
   este último fora da grade, em bloco próprio (`TotalBox`).
 - Sidebar escura com dots de módulo (avaliar contra a bancada creme antes de decidir).
+
+## Modos da listagem — lista · kanban · calendário (2.0, D12)
+
+A listagem tem TRÊS desenhos para a mesma consulta. A tabela existe sempre; kanban e calendário
+são visões alternativas, ligadas pelo alternador da barra (padrão 9, `visoes`/`agrupamentos`).
+Nenhuma delas consulta nada: recebem as linhas que a `VitraDataTable` já trouxe, e é isso que
+garante que alternar não troque o filtro por baixo do operador.
+
+- **Kanban** (`ModoKanban`, `visaoKanban`) — colunas por `campoDeColuna` (o `Agrupar por` da barra
+  vence, quando escolhido). Coluna em `--n-50` **sem borda** (tint separa região; borda ali seria a
+  segunda ferramenta na mesma fronteira), cabeçalho com quadradinho de cor + nome em `--t-rotulo` +
+  contagem em `--t-dado-meta`. Cartão = folha `--n-0`, borda `--n-300`, `--hard-soft` parado e
+  `--hard-1` no hover — o papel levanta. Dentro do cartão só espaço e hairline, nunca um terceiro
+  card. Título `--t-bloco`, subtítulo `--t-meta`, selo/data/dinheiro no rodapé, os dois últimos em
+  `--t-dado`. Arrastar entre colunas dispara `onMover`; **quem grava é a tela**. O menu `Mover para`
+  de cada cartão não é opcional: arrasto não existe para teclado nem leitor de tela.
+- **Calendário** (`ModoCalendario`, `visaoCalendario`) — mês ou semana por `campoDeData`. Grade de
+  hairline (`gap: 1px` sobre `--n-200`, nenhuma célula com borda própria), cabeçalho de dia em
+  `--t-rotulo`, número do dia em `--t-dado-meta` e **hoje** num quadrado `--n-900` — o único
+  preenchimento sólido da grade. Evento = pílula tintada pelo tom (`ok`/`info`/`warn`/`bad`/`mut`)
+  com ponto da mesma família; três por célula e `+n` para o resto, porque célula que cresce faz a
+  grade inteira pular de tamanho. Registro sem data **não some calado**: o rodapé conta quantos
+  ficaram de fora.
+
+**Três telas morreram nesta rodada** e viraram visão da listagem de origem: `Previsão de chegada`,
+`Quadro de cargas` e o calendário próprio da `Agenda` (que era Schedule-X). Tela própria para o
+mesmo recurso significava segunda barra de filtro, segunda tabela e segunda ideia de consulta
+salva sobre o mesmo dado — e o operador que estreitasse uma não via efeito na outra.

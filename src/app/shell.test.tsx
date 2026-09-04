@@ -77,15 +77,18 @@ describe('AppShell', () => {
 
     expect(screen.queryByRole('navigation', { name: 'Seções' })).not.toBeInTheDocument()
     const topo = within(document.querySelector('[data-slot="appbar"]') as HTMLElement)
-    // O que desceu para a barra não fica também aqui: marca, seletor de
-    // empresa, engrenagem e menu do operador.
-    expect(topo.queryByRole('link', { name: 'Configurações' })).not.toBeInTheDocument()
+    // Merge D4+D5+D6 (2026-09-03): o que desceu para a barra não fica também
+    // aqui — marca, seletor de empresa, menu do operador e a BUSCA (⌘K).
     expect(
       topo.queryByRole('button', { name: /Henrique|Usuário|Operador/i }),
     ).not.toBeInTheDocument()
-    // O que fica: busca e sino, as duas AÇÕES globais.
-    expect(topo.getByRole('button', { name: 'Abrir a paleta de comandos' })).toBeInTheDocument()
+    expect(topo.queryByRole('button', { name: 'Abrir a busca' })).not.toBeInTheDocument()
+    const barra = within(document.querySelector('[data-slot="sidebar-nav"]') as HTMLElement)
+    expect(barra.getByRole('button', { name: 'Abrir a busca' })).toBeInTheDocument()
+    // O que fica na appbar (D5): trilha, sino e tema — ações globais que não são navegação.
+    expect(topo.getByRole('navigation', { name: 'Trilha de navegação' })).toBeInTheDocument()
     expect(topo.getByRole('button', { name: /Notificações/ })).toBeInTheDocument()
+    expect(topo.getByRole('button', { name: /alternar para o tema/i })).toBeInTheDocument()
   })
 
   /**
@@ -175,9 +178,9 @@ describe('AppShell', () => {
     setup()
     const user = userEvent.setup()
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /alternar tema/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /alternar para o tema/i })).toBeInTheDocument()
     })
-    const toggle = screen.getByRole('button', { name: /alternar tema/i })
+    const toggle = screen.getByRole('button', { name: /alternar para o tema/i })
     expect(document.documentElement.classList.contains('light')).toBe(true)
     await user.click(toggle)
     expect(document.documentElement.classList.contains('dark')).toBe(true)
@@ -228,22 +231,18 @@ describe('AppShell', () => {
   // teste em duas rotas sem módulo em comum é o que prova isso, em vez de só
 
   describe('appbar global', () => {
-    it('aparece em toda rota, com paleta, engrenagem e sino', async () => {
+    it('aparece em toda rota, com trilha, sino e tema', async () => {
       for (const rota of ['/', '/cadastros/clientes']) {
         const { unmount } = setup(rota)
         await waitFor(() => {
           expect(document.querySelector('[data-slot="appbar"]')).toBeInTheDocument()
         })
-        expect(
-          screen.getByRole('button', { name: 'Abrir a paleta de comandos' }),
-        ).toBeInTheDocument()
-        // A engrenagem deixou de ser o botão apagado que dizia "ainda não
-        // existe": Configurações é PÁGINA, e a engrenagem leva até ela.
-        expect(screen.getByRole('link', { name: 'Configurações' })).toHaveAttribute(
-          'href',
-          '/config',
-        )
-        expect(screen.getByRole('button', { name: /Notificações/ })).toBeInTheDocument()
+        const topo = within(document.querySelector('[data-slot="appbar"]') as HTMLElement)
+        expect(topo.getByRole('navigation', { name: 'Trilha de navegação' })).toBeInTheDocument()
+        expect(topo.getByRole('button', { name: /Notificações/ })).toBeInTheDocument()
+        expect(topo.getByRole('button', { name: /alternar para o tema/i })).toBeInTheDocument()
+        // A busca (⌘K) mora na barra, não na appbar (D4/D6).
+        expect(screen.getByRole('button', { name: 'Abrir a busca' })).toBeInTheDocument()
         unmount()
       }
     })
@@ -254,12 +253,11 @@ describe('AppShell', () => {
     it('o campo de busca abre a PALETA, e não é mais um input mudo', async () => {
       setup()
       const user = userEvent.setup()
-      const gatilho = await screen.findByRole('button', { name: 'Abrir a paleta de comandos' })
+      const gatilho = await screen.findByRole('button', { name: 'Abrir a busca' })
 
       // Botão com cara de campo: input abriria diálogo ao digitar, mentindo
       // sobre o que a tecla vai fazer.
       expect(gatilho.tagName).toBe('BUTTON')
-      expect(gatilho).toHaveAttribute('aria-keyshortcuts', 'Control+K')
 
       await user.click(gatilho)
 
@@ -269,7 +267,7 @@ describe('AppShell', () => {
     it('Ctrl+K abre a paleta de qualquer lugar — conveniência, não requisito', async () => {
       setup()
       const user = userEvent.setup()
-      await screen.findByRole('button', { name: 'Abrir a paleta de comandos' })
+      await screen.findByRole('button', { name: 'Abrir a busca' })
 
       await user.keyboard('{Control>}k{/Control}')
 
@@ -279,7 +277,7 @@ describe('AppShell', () => {
     it('a paleta navega, e o comando da tela atual vem primeiro', async () => {
       const { router } = setup('/cadastros/clientes')
       const user = userEvent.setup()
-      await user.click(await screen.findByRole('button', { name: 'Abrir a paleta de comandos' }))
+      await user.click(await screen.findByRole('button', { name: 'Abrir a busca' }))
 
       await screen.findByPlaceholderText(/nome\/número de um registro/)
       expect(screen.getByText('Nesta tela')).toBeInTheDocument()
@@ -306,7 +304,7 @@ describe('AppShell', () => {
 
       const { router } = setup('/cadastros/clientes')
       const user = userEvent.setup()
-      await user.click(await screen.findByRole('button', { name: 'Abrir a paleta de comandos' }))
+      await user.click(await screen.findByRole('button', { name: 'Abrir a busca' }))
       await screen.findByPlaceholderText(/nome\/número de um registro/)
 
       await user.click(await screen.findByRole('menuitem', { name: /Mapeamento de Tabelas/ }))
@@ -315,60 +313,14 @@ describe('AppShell', () => {
       expect(router.state.location.pathname).toBe('/cadastros/clientes')
     })
 
-    it('o sino abre a gaveta, que EMPURRA — sem fixed, sem véu', async () => {
-      setup()
+    it('o sino leva à caixa de entrada (D7): rota, não gaveta', async () => {
+      const { router } = setup()
       const user = userEvent.setup()
+      const sino = await screen.findByRole('button', { name: /Notificações/ })
+      await user.click(sino)
       await waitFor(() => {
-        expect(screen.getByRole('button', { name: /Notificações/ })).toBeInTheDocument()
+        expect(router.state.location.pathname).toBe('/inbox')
       })
-
-      const gaveta = () => document.querySelector('[data-slot="gaveta-notificacoes"]')
-      expect(gaveta()).toHaveAttribute('data-aberta', 'false')
-
-      await user.click(screen.getByRole('button', { name: /Notificações/ }))
-
-      expect(gaveta()).toHaveAttribute('data-aberta', 'true')
-      // Coluna flex de verdade, não overlay: nunca `fixed`.
-      expect(getComputedStyle(gaveta() as Element).position).not.toBe('fixed')
-      expect(await screen.findByText('Notificações')).toBeInTheDocument()
-
-      // X fecha.
-      await user.click(screen.getByRole('button', { name: 'Fechar notificações' }))
-      expect(gaveta()).toHaveAttribute('data-aberta', 'false')
-    })
-
-    it('Esc fecha a gaveta', async () => {
-      setup()
-      const user = userEvent.setup()
-      await user.click(await screen.findByRole('button', { name: /Notificações/ }))
-      expect(document.querySelector('[data-slot="gaveta-notificacoes"]')).toHaveAttribute(
-        'data-aberta',
-        'true',
-      )
-
-      await user.keyboard('{Escape}')
-
-      expect(document.querySelector('[data-slot="gaveta-notificacoes"]')).toHaveAttribute(
-        'data-aberta',
-        'false',
-      )
-    })
-
-    it('o badge conta as não lidas, e marcar como lida abate o contador', async () => {
-      setup()
-      const user = userEvent.setup()
-      // Dado de mock (`src/mocks/notificacoes.ts`): 3 de 4 nascem não lidas.
-      expect(
-        await screen.findByRole('button', { name: 'Notificações, 3 não lidas' }),
-      ).toBeInTheDocument()
-
-      await user.click(screen.getByRole('button', { name: /Notificações/ }))
-      const primeiraNaoLida = screen.getAllByRole('button', { name: 'Marcar como lida' })[0]
-      await user.click(primeiraNaoLida as HTMLElement)
-
-      expect(
-        await screen.findByRole('button', { name: 'Notificações, 2 não lidas' }),
-      ).toBeInTheDocument()
     })
   })
   /**

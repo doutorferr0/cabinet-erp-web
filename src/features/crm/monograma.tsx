@@ -1,7 +1,31 @@
 import { cn } from '@/lib/utils'
 
 /**
- * MONOGRAMA — as iniciais de quem, num quadrado de 20px.
+ * MONOGRAMA DO FUNIL — as iniciais de quem, num quadrado de 20px.
+ *
+ * ## Por que o nome tem sobrenome (D37)
+ *
+ * Isto nasceu na D22 chamando-se `Monograma`, e `components/cabinet/monograma.tsx`
+ * — reescrito na D3 — já tinha esse nome. Duas declarações do mesmo nome, em
+ * arquivos distintos, que o merge da rodada não acusou porque nada colide: cada
+ * tela importa a sua e as duas compilam.
+ *
+ * **Não foram fundidas, e a razão é que elas discordam em três eixos, com
+ * argumento escrito dos dois lados:**
+ *
+ * | eixo | `components/cabinet` (D3) | aqui (D22) |
+ * |---|---|---|
+ * | iniciais | primeira + ÚLTIMA palavra (`Maria da Silva` → MS) | primeira + SEGUNDA (`MARIA HELENA ARQUITETURA ME` → MH) |
+ * | cor | hash do nome nas cinco `--tint-*` | fixa pelo PAPEL (cliente/responsável) |
+ * | acessibilidade | sempre `aria-hidden` | `sr-only` com o nome, salvo `decorativo` |
+ *
+ * Cada um está certo no seu lugar: a razão social do funil quebra a convenção
+ * de gente (`MARIA HELENA ARQUITETURA ME` daria `MM` por primeira+última —
+ * medido na tela), e a cor por papel existe para o cartão não ganhar uma nona
+ * cor sem dono. Escolher uma regra para os dois é decisão de PRODUTO, não de
+ * passada de consistência — então a D37 fez o que lhe cabia: **tirou a colisão
+ * de nome** e deixou a divergência visível aqui, em vez de fundir na marra e
+ * quebrar um dos dois casos medidos.
  *
  * O cartão do funil passou a nomear DUAS pessoas (o cliente e o responsável), e
  * dois nomes por extenso na mesma fileira comem a largura da coluna. O
@@ -32,7 +56,7 @@ const TONS = {
  *
  * Termo de uma letra não entra: a partícula (`de`, `e`) não distingue ninguém.
  */
-export function iniciaisDe(nome: string): string {
+export function iniciaisDoFunil(nome: string): string {
   const termos = nome
     .trim()
     .split(/\s+/)
@@ -60,7 +84,7 @@ const CAIXA =
  */
 const TINTA = { color: 'var(--n-900)' } as const
 
-export function Monograma({
+export function MonogramaDoFunil({
   nome,
   papel = 'responsavel',
   decorativo = false,
@@ -85,7 +109,7 @@ export function Monograma({
         style={{ background: TONS[papel], ...TINTA }}
         className={cn(CAIXA, className)}
       >
-        {iniciaisDe(nome)}
+        {iniciaisDoFunil(nome)}
       </span>
     )
   }
@@ -97,7 +121,7 @@ export function Monograma({
       style={{ background: TONS[papel], ...TINTA }}
       className={cn(CAIXA, className)}
     >
-      <span aria-hidden="true">{iniciaisDe(nome)}</span>
+      <span aria-hidden="true">{iniciaisDoFunil(nome)}</span>
       {/* O nome inteiro para quem ouve: duas letras soltas não dizem quem é. */}
       <span className="sr-only">{nome}</span>
     </span>

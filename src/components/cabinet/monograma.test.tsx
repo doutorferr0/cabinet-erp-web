@@ -9,10 +9,16 @@ import { describe, expect, it } from 'vitest'
  * partícula ("Maria da Silva") e razão social de uma palavra só ("Vertz").
  */
 describe('iniciaisDe', () => {
-  it('pega a primeira e a última palavra, ignorando partícula', () => {
+  it('pega as DUAS PRIMEIRAS palavras que valem, ignorando partícula', () => {
     expect(iniciaisDe('Maria da Silva')).toBe('MS')
-    expect(iniciaisDe('José dos Santos Oliveira')).toBe('JO')
+    // Nome de gente com quatro partes usa o do MEIO. É o preço da regra que a
+    // D37 escolheu, e ele é menor que o oposto: pela primeira+última, toda
+    // razão social terminaria no `L` de `Ltda`. Ver o porquê em `monograma.tsx`.
+    expect(iniciaisDe('José dos Santos Oliveira')).toBe('JS')
     expect(iniciaisDe('Ana Maria')).toBe('AM')
+    // O caso que motivou a troca: a última palavra da razão social não
+    // distingue ninguém.
+    expect(iniciaisDe('Vertz Iluminação Ltda')).toBe('VI')
   })
 
   it('nome de uma palavra usa as duas primeiras letras dela', () => {

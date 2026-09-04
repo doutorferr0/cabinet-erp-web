@@ -19,7 +19,7 @@ import { Calendar, FileText, MoreHorizontal, Plus } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { type Apodrecimento, apodrecimentoDoCartao, diasParado } from './apodrecimento'
 import { type ColunaDoQuadro, colunasDoQuadro, quemDoCartao, somaDaColuna } from './funil-agrupa'
-import { Monograma } from './monograma'
+import { MonogramaDoFunil } from './monograma'
 import { SeloDeApodrecimento } from './selo-de-apodrecimento'
 
 /**
@@ -416,7 +416,9 @@ function Cartao({
             coluna procurando de quem é o negócio antes de ler do que ele trata.
             O nome inteiro fica logo abaixo — o monograma é reconhecimento, não
             substituição. */}
-        {quem ? <Monograma nome={quem} papel="cliente" decorativo className="mt-px" /> : null}
+        {quem ? (
+          <MonogramaDoFunil nome={quem} papel="cliente" decorativo className="mt-px" />
+        ) : null}
 
         {/* Link do router, não `onClick` na caixa: o cartão leva a uma URL
             própria, e link preserva meio-clique, "abrir em nova aba" e o
@@ -526,7 +528,7 @@ function Cartao({
             primeiro. */}
         {apodrecimento ? <SeloDeApodrecimento apodrecimento={apodrecimento} /> : null}
         {oportunidade.ownerName ? (
-          <Monograma nome={oportunidade.ownerName} papel="responsavel" className="ml-auto" />
+          <MonogramaDoFunil nome={oportunidade.ownerName} papel="responsavel" className="ml-auto" />
         ) : null}
       </div>
 

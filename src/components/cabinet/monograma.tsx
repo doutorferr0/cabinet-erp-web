@@ -57,9 +57,30 @@ const ORDEM_DAS_TINTS = Object.keys(TINTS) as TintDeMonograma[]
 const PARTICULAS = new Set(['de', 'da', 'do', 'das', 'dos', 'e', 'del', 'di', 'du', 'y'])
 
 /**
- * Primeira letra da primeira palavra + primeira da última. Nome de uma palavra
+ * Primeira letra da primeira palavra + primeira da SEGUNDA. Nome de uma palavra
  * só usa as duas primeiras letras dela ("Vertz" → VE) — uma letra sozinha
  * ficaria perdida no meio da caixa e colidiria com metade do cadastro.
+ *
+ * ## Era primeira+ÚLTIMA, e a D37 trocou (decisão de convenção)
+ *
+ * Primeira+última é a convenção para NOME DE GENTE, e este repositório é um ERP
+ * onde a maioria dos nomes é razão social. **A última palavra de razão social é
+ * `Ltda`, `ME` ou `S/A`** — primeira+última faria metade do cadastro terminar na
+ * mesma letra (`Vertz Iluminação Ltda` → `VL`, `Mister LED Comercio de
+ * Iluminação Ltda` → `ML` só por acaso).
+ *
+ * A troca não é preferência: **dois lugares independentes já tinham chegado
+ * nela, e um deles mediu na tela.** `bloco-identidade.test.tsx` (D16) cobrava
+ * `Vertz Iluminação Ltda` → `VI` — e reprovava, porque esta função dizia `VL`;
+ * `features/crm/monograma.tsx` (D22) escreveu a própria cópia com a regra dos
+ * dois primeiros, registrando que `MARIA HELENA ARQUITETURA ME` daria `MM` pela
+ * outra. Três implementações, duas convenções, um teste vermelho na base — a
+ * D37 ficou com a que dois deles pediam e tem argumento de domínio.
+ *
+ * O que a mudança alcança: nome de PESSOA com três partes ou mais passa a usar
+ * o nome do meio (`José dos Santos Oliveira` → `JS`, não `JO`). Trocar de volta
+ * é editar estas quatro linhas — mas então `bloco-identidade` volta a reprovar,
+ * e é isso que precisa ser decidido junto, não em silêncio.
  */
 export function iniciaisDe(nome: string): string {
   const palavras = nome
@@ -68,13 +89,13 @@ export function iniciaisDe(nome: string): string {
     .filter((p) => p.length > 0 && !PARTICULAS.has(p.toLowerCase()))
 
   const primeira = palavras.at(0)
-  const ultima = palavras.at(-1)
-  if (!primeira || !ultima) return '—'
+  const segunda = palavras.at(1)
+  if (!primeira) return '—'
   // Por comprimento, não por igualdade de texto: "Ana Ana" tem duas palavras e
   // devolve AA, não AN.
-  if (palavras.length === 1) return primeira.slice(0, 2).toUpperCase()
+  if (!segunda) return primeira.slice(0, 2).toUpperCase()
 
-  return `${primeira.slice(0, 1)}${ultima.slice(0, 1)}`.toUpperCase()
+  return `${primeira.slice(0, 1)}${segunda.slice(0, 1)}`.toUpperCase()
 }
 
 /**

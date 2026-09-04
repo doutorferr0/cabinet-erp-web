@@ -428,7 +428,65 @@ afirmar a **requisição** — `POST /api/me/views` com `route`, `name`, `favori
 contraprova de que a chave da D4 não existe mais. Os quatro casos de `favoritos.test.tsx` saíram do
 skip e passam.
 
-## 9. O que D37 não pode fazer antes do merge
+## 9. A passada, com D1–D29 na base
+
+O merge serial fechou D1–D29 durante a sessão. O que a passada fez, e o que ela **não** fez.
+
+### 9.1 Feito
+
+| item | alcance | resultado |
+|---|---|---|
+| `acoesDeSelecao` → `acoesDeLote` | `data-table.tsx`, `tela-de-listagem.tsx`, `grade-2.0.test.tsx` | 9 ocorrências, 3 arquivos, **0 restantes** |
+| `NumeroHeroi` **apagado** | `kpi-tile.tsx` + o `describe` de sobrevivência | sem consumidor desde D15/D20; levou junto 3 `text-[<rem>]` |
+| `Monograma` do funil renomeado | `features/crm/` → `MonogramaDoFunil` / `iniciaisDoFunil` | acaba a colisão de nome |
+| **convenção de iniciais unificada** | `iniciaisDe` passa a ser primeira+SEGUNDA | ver 9.2 |
+| hex `#rrggbb` em `.tsx` | `planner.test.tsx`, `data-table.tsx` | **0** |
+| `rgba(` fora de `--inset`/`--soft-1` | `painel.tsx` | **0** |
+| comentário vencido de D10 | `data-table.tsx` | a frase "os `--*-bg` são `color-mix(…, transparent)`" — falsa desde D1 — foi corrigida no mesmo lugar |
+
+Sobre o `acoesDeLote`: o nome da spec é melhor **pelo par**. Ao lado de `acoesDeLinha`, "lote" e
+"linha" dizem QUANTAS linhas a ação alcança, que é a única diferença entre as duas. "Seleção"
+descrevia o gesto de chegar até elas, e o gesto é o mesmo nas duas.
+
+### 9.2 A convenção de iniciais era TRÊS implementações e DUAS regras
+
+`iniciaisDe` (D3, `components/cabinet`) fazia primeira+ÚLTIMA palavra. Mas:
+
+- `bloco-identidade.test.tsx` (D16) cobrava `Vertz Iluminação Ltda` → `VI` e **reprovava na base**,
+  porque a função dizia `VL`;
+- `features/crm/monograma.tsx` (D22) escreveu a **própria cópia** com primeira+SEGUNDA, registrando
+  que `MARIA HELENA ARQUITETURA ME` daria `MM` pela outra regra — medido na tela.
+
+O argumento que decide é de domínio e estava escrito no teste de D16: **a última palavra de razão
+social é `Ltda`, `ME` ou `S/A`**, então primeira+última faria metade do cadastro terminar na mesma
+letra. Num ERP a maioria dos nomes é razão social. Dois lugares independentes já pediam a mesma
+regra; a D37 ficou com ela e atualizou o caso do teste de D3 que cobrava a outra.
+
+**O que a mudança alcança, dito em voz alta:** nome de PESSOA com três partes ou mais passa a usar o
+nome do meio — `José dos Santos Oliveira` → `JS`, não `JO`. É reversível em quatro linhas, mas então
+`bloco-identidade` volta a reprovar: as duas metades precisam ser decididas juntas, e é por isso que
+a troca está escrita no JSDoc da função e não só aqui.
+
+O `MonogramaDoFunil` **não foi fundido** com o compartilhado, e isso é deliberado: além das
+iniciais (agora iguais), eles ainda discordam em cor (hash do nome × fixa pelo papel) e
+acessibilidade (`aria-hidden` sempre × `sr-only` com o nome). Os dois argumentos estão escritos e
+são bons no lugar de cada um. Fundir exige uma decisão de produto — a D37 tirou a colisão de nome e
+deixou a divergência visível.
+
+### 9.3 Não feito, com o número medido
+
+| grep | estado | por que não fecha aqui |
+|---|---:|---|
+| `text-[` em `.tsx` | **114**, em 63 arquivos | 40 são `text-[color:var(…)]` — **cor**, não tamanho, e é a forma legítima de divergir de um degrau; sobram ~55 tamanhos literais (31× `0.75rem`, 7× `0.6875rem`, …). Cada substituição é **escolher um degrau**, decisão de design em 40+ arquivos, vários em zona de PR ainda aberta (D30, D32, D33, D34, D35). |
+| `border-2` em `.tsx` | **89**, em 57 arquivos | mesma natureza, mesma dispersão |
+| `font-size:` em `.tsx` | **3** (2 em comentário) | o único real é `badge.tsx`, `[font-size:var(--t-badge,11.5px)]`, e só some **publicando o degrau `--t-badge`** na fundação (§6.3) |
+| um só medidor de contraste | **2** | ver abaixo — o bloqueio ficou mais forte, não mais fraco |
+
+Nenhum desses é "esquecido": os quatro têm o número medido e o bloqueio nomeado. O que os separa do
+que foi feito é que **renomear é reversível e escolher um degrau tipográfico não é** — a segunda
+metade pede uma issue com o mockup ao lado, não uma passada de consistência.
+
+## 10. O que D37 não pode fazer antes do merge
 
 Registrado porque a tentação é grande e o estrago é caro: os greps do DoD **já acham 136 `text-[`
 e 167 `border-2` na base pura**, e essas ocorrências são o código 1.x que as 30 PRs abertas estão

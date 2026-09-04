@@ -349,51 +349,20 @@ export function FaixaDeKpi({ children, className, style, ...props }: FaixaDeKpiP
 }
 
 /* ---------------------------------------------------------------------------
-   SOBREVIVENTE 1.x — sai quando D15 e D20 chegarem
+   `NumeroHeroi` SAIU AQUI (D37), e o bilhete que ele deixou dizia quando.
 
-   `NumeroHeroi` é a quinta família da fusão v5 (#236): display CONDENSADO a
-   36/38/48px, para o nº do documento e o total. O 2.0 não tem essa família — a
-   Bebas saiu na D1 e `--font-display-condensada` passou a apontar para a
-   Gambarino —, e §Hierarquia não tem degrau acima de 30px fora do display.
+   Era a quinta família da fusão v5 (#236): display CONDENSADO a 36/38/48px,
+   para o nº do documento e o total. O 2.0 não tem essa família — a Bebas saiu
+   na D1 e `--font-display-condensada` passou a apontar para a Gambarino —, e a
+   §Hierarquia não tem degrau acima de 30px fora do display.
 
-   Continua exportado AQUI, e não apagado, porque os dois consumidores estão em
-   zona alheia nesta rodada: `documento.tsx` (D15, cabeçalho de registro) e
-   `features/dashboard/indicadores.tsx` (D20). Apagá-lo daqui quebraria as duas
-   branches em curso; substituí-lo por `KpiTile` nelas seria tomar a decisão de
-   desenho de outra issue.
+   Ele continuava exportado porque os dois consumidores estavam em zona alheia:
+   `documento.tsx` (D15) e `features/dashboard/indicadores.tsx` (D20). As duas
+   mergearam e nenhuma o chama mais — a varredura só achava a própria
+   declaracao, o `describe` de sobrevivencia e duas mencoes em comentario
+   historico, que ficam onde estao porque explicam por que NAO e mais assim.
+   Quem quiser o numero grande usa `KpiTile` com `escala="destaque"`.
 
-   O que MUDOU: o comentário. O texto antigo justificava a medida pela métrica
-   da Bebas (`docs/design/medir-tabular.py`), fonte que o repo não carrega mais
-   — justificativa que descreve uma fonte ausente é pior que nenhuma.
+   Levou junto as tres unicas `text-[<rem>]` que sobravam neste arquivo: a
+   escala do heroi era literal porque a regua nao tem degrau acima de 30px.
    --------------------------------------------------------------------------- */
-
-export type EscalaHeroi = 'documento' | 'total' | 'cartao'
-
-const ESCALA_HEROI: Record<EscalaHeroi, string> = {
-  documento: 'text-[2.25rem]',
-  total: 'text-[3rem]',
-  cartao: 'text-[2.375rem]',
-}
-
-export interface NumeroHeroiProps extends React.ComponentProps<'span'> {
-  escala: EscalaHeroi
-}
-
-/**
- * @deprecated 1.x. Use `KpiTile` — `escala="destaque"` no lugar do cartão e do
- * fecho. Sai do repo em D15 (documento) e D20 (dashboard).
- */
-export function NumeroHeroi({ escala, className, ...props }: NumeroHeroiProps) {
-  return (
-    <span
-      data-slot="numero-heroi"
-      className={cn(
-        'font-[family-name:var(--font-display-condensada)] leading-none tabular-nums',
-        'tracking-[0.02em]',
-        ESCALA_HEROI[escala],
-        className,
-      )}
-      {...props}
-    />
-  )
-}

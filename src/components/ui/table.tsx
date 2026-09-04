@@ -20,11 +20,12 @@ const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  // A barra preta sólida da fundação anterior SAIU (DESIGN.md §Don'ts). O
-  // cabeçalho é caixa clara com letra preta: a força vem da régua de 3px, da
-  // caixa alta e do tracking, não de um bloco de tinta atravessando a tela.
-  // Sem separador vertical entre colunas — a amostra tirou a malha vertical, e
-  // a régua horizontal já delimita.
+  // A barra preta do cabeçalho SAIU na 2.0. Header de tabela é uma REGIÃO de
+  // natureza diferente do corpo, e a §Separação nomeia a ferramenta para isso:
+  // TINT (`n-50`), não borda e não bloco de tinta. Uma ferramenta por
+  // fronteira — o tint separa, e por isso não há régua de 3px por baixo dele.
+  // Sem separador vertical entre colunas: coluna fechada dos dois lados vira
+  // gaiola, e a hairline horizontal já delimita.
   <thead ref={ref} className={cn('[&_tr]:border-0', className)} {...props} />
 ))
 TableHeader.displayName = 'TableHeader'
@@ -35,11 +36,14 @@ const TableBody = React.forwardRef<
 >(({ className, ...props }, ref) => (
   // A malha VERTICAL saiu (a amostra não tem separador entre colunas: a
   // régua horizontal já delimita, e coluna fechada dos dois lados vira gaiola).
-  // A régua entre linhas sobe de 1px de Fio para 2px de Tinta, acompanhando a
-  // célula de 52px — régua fina sob célula alta some.
+  // A régua entre linhas VOLTOU a 1px, e desta vez com motivo escrito: 2px de
+  // tinta entre linhas é a mesma espessura da borda que separa a tabela do
+  // plano, então cada linha era lida como uma caixa própria e a listagem virava
+  // pilha de caixas. Hairline separa itens do MESMO tipo (§Separação, nível 2);
+  // a caixa é do contêiner, uma vez só.
   <tbody
     ref={ref}
-    className={cn('[&_tr:last-child]:border-0 [&_tr]:border-b-2 [&_tr]:border-border', className)}
+    className={cn('[&_tr:last-child]:border-0 [&_tr]:border-b [&_tr]:border-rule-hair', className)}
     {...props}
   />
 ))
@@ -59,12 +63,10 @@ TableFooter.displayName = 'TableFooter'
 
 const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTMLTableRowElement>>(
   ({ className, ...props }, ref) => (
-    // Hover fica a cargo do consumidor (a DataTable usa Bancada cheia; cabeçalho não tem hover).
-    <tr
-      ref={ref}
-      className={cn('border-b transition-colors data-[state=selected]:bg-muted', className)}
-      {...props}
-    />
+    // Hover e SELEÇÃO ficam a cargo do consumidor: na 2.0 a linha marcada é
+    // `--primary-soft` com faixa de 3px na borda esquerda, e um `bg-muted`
+    // genérico aqui brigaria com ela por especificidade em metade das tabelas.
+    <tr ref={ref} className={cn('border-b transition-colors', className)} {...props} />
   ),
 )
 TableRow.displayName = 'TableRow'
@@ -73,16 +75,20 @@ const TableHead = React.forwardRef<
   HTMLTableCellElement,
   React.ThHTMLAttributes<HTMLTableCellElement>
 >(({ className, ...props }, ref) => (
-  // Cabeçalho de coluna = BARRA PRETA (fusão v5, decisão do user 2026-08-19,
-  // supersede a etiqueta invertida da 1.5 AQUI, e só aqui): papel preto, tinta
-  // clara, mono 10px tracking largo. Com o rótulo de campo rebaixado a
-  // sussurro, o topo da grade vira a única peça escura da malha — âncora que
-  // separa cabeçalho de dado sem régua de 3px. Peso 400: a caixa alta e o
-  // contraste já são a força.
+  // Cabeçalho de coluna = RÓTULO sobre tint (reface 2.0, supersede a barra
+  // preta da fusão v5). É `--t-rotulo` da §Hierarquia — Inter 600 · 10.5 ·
+  // tracking .12em · caixa alta, em `n-500` —, e a classe vem de lá em vez de
+  // `text-[10px]` à mão: o degrau é o mesmo do rótulo de KPI e do título de
+  // grupo da sidebar, e três lugares copiando o mesmo tamanho divergem no
+  // primeiro ajuste.
+  //
+  // O tint `n-50` é a ÚNICA separação entre cabeçalho e corpo, mais a hairline
+  // `n-300` do pé do header. Fundo escuro atravessando a tela era a peça mais
+  // pesada de uma listagem cujo assunto é o dado, não a moldura.
   <th
     ref={ref}
     className={cn(
-      'h-[38px] bg-primary px-3 text-left align-middle font-mono text-[10px] font-normal tracking-[0.12em] text-primary-foreground uppercase [&:has([role=checkbox])]:pr-0',
+      'h-[38px] whitespace-nowrap bg-surface-sunken px-3 text-left align-middle t-rotulo [&:has([role=checkbox])]:pr-0',
       className,
     )}
     {...props}
@@ -96,9 +102,11 @@ const TableCell = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <td
     ref={ref}
-    // 52px é o pedido da amostra: a listagem é onde o operador mira com o
-    // mouse, e ganha ar. A densidade de comanda segue valendo no FORMULÁRIO —
-    // a célula editável da FormGrid continua em 32px.
+    // 52px é o pedido do mockup para a densidade CONFORTÁVEL: a listagem é onde
+    // o operador mira com o mouse, e ganha ar. Quem confere cinquenta linhas
+    // troca para compacta (40px), que a DataTable aplica por classe sobre esta
+    // mesma marcação. A densidade de comanda segue valendo no FORMULÁRIO — a
+    // célula editável da FormGrid continua em 32px.
     className={cn('h-[52px] px-3 py-0 align-middle [&:has([role=checkbox])]:pr-0', className)}
     {...props}
   />

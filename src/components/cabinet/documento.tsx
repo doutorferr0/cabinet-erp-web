@@ -1,6 +1,6 @@
-import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import type { FormGridTotalRow } from '@/components/cabinet/form-grid'
 import { NumeroHeroi } from '@/components/cabinet/numero-heroi'
+import { PageHeader } from '@/components/cabinet/page-header'
 import { Stamp, type StampTom } from '@/components/cabinet/stamp'
 import { TotalBox } from '@/components/cabinet/total-box'
 import { PERCENT_ESCALA, formatMoneyBRL } from '@/lib/formatters'
@@ -43,9 +43,12 @@ export interface DocumentoHeaderProps {
  */
 export function DocumentoHeader({ titulo, modo, numero, stamp }: DocumentoHeaderProps) {
   return (
-    <BandaDeIdentidade
+    <PageHeader
       titulo={titulo}
-      escalaTitulo="documento"
+      // Documento é REGISTRO, não página: o degrau menor da régua, com o
+      // número em mono ao lado como âncora. `escalaTitulo="documento"` subia o
+      // título para 36px — uma 12ª medida num sistema de 11 degraus.
+      variante="registro"
       {...(modo ? { contexto: modo } : {})}
     >
       {numero !== undefined && (
@@ -60,7 +63,7 @@ export function DocumentoHeader({ titulo, modo, numero, stamp }: DocumentoHeader
         </NumeroHeroi>
       )}
       {stamp && <Stamp tom={stamp.tom} label={stamp.label} />}
-    </BandaDeIdentidade>
+    </PageHeader>
   )
 }
 

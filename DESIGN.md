@@ -1150,7 +1150,17 @@ célula desenharia uma moldura por coluna.
 Célula de dinheiro em verde sobre zona de valor (e sem zona quando a linha está selecionada).
 `rowNumbers` e cabeçalho agrupado: mecanismos inalterados.
 
-### CadastroForm / BandaDeIdentidade (assinatura)
+### CadastroForm / PageHeader (assinatura)
+
+> **2.0 (D5, #473) — a `BandaDeIdentidade` foi APAGADA.** A caixa lilás com borda de 2px em volta do
+> nome da tela gastava borda + fundo + gradiente numa fronteira que espaço resolve — três das quatro
+> ferramentas de separação de uma vez (§Hierarquia). O nome da tela passou a ter **uma voz só**, o
+> `<h1>` do `PageHeader`, e `src/routes/toda-rota-tem-cabecalho.test.ts` reprova rota que não chegue
+> nele e `<h1>` escrito fora dele. O cabeçalho ganhou `variante` (`display` 30 · `pagina` 28 ·
+> `registro` 24, os degraus `--t-*`), `subtitulo` (o que a tela TEM agora, não o que ela é), `acoes`
+> fracas em ghost e a **tecla `Voltar` de 32px colada ao título** — que saiu do `PageFrame` e voltou
+> para cá, sem opt-in: quem decide se há tecla é `rotaMaeDe`, não a tela.
+
 Painel (raio 10px, `el-3`) com **faixa de acento** de 8px à esquerda e zona de identidade no fundo.
 Título em Display; contexto em Meta. Rodapé fixo com régua superior de 3px. Modo consulta via
 `<fieldset disabled>`: inalterado.
@@ -1310,12 +1320,35 @@ igual `data-modulo` do `<main>`. Origem: mockup `mockup-dashboard-cores.html`, s
 
 ### Appbar
 
+> **2.0 (D5, #473) — o que vale hoje.** A appbar é `src/app/appbar/`, tem **56px**, e faz duas
+> coisas: **migalha à esquerda** (derivada da rota pela taxonomia de `navigation.ts`, nunca escrita
+> pela tela) e **quatro ações globais à direita** — Ajuda · Notificações · Configurações · Tema —,
+> fixas em toda rota e na mesma ordem. Nada mais: marca, fileira de seções, busca e seletor de
+> empresa desceram para a barra lateral (`src/app/cinto-provisorio.tsx`, que D4/D6 apagam inteiro).
+> A **segunda faixa de 52px** que repetia o lugar dentro do conteúdo, com o botão de colapso da
+> barra, foi removida — duas respostas para "onde estou", em duas tipografias. O contador do sino
+> virou **ponto** (`--bad`); o número continua no nome acessível, porque quem ouve não vê o ponto.
+> Ação de TELA não sobe para cá: ela mora no `PageHeader`. O parágrafo abaixo descreve a appbar 1.7.
+
 Faixa própria (`src/app/appbar.tsx`), acima do cabeçalho de página, presente em toda rota. À
 esquerda, a **entrada da paleta de comandos** (240px, `Pesquisar…` + a etiqueta `Ctrl+K`); cluster
 à direita: engrenagem (**desabilitada** — não existe tela de configurações; um botão que não leva a
 lugar nenhum é pior que apagado, a mesma razão que desabilita `Alterar`/`Consul.` sem `get` no
 contrato) · sino com badge de não-lidas (abre a gaveta) · divisor · usuário (avatar + nome + papel +
 chevron, menu com `Sair`).
+
+### Região de avisos (`src/components/cabinet/regiao-de-avisos.tsx`)
+
+**2.0 (D5, #473).** Deixou de ser cartão flutuante no canto inferior direito (borda preta de 2px +
+sombra dura, três ferramentas de separação para uma frase de cinco palavras) e virou **faixa logo
+abaixo da appbar**, no shell: tint do tom (`--ok-bg`/`--info-bg`/`--warn-bg`/`--bad-bg`), sem borda
+e sem sombra, texto forte à esquerda e a tecla de dispensar à direita. Ela **empurra** o conteúdo em
+vez de cobri-lo.
+
+O **tom** é dado (`Aviso.tom`, `lib/avisos.ts`), não decoração: `ok` é o padrão e é o único que sai
+pelo relógio; `warn` e `bad` ficam até alguém dispensar — é o que o próprio `lib/avisos` diz do que
+não pode sumir em cinco segundos, o que o operador precisa LER e AGIR. `aria-live` vira `assertive`
+quando há `bad` na fila, e `polite` no resto.
 
 #### Paleta de comandos (`src/app/paleta-de-comandos.tsx`)
 

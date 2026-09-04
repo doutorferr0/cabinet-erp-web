@@ -24,9 +24,10 @@ function folha(): HTMLElement {
  * `border-2` por `border`, tirar `border-border` ou remover a sombra são
  * mudanças que passam em toda a suíte e só aparecem na tela, para o operador.
  *
- * Monta pelo ROTEADOR e não com `render(<PageFrame/>)` puro: desde a #235 a
- * folha abriga o `Voltar` universal, que lê a rota. Montá-la fora do router
- * mediria uma peça que não existe em tela nenhuma.
+ * Monta pelo ROTEADOR e não com `render(<PageFrame/>)` puro: a folha abriga o
+ * conteúdo da rota, e a saída universal — que na 2.0 (D5) voltou para o
+ * `PageHeader` — lê a rota. Montá-la fora do router mediria uma peça que não
+ * existe em tela nenhuma.
  */
 describe('PageFrame — a folha', () => {
   it('é delimitada por traço de 2px no token do traço', async () => {
@@ -63,8 +64,11 @@ describe('PageFrame — a folha', () => {
  * link ou recarga dependia do botão do navegador, que numa SPA volta para fora
  * da aplicação com a mesma facilidade com que volta para dentro.
  *
- * Mora na FOLHA e não em cada tela justamente para não voltar a ser opt-in:
- * tela nova nasce com saída sem lembrar de nada.
+ * Morou na FOLHA por isso, e na 2.0 (D5) voltou para o `PageHeader` — colada
+ * ao título, que é onde o olho já está. **O que não voltou foi o opt-in:** o
+ * padrão do cabeçalho é ligado e quem decide se há tecla é `rotaMaeDe`, não a
+ * tela. Por isso os casos abaixo não mudaram uma linha ao mudar de casa: eles
+ * medem a GARANTIA, não onde ela é montada.
  */
 describe('Voltar universal (#235)', () => {
   it('não aparece em tela que o menu publica — não há para onde voltar', async () => {

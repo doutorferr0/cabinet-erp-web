@@ -93,14 +93,6 @@ describe('AppShell', () => {
    * modelo antigo tinha `secaoDaRota` de um lado e a barra do outro, e a
    * `espiada` existia para remendar a divergência entre os dois.
    */
-  it('o rastro anuncia grupo e tela da rota, da mesma fonte que a barra', async () => {
-    setup('/compras/ordens')
-    const rastro = await screen.findByRole('navigation', { name: 'Você está em' })
-
-    expect(rastro).toHaveTextContent('Compras')
-    expect(rastro).toHaveTextContent('Ordem de Compra')
-  })
-
   it('a barra é a navegação, e ela está em toda rota', async () => {
     for (const rota of ['/', '/cadastros/clientes']) {
       const { unmount } = setup(rota)

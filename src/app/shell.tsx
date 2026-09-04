@@ -1,12 +1,10 @@
 import { Appbar } from '@/app/appbar'
 import { GavetaDeNotificacoes } from '@/app/gaveta-notificacoes'
 import { moduloDaRota } from '@/app/modulo'
-import { GRUPOS_NAV, GRUPO_CONFIG } from '@/app/nav/grupos'
-import { SidebarNav, ativoEm } from '@/app/nav/sidebar-nav'
+import { SidebarNav } from '@/app/nav/sidebar-nav'
 import { PageFrame } from '@/app/page-frame'
 import { PaletaDeComandos } from '@/app/paleta-de-comandos'
 import { RequireRecurso } from '@/app/require-recurso'
-import { ModeToggle } from '@/components/cabinet/mode-toggle'
 import { NOTIFICACOES_MOCK } from '@/mocks/notificacoes'
 import { useRouterState } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -36,27 +34,9 @@ import { useState } from 'react'
  * O rastro "Você está em" continua, e passou a ser a única coisa que a appbar
  * diz sobre navegação. A D5 redesenha a faixa.
  */
-/**
- * O RASTRO — grupo e tela, por extenso, para a rota no ar.
- *
- * Ele lê a MESMA lista que a barra desenha, e não uma segunda taxonomia: o
- * modelo antigo tinha `secaoDaRota` de um lado e a barra do outro, e a
- * divergência entre os dois foi o defeito que a `espiada` existia para
- * remendar. Aqui há uma fonte, e o que ela não conhece simplesmente não vira
- * rastro — dizer "Você está em" apontando para o lugar errado é pior que calar.
- */
-function rastroDaRota(pathname: string) {
-  for (const grupo of [...GRUPOS_NAV, GRUPO_CONFIG]) {
-    const tela = grupo.items.find((item) => ativoEm(item.url, pathname))
-    if (tela) return { grupo: grupo.title, tela: tela.title }
-  }
-  return undefined
-}
-
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { location } = useRouterState()
   const modulo = moduloDaRota(location.pathname)
-  const rastro = rastroDaRota(location.pathname)
 
   // Notificação é CASCA nesta fatia — dado de mock local, sem `src/data/` por
   // trás (não há `/api/notifications` no contrato — §@casca-global). Estado
@@ -77,33 +57,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="flex min-w-0 flex-1 flex-col">
         {/* APPBAR GLOBAL — acima do cabeçalho de página, em TODA rota
             (§@casca-global). Vive no shell: página nenhuma monta a própria. */}
-        <Appbar
-          naoLidas={naoLidas}
-          aoAbrirGaveta={() => setGavetaAberta(true)}
-          aoAbrirPaleta={() => setPaletaAberta(true)}
-        />
-
-        {/* O RASTRO e os ajustes de VISTA — o que a appbar diz sobre onde se
-            está, agora que ela não escolhe mais para onde ir. A D5 redesenha
-            esta faixa; o `ModeToggle` fica aqui até lá, e não na barra: tema é
-            ajuste de VISTA, e a barra é navegação. */}
-        <header
-          className="flex h-[52px] shrink-0 items-center gap-2 border-b-2 bg-card px-4"
-          data-slot="rastro"
-        >
-          {rastro ? (
-            <nav aria-label="Você está em" className="flex min-w-0 items-center gap-1.5">
-              <span className="t-rotulo shrink-0">{rastro.grupo}</span>
-              <span aria-hidden="true" className="t-meta">
-                /
-              </span>
-              <span className="t-ui truncate">{rastro.tela}</span>
-            </nav>
-          ) : null}
-          <div className="ml-auto flex items-center gap-2">
-            <ModeToggle />
-          </div>
-        </header>
+        {/* Appbar da D5: migalha + ações globais (ajuda, notificações, config,
+            tema). A paleta (⌘K) mora na barra lateral (D4). Merge D4+D5 pelo
+            Cowork em 2026-09-03: o rastro provisório que a D4 desenhava aqui
+            saiu — a migalha da appbar é a mesma fonte. */}
+        <Appbar naoLidas={naoLidas} aoAbrirNotificacoes={() => setGavetaAberta(true)} />
 
         {/* A área de conteúdo é Papel COM a grade de 52px; a folha (PageFrame)
             pousa opaca por cima (Regra da Grade de Fundo).

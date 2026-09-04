@@ -1,5 +1,5 @@
-import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
 import { TextField } from '@/components/cabinet/form-controls'
+import { PageHeader } from '@/components/cabinet/page-header'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
 import { usePedirRecuperacao } from '@/data/sessao'
@@ -39,7 +39,7 @@ export function EsqueciSenhaTela() {
     <div className="bg-paper-grid flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-sm rounded-panel border-2 border-border bg-card p-4 shadow-el3">
         <div className="mb-4">
-          <BandaDeIdentidade titulo="Cabinet" contexto="Esqueci a senha" />
+          <PageHeader variante="display" titulo="Cabinet" contexto="Esqueci a senha" />
         </div>
 
         {pedir.isSuccess ? (

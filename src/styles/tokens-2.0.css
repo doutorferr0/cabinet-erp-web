@@ -1046,3 +1046,66 @@ tr:hover [data-slot="monograma"] {
 [data-theme="dark"] [data-slot="form-block"] > [data-slot="form-block-cabecalho"] {
   background: color-mix(in oklab, var(--modulo-02, var(--n-100)) 35%, var(--n-50));
 }
+
+/* --- abas de formulário (Dados Principais · Outros Dados …): o conteúdo da aba
+   era campo solto no fundo da página. Vira PASTA: tira de abas com fundo do
+   módulo, aba ativa em folha que se funde ao painel, painel com borda n-400 e
+   relevo. Só as abas horizontais; a listagem tem as próprias (abas-de-consulta). --- */
+[data-slot="tabs"][data-orientation="horizontal"] {
+  gap: 0;
+}
+[data-slot="tabs"][data-orientation="horizontal"] > [data-slot="tabs-list"] {
+  gap: 2px;
+  padding: var(--s-2) var(--s-2) 0;
+  background: color-mix(in oklab, var(--modulo-02, var(--n-100)) 60%, var(--n-50));
+  border: 1px solid var(--n-400);
+  border-radius: var(--r-panel) var(--r-panel) 0 0;
+}
+[data-slot="tabs"][data-orientation="horizontal"]
+  > [data-slot="tabs-list"]
+  > [data-slot="tabs-trigger"] {
+  margin-bottom: -1px;
+  padding: 8px 12px 9px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: var(--r-ctrl) var(--r-ctrl) 0 0;
+  transition: background var(--dur-1, 120ms), color var(--dur-1, 120ms);
+}
+[data-slot="tabs"][data-orientation="horizontal"]
+  > [data-slot="tabs-list"]
+  > [data-slot="tabs-trigger"]:hover {
+  background: color-mix(in oklab, var(--n-900) 6%, transparent);
+  color: var(--n-900) !important;
+}
+[data-slot="tabs"][data-orientation="horizontal"]
+  > [data-slot="tabs-list"]
+  > [data-slot="tabs-trigger"][aria-selected="true"] {
+  background: var(--n-0);
+  border-color: var(--n-400);
+  color: var(--n-900) !important;
+  font-weight: 600;
+  box-shadow: 0 1px 0 0 var(--n-0), inset 0 2px 0 0 var(--lime-400);
+}
+[data-slot="tabs"][data-orientation="horizontal"] > [data-slot="tabs-content"] {
+  padding: var(--s-4);
+  background: var(--n-0);
+  border: 1px solid var(--n-400);
+  border-top: 0;
+  border-radius: 0 0 var(--r-panel) var(--r-panel);
+  box-shadow: 3px 3px 0 0 var(--n-300), 0 12px 24px -16px
+    color-mix(in oklab, var(--n-900) 45%, transparent);
+}
+/* dentro da pasta, o bloco de formulário é a segunda caixa (teto: 2) — sem relevo próprio */
+[data-slot="tabs-content"] [data-slot="form-block"] {
+  box-shadow: none;
+}
+[data-slot="tabs-content"] [data-slot="form-block"]:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* --- aviso de cobertura (dados de exemplo): faixa lateral no matiz, não bloco chapado --- */
+[data-slot="aviso-de-cobertura"] {
+  border-left: 3px solid var(--warn);
+  border-radius: 0 var(--r-ctrl) var(--r-ctrl) 0;
+}

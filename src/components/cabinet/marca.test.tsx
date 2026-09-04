@@ -3,49 +3,41 @@ import { describe, expect, it } from 'vitest'
 import { Marca } from './marca'
 
 describe('Marca', () => {
-  // O degrau de espessura é o motivo de o componente existir: a mesma casa a
-  // 16px e a 96px pede traços diferentes, e quem pede a marca não deve ter de
-  // saber disso.
-  it('escolhe a espessura pelo tamanho, em três degraus', () => {
-    const pesoDe = (tamanho: number) =>
-      renderWithQuery(<Marca tamanho={tamanho} />)
-        .container.querySelector('[data-slot="marca-simbolo"]')
-        ?.getAttribute('data-peso')
+  // O corte de peso é o motivo de o componente existir: a versão com moldura é
+  // ilegível abaixo de 64px, e quem pede a marca não deve ter de saber disso.
+  it('abaixo de 64px usa o peso compacto, de 64 para cima o cheio', () => {
+    const { container: pequena } = renderWithQuery(<Marca tamanho={28} />)
+    const { container: grande } = renderWithQuery(<Marca tamanho={64} />)
 
-    expect(pesoDe(16)).toBe('grossa')
-    expect(pesoDe(28)).toBe('grossa')
-    expect(pesoDe(40)).toBe('media')
-    expect(pesoDe(64)).toBe('media')
-    expect(pesoDe(96)).toBe('fina')
+    expect(pequena.querySelector('[data-slot="marca-simbolo"]')).toHaveAttribute(
+      'data-peso',
+      'compacta',
+    )
+    expect(grande.querySelector('[data-slot="marca-simbolo"]')).toHaveAttribute(
+      'data-peso',
+      'cheia',
+    )
   })
 
-  it('é UM desenho de duas casas, e o traço mora no caminho', () => {
-    // Era um par de arquivos (3 níveis + moldura acima de 64px, 2 níveis
-    // abaixo), porque o desenho antigo não sobrevivia à redução. O da 2.0 é
-    // um só: o que muda é a espessura, e ela vai em cada `path` — no `<svg>`
-    // ela seria uma só para as duas casas, e a de dentro engordaria junto.
+  it('o compacto tem 2 níveis e o cheio 3 mais a moldura', () => {
+    // Não são o mesmo desenho em duas espessuras: o compacto PERDE um nível e a
+    // moldura, que é o que devolve o vão entre traços a 16px.
     const { container: pequena } = renderWithQuery(<Marca tamanho={28} />)
     const { container: grande } = renderWithQuery(<Marca tamanho={96} />)
 
-    const caminhos = (raiz: HTMLElement) => [
-      ...raiz.querySelectorAll('[data-slot="marca-simbolo"] path'),
-    ]
-    expect(caminhos(pequena)).toHaveLength(2)
-    expect(caminhos(grande)).toHaveLength(2)
-    expect(caminhos(pequena).map((p) => p.getAttribute('stroke-width'))).toEqual(['11', '9'])
-    expect(caminhos(grande).map((p) => p.getAttribute('stroke-width'))).toEqual(['6', '5'])
+    expect(pequena.querySelectorAll('[data-slot="marca-simbolo"] path')).toHaveLength(2)
+    expect(grande.querySelectorAll('[data-slot="marca-simbolo"] path')).toHaveLength(4)
   })
 
-  it('a cor é herdada e o desenho é vazado', () => {
-    // `currentColor` é o que faz a marca virar no tema escuro. Um valor literal
+  it('o traço sai do arquivo e a cor é herdada', () => {
+    // `currentColor` é o que faz a marca virar no tema escuro. Um preto literal
     // sumiria na bancada escura sem quebrar teste nenhum.
     const { container } = renderWithQuery(<Marca tamanho={28} />)
 
     const simbolo = container.querySelector('[data-slot="marca-simbolo"]')
     expect(simbolo).toHaveAttribute('stroke', 'currentColor')
+    expect(simbolo).toHaveAttribute('stroke-width', '9')
     expect(simbolo).toHaveAttribute('fill', 'none')
-    // Canto vivo: a casa é reta, e `round` a 16px arredonda a cumeeira.
-    expect(simbolo).toHaveAttribute('stroke-linejoin', 'miter')
   })
 
   it('a assinatura leva símbolo e nome, com um único rótulo', () => {

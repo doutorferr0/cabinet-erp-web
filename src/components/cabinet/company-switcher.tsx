@@ -115,7 +115,7 @@ export function CompanySwitcher() {
         // que diz 'Nenhuma empresa ativa' faria o leitor de tela anunciar o
         // contrário do que está escrito nele.
         aria-label={ativa ? `Empresa ativa: ${ativa.name}` : titulo}
-        className="flex w-full items-center gap-3 rounded-card border bg-card px-3 py-2 text-left outline-none focus-visible:focus-ring disabled:opacity-60"
+        className="flex w-full items-center gap-3 rounded-card border bg-card px-3 py-2 text-left outline-none focus-visible:focus-ring desabilitado"
         style={{ borderWidth: '1.5px', borderColor: 'var(--n-900)', boxShadow: 'var(--key-1)' }}
       >
         {/* MONOGRAMA chartreuse com tinta preta — o único chartreuse desta

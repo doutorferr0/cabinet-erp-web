@@ -122,5 +122,19 @@ export function Monograma({ nome, cor, tamanho, className }: MonogramaProps) {
   )
 }
 
-/** Alias da D16 (#484): as iniciais do nome. O nome canônico é `iniciaisDe`. */
-export const monograma = iniciaisDe
+/**
+ * Iniciais no critério da D16 (#484): primeira letra das duas primeiras
+ * palavras com mais de 2 letras (ignora "de", "e"); nome curto/vazio cai para
+ * os 2 primeiros caracteres. É o que `BlocoIdentidade` e `LookupCombo` esperam;
+ * `iniciaisDe` (D3) fica para a grade. Unificar é item da D37.
+ */
+export function monograma(nome: string): string {
+  const partes = nome
+    .trim()
+    .split(/\s+/)
+    .filter((parte) => parte.length > 2 && /\p{L}/u.test(parte))
+  if (partes.length === 0) return nome.trim().slice(0, 2).toLocaleUpperCase()
+  const primeira = partes[0] ?? ''
+  const segunda = partes[1] ?? ''
+  return (primeira.slice(0, 1) + (segunda.slice(0, 1) || primeira.slice(1, 2))).toLocaleUpperCase()
+}

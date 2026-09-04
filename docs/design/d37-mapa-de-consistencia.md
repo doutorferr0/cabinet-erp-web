@@ -293,3 +293,17 @@ e 167 `border-2` na base pura**, e essas ocorrências são o código 1.x que as 
 reescrevendo. Zerá-las agora conflitaria com praticamente toda a rodada, e o conflito cairia em
 cima de quem tem menos contexto para resolvê-lo — o agente da PR, no rebase. A passada só é segura
 depois que a base contiver D1–D29, exatamente como a issue escreve.
+
+**A pergunta foi feita item a item, não no atacado**, porque uma renomeação barata que passasse
+agora valeria a pena. Nenhuma passa:
+
+| renomeação | por que não agora |
+|---|---|
+| `acoesDeSelecao` → `acoesDeLote` | `data-table.tsx` e `tela-de-listagem.tsx`, oito PRs por cima |
+| `NumeroHeroi` → `KpiTile` | `kpi-tile.tsx` só existe em D11, que ainda não mergeou |
+| unificar os medidores | `medir-contraste-2.0.py` só existe em D4, D20 e D34 |
+| `features/crm/monograma.tsx` | o arquivo nasce em D22 |
+| `vazio-com-saida.test.tsx` | o único candidato que **já está na base** — e **D35 o modifica**, e D35 é a branch que mais conflita da rodada |
+
+O último era o caso promissor e foi conferido por diff, não por suposição: `git diff --name-only
+origin/design/2.0 <branch> -- <arquivo>` sobre as 33 branches devolve exatamente uma, D35.

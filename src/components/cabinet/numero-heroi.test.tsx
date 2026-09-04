@@ -10,21 +10,23 @@ import { describe, expect, it } from 'vitest'
  * tamanho".
  */
 describe('NumeroHeroi', () => {
-  it('fala pelo token da quinta família, nunca pelo nome da fonte', () => {
+  it('fala pelo TOKEN, nunca pelo nome da fonte', () => {
     render(<NumeroHeroi escala="total">1.234</NumeroHeroi>)
     const n = screen.getByText('1.234')
     expect(n.className).toContain('font-[family-name:var(--font-display-condensada)]')
-    // `Bebas Neue` escrito na tela seria a família fora do token: o dia em que
-    // a pilha mudar, esta peça continuaria pedindo a fonte antiga em silêncio.
-    expect(n.className).not.toContain('Bebas')
+    // Nome de fonte escrito na tela é a família fora do token — e a 2.0 provou
+    // o custo: a pilha inteira trocou em #469, e esta peça continuou certa
+    // porque pede um token. Se pedisse a fonte pelo nome, continuaria pedindo
+    // uma família que o `package.json` já não instala, em silêncio.
+    expect(n.className).not.toMatch(/font-\[['"]/)
   })
 
-  it('declara tabular-nums mesmo com a Bebas já sendo tabular', () => {
+  it('declara tabular-nums mesmo quando a família já é tabular', () => {
     render(<NumeroHeroi escala="total">R$ 9.999,99</NumeroHeroi>)
-    // A Bebas publica `tnum` e tem avanço uniforme (medido em
-    // docs/design/medir-tabular.py). Quem NÃO foi medido é o fallback da pilha
-    // — `Archivo Narrow`, `ui-sans-serif`. Sem esta classe, o total mudaria de
-    // largura enquanto o operador digita os itens, na máquina sem a Bebas.
+    // A condensada original publicava `tnum` e tinha avanço uniforme (medido em
+    // docs/design/medir-tabular.py). Quem NÃO foi medido é o fallback da pilha.
+    // Sem esta classe, o total mudaria de largura enquanto o operador digita os
+    // itens, na máquina que não tiver a família de display.
     expect(screen.getByText('R$ 9.999,99').className).toContain('tabular-nums')
   })
 

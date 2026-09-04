@@ -92,7 +92,7 @@ function MioloDoIcone({ secao, ativa }: { secao: NavSecao; ativa: boolean }) {
  *
  * A dica sai então em `::after` com `content: attr(...)`, que é o mecanismo do
  * próprio mockup (`.tab::after`) e custa zero em render. As classes copiam a
- * aparência do `Tooltip`: tinta sólida, texto no fundo, PT Mono em caixa alta.
+ * aparência do `Tooltip`: tinta sólida, texto no fundo, mono em caixa alta.
  * O que se perde é a seta — e ela existe para desambiguar overlay em PORTAL,
  * que flutua longe do gatilho; esta nasce ancorada no próprio ícone, centrada
  * nele, e não tem como falar de outro.

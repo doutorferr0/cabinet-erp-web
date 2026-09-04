@@ -16,9 +16,10 @@ describe('DocumentoHeader', () => {
   it('título em Headline à esquerda e número em Número do Documento à direita', () => {
     render(<DocumentoHeader titulo="Orçamento" numero="ORÇ-2026-00184" />)
     // FUSÃO v5 r3 (decisão do user, 2026-08-19): o título da banda fala em
-    // display CONDENSADO (Bebas Neue) e CAIXA ALTA — a regra "serifada não
-    // leva caixa alta" era da Newsreader e sai junto com ela AQUI; a serifa
-    // continua sendo a voz de QUEM no <Nome> e nos H1 de cadastro.
+    // display CONDENSADO e CAIXA ALTA. Na 2.0 `--font-display-condensada` é
+    // ALIAS de `--font-display` — a quinta família saiu, o token continua até
+    // D15 trocá-lo por `--t-registro`, e a caixa alta é o que sobra da decisão
+    // original.
     const titulo = screen.getByRole('heading', { name: 'Orçamento' })
     expect(titulo.className).toContain('font-[family-name:var(--font-display-condensada)]')
     expect(titulo.className).toContain('uppercase')
@@ -41,7 +42,7 @@ describe('DocumentoHeader', () => {
     const { container } = render(<DocumentoHeader titulo="Pedido de Compra" numero="PC-001" />)
     const banda = screen.getByRole('heading', { level: 1 }).closest('div')
     // r5: zona de identidade em gradiente — ver banda-identidade.test.
-    expect(banda?.className).toContain('hsl(var(--zone-id))')
+    expect(banda?.className).toContain('var(--zone-id)')
     expect(banda?.className).toContain('border-2')
     expect(container.querySelector('header')).toBeNull()
   })

@@ -60,24 +60,24 @@ export function BandaDeIdentidade({
         // FUSÃO v5: trilho de cor à esquerda (PREENCHIMENTO do acento — traço
         // segue preto) + um degrau a mais de respiro. A banda é a peça que diz
         // "que tela é esta"; o trilho é a assinatura de cor dela.
-        'relative flex items-center gap-3.5 overflow-hidden border-2 border-border bg-[linear-gradient(115deg,hsl(var(--zone-id)),hsl(var(--zone-id)/0.55)_58%,hsl(var(--zone-info)/0.5))] py-3 pr-3.5 pl-5',
+        'relative flex items-center gap-3.5 overflow-hidden border-2 border-border bg-[linear-gradient(115deg,var(--zone-id),color-mix(in_oklab,var(--zone-id)_55%,transparent)_58%,color-mix(in_oklab,var(--zone-info)_50%,transparent))] py-3 pr-3.5 pl-5',
         className,
       )}
     >
       <span aria-hidden="true" className="absolute inset-y-0 left-0 w-1.5 bg-accent" />
-      {/* Headline: o degrau mais alto da rampa, um por tela — e desde
-          2026-08-13 na voz de QUEM (Newsreader, pelo seletor `h1` do
-          `index.css`), porque título de tela responde "quem é esta tela" no
-          mesmo grupo do nome próprio de entidade.
-          **Sem CAIXA ALTA** (decisão do user, 2026-08-13): serifada não leva
-          caixa alta. Maiúscula só na inicial — o título já chega escrito assim
-          ("Cadastro de Fornecedores"), então quem capitaliza é o texto, não o
-          CSS. A caixa alta era da época em que o título falava em Sora, onde
-          ela dava força sem custo; numa serifada de alto contraste ela vira
-          letreiro e fecha o vão entre serifas vizinhas.
-          Peso 700 e não 800: o Newsreader entra com dois pesos só (400/700), e
-          `font-extrabold` sem arquivo de 800 vira negrito SINTÉTICO — o browser
-          engorda o traço por conta e fecha as hastes finas. */}
+      {/* Headline: o degrau mais alto da rampa, um por tela. Na régua 2.0 ele
+          é `--t-pagina` (título de página) e D5 o aplica no `PageHeader`; aqui
+          ele ainda fala pelo token de display, que é alias da família de
+          título.
+          **Sem CAIXA ALTA** (decisão do user, 2026-08-13): maiúscula só na
+          inicial — o título já chega escrito assim ("Cadastro de
+          Fornecedores"), então quem capitaliza é o texto, não o CSS. A caixa
+          alta vinha da época em que o título falava numa sans, onde ela dava
+          força sem custo; numa família de título de alto contraste ela vira
+          letreiro e fecha o vão entre as serifas vizinhas.
+          Peso: a família de título tem UM peso, e a régua §Hierarquia diz que
+          entre títulos a hierarquia é de tamanho, nunca de peso — pedir 700 ou
+          800 aqui faria o browser engordar o traço por conta. */}
       <h1
         className={cn(
           'font-[family-name:var(--font-display-condensada)] leading-none tracking-[0.02em] uppercase',

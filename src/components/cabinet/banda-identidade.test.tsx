@@ -31,7 +31,7 @@ describe('BandaDeIdentidade', () => {
     const banda = container.firstElementChild as HTMLElement
     // r5: a zona de identidade virou GRADIENTE (id → info suave) — mais um
     // degrau de detalhe das referências; a âncora segue sendo a zona-id.
-    expect(banda.className).toContain('hsl(var(--zone-id))')
+    expect(banda.className).toContain('var(--zone-id)')
     expect(banda.className).toContain('border-2')
     expect(banda.className).not.toContain('rounded')
   })

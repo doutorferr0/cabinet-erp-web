@@ -29,21 +29,22 @@ export interface NumeroHeroiProps extends React.ComponentProps<'span'> {
 
 /**
  * NÚMERO-HERÓI (fusão v5 r3, issue #236): o dado que a tela existe para
- * mostrar, em display CONDENSADO — a quinta família, decisão do user de
- * 2026-08-19 sobre o teto de quatro, com UM peso e emprego único.
+ * mostrar, no maior degrau de display.
  *
- * Condensada aqui não é estilo, é o que torna o tamanho POSSÍVEL: medido em
- * `docs/design/medir-tabular.py`, `R$ 9.999.999,99` sai a 222px em Bebas
- * contra 363px em Sora — no segundo caso o total não caberia na largura do
- * documento a 48px. A opção de condensar o Sora foi levantada e é INERTE:
- * nenhum peso do `@fontsource/sora` tem eixo `wdth`, todos declaram
- * `usWidthClass = 5`, e browser nenhum condensa sinteticamente.
+ * **A quinta família saiu na 2.0 (#469) e o token FICOU.** Ele nasceu como uma
+ * condensada de emprego único, escolhida porque o tamanho dependia dela:
+ * medido em `docs/design/medir-tabular.py`, `R$ 9.999.999,99` sai a 222px
+ * condensado contra 363px na sans de display de então — no segundo caso o total
+ * não caberia na largura do documento a 48px. A 2.0 tem três famílias, e
+ * `--font-display-condensada` virou ALIAS de `--font-display`: o desenho do
+ * número-herói é trabalho de D17, e trocar a pilha aqui antes disso seria mudar
+ * a peça pela metade. Se o total voltar a estourar a largura, o remédio é o
+ * degrau (`--t-*`), não uma sexta família.
  *
- * `tabular-nums` fica declarado embora a Bebas já publique `tnum` e tenha
- * avanço uniforme nos dez dígitos: quem alinha a casa decimal aqui pode ser o
- * fallback da pilha (`Archivo Narrow`, `ui-sans-serif`), e esse não foi
- * medido. Sem isso, o total mudaria de largura enquanto o operador digita os
- * itens — foi o defeito que reprovou o Sora, que varia 35% entre `1.111` e
+ * `tabular-nums` fica declarado mesmo quando a família já publica `tnum`: quem
+ * alinha a casa decimal pode ser o fallback da pilha, e esse não foi medido.
+ * Sem isso, o total mudaria de largura enquanto o operador digita os itens —
+ * foi o defeito que reprovou a sans de display, que varia 35% entre `1.111` e
  * `9.999`.
  */
 export function NumeroHeroi({ escala, className, ...props }: NumeroHeroiProps) {
@@ -52,8 +53,8 @@ export function NumeroHeroi({ escala, className, ...props }: NumeroHeroiProps) {
       data-slot="numero-heroi"
       className={cn(
         'font-[family-name:var(--font-display-condensada)] leading-none tabular-nums',
-        // Caixa alta com respiro: a Bebas é toda-maiúscula por desenho e
-        // aperta os dígitos por padrão.
+        // Caixa alta com respiro: a condensada original era toda-maiúscula por
+        // desenho e apertava os dígitos; o respiro fica até D17 redesenhar.
         'tracking-[0.02em]',
         ESCALA[escala],
         className,

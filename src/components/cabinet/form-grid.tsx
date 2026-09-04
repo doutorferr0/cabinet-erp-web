@@ -40,8 +40,8 @@ export interface FormGridColumn {
    * Existe pelo mesmo motivo do `voz` do `<TextField>`: a célula editável é um
    * `<input>`, e `<input>` não aceita filho — `<Nome>` e `<Produto>` não
    * entram aqui. Sem isto, a mesma descrição de produto que a listagem mostra
-   * em Sora aparece em Inter dentro da grade do documento, e a regra vira
-   * "vale onde é texto, não vale onde é campo".
+   * na voz de O QUÊ aparece em Inter dentro da grade do documento, e a regra
+   * vira "vale onde é texto, não vale onde é campo".
    *
    * O produto NÃO recua para `--muted-foreground` aqui: na listagem ele é
    * coadjuvante do nome do cliente, mas na grade do documento ele É o assunto

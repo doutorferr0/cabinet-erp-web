@@ -146,14 +146,16 @@ function SheetTitle({ className, ...props }: Omit<React.ComponentProps<typeof He
     <Heading
       slot="title"
       data-slot="sheet-title"
-      // Serifada não leva caixa alta (decisão do user, 2026-08-13): o título fala
-      // na voz de QUEM desde a troca de tipografia, e caixa alta em Newsreader
-      // vira letreiro. Maiúscula só na inicial, como o texto vem escrito. Peso
-      // 700 porque não há arquivo de 800 — 800 aqui seria negrito sintético.
-      // Sora explícito, e não herdado: desde que a regra do `index.css` passou a
-      // valer só para `h1` (2026-08-13), um `Heading` sem família cai no Inter
-      // do body — e a regra é "de H2 para baixo, Sora". Herança que sumiu, e
-      // sumiu calada: o título continuava renderizando, só que na voz errada.
+      // Sem caixa alta (decisão do user, 2026-08-13): o título de gaveta é
+      // estrutura, e caixa alta numa família de título vira letreiro. Maiúscula
+      // só na inicial, como o texto já vem escrito.
+      // Família DECLARADA, e não herdada: desde que a regra do `index.css`
+      // passou a valer só para `h1` (2026-08-13), um `Heading` sem família cai
+      // no Inter do body. Herança que sumiu, e sumiu calada — o título
+      // continuava renderizando, só que na voz errada.
+      // D15/D16 trocam isto por `.t-secao`, que é o degrau da régua para título
+      // de dialog e de gaveta; o peso some junto, porque a família de título
+      // tem peso único.
       className={cn('font-display text-base font-bold text-foreground', className)}
       {...props}
     />

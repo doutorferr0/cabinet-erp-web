@@ -1,5 +1,4 @@
-import markCompacta from '@/assets/marca/cabinet-mark-compact.svg?raw'
-import markCheia from '@/assets/marca/cabinet-mark.svg?raw'
+import mark from '@/assets/marca/cabinet-mark.svg?raw'
 import wordmark from '@/assets/marca/cabinet-wordmark.svg?raw'
 import { cn } from '@/lib/utils'
 
@@ -10,49 +9,51 @@ import { cn } from '@/lib/utils'
  * ornamento monta traço e preenchimento em duas camadas a partir do `d` de um
  * shape do acervo, com peso (`drop-shadow`) e tom de módulo. A marca é o
  * oposto disso: desenho de LINHA sem preenchimento, espessura própria por
- * peso, e cor que não pertence a módulo nenhum. Passá-la pelo ornamento
+ * tamanho, e cor que não pertence a módulo nenhum. Passá-la pelo ornamento
  * pintaria o miolo da casa e daria a ela a cor da tela em que estivesse.
  *
- * **Dois pesos, e o corte é de LEGIBILIDADE, não de gosto** (medido em render,
- * 2026-08-13):
+ * **UM desenho, três espessuras (2.0, #469).** Até aqui eram dois arquivos —
+ * um com 3 níveis e moldura arredondada, outro com 2 níveis e traço 3× mais
+ * grosso — porque o desenho antigo não sobrevivia à redução: abaixo de 64px a
+ * moldura comia 20% do quadro e empurrava o traço interno para sub-pixel. O
+ * desenho da 2.0 é uma coisa só, duas casas concêntricas de telhado reto, e o
+ * que muda com o tamanho é a ESPESSURA, não a quantidade de níveis:
  *
- * - `cabinet-mark.svg` — 3 níveis + moldura arredondada. Piso 64px: abaixo
- *   disso a moldura come 20% do quadro e empurra o traço interno para
- *   sub-pixel, e a casa vira borrão.
- * - `cabinet-mark-compact.svg` — 2 níveis, sem moldura, traço 3× mais grosso.
- *   Legível até 16px, que é o favicon pequeno.
+ * - **≤ 28px** — 11/9: o favicon e o ícone da barra colapsada. Traço grosso é
+ *   o que mantém o vão interno visível quando o quadro tem 16 pixels de lado.
+ * - **29–64px** — 8/6,5: a assinatura da appbar e a marca do login.
+ * - **acima de 64px** — 6/5: display. Aqui o traço grosso engorda a casa e ela
+ *   perde o desenho.
  *
  * Quem escolhe é o `tamanho`, nunca a tela: pedir a marca é pedir a marca, e a
- * decisão de peso é do componente. Ver `PISO_DA_MOLDURA`.
+ * decisão de peso é do componente. Ver `TRACOS`.
  *
  * **A cor sai de `currentColor`.** A marca é traço, e traço é tinta: herda o
  * `color` de quem a hospeda e vira sozinha no tema escuro. Não recebe tom de
  * módulo de propósito — a marca responde "que produto é este", pergunta cuja
- * resposta não muda ao navegar. Um roxo fixo aqui seria a mesma falha muda do
+ * resposta não muda ao navegar. Um valor fixo aqui seria a mesma falha muda do
  * `text-white` da fase 3, com a marca sumindo na bancada escura.
  *
- * **O favicon é CÓPIA, não import** (`public/favicon.svg`): quem o lê é o
- * browser antes de existir bundle. Mudou o desenho, mudam os dois arquivos.
+ * **O SVG servido é CÓPIA, não import** (`public/marca.svg`, `public/favicon.svg`):
+ * quem os lê é o browser antes de existir bundle. Mudou o desenho, mudam os três.
  */
 
 /** `id="Vector_1"` também contém `d="`; o espaço antes garante que é o atributo. */
 const ATRIBUTO_D = /\sd="([^"]+)"/g
 const ATRIBUTO_VIEWBOX = /viewBox="([^"]+)"/
-const ATRIBUTO_TRACO = /stroke-width="([\d.]+)"/
 
 interface Desenho {
   viewBox: string
   paths: string[]
-  /** Espessura em unidades do `viewBox`, como está no arquivo. 0 = desenho de massa. */
-  traco: number
   /** Largura ÷ altura do `viewBox` — o wordmark é deitado, o símbolo é quadrado. */
   proporcao: number
 }
 
 /**
  * O arquivo continua sendo a FONTE — a mesma disciplina do `<Ornamento>`. O que
- * o componente faz é reler `viewBox`, espessura e caminhos e remontar o SVG com
- * o tamanho pedido. Editar o desenho é editar o `.svg`, nunca este arquivo.
+ * o componente faz é reler `viewBox` e caminhos e remontar o SVG no tamanho
+ * pedido. Editar o DESENHO é editar o `.svg`, nunca este arquivo; a espessura,
+ * essa sim, é decisão de código, porque depende do tamanho (ver `TRACOS`).
  */
 function lerDesenho(raw: string): Desenho {
   const viewBox = ATRIBUTO_VIEWBOX.exec(raw)?.[1] ?? '0 0 100 100'
@@ -60,26 +61,35 @@ function lerDesenho(raw: string): Desenho {
   return {
     viewBox,
     paths: [...raw.matchAll(ATRIBUTO_D)].map(([, d]) => d ?? '').filter((d) => d.length > 0),
-    traco: Number(ATRIBUTO_TRACO.exec(raw)?.[1] ?? 0),
     proporcao: largura / altura,
   }
 }
 
 const DESENHOS = {
-  cheia: lerDesenho(markCheia),
-  compacta: lerDesenho(markCompacta),
+  simbolo: lerDesenho(mark),
   nome: lerDesenho(wordmark),
 } as const
 
 /**
- * A partir de 64px a moldura tem espaço para existir; abaixo, não.
+ * Espessura por DEGRAU, em unidades do `viewBox`, na ordem dos caminhos (casa
+ * de fora, casa de dentro).
  *
- * Não é escala contínua: são dois desenhos diferentes, e o compacto tem menos
- * níveis. Interpolar espessura no mesmo desenho foi o que falhou — foi assim
- * que a logo original chegou, com 4 contornos a 0,9% de espessura ilegíveis
- * abaixo de 32px.
+ * Três degraus e não uma escala contínua: interpolar espessura foi o que
+ * falhou na logo original, que chegou com 4 contornos a 0,9% e ilegível abaixo
+ * de 32px. O corte é de LEGIBILIDADE e foi olhado em render — o degrau existe
+ * onde o vão interno começa a fechar, não em múltiplos redondos.
  */
-const PISO_DA_MOLDURA = 64
+const TRACOS = [
+  { ate: 28, nome: 'grossa', larguras: [11, 9] },
+  { ate: 64, nome: 'media', larguras: [8, 6.5] },
+  { ate: Number.POSITIVE_INFINITY, nome: 'fina', larguras: [6, 5] },
+] as const
+
+/** O degrau de espessura para um tamanho. O último cobre o infinito, então
+ *  sempre há resposta — e é por isso que ele é o padrão, e não um `?? []`. */
+function degrauDe(tamanho: number): (typeof TRACOS)[number] {
+  return TRACOS.find(({ ate }) => tamanho <= ate) ?? TRACOS[2]
+}
 
 /**
  * Altura do nome em relação ao lado do símbolo, na assinatura.
@@ -141,26 +151,27 @@ export function Marca({ variante = 'simbolo', tamanho, className, classeDoNome }
 }
 
 function Simbolo({ tamanho }: { tamanho: number }) {
-  const desenho = tamanho >= PISO_DA_MOLDURA ? DESENHOS.cheia : DESENHOS.compacta
+  const desenho = DESENHOS.simbolo
+  const degrau = degrauDe(tamanho)
 
   return (
     <svg
       aria-hidden="true"
       data-slot="marca-simbolo"
-      data-peso={tamanho >= PISO_DA_MOLDURA ? 'cheia' : 'compacta'}
+      data-peso={degrau.nome}
       viewBox={desenho.viewBox}
       width={tamanho}
       height={tamanho}
       className="block shrink-0"
       fill="none"
       stroke="currentColor"
-      strokeWidth={desenho.traco}
       // Canto vivo: a casa do user é reta, e `round` a 16px arredonda a cumeeira
       // até ela parecer um arco.
       strokeLinejoin="miter"
+      strokeLinecap="butt"
     >
-      {desenho.paths.map((d) => (
-        <path key={d} d={d} />
+      {desenho.paths.map((d, i) => (
+        <path key={d} d={d} strokeWidth={degrau.larguras[i] ?? degrau.larguras[1]} />
       ))}
     </svg>
   )

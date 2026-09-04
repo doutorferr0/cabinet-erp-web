@@ -35,29 +35,25 @@ import zlib
 from pathlib import Path
 
 # As famílias da identidade, com o papel de cada uma — quatro até a fusão v5 r3,
-# CINCO desde que o display condensado entrou. O PESO não vem
+# cinco com o display condensado, e **duas desde a 2.0** (#469). O PESO não vem
 # escrito aqui: sai dos `@import` do `src/index.css`, que é a lista do que a
 # aplicação de fato baixa.
 #
 # A diferença é real. `tnum` é declarado por ARQUIVO, não por família, e nada
 # obriga dois pesos da mesma família a concordarem — o WOFF de cada peso tem o
-# seu próprio `GSUB`. Fixar 400 aqui media, no caso do Sora, um arquivo que o
-# navegador nunca pede: o CSS importa **600 e 700**, e 400 não está entre eles.
-# (Hoje os dois dão o mesmo veredito; a medição é que apontava para o lugar
-# errado, e é ela que precisa continuar certa quando a família mudar.)
+# seu próprio `GSUB`. Fixar 400 aqui já mediu, na sans de títulos da 1.5, um
+# arquivo que o navegador nunca pedia: o CSS importava 600 e 700.
+#
+# **A terceira família da 2.0 não entra nesta lista, e a ausência é a regra.**
+# A Gambarino é `@font-face` próprio sobre um `woff2` de `public/fonts/`, não
+# pacote `@fontsource` — este script mede o que vem por `@import "@fontsource/…"`,
+# que é o que ele sabe localizar em `node_modules`. E a régua §Hierarquia a
+# proíbe onde a medição importaria: Gambarino nunca entra em tabela, nunca em
+# botão e nunca abaixo de 20px. Dígito que se soma ou se compara é `--t-dado` /
+# `--t-dado-meta`, e esses são mono.
 FAMILIAS = [
-    ("Inter", "corpo (--font-sans)", "inter"),
-    ("Sora", "títulos (--font-display)", "sora"),
-    ("Newsreader", "nome próprio (--font-nome)", "newsreader"),
-    ("PT Mono", "meta e número grande (--font-mono)", "pt-mono"),
-    # A QUINTA, e ela chegou depois desta lista: a fusão v5 r3 trouxe o display
-    # condensado para o nome do documento e o número-herói (issue #236, decisão
-    # do user sobre o teto de quatro famílias). Ficou dois dias fora da medição
-    # — ver `familias_nao_medidas`, que existe por causa disto.
-    ("Bebas Neue", "display condensado (--font-display-condensada)", "bebas-neue"),
-    # REFACE 2.0 (fundação, 2026-09-02): a mono nova. Substitui PT Mono como
-    # `--font-mono` em D1 (#469); até lá as duas coexistem e as duas são medidas.
-    ("JetBrains Mono", "dado: id, data, valor (--font-mono 2.0)", "jetbrains-mono"),
+    ("Inter", "interface (--font-sans)", "inter"),
+    ("JetBrains Mono", "dado (--font-mono)", "jetbrains-mono"),
 ]
 
 RAIZ = Path(__file__).resolve().parents[2]

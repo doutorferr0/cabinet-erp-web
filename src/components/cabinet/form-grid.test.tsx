@@ -284,9 +284,9 @@ describe('FormGrid — zona de dinheiro nos totais', () => {
 /**
  * A VOZ da coluna. A célula editável é um `<input>`, e `<input>` não aceita
  * filho — `<Nome>` e `<Produto>` não entram aqui. Sem a prop, a mesma
- * descrição de produto que a listagem mostra em Sora aparecia em Inter dentro
- * da grade do documento, e a regra semântica virava "vale onde é texto, não
- * vale onde é campo".
+ * descrição de produto que a listagem mostra na voz de O QUÊ aparecia em Inter
+ * dentro da grade do documento, e a regra semântica virava "vale onde é texto,
+ * não vale onde é campo".
  */
 describe('FormGrid — voz da coluna', () => {
   function HarnessDeVoz() {
@@ -310,7 +310,7 @@ describe('FormGrid — voz da coluna', () => {
     )
   }
 
-  it('produto fala em Sora, nome em serifada, e o resto continua em UI', () => {
+  it('produto e nome falam nas vozes próprias, e o resto continua em UI', () => {
     render(<HarnessDeVoz />)
 
     expect(screen.getByLabelText(/Descrição do Produto/).className).toContain('font-display')

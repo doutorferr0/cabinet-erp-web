@@ -181,10 +181,17 @@ describe('listagem de produtos', () => {
     renderRoute('/cadastros/produtos', servidorDeProdutos())
 
     await screen.findByText('VERTZ')
-    expect(screen.queryByRole('button', { name: /Marca/ })).toBeNull()
-    expect(screen.queryByRole('button', { name: /Fábrica/ })).toBeNull()
+    // A pergunta é sobre o CABEÇALHO DA TABELA, e por isso ela é feita dentro
+    // dele. Fora, `/Marca/` casa os botões de favoritar da sidebar
+    // (`aria-label="Marcar Dashboard"`, D4) — a busca global achava dois
+    // "Marca" e reprovava com "found multiple elements", que é o oposto do que
+    // este caso afirma. Escopo em vez de regex mais fechada: o que se quer
+    // dizer é "neste cabeçalho não há botão", não "não há esta string na tela".
+    const cabecalho = within(screen.getByRole('table')).getAllByRole('rowgroup')[0]
+    expect(within(cabecalho).queryByRole('button', { name: /Marca/ })).toBeNull()
+    expect(within(cabecalho).queryByRole('button', { name: /Fábrica/ })).toBeNull()
     // Contraprova: a coluna que a whitelist ACEITA continua clicável.
-    expect(screen.getByRole('button', { name: /Nosso Código/ })).toBeInTheDocument()
+    expect(within(cabecalho).getByRole('button', { name: /Nosso Código/ })).toBeInTheDocument()
   })
 
   // A whitelist do servidor é `code`/`description`/`active`: mandar o nome em

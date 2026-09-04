@@ -9,6 +9,12 @@ Tudo aqui foi medido por `git grep <ref>` e por um merge serial de ensaio numa w
 descartável. **Nenhum número foi copiado de issue ou de relato de PR** — os relatos são de quando
 foram escritos, e a rodada mudou embaixo deles.
 
+**O merge serial começou durante a sessão** e chegou em D7 (`b8f2939`) enquanto este arquivo era
+escrito. As medições das seções 2–6 são de antes disso e continuam valendo como retrato do que as
+branches contêm — nenhuma delas depende do estado da base. A §7 é posterior e só existe porque o
+merge andou. **Não copie os números daqui sem remedir:** este arquivo não roda, então envelhece
+calado, e a rodada já provou que muda de hora em hora.
+
 ## 1. Como remedir
 
 O ensaio de merge está em `scripts/` de ninguém: é um `git worktree add --detach origin/design/2.0`
@@ -286,7 +292,59 @@ a unificação aqui é de **cópia**, não de API — e depende de o sujeito ser
 `acoesDeLinha` (5) é conceito distinto de `acoesDeSelecao` (15) e fica; renomear o segundo para
 `acoesDeLote` deixa o par mais legível, que é metade do motivo da renomeação.
 
-## 7. O que D37 não pode fazer antes do merge
+## 7. A base ficou VERMELHA no merge de D3, e ninguém viu
+
+Achado durante a espera, e o mais caro do documento: **`design/2.0` está com a suíte vermelha desde
+o merge de D3 (PR #505)**, e como o CI de cada PR da rodada roda contra o merge com a base, **toda
+PR seguinte herda o vermelho**. O sintoma chegou por aqui: o `check` desta PR reprovou com um diff
+que era um arquivo `.md`.
+
+Bissecção sobre os sete merges, rodando só os dois arquivos afetados:
+
+| commit | merge | suíte |
+|---|---|---|
+| `ef64e03` | (fundação) | 2 passed |
+| `7c87374` | D1 tokens | 2 passed |
+| `a7a4742` | D2 controles | 2 passed |
+| `46886b8` | **D3 badge/money** | **2 failed** |
+| `0a47dff` … `b36660f` | D4, D5, D6, D7 | 2 failed |
+
+**Não é conflito semântico:** rodando `origin/design/d3-badge-money` sozinha, sem D1 e sem D2, os
+mesmos testes já falham. A branch foi mergeada vermelha. **E não houve descuido de quem mergeou —
+não havia o que ver:** `gh pr checks 505` lista **só os dois Cloudflare Pages**, que rodam
+`tsc -b && vite build` e não a suíte; a API não devolve **nenhum** run do Actions para a branch. O
+job `check` nunca existiu naquela PR. É a dívida que `ef64e03` ("PRs da rodada rodavam sem CI") foi
+fechar, e D3 é anterior a ela.
+
+São três defeitos de naturezas diferentes, e vale separá-los porque só um é "teste velho":
+
+1. **`selo.test.tsx` × 2 — teste que envelheceu com o componente.** D3 trocou `bg-card` por
+   `bg-[var(--n-0)]` e `shadow-el1` por `shadow-[var(--hard-1)]`, e não atualizou as asserções.
+   Conserto: as asserções passam a cobrar os tokens 2.0.
+2. **`produto-form.test.tsx:162` — promessa escrita e não cumprida.** O comentário de `badge.tsx`
+   declara que *"os aliases (`Stamp`, `CelulaAtivo`) sobrescrevem `data-slot`/`data-tom` para não
+   quebrar quem os consulta"*. `Stamp` cumpre; **`CelulaAtivo` não** — saía como
+   `data-slot="badge"`, e o teste, que consulta `[data-slot="stamp"]` desde a 1.x (quando a coluna
+   era um `Stamp`), parou de achar a célula. Conserto **no componente, não no teste**: o alias
+   passa a sobrescrever, que é o que a própria peça promete. O slot nomeia o PAPEL — "o selo de
+   estado desta linha" —, não a peça que o desenha.
+3. **`produto-form.test.tsx:184` — conflito semântico de verdade, e este é de D4.** O caso afirma
+   que a coluna `Marca` não é ordenável, perguntando `queryByRole('button', { name: /Marca/ })`
+   na tela inteira. D4 pôs botões de favoritar na sidebar com `aria-label="Marcar Dashboard"`,
+   `"Marcar Movimentação"` … — a regex frouxa passou a casar dois, e o caso morre com *"found
+   multiple elements"*, que é o oposto do que ele afirma. **Nenhuma das duas PRs errou sozinha.**
+   Conserto: a pergunta é sobre o cabeçalho da tabela, então é feita **dentro dele** — escopo, não
+   regex mais fechada, porque o que se quer dizer é "neste cabeçalho não há botão", não "esta
+   string não existe na tela".
+
+Este é o exemplo mais limpo do que uma passada de consistência serve: **os três defeitos passam por
+qualquer revisão de PR isolada.** O primeiro só aparece rodando a suíte que a PR não tinha; o
+segundo é uma frase de comentário contra uma linha de código no mesmo arquivo; o terceiro só existe
+quando duas PRs que não se tocam estão na mesma árvore.
+
+Consertados nesta PR — é `atualizar testes` do DoD, e desbloqueia as 23 PRs restantes da rodada.
+
+## 8. O que D37 não pode fazer antes do merge
 
 Registrado porque a tentação é grande e o estrago é caro: os greps do DoD **já acham 136 `text-[`
 e 167 `border-2` na base pura**, e essas ocorrências são o código 1.x que as 30 PRs abertas estão

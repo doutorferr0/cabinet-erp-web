@@ -4,8 +4,8 @@ import type * as React from 'react'
 /**
  * ESTADO VAZIO — a peça que fala quando não há o que mostrar.
  *
- * **Reface 2.0 (D29): o vazio perdeu o ornamento.** Até a 1.x cada vazio
- * pousava um `Ornamento` de 96 a 128px no `EmptyMedia` — um desenho grande,
+ * **Reface 2.0 (D29): o vazio perdeu o desenho de acervo.** Até a 1.x cada
+ * vazio pousava um shape de 96 a 128px no `EmptyMedia` — um desenho grande,
  * colorido e diferente por situação. Eram seis shapes para dizer seis vezes a
  * mesma coisa ("não há nada aqui"), e o desenho ficava mais alto e mais saturado
  * que a frase que de fato informa e que a ação que de fato resolve. O 2.0 troca

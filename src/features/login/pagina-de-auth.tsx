@@ -1,10 +1,10 @@
+import { Forma } from '@/components/cabinet/forma'
 import { Marca } from '@/components/cabinet/marca'
-import { Ornamento } from '@/components/cabinet/ornamento'
 
 /**
  * A PÁGINA DIVIDIDA das quatro telas de credencial (Reface 2.0, D28).
  *
- * Esquerda é BANCADA: marca, ornamento e o claim — quem chega aqui ainda não
+ * Esquerda é BANCADA: marca, a forma em três níveis e o claim — quem chega aqui ainda não
  * tem sistema para navegar, então o lado que não pede nada é o que diz de que
  * produto se trata. Direita é a folha rebaixada com UM card, e é lá que mora
  * todo o controle.
@@ -23,6 +23,14 @@ import { Ornamento } from '@/components/cabinet/ornamento'
  * browser não faz fallback porque o glifo existe, só não tem o sinal. Medido em
  * captura 3× nos dois temas; reportado na #469, que é a dona da fonte. Enquanto
  * durar, título em Gambarino evita palavra com ç.
+ *
+ * **A casa em TRÊS níveis é a marca em tamanho de bancada (D35).** A gramática é
+ * a mesma do resto do sistema (contorno duplo concêntrico), e aqui ela ganha o
+ * nível do meio, que nenhuma outra forma tem: é o login que mostra a marca
+ * inteira, e é dela que as sete formas de módulo derivam. Um tint só, em três
+ * opacidades (18 · 55 · cheio) — o mockup pinta os três anéis com matizes
+ * diferentes, e três matizes numa peça de identidade dariam a mesma leitura de
+ * "três coisas" que o acervo de 16 desenhos dava.
  *
  * §Hierarquia: DOIS Gambarinos, e são os dois permitidos — `t-display` no claim
  * (a régua nomeia "claim do login" como uso dele) e `t-registro` no título do
@@ -53,10 +61,11 @@ export function PaginaDeAuth({
 
         {/* Sangra pela direita de propósito: forma cortada pela borda lê como
             textura da bancada, forma inteira e centrada leria como ilustração. */}
-        <Ornamento
-          shape="dashboard"
-          tom="icone"
+        <Forma
+          tipo="casa"
+          niveis={3}
           tamanho={360}
+          tint="--mod-hoje"
           className="pointer-events-none absolute top-20 -right-16 text-[color:var(--n-900)] opacity-90"
         />
 

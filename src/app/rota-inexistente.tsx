@@ -1,4 +1,4 @@
-import { Ornamento } from '@/components/cabinet/ornamento'
+import { Forma } from '@/components/cabinet/forma'
 import { buttonVariants } from '@/components/ui/button'
 import { Empty, EmptyContent, EmptyDescription, EmptyMedia } from '@/components/ui/empty'
 import { Link } from '@tanstack/react-router'
@@ -9,20 +9,12 @@ import { Link } from '@tanstack/react-router'
  * Sem isto o TanStack Router mostra a mensagem crua dele, que fala de rota e de
  * árvore — vocabulário de quem escreveu o roteador, não de quem opera o sistema.
  *
- * ## O único estado que MANTÉM ornamento (D29)
+ * ## A casa da marca, em rose
  *
- * A D29 tirou o desenho de todos os outros: no vazio de listagem e na falha de
- * painel, o ornamento de 96/128px era o elemento mais alto de um bloco que mora
- * dentro de uma tela cheia de outras coisas, e ganhava da frase e da tecla.
- * Aqui não há outra coisa — o estado É a tela inteira, e o desenho é o que
- * impede que um endereço errado pareça um sistema quebrado. Reduzido de 128
- * para 72: continua sendo a primeira coisa que se vê, sem ser a única.
- *
- * A D28 já passou pelo ornamento e ele deixou de ser desenho de acervo: virou
- * UMA forma — os anéis concêntricos do login —, e o `shape` escolhe o matiz, não
- * o traço. Isso muda o argumento acima para melhor: o que o 404 mostra agora é a
- * MESMA marca que a tela de entrada mostra, em vermelho. Quem chegou a um
- * endereço que não existe vê a casa do sistema, não um pictograma de avaria.
+ * É a MESMA forma que a tela de entrada mostra, tingida de vermelho: quem chegou
+ * a um endereço que não existe vê a casa do sistema, não um pictograma de
+ * avaria. Ela é `static` — o 404 não está carregando nada, e forma que respira
+ * aqui prometeria que algo ainda vai chegar.
  *
  * ## Gambarino, e é ele que gasta o da tela
  *
@@ -40,7 +32,7 @@ export function RotaInexistente() {
   return (
     <Empty className="py-16">
       <EmptyMedia className="[&_svg]:size-auto">
-        <Ornamento shape="rota-inexistente" tom="erro" tamanho={72} />
+        <Forma tipo="casa" tamanho={120} tint="--rose-400" className="text-foreground" />
       </EmptyMedia>
       <div className="flex max-w-sm flex-col items-center gap-1.5">
         <h1 className="t-pagina">Este endereço não existe</h1>

@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils'
  * o degrau da régua. Reescrever esta peça em `--t-*` é trabalho de D8/D15.
  *
  * **É componente, e não uma classe `font-nome` solta, pelo mesmo motivo do
- * `<Ornamento>`:** nome de entidade aparece em formulário, célula de tabela,
+ * `<Forma>`:** nome de entidade aparece em formulário, célula de tabela,
  * combo, migalha, banda de identidade e diálogo de confirmação. Regra que
  * depende de alguém lembrar da classe falha na terceira tela — e falha MUDA,
  * porque texto na fonte errada não quebra teste nenhum.

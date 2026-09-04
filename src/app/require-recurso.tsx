@@ -1,5 +1,4 @@
 import { itemDaRota } from '@/app/navigation'
-import { Ornamento } from '@/components/cabinet/ornamento'
 import { buttonVariants } from '@/components/ui/button'
 import {
   Empty,
@@ -13,6 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useEmpresasDaSessao } from '@/data/empresas-api'
 import { useRecursosDaEmpresa } from '@/data/recursos-da-empresa'
 import { Link, useRouterState } from '@tanstack/react-router'
+import { Building2 } from 'lucide-react'
 
 /**
  * Guarda de RECURSO: tela de módulo que a empresa ativa não opera não renderiza.
@@ -44,7 +44,7 @@ export function RequireRecurso({ children }: { children: React.ReactNode }) {
 /**
  * Não é erro e não é 404: o endereço existe, a empresa é que não o opera.
  *
- * Por isso o ornamento é o da EMPRESA (soft blue), não o vermelho do 404 nem o
+ * Por isso o sinal é o da EMPRESA (soft blue), não o vermelho do 404 nem o
  * tomate da indisponibilidade de rede — a frase que a tela precisa dizer é
  * "isto é sobre em que empresa você está", e a saída oferecida é justamente
  * trocar de empresa, no rodapé da barra lateral.
@@ -56,7 +56,7 @@ function RecursoIndisponivel({ titulo }: { titulo: string }) {
   return (
     <Empty className="py-16">
       <EmptyMedia>
-        <Ornamento shape="empresa" tom="empresa" tamanho={128} />
+        <Building2 className="text-empresa" />
       </EmptyMedia>
       <EmptyHeader>
         <EmptyTitle>{titulo} não faz parte desta empresa</EmptyTitle>

@@ -13,7 +13,12 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 beforeEach(redefinirInbox)
 afterEach(redefinirInbox)
 
-const lista = () => within(screen.getByRole('list'))
+// Escopado pela região da caixa (`aria-label` começa com 'Caixa de entrada'):
+// desde a barra única da D4 há outras listas na tela (grupos da navegação).
+const lista = () =>
+  within(
+    screen.getByRole('region', { name: /^Caixa de entrada/ }).querySelector('ul') as HTMLElement,
+  )
 
 describe('caixa de entrada', () => {
   it('abre em Não lidas e mostra só o que ainda pede trabalho', async () => {
@@ -84,7 +89,9 @@ describe('caixa de entrada', () => {
     await user.click(await screen.findByRole('button', { name: 'Marcar tudo como lido' }))
 
     expect(await screen.findByText(/A caixa está limpa/)).toBeInTheDocument()
-    expect(screen.queryByRole('list')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('region', { name: /^Caixa de entrada/ }).querySelector('ul'),
+    ).not.toBeInTheDocument()
     // Zero não vira "0 não lidas": a ausência do contexto já é a informação.
     expect(screen.queryByText(/não lidas/)).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Marcar tudo como lido' })).toBeDisabled()

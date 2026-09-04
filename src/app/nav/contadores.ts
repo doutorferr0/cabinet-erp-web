@@ -1,7 +1,7 @@
 import { listTasks } from '@/api/gerado'
 import type { TaskDto } from '@/api/gerado'
 import { type RespostaDaApi, dadosOuErro } from '@/data/api-provider'
-import { NOTIFICACOES_MOCK } from '@/mocks/notificacoes'
+import { useNaoLidasDoInbox } from '@/features/inbox/estado-do-inbox'
 import { useQuery } from '@tanstack/react-query'
 
 /**
@@ -61,7 +61,8 @@ export function useContadoresNav(): ContadoresNav {
    *
    * TODO(contract): D11 publica o agregado; até lá isto é tabela local.
    */
-  const caixaDeEntrada = NOTIFICACOES_MOCK.filter((n) => !n.lida).length
+  // D7: a mesma fonte do sino — store da caixa de entrada.
+  const caixaDeEntrada = useNaoLidasDoInbox()
 
   return {
     minhasTarefas: tarefas.data?.length,

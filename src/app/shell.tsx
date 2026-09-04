@@ -1,12 +1,11 @@
 import { Appbar } from '@/app/appbar'
-import { GavetaDeNotificacoes } from '@/app/gaveta-notificacoes'
 import { moduloDaRota } from '@/app/modulo'
 import { SidebarNav } from '@/app/nav/sidebar-nav'
 import { PageFrame } from '@/app/page-frame'
 import { PaletaDeComandos } from '@/app/paleta-de-comandos'
 import { RequireRecurso } from '@/app/require-recurso'
-import { NOTIFICACOES_MOCK } from '@/mocks/notificacoes'
-import { useRouterState } from '@tanstack/react-router'
+import { useNaoLidasDoInbox } from '@/features/inbox/estado-do-inbox'
+import { useNavigate, useRouterState } from '@tanstack/react-router'
 import { useState } from 'react'
 
 /**
@@ -38,17 +37,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { location } = useRouterState()
   const modulo = moduloDaRota(location.pathname)
 
-  // Notificação é CASCA nesta fatia — dado de mock local, sem `src/data/` por
-  // trás (não há `/api/notifications` no contrato — §@casca-global). Estado
-  // vive no shell porque é ele que também guarda se a gaveta está aberta; as
-  // duas coisas nascem e morrem juntas com a navegação da sessão.
-  const [notificacoes, setNotificacoes] = useState(NOTIFICACOES_MOCK)
-  const [gavetaAberta, setGavetaAberta] = useState(false)
+  // A CAIXA DE ENTRADA é rota (D7): o contador do sino vem do store de módulo
+  // (`features/inbox/estado-do-inbox.ts`) e o sino NAVEGA para `/inbox` — a
+  // gaveta que empurrava o conteúdo saiu. Merge D5+D7 pelo Cowork, 2026-09-03.
+  const navigate = useNavigate()
+  const naoLidas = useNaoLidasDoInbox()
   // A paleta é do SHELL, não da appbar nem da barra: ela está em toda rota e o
-  // `Ctrl+K` precisa valer com o foco em qualquer lugar. Montá-la dentro de
-  // quem a abre a amarraria a um dos dois botões que a chamam.
+  // `Ctrl+K` precisa valer com o foco em qualquer lugar.
   const [paletaAberta, setPaletaAberta] = useState(false)
-  const naoLidas = notificacoes.filter((n) => !n.lida).length
 
   return (
     <div className="flex min-h-svh w-full">
@@ -61,7 +57,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             tema). A paleta (⌘K) mora na barra lateral (D4). Merge D4+D5 pelo
             Cowork em 2026-09-03: o rastro provisório que a D4 desenhava aqui
             saiu — a migalha da appbar é a mesma fonte. */}
-        <Appbar naoLidas={naoLidas} aoAbrirNotificacoes={() => setGavetaAberta(true)} />
+        <Appbar
+          naoLidas={naoLidas}
+          aoAbrirNotificacoes={() => void navigate({ to: '/inbox' as never })}
+        />
 
         {/* A área de conteúdo é Papel COM a grade de 52px; a folha (PageFrame)
             pousa opaca por cima (Regra da Grade de Fundo).
@@ -85,18 +84,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      {/* Coluna IRMÃ do conteúdo, dentro do mesmo flex — é isso que faz a
-          gaveta EMPURRAR ao abrir, em vez de flutuar por cima dele (decisão do
-          user, §@casca-global: "não quero que sobreponha, e sim empurre"). */}
       <PaletaDeComandos aberta={paletaAberta} onOpenChange={setPaletaAberta} />
-      <GavetaDeNotificacoes
-        aberta={gavetaAberta}
-        onOpenChange={setGavetaAberta}
-        notificacoes={notificacoes}
-        aoMarcarLida={(id) =>
-          setNotificacoes((atual) => atual.map((n) => (n.id === id ? { ...n, lida: !n.lida } : n)))
-        }
-      />
     </div>
   )
 }

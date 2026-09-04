@@ -10,16 +10,19 @@ describe('CelulaAtivo', () => {
     expect(screen.getByText('Ativo')).toBeInTheDocument()
   })
 
-  it('inativo é o carimbo ANULADO, não o preenchido', () => {
-    render(<CelulaAtivo ativo={false} />)
-    const carimbo = screen.getByText('Inativo')
-    // `void` é o tom vazado. Preencher o inativo faria a lista gritar
-    // justamente a linha que saiu de circulação.
-    expect(carimbo).toHaveAttribute('data-tom', 'void')
+  it('ativo é o tom bom', () => {
+    render(<CelulaAtivo ativo />)
+    expect(screen.getByText('Ativo')).toHaveAttribute('data-badge-tom', 'ok')
   })
 
-  it('ativo usa o tom preenchido', () => {
-    render(<CelulaAtivo ativo />)
-    expect(screen.getByText('Ativo')).toHaveAttribute('data-tom', 'done')
+  it('inativo é MUDO, não vermelho', () => {
+    render(<CelulaAtivo ativo={false} />)
+    const badge = screen.getByText('Inativo')
+    // A 1.x mandava inativo → `void`, o tom do anulado. Numa listagem de
+    // cadastros vermelho é a cor do que exige AÇÃO, e um fornecedor que a
+    // empresa parou de usar não exige nenhuma: a coluna pintava de alarme uma
+    // condição administrativa banal. `mut` é sair de circulação — silêncio.
+    expect(badge).toHaveAttribute('data-badge-tom', 'mut')
+    expect(badge).not.toHaveAttribute('data-badge-tom', 'bad')
   })
 })

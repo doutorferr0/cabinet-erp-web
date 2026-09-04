@@ -1700,7 +1700,14 @@ export function VitraDataTable<T>({
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    // O PAINEL da listagem (mockup, aba Listagem): UMA caixa de tinta com sombra
+    // dura, e dentro dela as zonas — visões (tint do módulo), barra de filtro,
+    // grade, rodapé — separadas por régua n-300. Decisão do user (2026-09-04):
+    // "não enxergo as divisões"; a caixa era n-300 sobre n-300 e sumia.
+    <div
+      data-slot="painel-da-listagem"
+      className="flex flex-col overflow-clip rounded-panel border-[1.5px] border-[var(--n-900)] bg-card shadow-[var(--hard-2)]"
+    >
       {/* Não desenha nada: só mantém o endereço contando a mesma história que a
           barra. Fica sob `consultaNoEndereco` porque a janela de busca monta a
           MESMA tabela sobre a tela de trás. */}
@@ -1905,11 +1912,11 @@ export function VitraDataTable<T>({
               ))}
             </div>
           ) : query.isError ? (
-            <div className="rounded-data border border-input bg-card py-8 shadow-macia">
+            <div className="bg-card py-10">
               <FalhaDaConsulta erro={query.error} aoTentar={() => query.refetch()} />
             </div>
           ) : rows.length === 0 ? (
-            <div className="rounded-data border border-input bg-card py-8 shadow-macia">
+            <div className="bg-card py-10">
               <VazioDaConsulta
                 q={state.q}
                 temFiltro={temFiltro}
@@ -1935,11 +1942,7 @@ export function VitraDataTable<T>({
            caixa que não rola, ou seja, parado. `clip` recorta igual e não cria
            scrollport, então a fixação passa a valer contra a rolagem da PÁGINA,
            que é onde a listagem rola de verdade. */
-        <div
-          data-slot="grade"
-          data-densidade={densidade}
-          className="overflow-clip rounded-data border border-input bg-card shadow-macia"
-        >
+        <div data-slot="grade" data-densidade={densidade} className="overflow-clip bg-card">
           {/* `tabular-nums` na TABELA inteira, e não coluna a coluna.
               Medido em `docs/design/medir-tabular.py`: no Inter do corpo o `1`
               avança 833/2048 de em e o `4`, 1323 — numa coluna de valores isso
@@ -1997,7 +2000,7 @@ export function VitraDataTable<T>({
                 tint separa, então não há borda por baixo dele. O mockup desenha
                 as duas (tint + hairline); a régua da rodada é explícita
                 ("header separado por tint n-50, não por borda") e vence. */}
-            <TableHeader className="sticky top-0 z-10 bg-surface-sunken">
+            <TableHeader className="sticky top-0 z-10 bg-[var(--n-100)] [&_th]:h-10 [&_th]:border-b [&_th]:border-input [&_th]:text-[var(--n-700)]">
               {table.getHeaderGroups().map((headerGroup, hgIndex, headerGroups) => (
                 // Cabeçalho agrupado: fileira de grupo separada das sub-colunas
                 // por Fio (a sublinha forte fica na fileira das folhas).
@@ -2335,7 +2338,7 @@ export function VitraDataTable<T>({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 border-t border-input bg-[var(--n-50)] px-[var(--s-3)] py-2">
         {/* O rodapé responde DUAS perguntas, e por isso tem dois lados: à
             esquerda "o que estou vendo e quanto isso soma"; à direita "como
             ando por dentro disso". Antes havia só a contagem, e a soma da

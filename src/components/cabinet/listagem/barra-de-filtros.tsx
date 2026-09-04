@@ -156,7 +156,7 @@ export function BarraDeFiltros({
       data-slot="barra-de-filtros"
       className={cn(
         'flex flex-wrap items-center gap-[var(--s-2)] gap-y-[var(--s-2)]',
-        'border-rule-hair border-b px-[var(--s-3)] py-2.5',
+        'border-input border-b bg-card px-[var(--s-3)] py-2.5',
         '[&_button]:whitespace-nowrap',
       )}
     >

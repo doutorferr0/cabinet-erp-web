@@ -296,7 +296,7 @@ export function AbasDeConsulta({
       {/* Hairline, não a régua de 2px: a tira e a barra de filtro são regiões do
           MESMO card, e duas linhas grossas empilhadas fariam a barra parecer um
           card dentro do card (§Hierarquia, separação 2). */}
-      <div className="flex flex-wrap items-center gap-0.5 border-rule-hair border-b px-2.5 pt-[var(--s-2)]">
+      <div className="flex flex-wrap items-center gap-0.5 border-input border-b bg-[var(--modulo-02,var(--n-50))] px-[var(--s-3)] pt-[var(--s-2)]">
         <div role="tablist" aria-label="Visões salvas" className="flex flex-wrap items-center">
           <Aba
             ativa={abaAtiva === ABA_TODOS}

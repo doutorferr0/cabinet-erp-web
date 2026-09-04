@@ -32,6 +32,7 @@ import { Route as ComprasPrevisaoRouteImport } from './routes/compras/previsao'
 import { Route as ConfigIndexRouteImport } from './routes/config/index'
 import { Route as ConfigListasRouteImport } from './routes/config/listas'
 import { Route as ConfigUsuariosRouteImport } from './routes/config/usuarios'
+import { Route as CrmIndexRouteImport } from './routes/crm/index'
 import { Route as CrmMotivosRouteImport } from './routes/crm/motivos'
 import { Route as EstoqueIndexRouteImport } from './routes/estoque/index'
 import { Route as EstoqueMovimentacaoRouteImport } from './routes/estoque/movimentacao'
@@ -179,6 +180,11 @@ const ConfigUsuariosRoute = ConfigUsuariosRouteImport.update({
   id: '/config/usuarios',
   path: '/config/usuarios',
   getParentRoute: () => rootRouteImport,
+} as any)
+const CrmIndexRoute = CrmIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CrmRoute,
 } as any)
 const CrmMotivosRoute = CrmMotivosRouteImport.update({
   id: '/motivos',
@@ -381,6 +387,7 @@ export interface FileRoutesByFullPath {
   '/cadastros/': typeof CadastrosIndexRoute
   '/compras/': typeof ComprasIndexRoute
   '/config/': typeof ConfigIndexRoute
+  '/crm/': typeof CrmIndexRoute
   '/estoque/': typeof EstoqueIndexRoute
   '/vendas/': typeof VendasIndexRoute
   '/cadastros/clientes/$clienteId': typeof CadastrosClientesClienteIdRoute
@@ -414,7 +421,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/agenda': typeof AgendaRoute
   '/boletim': typeof BoletimRoute
-  '/crm': typeof CrmRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/definir-senha': typeof DefinirSenhaRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
@@ -434,6 +440,7 @@ export interface FileRoutesByTo {
   '/cadastros': typeof CadastrosIndexRoute
   '/compras': typeof ComprasIndexRoute
   '/config': typeof ConfigIndexRoute
+  '/crm': typeof CrmIndexRoute
   '/estoque': typeof EstoqueIndexRoute
   '/vendas': typeof VendasIndexRoute
   '/cadastros/clientes/$clienteId': typeof CadastrosClientesClienteIdRoute
@@ -492,6 +499,7 @@ export interface FileRoutesById {
   '/cadastros/': typeof CadastrosIndexRoute
   '/compras/': typeof ComprasIndexRoute
   '/config/': typeof ConfigIndexRoute
+  '/crm/': typeof CrmIndexRoute
   '/estoque/': typeof EstoqueIndexRoute
   '/vendas/': typeof VendasIndexRoute
   '/cadastros/clientes/$clienteId': typeof CadastrosClientesClienteIdRoute
@@ -551,6 +559,7 @@ export interface FileRouteTypes {
     | '/cadastros/'
     | '/compras/'
     | '/config/'
+    | '/crm/'
     | '/estoque/'
     | '/vendas/'
     | '/cadastros/clientes/$clienteId'
@@ -584,7 +593,6 @@ export interface FileRouteTypes {
     | '/'
     | '/agenda'
     | '/boletim'
-    | '/crm'
     | '/dashboard'
     | '/definir-senha'
     | '/esqueci-senha'
@@ -604,6 +612,7 @@ export interface FileRouteTypes {
     | '/cadastros'
     | '/compras'
     | '/config'
+    | '/crm'
     | '/estoque'
     | '/vendas'
     | '/cadastros/clientes/$clienteId'
@@ -661,6 +670,7 @@ export interface FileRouteTypes {
     | '/cadastros/'
     | '/compras/'
     | '/config/'
+    | '/crm/'
     | '/estoque/'
     | '/vendas/'
     | '/cadastros/clientes/$clienteId'
@@ -876,6 +886,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/config/usuarios'
       preLoaderRoute: typeof ConfigUsuariosRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/crm/': {
+      id: '/crm/'
+      path: '/'
+      fullPath: '/crm/'
+      preLoaderRoute: typeof CrmIndexRouteImport
+      parentRoute: typeof CrmRoute
     }
     '/crm/motivos': {
       id: '/crm/motivos'
@@ -1162,6 +1179,7 @@ const ComprasRouteWithChildren =
 
 interface CrmRouteChildren {
   CrmMotivosRoute: typeof CrmMotivosRoute
+  CrmIndexRoute: typeof CrmIndexRoute
   CrmFunilFunilIdRoute: typeof CrmFunilFunilIdRoute
   CrmFunisFunilIdRoute: typeof CrmFunisFunilIdRoute
   CrmOportunidadesOportunidadeIdRoute: typeof CrmOportunidadesOportunidadeIdRoute
@@ -1171,6 +1189,7 @@ interface CrmRouteChildren {
 
 const CrmRouteChildren: CrmRouteChildren = {
   CrmMotivosRoute: CrmMotivosRoute,
+  CrmIndexRoute: CrmIndexRoute,
   CrmFunilFunilIdRoute: CrmFunilFunilIdRoute,
   CrmFunisFunilIdRoute: CrmFunisFunilIdRoute,
   CrmOportunidadesOportunidadeIdRoute: CrmOportunidadesOportunidadeIdRoute,

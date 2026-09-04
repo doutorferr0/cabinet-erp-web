@@ -72,30 +72,17 @@ const DIVIDAS: Record<string, string> = {
   // convidaria a primeira tela de suporte a improvisar o caminho, que é o
   // defeito que a regra existe para impedir — e improvisar ali é improvisar o
   // acesso a dado de terceiro.
-  // Ficou órfã na D19 (#487), e de propósito. Ela é o SHELL 1.x da ficha de
-  // cadastro — `PageHeader` com `Alterar` forte e a calha estreita à esquerda —
-  // e a Reface 2.0 o substituiu pelo esqueleto do registro
-  // (`features/cadastro/ficha-de-registro.tsx`): cabeçalho com entidade, código
-  // e situação, coluna lateral de consulta e uma próxima ação que não é
-  // `Alterar`. O que D16 entregou DENTRO dela — `BlocoIdentidade`,
-  // `FichaDeModulos`, `IndiceDeModulos` — continua montado, pelo esqueleto novo.
-  // Não se apaga aqui porque apagar componente de zona alheia no meio da rodada
-  // é o que a regra de zonas existe para impedir; quem a remove é a D30, que é
-  // a issue de fechamento.
-  'components/cabinet/ficha/ficha-de-cadastro.tsx':
-    'órfã desde a D19 (#487): o esqueleto 2.0 é `features/cadastro/ficha-de-registro.tsx`; a D30 apaga',
   'data/suporte-api.ts':
     'órfã desde o item 6 da fundação (PR #369); religa no console de suporte, que é trilho próprio — o mock e as guardas já respondem sem ela',
-  // Nasceu órfão na D3 (#471) e o motivo é a forma da rodada, não esquecimento:
-  // as 30 issues do Reface 2.0 correm EM PARALELO a partir de `design/2.0`, com
-  // zonas de arquivo disjuntas. O consumidor que a DoD da #471 nomeia — a
-  // página de controles — é entrega da D2 (#470), que está em curso noutra
-  // branch; montá-lo aqui seria escrever no arquivo de outro agente, que é
-  // exatamente o que a §Regra de ouro proíbe. `<Badge>` e `<Money>` saíram
-  // desta mesma PR já ligados (a coluna `Ativo` e a de valor das listagens);
-  // este é o único dos três cujo lugar cai fora da zona da issue.
-  'components/cabinet/monograma.tsx':
-    'órfão desde a #471 (D3); a página de controles da D2 o monta — é o consumidor que a DoD da #471 declara',
+  // Ficou órfão AQUI, e é efeito direto do hub: `/vendas/` era o único
+  // consumidor, e o estado vazio que ele decorava ("Escolha uma opção no menu
+  // de Vendas") deixou de existir — a rota-índice agora TEM conteúdo. Não se
+  // apaga porque `stipple.tsx` é peça do desenho declarada no DESIGN.md
+  // §Stipple e está na zona de D28, que reduz o ornamento e decide o destino
+  // dela junto com `ornamento.tsx`. Apagá-lo daqui seria tomar por D28 uma
+  // decisão de identidade visual, com a issue dela ainda aberta.
+  'components/cabinet/stipple.tsx':
+    'órfão desde o hub de módulo (D26): `/vendas/` era o único consumidor e o estado vazio dele morreu; quem decide religar ou apagar é D28 (ornamento/stipple/marca)',
 }
 
 function arquivosDe(dir: string): string[] {

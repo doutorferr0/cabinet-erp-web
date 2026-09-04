@@ -17,8 +17,9 @@ import { draggable, dropTargetForElements } from '@atlaskit/pragmatic-drag-and-d
 import { Link } from '@tanstack/react-router'
 import { Calendar, FileText, MoreHorizontal, Plus } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { type Apodrecimento, apodrecimentoDoCartao } from './apodrecimento'
+import { type Apodrecimento, apodrecimentoDoCartao, diasParado } from './apodrecimento'
 import { type ColunaDoQuadro, colunasDoQuadro, quemDoCartao, somaDaColuna } from './funil-agrupa'
+import { Monograma } from './monograma'
 import { SeloDeApodrecimento } from './selo-de-apodrecimento'
 
 /**
@@ -204,6 +205,54 @@ function destinosDoCartao(
   return [...dentroDaColuna, ...outras]
 }
 
+/**
+ * A cor da coluna — 3px no topo e o quadradinho do cabeçalho, a mesma tinta.
+ *
+ * É a única cor da coluna, e ela diz o que a ETAPA é, não em que posição do
+ * funil ela está: ganho verde, perda rosa, fluxo aberto neutro. O mockup dá um
+ * matiz por coluna para o quadro de Tarefas, onde a coluna é uma SITUAÇÃO e o
+ * arco-íris ensina a ordem; aqui as colunas são configuração da empresa e podem
+ * ser quinze — um matiz por etapa viraria decoração sem dono, que é o que a
+ * rodada proíbe.
+ *
+ * Agrupado por responsável ou origem a coluna não é etapa nenhuma e fica
+ * neutra: pintar de verde a coluna de um vendedor diria que ele é o negócio
+ * fechado.
+ */
+function corDaColuna(etapa: CrmStageDto | undefined): string {
+  if (etapa?.isWon) return 'var(--mint-400)'
+  if (etapa?.isLost) return 'var(--rose-400)'
+  return 'var(--n-400)'
+}
+
+/** O fundo da coluna: tint por natureza da etapa, folha-2 no fluxo aberto. */
+function fundoDaColuna(etapa: CrmStageDto | undefined): string {
+  if (etapa?.isWon) return 'var(--tint-mint)'
+  if (etapa?.isLost) return 'var(--tint-rose)'
+  return 'var(--n-50)'
+}
+
+/**
+ * DIAS NA ETAPA — quanto tempo o cartão está parado onde está.
+ *
+ * O número aparece SEMPRE (é o dado que o operador compara entre cartões); o
+ * realce é que é exceção. E ele tem duas fontes, que não podem falar por cima
+ * uma da outra:
+ *
+ * - **A empresa configurou `rotDays` na etapa** → quem decide é o
+ *   apodrecimento, e quem desenha é o selo, com o limite escrito (`12/7 D`).
+ *   Realçar aqui também seria dizer duas vezes a mesma coisa, e o segundo aviso
+ *   gasta o primeiro.
+ * - **A etapa não tem `rotDays`** → não há limite configurado para comparar, e
+ *   o quadro cai na régua da rodada: mais de 14 dias parado é digno de nota
+ *   (D22). É palpite razoável no lugar de silêncio, nunca no lugar do dado da
+ *   empresa.
+ */
+export function realceDosDias(dias: number, etapa: CrmStageDto | undefined): boolean {
+  if (etapa?.rotDays) return false
+  return dias > 14
+}
+
 function Cartao({
   oportunidade,
   destinos,
@@ -323,35 +372,52 @@ function Cartao({
     )
   }, [arrastavel])
 
+  const etapaDoCartao = etapas.find((e) => e.id === oportunidade.stageId)
+  const dias = diasParado(oportunidade.stageChangedAt, new Date())
+  const diasEmRealce = realceDosDias(dias, etapaDoCartao)
+
   return (
     <li
       ref={caixa}
       data-slot="cartao"
       data-arrastando={arrastando ? '' : undefined}
+      // A FOLHA sobre a coluna afundada, com traço de controle e a sombra
+      // quieta — a anatomia de card do mockup (§2.5). O hover levanta um pixel
+      // e endurece a sombra e a borda: é o único movimento do quadro, e ele diz
+      // "isto se pega", que é literalmente o que o cartão faz.
       className={cn(
-        'relative rounded-card border-2 bg-card p-2.5',
+        'relative flex flex-col gap-[var(--s-2)] rounded-[var(--r-ctrl)] border border-[var(--n-300)] bg-[var(--n-0)] p-[var(--s-3)] shadow-[var(--hard-soft)]',
+        'transition-[transform,box-shadow,border-color] duration-[var(--dur-1)] ease-[var(--ease)]',
+        'hover:-translate-x-px hover:-translate-y-px hover:border-[var(--n-900)] hover:shadow-[var(--hard-1)]',
+        'motion-reduce:transition-none motion-reduce:hover:translate-x-0 motion-reduce:hover:translate-y-0',
         // Some pela metade enquanto viaja: o cartão continua desenhado na
         // origem até o gesto terminar, e sem isto o operador vê duas cópias.
         arrastando && 'opacity-40',
         // O TINGIMENTO é o terceiro degrau, e só no fim: nada → selo → selo +
         // cartão tingido. Tingir já no aviso gastaria o sinal forte antes de o
         // prazo estourar, e aí o vermelho não significaria mais nada.
-        apodrecimento?.estado === 'apodrecido' && 'bg-zone-danger',
+        apodrecimento?.estado === 'apodrecido' && 'bg-[var(--tint-rose)]',
       )}
     >
-      {/* A MARCA DE ENCAIXE, no vão de 8px acima do cartão: traço preto de 2px,
-          que é a língua do resto do desenho. Posicionada por `absolute` de
+      {/* A MARCA DE ENCAIXE, no vão de 8px acima do cartão: traço de tinta de
+          2px, que é a língua do resto do desenho. Posicionada por `absolute` de
           propósito — um elemento no fluxo empurraria a pilha inteira para
           baixo a cada passagem do ponteiro, e o quadro tremeria. */}
       {encaixeAcima ? (
         <span
           data-slot="encaixe"
           aria-hidden="true"
-          className="absolute -top-1.5 right-0 left-0 h-0.5 bg-foreground"
+          className="absolute -top-1.5 right-0 left-0 h-0.5 bg-[var(--n-900)]"
         />
       ) : null}
 
-      <div className="flex items-start gap-1">
+      <div className="flex items-start gap-[var(--s-2)]">
+        {/* O CLIENTE ancora o cartão pela esquerda (D22): o operador varre a
+            coluna procurando de quem é o negócio antes de ler do que ele trata.
+            O nome inteiro fica logo abaixo — o monograma é reconhecimento, não
+            substituição. */}
+        {quem ? <Monograma nome={quem} papel="cliente" decorativo className="mt-px" /> : null}
+
         {/* Link do router, não `onClick` na caixa: o cartão leva a uma URL
             própria, e link preserva meio-clique, "abrir em nova aba" e o
             endereço na barra de status. Caixa inteira clicável também não é
@@ -359,7 +425,7 @@ function Cartao({
         <Link
           to="/crm/oportunidades/$oportunidadeId"
           params={{ oportunidadeId: oportunidade.id }}
-          className="flex-1 font-display font-semibold leading-tight underline-offset-2 hover:underline"
+          className="t-ui min-w-0 flex-1 underline-offset-2 hover:underline"
         >
           {oportunidade.name}
         </Link>
@@ -368,10 +434,10 @@ function Cartao({
           <Button
             variant="ghost"
             size="icon-sm"
-            className="ml-auto"
+            className="-mt-1 -mr-1 ml-auto"
             aria-label={`Ações de ${oportunidade.name}`}
           >
-            <MoreHorizontal className="text-modulo" />
+            <MoreHorizontal />
           </Button>
           <DropdownMenu placement="bottom end">
             <DropdownMenuLabel>Mover para</DropdownMenuLabel>
@@ -387,25 +453,34 @@ function Cartao({
         </DropdownMenuTrigger>
       </div>
 
-      {quem ? <p className="mt-1 text-sm text-muted-foreground">{quem}</p> : null}
+      {quem ? <p className="t-meta truncate">{quem}</p> : null}
 
-      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t pt-1.5 text-sm text-muted-foreground">
+      {/* O DADO do cartão, numa fileira só: dinheiro, prazo e o documento que
+          ele virou. Separado do título por ESPAÇO, não por linha — a fronteira
+          mais barata que resolve (§Separação), e a hairline aqui seria a
+          segunda ferramenta na mesma junta. */}
+      <div className="flex flex-wrap items-center gap-x-[var(--s-3)] gap-y-[var(--s-1)]">
         {/* Agrupado por outro campo, a coluna deixa de dizer em que etapa o
             negócio está — e sem isso o item `Mover para` do menu levaria o
             cartão para um lugar que a tela não mostra. O carimbo devolve o que
             a coluna deixou de contar. */}
         {mostraEtapa ? (
-          <span className="border-2 border-border px-1.5 font-mono text-[0.75rem] uppercase tracking-[0.06em] text-foreground">
+          <span
+            style={{ color: 'var(--n-700)' }}
+            className="t-rotulo rounded-[var(--r-chip)] bg-[var(--mut-bg)] px-[var(--s-2)] py-px"
+          >
             {oportunidade.stageName}
           </span>
         ) : null}
         {/* Dinheiro em centavos inteiros; R$ só aqui, na borda de exibição.
             `null` é "ainda não estimado" e some — zero diria outra coisa. */}
-        {valorCents === null ? null : (
-          <span className="font-mono tabular-nums text-foreground">
-            {formatMoneyBRL(valorCents)}
+        {valorCents === null ? null : <span className="t-dado">{formatMoneyBRL(valorCents)}</span>}
+        {dataPrevista ? (
+          <span className="t-dado-meta flex items-center gap-1">
+            <Calendar className="size-3.5" aria-hidden="true" />
+            {formatDateBR(dataPrevista)}
           </span>
-        )}
+        ) : null}
         {/* O vínculo com o orçamento, quando existe: o cartão diz que o
             negócio já virou documento, e leva até ele. Sem isto a conversão
             aconteceria e o quadro continuaria mostrando o mesmo cartão de
@@ -414,23 +489,44 @@ function Cartao({
           <Link
             to="/vendas/orcamentos/$orcamentoId"
             params={{ orcamentoId: oportunidade.quoteId }}
-            className="flex items-center gap-1 font-semibold text-foreground underline-offset-2 hover:underline"
+            style={{ color: 'var(--primary-text)' }}
+            className="t-ui flex items-center gap-1 underline-offset-2 hover:underline"
           >
             <FileText className="size-3.5" aria-hidden="true" />
             Orçamento
           </Link>
         ) : null}
-        {dataPrevista ? (
-          <span className="flex items-center gap-1 tabular-nums">
-            <Calendar className="size-3.5" aria-hidden="true" />
-            {formatDateBR(dataPrevista)}
-          </span>
-        ) : null}
-        {/* No fim da fileira de rodapé, e não no alto: o apodrecimento é sobre o
-            TEMPO do cartão, e mora ao lado da data prevista — não competindo
-            com o título, que é o que o operador lê primeiro. */}
-        {apodrecimento ? (
-          <SeloDeApodrecimento apodrecimento={apodrecimento} className="ml-auto" />
+      </div>
+
+      {/* O RODAPÉ é o tempo e a gente: quanto o negócio está parado, e de quem
+          ele é. Separado por hairline porque muda de assunto — deixa de falar
+          do negócio e passa a falar de quem tem de agir. */}
+      <div className="flex flex-wrap items-center gap-x-[var(--s-2)] gap-y-[var(--s-1)] border-[var(--n-200)] border-t pt-[var(--s-2)]">
+        <span
+          className={cn(
+            't-dado-meta',
+            // Realce sem cor de texto: a régua da rodada só admite três degraus
+            // de tinta, então o aviso é PÍLULA (fundo âmbar alpha + tinta
+            // n-900), a mesma anatomia da prioridade no mockup.
+            diasEmRealce && 'rounded-[var(--r-chip)] bg-[var(--warn-bg)] px-[var(--s-2)]',
+          )}
+          // A tinta por `style`: `.t-dado-meta` declara `color` fora do layer de
+          // utilities do Tailwind, e um `text-[…]` ao lado dela não pega.
+          style={diasEmRealce ? { color: 'var(--n-900)' } : undefined}
+          title={
+            diasEmRealce
+              ? `Parado há ${dias} dias. Esta etapa não tem prazo configurado; o quadro avisa acima de 14.`
+              : undefined
+          }
+        >
+          {dias} d na etapa
+        </span>
+        {/* Ao lado dos dias, e não no alto: o apodrecimento é sobre o TEMPO do
+            cartão — não compete com o título, que é o que o operador lê
+            primeiro. */}
+        {apodrecimento ? <SeloDeApodrecimento apodrecimento={apodrecimento} /> : null}
+        {oportunidade.ownerName ? (
+          <Monograma nome={oportunidade.ownerName} papel="responsavel" className="ml-auto" />
         ) : null}
       </div>
 
@@ -442,7 +538,7 @@ function Cartao({
         // ADAPTADOR passou ao `dadosOuErro` ("Falha ao mover a oportunidade."),
         // nunca o `detail`. O comentário acima descrevia a intenção; o código
         // mostrava o genérico. `mensagemDoErro` é quem cumpre a promessa.
-        <p role="alert" className="mt-1 text-[0.75rem] text-destructive">
+        <p role="alert" className="t-meta" style={{ color: 'var(--bad)' }}>
           {mensagemDoErro(mover.error, 'Falha ao mover.')}
         </p>
       ) : null}
@@ -487,69 +583,72 @@ function Coluna({
     })
   }, [etapa])
 
+  const cor = corDaColuna(etapa)
+
   return (
     <section
       ref={caixa}
       data-slot="coluna"
       data-sob-voo={encaixeNoFim ? '' : undefined}
       aria-label={coluna.titulo}
-      // A coluna é caixa própria na superfície afundada e os cartões ficam em
-      // `bg-card` por cima — é o contraste que separa o cartão da coluna. O
-      // preenchimento NÃO varia por etapa: aqui a cor já é a do módulo (o verde
-      // do CRM), e pintar cada etapa de um tom diria que etapa é módulo.
+      style={{ borderTopColor: cor, background: fundoDaColuna(etapa) }}
+      // A coluna é REGIÃO, não objeto: fundo afundado e nenhuma borda em volta
+      // (§Separação — tint separa região por natureza, e o card já é a
+      // ferramenta do cartão). Os 3px do topo são a cor da etapa, não um
+      // contorno: uma linha só, e do lado em que ela nomeia a coluna.
       className={cn(
-        'flex min-w-0 flex-col gap-2 rounded-panel border-2 bg-surface-sunken p-2.5 shadow-el1',
-        // Ganho e perda são propriedades da ETAPA, e o quadro as mostra: a
-        // coluna que fecha o negócio não é uma etapa qualquer no meio do fluxo.
-        // Agrupado por outro campo, a coluna não é etapa nenhuma e não herda a
-        // zona — pintar de verde a coluna de um vendedor diria que ele é o
-        // negócio fechado.
-        etapa?.isWon && 'bg-zone-money',
-        etapa?.isLost && 'bg-zone-warn',
-        // Um DEGRAU de elevação (§Elevação) enquanto o cartão passa por cima —
+        'flex min-w-0 flex-col gap-[var(--s-2)] rounded-[var(--r-card)] border-t-[3px] p-[var(--s-2)]',
+        // Um DEGRAU de elevação (§Separação) enquanto o cartão passa por cima —
         // nunca uma cor: aqui a cor já diz ganho e perda, e um realce colorido
         // faria o quadro dizer que a etapa mudou de natureza durante o gesto.
-        encaixeNoFim && 'shadow-el2',
+        encaixeNoFim && 'shadow-[var(--hard-1)]',
       )}
     >
-      <header className="flex items-center gap-2 rounded-card border-2 bg-card px-2 py-1.5">
-        <h3 className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em]">
-          {coluna.titulo}
-        </h3>
-        <span className="rounded-item border-2 px-1.5 font-mono text-[0.75rem] font-medium tabular-nums">
-          {cartoes.length}
-        </span>
-        {/* O total da etapa em centavos formatados, não em notação compacta: o
-            operador confere este número contra o orçamento, e "R$ 12,3 mil" não
-            se confere. */}
-        <span className="ml-auto font-mono text-[0.75rem] tabular-nums">
-          {formatMoneyBRL(somaDaColuna(cartoes))}
-        </span>
-        {/* Incluir NA COLUNA, e não um botão único no alto: o operador que abre
+      {/* DUAS linhas, e não uma: medido na tela, `Visita técnica` e `Proposta
+          enviada` viravam `Visita t…` para caber ao lado da soma. O nome da
+          etapa é o que nomeia a coluna — quem tem de ceder espaço é o número,
+          que ganha a linha de baixo inteira. */}
+      <header className="flex flex-col gap-[var(--s-1)] px-[var(--s-2)] py-[var(--s-1)]">
+        <div className="flex items-center gap-[var(--s-2)]">
+          {/* O quadradinho de cor do mockup: a mesma tinta dos 3px de cima, para
+              o cabeçalho continuar nomeado quando a coluna rolar. */}
+          <span
+            aria-hidden="true"
+            style={{ background: cor }}
+            className="size-2 shrink-0 rounded-[2px]"
+          />
+          <h3 className="t-bloco min-w-0 flex-1 truncate">{coluna.titulo}</h3>
+          <span className="t-dado-meta">{cartoes.length}</span>
+          {/* Incluir NA COLUNA, e não um botão único no alto: o operador que abre
             uma oportunidade já sabe em que etapa ela nasce, e a etapa viaja na
             URL. Um `Incluir` genérico faria escolher a etapa duas vezes.
             Só existe quando a coluna É uma etapa: numa coluna de responsável, o
             cartão novo não teria etapa nenhuma para nascer, e escolher uma por
             ele seria o `Incluir` decidindo o funil. */}
-        {etapa ? (
-          <Link
-            to="/crm/oportunidades/$oportunidadeId"
-            params={{ oportunidadeId: 'novo' }}
-            search={{ funilId: pipelineId, etapaId: etapa.id }}
-            aria-label={`Incluir oportunidade em ${etapa.name}`}
-            className="grid size-6 place-content-center rounded-item border-2 hover:bg-modulo"
-          >
-            <Plus className="size-3.5" aria-hidden="true" />
-          </Link>
-        ) : null}
+          {etapa ? (
+            <Link
+              to="/crm/oportunidades/$oportunidadeId"
+              params={{ oportunidadeId: 'novo' }}
+              search={{ funilId: pipelineId, etapaId: etapa.id }}
+              aria-label={`Incluir oportunidade em ${etapa.name}`}
+              className="grid size-[22px] shrink-0 place-content-center rounded-[var(--r-item)] text-[var(--n-500)] hover:bg-[var(--hover)] hover:text-[var(--n-900)]"
+            >
+              <Plus className="size-3.5" aria-hidden="true" />
+            </Link>
+          ) : null}
+        </div>
+        {/* O total da etapa em centavos formatados, não em notação compacta: o
+            operador confere este número contra o orçamento, e "R$ 12,3 mil" não
+            se confere. */}
+        <span className="t-dado pl-[var(--s-4)]">{formatMoneyBRL(somaDaColuna(cartoes))}</span>
       </header>
 
       {cartoes.length === 0 ? (
-        <p className="rounded-card border-2 border-dashed p-3 text-center text-sm text-muted-foreground">
+        <p className="t-meta rounded-[var(--r-ctrl)] border border-[var(--n-300)] border-dashed p-[var(--s-3)] text-center">
           Nenhuma oportunidade nesta etapa.
         </p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="flex flex-col gap-[var(--s-2)]">
           {cartoes.map((oportunidade) => (
             <Cartao
               key={oportunidade.id}
@@ -576,7 +675,7 @@ function Coluna({
           nulo, e o traço aparece onde o cartão vai parar. Só quando a coluna é
           o alvo — em cima de um cartão quem marca é o cartão. */}
       {encaixeNoFim ? (
-        <span data-slot="encaixe" aria-hidden="true" className="h-0.5 bg-foreground" />
+        <span data-slot="encaixe" aria-hidden="true" className="h-0.5 bg-[var(--n-900)]" />
       ) : null}
     </section>
   )
@@ -603,7 +702,7 @@ export function QuadroDoFunil({
 
   if (etapas.isPending) {
     return (
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(238px,1fr))] gap-4">
+      <div className="grid grid-flow-col auto-cols-[minmax(238px,1fr)] gap-[var(--s-3)] overflow-x-auto">
         {[0, 1, 2, 3].map((i) => (
           <Skeleton key={i} className="h-64 w-full" />
         ))}
@@ -631,11 +730,19 @@ export function QuadroDoFunil({
   const colunas = colunasDoQuadro(oportunidades, configuradas, agruparPor)
 
   return (
-    // `auto-fit`/`minmax`, nunca `@media`: as colunas espremem antes de quebrar
-    // em duas linhas, e a quebra reage ao espaço REAL — inclusive à gaveta de
-    // notificações encolhendo o `<main>`, que um breakpoint fixo não veria.
+    // UMA FILEIRA QUE ROLA, e não uma grade que quebra (D22).
+    //
+    // O `auto-fit`/`minmax` de antes deixava as colunas caírem para uma segunda
+    // linha — e num funil isso não é reflow, é a ORDEM se perdendo: medido na
+    // tela, `Ganho` e `Perdido` apareciam ABAIXO de `Contato`, como se o
+    // negócio fechado viesse depois do primeiro contato pela esquerda. A ordem
+    // das etapas é o que o quadro afirma; ela não pode depender da largura.
+    //
+    // Continua sem `@media`: quem decide é `auto-columns` com `minmax`, então as
+    // colunas espremem até 238px e só então a fileira rola — reagindo ao espaço
+    // REAL, inclusive à gaveta de notificações encolhendo o `<main>`.
     // `items-start`: cada coluna para onde os cartões dela param.
-    <div className="grid grid-cols-[repeat(auto-fit,minmax(238px,1fr))] items-start gap-4">
+    <div className="grid grid-flow-col auto-cols-[minmax(238px,1fr)] items-start gap-[var(--s-3)] overflow-x-auto pb-[var(--s-2)]">
       {colunas.map((coluna) => (
         <Coluna
           key={coluna.chave}

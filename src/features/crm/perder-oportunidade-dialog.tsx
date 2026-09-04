@@ -1,4 +1,4 @@
-import type { CrmOpportunityDto, CrmStageDto } from '@/api/gerado'
+import type { CrmStageDto } from '@/api/gerado'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -6,6 +6,21 @@ import { Label } from '@/components/ui/label'
 import { useMotivosDePerda, useMoverOportunidade } from '@/data/crm-api'
 import { Link } from '@tanstack/react-router'
 import { useEffect, useId, useState } from 'react'
+
+/**
+ * O que o diálogo precisa saber do negócio: quem é, e de onde ele sai.
+ *
+ * Subconjunto do `CrmOpportunityDto` — e não o DTO inteiro — porque a FICHA
+ * também abre este diálogo, e lá o registro carregado é o do formulário
+ * (`Oportunidade`), que não tem `stageName`: o nome da etapa vem da
+ * configuração do funil. Pedir o DTO obrigaria a ficha a buscar de novo o
+ * mesmo registro só para preencher uma frase.
+ */
+export interface AlvoDaPerda {
+  id: string
+  name: string
+  stageName: string
+}
 
 /**
  * PERDER O NEGÓCIO — o motivo é pedido ANTES, não cobrado depois.
@@ -45,7 +60,7 @@ export function PerderOportunidadeDialog({
   onFechar,
 }: {
   aberto: boolean
-  oportunidade: CrmOpportunityDto | null
+  oportunidade: AlvoDaPerda | null
   /** As etapas `isLost` do funil — vêm da configuração, não de palpite. */
   etapasDePerda: readonly CrmStageDto[]
   etapaSugerida?: string

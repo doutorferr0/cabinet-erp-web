@@ -326,7 +326,8 @@ describe('quadro do funil: o arrasto', () => {
     await arrastarSobre(cartaoDe('Casa Jardim'), proposta)
 
     await waitFor(() => expect(proposta).toHaveAttribute('data-sob-voo'))
-    expect(proposta.className).toContain('shadow-el2')
+    // Um DEGRAU de elevação, nunca uma cor — a sombra dura de tinta 2.0.
+    expect(proposta.className).toContain('shadow-[var(--hard-1)]')
   })
 })
 

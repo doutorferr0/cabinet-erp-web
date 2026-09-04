@@ -7,8 +7,10 @@ import { type AcaoDeLinha, AcoesDeLinha } from '@/components/cabinet/listagem/ac
 import { BarraDeFiltros } from '@/components/cabinet/listagem/barra-de-filtros'
 import {
   IconeDeTipo,
+  LARGURA_DO_TIPO,
   type TipoDeColuna,
   classeDoTipo,
+  ehTipoComposto,
   renderTipo,
   tomDoValor,
 } from '@/components/cabinet/listagem/celulas-tipadas'
@@ -20,6 +22,12 @@ import {
 } from '@/components/cabinet/listagem/colunas-da-grade'
 import { gruposDoModulo } from '@/components/cabinet/listagem/colunas-por-modulo'
 import { FiltroPorModulo } from '@/components/cabinet/listagem/filtro-por-modulo'
+import { useFlipDasLinhas } from '@/components/cabinet/listagem/flip-das-linhas'
+import {
+  DICA_DA_PLANILHA,
+  EditorDaCelula,
+  useModoPlanilha,
+} from '@/components/cabinet/listagem/modo-planilha'
 import { ModuloEmConstrucao } from '@/components/cabinet/modulo-em-construcao'
 import { Ornamento, OrnamentoDoModulo } from '@/components/cabinet/ornamento'
 import { Stamp, type StampTom } from '@/components/cabinet/stamp'
@@ -89,7 +97,16 @@ import {
   type LucideIcon,
   Rows3,
 } from 'lucide-react'
-import { Fragment, type ReactNode, useCallback, useEffect, useId, useMemo, useState } from 'react'
+import {
+  Fragment,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 
 declare module '@tanstack/react-table' {
   interface ColumnMeta<TData, TValue> {
@@ -102,6 +119,16 @@ declare module '@tanstack/react-table' {
      * Ver `listagem/celulas-tipadas.tsx`.
      */
     tipo?: TipoDeColuna
+    /**
+     * A célula aceita edição inline no modo Planilha (D33).
+     *
+     * Sem isto, Enter na célula ABRE o registro — que é o que nove em cada dez
+     * colunas de uma listagem de ERP querem, porque listagem confere e o
+     * formulário é que grava. Ligar exige a tela passar `aoEditarCelula`: a
+     * coluna diz que ACEITA, a tela diz o que FAZER com o valor, e uma sem a
+     * outra abriria um editor cujo Enter não grava em lugar nenhum.
+     */
+    editavel?: boolean
   }
 }
 
@@ -245,12 +272,29 @@ export function agruparLinhas<T>(
  * confere cinquenta linhas quer as cinquenta na tela; quem lê uma a uma quer
  * respiro. Fixar um dos dois é escolher pelo outro.
  *
+ * `planilha` (D33) é a terceira, e é a única que muda o GESTO e não só a
+ * altura: a unidade passa a ser a célula, as setas andam por ela e `⌘C` copia o
+ * que está marcado. Ela entra aqui, ao lado das outras duas, porque é a mesma
+ * pergunta — "como você quer olhar esta lista hoje" —, e um interruptor
+ * separado obrigaria o operador a descobrir que existem dois lugares onde a
+ * grade muda de cara.
+ *
+ * A planilha herda a ALTURA da compacta, e não a do mockup: a célula é a
+ * unidade de cópia, e o subtítulo da entidade dentro dela faria `⌘C` levar duas
+ * linhas de texto para a planilha do operador. O que se copia tem de ser o
+ * valor, não o valor mais o que o explica.
+ *
  * A troca é CSS puro sobre a mesma marcação — nada de reconsultar nem remontar
  * a tabela, porque densidade não muda o que a consulta trouxe.
  */
 export const DENSIDADES = [
   { id: 'compacta', rotulo: 'Compacta', altura: 'Linha de 40px, sem subtítulo' },
   { id: 'confortavel', rotulo: 'Confortável', altura: 'Linha de 52px, com subtítulo' },
+  {
+    id: 'planilha',
+    rotulo: 'Planilha',
+    altura: 'Célula selecionável: setas navegam, Enter edita, Esc cancela',
+  },
 ] as const
 
 export type Densidade = (typeof DENSIDADES)[number]['id']
@@ -268,6 +312,7 @@ const DENSIDADE_PADRAO: Densidade = 'confortavel'
  */
 function densidadeLida(valor: unknown): Densidade | null {
   if (valor === 'compacta') return 'compacta'
+  if (valor === 'planilha') return 'planilha'
   if (valor === 'confortavel' || valor === 'padrao') return 'confortavel'
   return null
 }
@@ -421,6 +466,22 @@ export interface VitraDataTableProps<T> {
    * o vazio termina em cadastro que ninguém pediu no meio de outro formulário.
    */
   acaoDoVazio?: { label: string; onClick: () => void }
+  /**
+   * O que fazer com o valor digitado numa célula do modo Planilha (D33).
+   *
+   * Só é chamada em coluna que declara `meta.editavel` — e as duas condições
+   * são separadas de propósito: a COLUNA sabe se o campo é editável (uma
+   * situação derivada não é), a TELA sabe para onde o valor vai. Sem esta prop
+   * nenhuma coluna edita, mesmo declarando `editavel`, e Enter volta a abrir o
+   * registro: um editor que aceita a digitação e perde o valor no Enter é pior
+   * que editor nenhum.
+   *
+   * Hoje NENHUMA das onze listagens a liga, e isso não é esquecimento: listagem
+   * confere e o formulário grava, e a escrita em lote não existe na fronteira
+   * (ver `BarraDeSelecao`). A capacidade fica pronta para a grade de itens do
+   * documento, que é onde a edição em célula é o trabalho.
+   */
+  aoEditarCelula?: (linha: T, colunaId: string, valor: string) => void
 }
 
 /**
@@ -642,11 +703,14 @@ function BarraDeSelecao<T>({
   acoes,
   linhas,
   aoLimpar,
+  saindo,
 }: {
   quantidade: number
   acoes: readonly DataTableAction<T>[]
   linhas: readonly T[]
   aoLimpar: () => void
+  /** A saída é mais rápida que a entrada (90ms contra 200ms, pesquisa §8). */
+  saindo: boolean
 }) {
   const varias = quantidade > 1
   return (
@@ -655,9 +719,32 @@ function BarraDeSelecao<T>({
     // invertida é lida como modo — "a tela está em outro estado agora" —, que é
     // exatamente o que ela é. Fosse mais uma caixa clara, passaria por
     // cabeçalho e o operador agiria em lote achando que agia em uma.
+    //
+    // Na 2.0 ela FLUTUA (pesquisa §4): pílula de raio total, tinta a 92% com
+    // desfoque atrás, sombra dura + a difusa que a solta do plano. Glass aqui
+    // não é decoração — é o único lugar da listagem onde ele cabe pela regra
+    // ("glass só no que flutua"), e o que ele comunica é que a barra está SOBRE
+    // a grade, não dentro dela: por baixo continua a linha que o operador
+    // marcou, meio visível, que é o que ele quer conferir antes de apertar
+    // `Cancelar ordens`.
     <div
       data-slot="barra-de-selecao"
-      className="flex flex-wrap items-center gap-2.5 rounded-data bg-foreground px-3 py-2"
+      className={cn(
+        'flex flex-wrap items-center gap-2.5 rounded-[var(--r-pill)] py-2 pr-2.5 pl-3.5',
+        'bg-[color-mix(in_oklab,var(--n-900)_92%,transparent)] backdrop-blur-[6px]',
+        // A sombra dura é a do sistema (`--hard-3`, a de dialog e ⌘K); a difusa
+        // por baixo é a §5 da pesquisa, e existe porque a pílula está no ar:
+        // sem ela, a tinta chapada encostaria na grade como um adesivo.
+        'shadow-[var(--hard-3),0_20px_40px_-16px_color-mix(in_oklab,var(--n-900)_55%,transparent)]',
+        // Entrada de 200ms subindo — o `cab-rise` da fundação, que é
+        // exatamente o `cab-pop` do mockup depois de a centragem sair do
+        // `transform` e ir para o `flex` do ancoradouro. Um keyframe novo com
+        // outro nome para o mesmo movimento seria a segunda fonte da mesma
+        // decisão, e `tokens-2.0.css` é zona de D1 nesta rodada.
+        saindo
+          ? 'animate-[cab-fade_90ms_var(--ease)_reverse_both]'
+          : 'animate-[cab-rise_var(--dur-2)_var(--ease-out)_both]',
+      )}
     >
       {/* `<output>`: o número muda a cada checkbox e quem não vê a tela precisa
           ouvir o total, não o evento. O NÚMERO em mono, a palavra em Inter — é
@@ -710,7 +797,14 @@ function BarraDeSelecao<T>({
         className="ml-auto inline-flex items-center gap-2 rounded-item px-2 py-1 t-meta text-card/75! hover:text-card! focus-visible:focus-ring"
       >
         Limpar seleção
-        <kbd className="rounded-item border border-muted-foreground px-1 t-dado-meta text-card/75!">
+        {/* `bg-transparent!` — a regra global `kbd { background: var(--card) }`
+            do `index.css` está FORA de camada e vence toda utility sem `!`. O
+            resultado media na tela como uma tecla de papel branco sobre a
+            pílula escura, com o texto (já sobrescrito para `--card`) invisível
+            dentro dela. A cor tinha `!` desde sempre; o fundo, não — e o
+            defeito só aparece na captura, porque o teste continua achando o
+            `esc` pelo texto. */}
+        <kbd className="rounded-item border border-muted-foreground bg-transparent! px-1 t-dado-meta text-card/75!">
           esc
         </kbd>
       </button>
@@ -740,6 +834,7 @@ export function VitraDataTable<T>({
   acoesDeSelecao,
   acoesDeLinha,
   acaoDoVazio,
+  aoEditarCelula,
 }: VitraDataTableProps<T>) {
   /**
    * O ENDEREÇO É O PONTO DE PARTIDA da consulta (#199).
@@ -1205,7 +1300,21 @@ export function VitraDataTable<T>({
   }, [aoAbrirLinha, acoesDeLinha])
   const temAcoesDeLinha = acoesDaLinha.length > 0
 
-  const compacta = densidade === 'compacta'
+  /**
+   * A planilha usa a MESMA célula da compacta (40px, sem subtítulo): a unidade
+   * ali é a célula, e o subtítulo dentro dela sujaria o `⌘C`.
+   */
+  const planilha = densidade === 'planilha'
+  const compacta = densidade === 'compacta' || planilha
+
+  /**
+   * O `<table>` — dois donos, um ref.
+   *
+   * O modo Planilha o usa para achar a célula de destino e focá-la; o FLIP, para
+   * medir onde cada linha estava. Dois refs no mesmo elemento seriam duas
+   * fontes para a mesma pergunta ("qual é a grade?").
+   */
+  const refDaTabela = useRef<HTMLTableElement | null>(null)
 
   /**
    * Colunas que desenham o próprio conteúdo — as que o TIPO não sobrescreve.
@@ -1263,7 +1372,7 @@ export function VitraDataTable<T>({
    * Duas cópias divergiriam na primeira mudança de comportamento, e a que
    * fica dentro do grupo é a que ninguém lembraria de atualizar.
    */
-  function renderLinha(row: Row<T>) {
+  function renderLinha(row: Row<T>, linhaVisual: number) {
     const isSelected = selecionadas.includes(row.original)
     const tomDaLinha = decoracao?.(row.original)
     /**
@@ -1289,6 +1398,10 @@ export function VitraDataTable<T>({
       // sendo o texto. Chartreuse aqui é ÁREA, nunca letra.
       <TableRow
         key={row.id}
+        // O id da linha é a IDENTIDADE que o FLIP usa para saber que a
+        // linha que estava em cima é a mesma que agora está embaixo.
+        // Medir por posição inverteria o sentido do deslize.
+        data-linha-id={row.id}
         data-state={isSelected ? 'selected' : undefined}
         // A linha é parada de FOCO nos dois modos, e o que ela faz
         // muda com o gesto da tela: onde a linha abre (#198), Enter
@@ -1296,7 +1409,12 @@ export function VitraDataTable<T>({
         // aplicativo tem; onde a linha marca (janela de busca), os
         // dois marcam, como era. Não é atalho: é o teclado nativo do
         // controle, e nenhuma tecla precisa ser memorizada.
-        tabIndex={0}
+        //
+        // No modo PLANILHA a parada sai da linha e vai para a célula
+        // ativa: com as duas, um Tab pousaria na linha e o seguinte na
+        // célula, e o operador andaria metade dos passos sem sair do
+        // lugar.
+        tabIndex={planilha ? -1 : 0}
         aria-selected={isSelected}
         data-apagada={apagada ? '' : undefined}
         className={cn(
@@ -1328,11 +1446,20 @@ export function VitraDataTable<T>({
           // que a tela mandou destacar.
           apagada && tomDaLinha === undefined && 'text-muted-foreground',
         )}
+        // No modo PLANILHA a linha para de responder a clique e a tecla,
+        // e a razão é a mesma que faz o modo existir: ali a unidade é a
+        // CÉLULA. Clicar numa célula posiciona o cursor de onde a próxima
+        // seta parte — abrir o registro junto tiraria da tela quem só
+        // estava mirando de onde ia copiar. E o Enter que a célula trata
+        // (editar, ou abrir) chegaria aqui de novo pela propagação,
+        // abrindo o mesmo registro duas vezes.
         onClick={() => {
+          if (planilha) return
           if (linhaAbre) aoAbrirLinha(row.original)
           else alternarLinha(row.original)
         }}
         onKeyDown={(e) => {
+          if (planilha) return
           if (e.key !== 'Enter' && e.key !== ' ') return
           // Espaço rolaria a página; Enter dentro de célula com
           // controle não deve chegar aqui duas vezes.
@@ -1378,7 +1505,7 @@ export function VitraDataTable<T>({
             {(state.page - 1) * state.pageSize + row.index + 1}
           </TableCell>
         ) : null}
-        {row.getVisibleCells().map((cell) => {
+        {row.getVisibleCells().map((cell, indiceDaColuna) => {
           const tipo = cell.column.columnDef.meta?.tipo
           // Coluna que declara `cell` próprio manda no CONTEÚDO;
           // o tipo só lhe dá a moldura. É o caso que existe hoje
@@ -1386,18 +1513,48 @@ export function VitraDataTable<T>({
           // alinhar como as irmãs —, e reescrever o conteúdo dela
           // aqui apagaria formatação que a tela escolheu.
           const proprio = comCelulaPropria.has(cell.column.id)
+          const celula = { linha: linhaVisual, coluna: indiceDaColuna }
+          const valor = cell.getValue()
+          /**
+           * O `title` é o texto INTEIRO da célula truncada — a
+           * outra metade da regra da §Hierarquia ("trunca com `…` +
+           * tooltip, nunca quebra em 3 linhas"). Só onde o valor É
+           * texto: pendurar `[object Object]` no `title` de uma
+           * célula de progresso seria pior que não ter dica.
+           */
+          const textoDoValor = typeof valor === 'string' && valor !== '' ? valor : undefined
           return (
             <TableCell
               key={cell.id}
               data-tipo={tipo}
+              {...(textoDoValor ? { title: textoDoValor } : {})}
+              {...(planilha ? modoPlanilha.propsDaCelula(celula) : {})}
               className={cn(
                 cell.column.columnDef.meta?.numeric === true && 'text-right tabular-nums',
                 classeDoTipo(tipo),
+                // `table-layout: fixed` dá a largura; a truncagem é o
+                // que impede o texto longo de atravessar a coluna
+                // vizinha, que é o que a largura fixa faria sozinha.
+                // Os tipos COMPOSTOS ficam de fora: entidade,
+                // progresso e situação montam layout próprio dentro da
+                // célula, e `white-space: nowrap` herdado ali cortaria
+                // o subtítulo em vez de truncá-lo.
+                ehTipoComposto(tipo) ? 'overflow-hidden' : 'truncate',
+                planilha && 'celula-de-planilha',
               )}
             >
-              {tipo && !proprio
-                ? renderTipo(tipo, cell.getValue(), { compacta })
-                : flexRender(cell.column.columnDef.cell, cell.getContext())}
+              {modoPlanilha.editorAberto(celula) ? (
+                <EditorDaCelula
+                  valorInicial={textoDoValor ?? String(valor ?? '')}
+                  rotulo={`${cell.column.id}, linha ${linhaVisual + 1}`}
+                  aoConfirmar={modoPlanilha.confirmarEdicao}
+                  aoCancelar={modoPlanilha.cancelarEdicao}
+                />
+              ) : tipo && !proprio ? (
+                renderTipo(tipo, valor, { compacta })
+              ) : (
+                flexRender(cell.column.columnDef.cell, cell.getContext())
+              )}
             </TableCell>
           )
         })}
@@ -1436,11 +1593,99 @@ export function VitraDataTable<T>({
     )
   }, [agrupamentoDaTabela, subtotalDoGrupo, table])
 
+  /**
+   * As linhas na ORDEM DA TELA — a coordenada do modo Planilha.
+   *
+   * Com agrupamento ligado, a ordem é a das faixas, e grupo FECHADO não entra:
+   * a seta para baixo tem de andar pelo que está à vista. Derivar isto de
+   * `getRowModel().rows` (que ignora grupo e colapso) faria o foco cair dentro
+   * de um grupo fechado e sumir da tela sem nada explicar — o operador só veria
+   * o anel desaparecer.
+   */
+  const linhasVisiveis = agrupamentoDaTabela
+    ? gruposDaTabela.flatMap((grupo) => (gruposFechados.includes(grupo.valor) ? [] : grupo.linhas))
+    : table.getRowModel().rows
+
+  /**
+   * Sem `useMemo`, e MEDIDO: `table` é a mesma instância entre renders, então
+   * um memo com ela na lista de dependências devolveria a lista da PRIMEIRA
+   * render — a vazia, de antes de a consulta responder. O sintoma era todo
+   * `data-celula` nascer `0:c`, dez linhas disputando o mesmo endereço, e a
+   * seta para baixo não saindo do lugar. Numerar vinte linhas por render é
+   * mais barato que a comparação que estaria errada.
+   */
+  const indiceVisual = new Map(linhasVisiveis.map((row, indice) => [row.id, indice]))
+
+  /** As colunas de DADO, na ordem em que a linha as desenha. */
+  const colunasDeDado = table.getVisibleLeafColumns()
+
+  const modoPlanilha = useModoPlanilha({
+    raiz: refDaTabela,
+    ativo: planilha,
+    linhas: linhasVisiveis.length,
+    colunas: colunasDeDado.length,
+    // A coluna PODE editar e a tela SABE gravar: as duas, ou Enter abre o
+    // registro. Ver `aoEditarCelula`.
+    editavel: (coluna) =>
+      aoEditarCelula !== undefined && colunasDeDado[coluna]?.columnDef.meta?.editavel === true,
+    aoAbrir: (linha) => {
+      const row = linhasVisiveis[linha]
+      if (row && aoAbrirLinha) aoAbrirLinha(row.original)
+    },
+    aoGravar: (celula, valor) => {
+      const row = linhasVisiveis[celula.linha]
+      const coluna = colunasDeDado[celula.coluna]
+      if (row && coluna) aoEditarCelula?.(row.original, coluna.id, valor)
+    },
+  })
+
+  /**
+   * O que AUTORIZA o deslize das linhas (FLIP): agrupamento, ordenação e
+   * colapso de grupo — os três gestos que movem uma linha para outro lugar sem
+   * mudar o conjunto.
+   *
+   * A página NÃO entra: trocar de página troca as linhas, e animar a chegada de
+   * vinte registros novos como se fossem os mesmos vinte de antes deslizando é
+   * mentira visual. Ali o que muda é o conteúdo, e o esqueleto já conta isso.
+   */
+  const ordemDasLinhas = `${agruparPor}|${state.sort?.id ?? ''}|${state.sort?.desc ? 'desc' : 'asc'}|${gruposFechados.join(',')}`
+  useFlipDasLinhas(refDaTabela, ordemDasLinhas)
+
   const temFiltro = (state.filtros?.length ?? 0) > 0
   // "Todas" é sempre "todas as DESTA PÁGINA" — ver o rótulo do checkbox do
   // cabeçalho.
   const algumaMarcada = selecionadas.length > 0
   const todasMarcadas = rows.length > 0 && selecionadas.length === rows.length
+
+  /**
+   * A barra de lote SAI, e sair leva 90ms — menos que os 200 de entrar
+   * (pesquisa §8: "a saída também anima, e mais rápido que a entrada").
+   *
+   * Uma peça que aparece com movimento e desaparece num corte parece ter sido
+   * fechada por um erro. O contrário — saída lenta — atrasa a tela depois de o
+   * operador já ter decidido.
+   *
+   * A quantidade fica CONGELADA durante a saída: a seleção já é zero nesses
+   * 90ms, e mostrar "0 selecionadas" enquanto a barra desliza para fora seria
+   * um número errado no lugar onde o operador confere quantas linhas vão ser
+   * afetadas.
+   */
+  const [barraSaindo, setBarraSaindo] = useState(false)
+  const tinhaSelecao = useRef(false)
+  const ultimaQuantidade = useRef(0)
+  useEffect(() => {
+    if (algumaMarcada) {
+      tinhaSelecao.current = true
+      ultimaQuantidade.current = selecionadas.length
+      setBarraSaindo(false)
+      return
+    }
+    if (!tinhaSelecao.current) return
+    tinhaSelecao.current = false
+    setBarraSaindo(true)
+    const fim = setTimeout(() => setBarraSaindo(false), 90)
+    return () => clearTimeout(fim)
+  }, [algumaMarcada, selecionadas.length])
 
   function toggleSort(columnId: string) {
     updateState((s) => {
@@ -1561,6 +1806,10 @@ export function VitraDataTable<T>({
                 const lida = densidadeLida(id)
                 if (lida) setDensidade(lida)
               },
+              // A dica só existe na PLANILHA, e some nas outras duas: uma
+              // legenda de teclas parada na barra o dia inteiro vira parte do
+              // cenário, e ninguém a lê no dia em que ela passa a valer.
+              ...(planilha ? { dica: DICA_DA_PLANILHA } : {}),
             })}
         acoes={actions.map((action) => {
           // O filtro estruturado OCUPA o lugar do botão `Filtro` da barra
@@ -1643,15 +1892,6 @@ export function VitraDataTable<T>({
           : {})}
       />
 
-      {marcavel && algumaMarcada ? (
-        <BarraDeSelecao
-          quantidade={selecionadas.length}
-          acoes={acoesDeSelecao ?? []}
-          linhas={selecionadas}
-          aoLimpar={() => setSelecionadas([])}
-        />
-      ) : null}
-
       {visaoAtiva ? (
         // A visão troca só o DESENHO. Carregando, falha e vazio continuam sendo
         // os mesmos três estados da mesma consulta — e são desenhados pelas
@@ -1712,14 +1952,42 @@ export function VitraDataTable<T>({
               `meta.numeric` segue existindo, e agora só decide ALINHAMENTO à
               direita, que é outra pergunta. */}
           <Table
+            ref={refDaTabela}
+            {...(planilha ? modoPlanilha.propsDaGrade : {})}
             className={cn(
-              'tabular-nums',
+              // `table-layout: fixed` (D33, pesquisa §10): a largura da coluna
+              // deixa de ser calculada a partir do conteúdo da PÁGINA ATUAL.
+              // Enquanto ela era automática, a mesma coluna de data media 96px
+              // numa página e 140px na seguinte, e o operador que paginava
+              // conferindo via a grade inteira se reorganizar debaixo do olho.
+              // Quem manda nas larguras agora é o `<colgroup>` abaixo.
+              'table-fixed tabular-nums',
               // A célula do shadcn traz `h-[52px]`; o seletor de descendente
               // ganha dela por especificidade, sem `!important` e sem tocar no
               // componente compartilhado — outras tabelas do app não mudam.
               compacta && '[&_td]:h-10',
             )}
           >
+            {/* As larguras, em UM lugar. `<colgroup>` e não `width` por `<th>`:
+                o cabeçalho agrupado tem `colSpan`, e uma largura declarada numa
+                célula que abrange três colunas não diz nada sobre nenhuma
+                delas. As colunas de SERVIÇO repetem aqui o que já vale nas
+                classes (`w-10`, `w-[90px]`) porque em `fixed` quem não declara
+                divide a sobra — e o checkbox ficaria com um sexto da tela. */}
+            <colgroup>
+              {marcavel ? <col style={{ width: 40 }} /> : null}
+              {rowNumbers ? <col style={{ width: 40 }} /> : null}
+              {colunasDeDado.map((coluna) => {
+                const largura = LARGURA_DO_TIPO[coluna.columnDef.meta?.tipo ?? 'texto']
+                return (
+                  <col
+                    key={coluna.id}
+                    {...(largura !== undefined ? { style: { width: largura } } : {})}
+                  />
+                )
+              })}
+              {temAcoesDeLinha ? <col style={{ width: 90 }} /> : null}
+            </colgroup>
             {/* Cabeçalho FIXO na rolagem (#198): numa listagem de cinquenta
                 linhas o operador perde o nome da coluna antes da décima, e passa
                 a contar posição no olho. O tint `n-50` é obrigatório junto do
@@ -1768,6 +2036,11 @@ export function VitraDataTable<T>({
                     // entidade do schema — nas outras a grade segue sem ponto,
                     // em vez de inventar um módulo para caber no desenho.
                     const modulo = entidade ? moduloDaColuna(entidade, header.column.id) : undefined
+                    // Só a folha carrega largura: um cabeçalho agrupado abrange
+                    // três colunas, e um `min-width` nele falaria de uma coluna
+                    // que não existe.
+                    const larguraDoCabecalho =
+                      header.colSpan > 1 ? undefined : LARGURA_DO_TIPO[tipo ?? 'texto']
                     return (
                       <TableHead
                         key={header.id}
@@ -1783,7 +2056,27 @@ export function VitraDataTable<T>({
                               : 'none'
                             : undefined
                         }
-                        className={cn(header.colSpan > 1 && 'text-center', numeric && 'text-right')}
+                        // O `<colgroup>` dá a largura; o `min-width` aqui é o
+                        // PISO. Em `table-layout: fixed` o navegador comprime
+                        // as colunas declaradas quando a soma não cabe, e uma
+                        // coluna de dinheiro espremida a 70px quebra o valor
+                        // no meio — com o piso, quem cede é a coluna flexível,
+                        // e abaixo disso aparece a rolagem horizontal que o
+                        // contêiner da tabela já tem.
+                        {...(larguraDoCabecalho !== undefined
+                          ? { style: { minWidth: larguraDoCabecalho } }
+                          : {})}
+                        // `overflow-hidden` porque a largura agora é FIXA: o
+                        // `--t-rotulo` é caixa alta com tracking, e "NOSSO
+                        // CÓDIGO" não cabe nos 110px da coluna de id — sem
+                        // isto ele atravessava o cabeçalho da coluna vizinha e
+                        // as duas palavras se sobrepunham. O rótulo inteiro
+                        // fica no `title`, como o valor da célula.
+                        className={cn(
+                          'overflow-hidden',
+                          header.colSpan > 1 && 'text-center',
+                          numeric && 'text-right',
+                        )}
                       >
                         {/* Cabeçalho = ícone de TIPO + rótulo + seta. O ícone
                             diz a natureza da coluna antes de o olho ler a
@@ -1794,9 +2087,12 @@ export function VitraDataTable<T>({
                         {header.isPlaceholder ? null : (
                           <span
                             className={cn(
-                              'inline-flex items-center gap-1.5',
+                              'flex max-w-full items-center gap-1.5',
                               numeric && 'flex-row-reverse',
                             )}
+                            {...(typeof header.column.columnDef.header === 'string'
+                              ? { title: header.column.columnDef.header }
+                              : {})}
                           >
                             {tipo ? (
                               <IconeDeTipo tipo={tipo} />
@@ -1814,7 +2110,7 @@ export function VitraDataTable<T>({
                                 // caixa alta (as colunas sem ordenação) e meia
                                 // em caixa mista (as com), sem nada no código
                                 // dizendo por quê.
-                                className="inline-flex items-center gap-1 uppercase hover:text-foreground focus-visible:focus-ring"
+                                className="flex min-w-0 items-center gap-1 truncate uppercase hover:text-foreground focus-visible:focus-ring"
                                 onClick={() => toggleSort(header.column.id)}
                               >
                                 {flexRender(header.column.columnDef.header, header.getContext())}
@@ -1982,15 +2278,60 @@ export function VitraDataTable<T>({
                           </button>
                         </TableCell>
                       </TableRow>
-                      {fechado ? null : grupo.linhas.map((row) => renderLinha(row))}
+                      {fechado
+                        ? null
+                        : grupo.linhas.map((row) =>
+                            renderLinha(row, indiceVisual.get(row.id) ?? 0),
+                          )}
                     </Fragment>
                   )
                 })
               ) : (
-                table.getRowModel().rows.map((row) => renderLinha(row))
+                table
+                  .getRowModel()
+                  .rows.map((row) => renderLinha(row, indiceVisual.get(row.id) ?? 0))
               )}
             </TableBody>
           </Table>
+
+          {/* O ANCORADOURO da barra de lote — altura ZERO, de propósito.
+              Ele é o que faz a barra flutuar SEM empurrar a grade: no 1.x ela
+              entrava no fluxo acima da tabela, e marcar uma linha descia a
+              grade inteira alguns pixels — a linha que o operador acabou de
+              mirar saía de baixo do cursor no exato instante em que ele a
+              marcou. Com `h-0` o layout não sabe que a barra existe; quem a põe
+              na tela é o `translate` do filho.
+              `sticky bottom-3` e não `absolute`: numa consulta de cinquenta
+              linhas o fim da grade está fora da janela, e uma barra presa ao
+              rodapé do card só apareceria depois de rolar até lá. Grudada,
+              ela acompanha a leitura. A caixa da grade usa `overflow-clip`, que
+              recorta sem criar scrollport — então quem manda no `sticky` é a
+              rolagem da PÁGINA, que é onde a listagem rola.
+              A barra vive AQUI, dentro do card, e não no rodapé da tela: as
+              visões alternativas (quadro) não têm linha para marcar, e uma
+              pílula de lote pairando sobre um quadro sem seleção possível seria
+              a promessa de uma ação que não existe ali. */}
+          <div
+            data-slot="ancora-da-barra-de-selecao"
+            // `items-start` importa: num flex de altura zero o alinhamento
+            // padrão (`stretch`) esticaria a pílula PARA zero, e aí o
+            // `-translate-y-full` do filho — que é 100% da altura dele —
+            // moveria zero pixel. A barra ficava colada no fim da caixa e
+            // recortada pelo `overflow-clip`; só a captura mostrou.
+            className="pointer-events-none sticky bottom-3 z-20 flex h-0 items-start justify-center"
+          >
+            {marcavel && (algumaMarcada || barraSaindo) ? (
+              <div className="-translate-y-full pointer-events-auto pb-1">
+                <BarraDeSelecao
+                  quantidade={algumaMarcada ? selecionadas.length : ultimaQuantidade.current}
+                  acoes={acoesDeSelecao ?? []}
+                  linhas={selecionadas}
+                  aoLimpar={() => setSelecionadas([])}
+                  saindo={barraSaindo}
+                />
+              </div>
+            ) : null}
+          </div>
         </div>
       )}
 

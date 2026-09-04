@@ -937,3 +937,32 @@ function vazio(): OrcamentoDoSeed {
     parcelas: [],
   }
 }
+
+// ------------------------------------------------- leitura para os agregados
+
+/**
+ * O orçamento REDUZIDO ao que a faixa de KPI pergunta (#479) — mesma razão que
+ * `ordensParaAgregado` em `compras.ts`: quem serve a grade responde pelo
+ * resumo, senão a faixa e a grade contam a mesma coisa de dois jeitos.
+ *
+ * `totalCents` sai daqui já somado pelo `totalDoOrcamento`, que é o mesmo que a
+ * listagem usa — o total do orçamento não é a soma dos itens (desconto e
+ * serviços entram por regra própria), e recalcular fora daqui erraria.
+ */
+export interface OrcamentoParaAgregado {
+  dataEmissao: string | null
+  dataValidade: string | null
+  dataFechamento: string | null
+  cancelado: boolean
+  totalCents: number
+}
+
+export function orcamentosParaAgregado(): OrcamentoParaAgregado[] {
+  return estado.linhas.map((o) => ({
+    dataEmissao: o.dataEmissao,
+    dataValidade: o.dataValidade,
+    dataFechamento: o.dataFechamento,
+    cancelado: o.cancelado,
+    totalCents: totalDoOrcamento(o),
+  }))
+}

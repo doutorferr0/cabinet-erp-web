@@ -328,9 +328,16 @@ describe('a listagem lê o que o servidor manda', () => {
     expect(await screen.findByText('30991')).toBeInTheDocument()
     expect(screen.getByText('STELLA ILUMINAÇÃO LTDA')).toBeInTheDocument()
     // O que viaja é `active`/`sale`; o que o operador lê é outra coisa.
-    expect(screen.getByText('Em andamento')).toBeInTheDocument()
+    //
+    // Na GRADE a palavra é uma só (`Aberto`): o carimbo da D8 quebra em duas
+    // linhas com "Em andamento" e estica a altura da linha. `Em andamento`
+    // continua sendo o rótulo da FICHA, onde há espaço — ver
+    // `CARIMBO_DA_SITUACAO` em `routes/vendas/pedidos/index.tsx`.
+    expect(screen.getByText('Aberto')).toBeInTheDocument()
     expect(screen.getByText('Venda')).toBeInTheDocument()
-    expect(screen.getByText(/2\.500,00/)).toBeInTheDocument()
+    // DUAS ocorrências desde a D8, e é o certo: o valor na célula e a soma
+    // filtrada no rodapé da grade. `getByText` reprovava por ambiguidade.
+    expect(screen.getAllByText(/2\.500,00/).length).toBeGreaterThanOrEqual(1)
   })
 
   it('a demonstração se distingue da venda de relance', async () => {

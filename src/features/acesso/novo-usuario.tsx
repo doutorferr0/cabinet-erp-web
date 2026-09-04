@@ -66,8 +66,8 @@ export function NovoUsuarioDialog({
         <DialogTitle>Novo usuário</DialogTitle>
       </DialogHeader>
 
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-[var(--s-3)]">
+        <div className="flex flex-col gap-[var(--s-1)]">
           <Label htmlFor="usuario-nome">Nome</Label>
           <Input
             id="usuario-nome"
@@ -76,7 +76,7 @@ export function NovoUsuarioDialog({
             onChange={(e) => setNome(e.target.value)}
           />
         </div>
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-[var(--s-1)]">
           <Label htmlFor="usuario-email">E-mail</Label>
           <Input
             id="usuario-email"
@@ -84,15 +84,13 @@ export function NovoUsuarioDialog({
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-          <p className="text-muted-foreground text-xs leading-snug">
-            É a credencial de entrada — única no produto inteiro.
-          </p>
+          <p className="t-meta">É a credencial de entrada — única no produto inteiro.</p>
         </div>
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-[var(--s-1)]">
           <Label htmlFor="usuario-papel">Papel</Label>
           <select
             id="usuario-papel"
-            className="flex h-9 w-full border-2 border-input bg-card px-2.5 py-1 text-sm outline-none focus-visible:focus-ring"
+            className="t-ui flex h-9 w-full border-2 border-input bg-card px-2.5 py-1 outline-none focus-visible:focus-ring"
             value={roleId}
             onChange={(e) => setRoleId(e.target.value)}
           >

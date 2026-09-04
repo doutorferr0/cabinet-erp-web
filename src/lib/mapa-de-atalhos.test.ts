@@ -27,10 +27,7 @@ const SRC = resolve(__dirname, '..')
  * ligá-la ou apagá-la do registry, e as duas dependem da mesma resposta —
  * por isso a linha aponta a issue, não uma PR.
  */
-const SEM_CHAMADOR: Partial<Record<NomeDeAtalho, string>> = {
-  incluir:
-    'declarado desde a origem do registry e nunca ligado; a #362 pergunta ao operador se ele fica (a busca já oferece "Novo cliente") antes de a barra de ações passar a ligá-lo',
-}
+const SEM_CHAMADOR: Partial<Record<NomeDeAtalho, string>> = {}
 
 function arquivosDe(dir: string): string[] {
   return readdirSync(dir).flatMap((nome) => {

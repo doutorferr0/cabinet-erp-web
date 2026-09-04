@@ -26,12 +26,21 @@ import { useState } from 'react'
  * Portado de sadmann7/shadcn-table (MIT) — ver `src/lib/filtro-de-consulta.ts`
  * e o `NOTICE` da raiz. Os controles do original que dependem de componente
  * ausente aqui (Calendar, Slider, Faceted) foram refeitos sobre o que o repo
- * tem: `<select>` nativo com a caixa preta de 2px e o Command sobre RAC.
+ * tem: `<select>` nativo com o sulco de campo da 2.0 e o Command sobre RAC.
  */
 
-/** Caixa preta 2px, radius 0 — a mesma dos selects do formulário e do rodapé da tabela. */
+/**
+ * O sulco de campo da 2.0 (#470), na altura de 28px da barra de filtro: borda
+ * 1px de controle, `--inset`, foco em tinta + o anel único do repo. Era a caixa
+ * preta de 2px — e uma linha de filtro com três caixas pretas lado a lado
+ * (campo, operador, valor) tinha o peso visual de três botões primários para
+ * dizer uma frase que o operador ainda está montando.
+ *
+ * 28px e não 34px porque a linha do filtro é uma frase densa, e o §Hierarquia
+ * pede a altura `sm` para controle que mora dentro de outro controle.
+ */
 const CAIXA_DE_SELECT =
-  'desabilitado h-8 border-2 border-input bg-card px-2 text-sm outline-none focus-visible:focus-ring'
+  'desabilitado t-corpo h-7 rounded-[var(--r-ctrl)] border border-[color:var(--n-300)] bg-[color:var(--n-0)] px-2 shadow-[var(--inset)] outline-none transition-colors focus-visible:border-[color:var(--n-900)] focus-visible:focus-ring disabled:shadow-none'
 
 export function SelectBrut({ className, ...props }: React.ComponentProps<'select'>) {
   return <select className={cn(CAIXA_DE_SELECT, className)} {...props} />
@@ -73,16 +82,14 @@ export function SeletorDeCampo({
         className={cn('justify-between font-normal', className)}
       >
         <span className="truncate">{atual?.rotulo ?? 'Escolha o campo'}</span>
-        <ChevronsUpDown className="ml-1 size-4 shrink-0 text-foreground" />
+        <ChevronsUpDown className="ml-1 size-[15px] shrink-0" />
       </Button>
       <Popover className="w-56 p-0">
         <Command>
           <CommandInput placeholder="Buscar campo…" />
           <CommandList
             renderEmptyState={() => (
-              <div className="py-6 text-center text-sm text-muted-foreground">
-                Nenhum campo encontrado.
-              </div>
+              <div className="t-meta py-6 text-center">Nenhum campo encontrado.</div>
             )}
             selectionMode="single"
             selectedKeys={[valor]}
@@ -216,7 +223,7 @@ export function ControleDeValor({
           className={cn('justify-between font-normal', className)}
         >
           <span className="truncate">{resumo}</span>
-          <ChevronsUpDown className="ml-1 size-4 shrink-0 text-foreground" />
+          <ChevronsUpDown className="ml-1 size-[15px] shrink-0" />
         </Button>
         <Popover className="w-56 p-0">
           <Command>
@@ -229,9 +236,7 @@ export function ControleDeValor({
               selectionMode="multiple"
               selectedKeys={marcados}
               renderEmptyState={() => (
-                <div className="py-6 text-center text-sm text-muted-foreground">
-                  Nenhuma opção encontrada.
-                </div>
+                <div className="t-meta py-6 text-center">Nenhuma opção encontrada.</div>
               )}
               onSelectionChange={(chaves) => {
                 if (chaves === 'all') {
@@ -265,15 +270,15 @@ export function ControleDeValor({
           <Input
             type="date"
             aria-label={`${rotulo} — de`}
-            className="h-8 min-w-0"
+            className="h-7 min-w-0"
             value={de}
             onChange={(e) => onChange([e.target.value, ate])}
           />
-          <span className="text-sm text-muted-foreground">a</span>
+          <span className="t-meta">a</span>
           <Input
             type="date"
             aria-label={`${rotulo} — até`}
-            className="h-8 min-w-0"
+            className="h-7 min-w-0"
             value={ate}
             onChange={(e) => onChange([de, e.target.value])}
           />
@@ -284,7 +289,7 @@ export function ControleDeValor({
       <Input
         type="date"
         aria-label={rotulo}
-        className={cn('h-8', className)}
+        className={cn('h-7', className)}
         value={primeiro(filtro.valor)}
         onChange={(e) => onChange(e.target.value)}
       />
@@ -299,15 +304,15 @@ export function ControleDeValor({
       <div className={cn('flex items-center gap-1', className)}>
         <Input
           aria-label={`${rotulo} — de`}
-          className="h-8 min-w-0"
+          className="h-7 min-w-0"
           inputMode="numeric"
           value={de}
           onChange={(e) => onChange([e.target.value, ate])}
         />
-        <span className="text-sm text-muted-foreground">a</span>
+        <span className="t-meta">a</span>
         <Input
           aria-label={`${rotulo} — até`}
-          className="h-8 min-w-0"
+          className="h-7 min-w-0"
           inputMode="numeric"
           value={ate}
           onChange={(e) => onChange([de, e.target.value])}
@@ -319,7 +324,7 @@ export function ControleDeValor({
   return (
     <Input
       aria-label={rotulo}
-      className={cn('h-8', className)}
+      className={cn('h-7', className)}
       inputMode={numerico ? 'numeric' : undefined}
       placeholder={campo.placeholder ?? 'Digite um valor…'}
       value={primeiro(filtro.valor)}

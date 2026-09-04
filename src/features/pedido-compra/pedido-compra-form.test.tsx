@@ -260,7 +260,14 @@ describe('pedido de compra na tela', () => {
     // que o servidor recusa com `item-ja-em-ordem`.
     expect(screen.queryByRole('button', { name: 'FILLAMENTO' })).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'EVOLED COMERCIAL' }))
+    // COM UM FORNECEDOR SÓ o gesto é a PRÓXIMA AÇÃO do cabeçalho (D19, #487),
+    // e a ponte do rodapé não aparece: dois botões com o mesmo destino na mesma
+    // tela era a duplicação que a Reface desfez. Com dois ou mais fornecedores
+    // em aberto a ponte volta — a próxima ação é uma, e o pedido com três
+    // fornecedores não tem uma próxima ordem, tem três.
+    await user.click(
+      screen.getByRole('button', { name: 'Gerar ordem de compra · EVOLED COMERCIAL' }),
+    )
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/compras/ordens/novo')

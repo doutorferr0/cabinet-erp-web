@@ -14270,6 +14270,345 @@
           }
         }
       }
+    },
+    "/api/purchases/orders-summary": {
+      "get": {
+        "tags": ["compras"],
+        "operationId": "GetPurchaseOrdersSummary",
+        "description": "Proposto. Os números da faixa de KPI acima da listagem de ordens de compra, da EMPRESA ATIVA da sessão. Números derivados do movimento — o servidor apura, o front só formata.\n\nCaminho sob `/api/purchases/`, e não `/api/purchase-orders/summary`, pelo precedente que já está no contrato (`arrival-forecast`, `stock-replenishment`): agregado ganha prefixo próprio em vez de virar irmão de `/{id}`, onde `summary` e um uuid disputam a mesma posição do roteador. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseOrdersSummaryDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/sales/quotes-summary": {
+      "get": {
+        "tags": ["vendas"],
+        "operationId": "GetQuotesSummary",
+        "description": "Proposto. Os números da faixa de KPI acima da listagem de orçamentos, da EMPRESA ATIVA da sessão. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuotesSummaryDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/stock/summary": {
+      "get": {
+        "tags": ["estoque"],
+        "operationId": "GetStockSummary",
+        "description": "Proposto. Os números da faixa de KPI acima das listagens de estoque (valorizado, parado, movimentação), da EMPRESA ATIVA da sessão. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockSummaryDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/crm/opportunities-summary": {
+      "get": {
+        "tags": ["crm"],
+        "operationId": "GetOpportunitiesSummary",
+        "description": "Proposto. Os números da faixa de KPI acima do funil de oportunidades, da EMPRESA ATIVA da sessão. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunitiesSummaryDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/nav/counters": {
+      "get": {
+        "tags": ["nav"],
+        "operationId": "GetNavCounters",
+        "description": "Proposto. Os contadores da navegação, do usuário e da EMPRESA ATIVA da sessão, numa leitura só. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NavCountersDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/me/views": {
+      "get": {
+        "tags": ["preferencias"],
+        "operationId": "ListMyViews",
+        "description": "Proposto. Views salvas do USUÁRIO da sessão — nenhuma outra. O grupo FAVORITOS da barra lateral se alimenta daqui, e por isso a leitura é a lista inteira e não uma página: são unidades por tela, e paginar preferência pessoal daria uma barra lateral que continua na página 2.",
+        "parameters": [
+          {
+            "name": "route",
+            "in": "query",
+            "description": "Recorta pelas views de UMA tela. Ausente = todas, que é o que a barra lateral pede: ela mostra os favoritos de tudo, e uma requisição por tela aberta seria uma consulta por item do menu.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SavedViewDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      },
+      "post": {
+        "tags": ["preferencias"],
+        "operationId": "CreateMyView",
+        "description": "Proposto. Salva a consulta que está na tela com um nome. **Quem cria decide a estrela**: \"Salvar consulta\" na listagem manda `favorite: false` (fixar é um segundo gesto, e salvar já fixado encheria a barra lateral de uma vez), e o ★ do item de nav manda `true`, porque ali o gesto É fixar. O servidor não força nenhum dos dois — forçar `false` obrigaria a estrela a fazer POST e PUT por um clique só, com uma janela entre os dois em que a view existe sem aparecer. O que é do servidor é a `position`: a view entra no fim da fila da tela dela.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedViewWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedViewDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — nome vazio, `route` que não é caminho da aplicação, ou campo de `filters`/`sortBy` fora da whitelist do recurso daquela rota. Aceitar campo desconhecido gravaria uma view que só falha ao ser aberta.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "409": {
+            "description": "Conflict — sessão sem empresa ativa (`sem-empresa-ativa`). A view é do usuário e não da empresa, mas quem recusa é a borda de `/api/`, antes do handler: declarar só onde o dado é da empresa deixaria justamente esta escrita devolvendo um código que o contrato não prevê.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/views/{id}": {
+      "put": {
+        "tags": ["preferencias"],
+        "operationId": "UpdateMyView",
+        "description": "Proposto. Substitui a view INTEIRA — é por aqui que ela é renomeada, muda de cor, ganha ou perde a estrela. **Uma operação só para os quatro gestos**: um `PATCH` de `favorite` pareceria mais barato e criaria uma segunda porta de escrita sobre o mesmo registro, com regra de validação própria para manter em dia.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedViewWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedViewDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — a view não existe OU é de outro usuário, e as duas respondem igual de propósito: um 403 distinto contaria que ela existe.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sessão sem empresa ativa (`sem-empresa-ativa`). A view é do usuário e não da empresa, mas quem recusa é a borda de `/api/`, antes do handler: declarar só onde o dado é da empresa deixaria justamente esta escrita devolvendo um código que o contrato não prevê.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["preferencias"],
+        "operationId": "DeleteMyView",
+        "description": "Proposto. Apaga a view. **É o único DELETE do contrato, e a exceção tem motivo:** a regra do produto é desativar em vez de excluir porque cadastro tem histórico e é referenciado por documento. View salva não é referenciada por nada e é do próprio usuário — desativada, ela viraria lixo permanente na barra lateral de quem pediu para tirá-la de lá.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — a view não existe OU é de outro usuário, e as duas respondem igual de propósito.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sessão sem empresa ativa (`sem-empresa-ativa`). A view é do usuário e não da empresa, mas quem recusa é a borda de `/api/`, antes do handler: declarar só onde o dado é da empresa deixaria justamente esta escrita devolvendo um código que o contrato não prevê.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -25098,6 +25437,396 @@
             "format": "int32"
           }
         }
+      },
+      "KpiSeriesDto": {
+        "description": "Proposto. A série da sparkline de um KPI: os **doze últimos meses fechados**, do mais antigo para o mais recente, na unidade do número que ela acompanha (centavos quando o KPI é dinheiro, contagem quando é contagem).\n\nÉ um schema só, referenciado pelas quatro famílias, porque a JANELA é propriedade do desenho e não de cada resumo: quatro cópias divergiriam na primeira vez que alguém mudasse uma para dezoito meses, e a faixa passaria a comparar sparklines de escalas diferentes lado a lado.\n\nMenos de doze pontos é resposta legítima — empresa nova não tem doze meses de movimento. A tela desenha o que veio; não completa com zero, que seria inventar queda que não houve.",
+        "type": "array",
+        "maxItems": 12,
+        "items": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "PurchaseOrdersSummaryDto": {
+        "description": "Proposto. O resumo da faixa de KPI da listagem de ORDENS DE COMPRA. Dinheiro em CENTAVOS, inteiro — a regra do repo vale no contrato. O DTO manda o valor de HOJE e a base de comparação, nunca o percentual pronto: variação apurada no servidor é número que o operador não consegue conferir contra nada na tela, e a derivação de dois campos visíveis ele confere. Mesma regra de `DashboardSummaryDto`.",
+        "required": [
+          "openOrders",
+          "openOrdersValueCents",
+          "lateOrders",
+          "arrivingThisWeek",
+          "monthValueCents",
+          "previousMonthValueCents",
+          "monthlyValueSeries"
+        ],
+        "type": "object",
+        "properties": {
+          "openOrders": {
+            "description": "Ordens ainda não recebidas por inteiro.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "openOrdersValueCents": {
+            "description": "Valor somado das ordens em aberto.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "lateOrders": {
+            "description": "Destas, quantas com previsão de chegada já vencida.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "arrivingThisWeek": {
+            "description": "Destas, quantas com previsão nos próximos 7 dias.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "monthValueCents": {
+            "description": "Emitido no mês corrente.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "previousMonthValueCents": {
+            "description": "Emitido no mês anterior fechado.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "monthlyValueSeries": {
+            "description": "Emitido por mês, em centavos.",
+            "$ref": "#/components/schemas/KpiSeriesDto"
+          }
+        }
+      },
+      "QuotesSummaryDto": {
+        "description": "Proposto. O resumo da faixa de KPI da listagem de ORÇAMENTOS. O DTO manda o valor de HOJE e a base de comparação, nunca o percentual pronto: variação apurada no servidor é número que o operador não consegue conferir contra nada na tela, e a derivação de dois campos visíveis ele confere. Mesma regra de `DashboardSummaryDto`.",
+        "required": [
+          "openQuotes",
+          "openQuotesValueCents",
+          "expiringThisWeek",
+          "wonThisMonth",
+          "monthValueCents",
+          "previousMonthValueCents",
+          "monthlyValueSeries"
+        ],
+        "type": "object",
+        "properties": {
+          "openQuotes": {
+            "description": "Orçamentos em aberto — nem virados em pedido, nem cancelados.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "openQuotesValueCents": {
+            "description": "Valor somado dos orçamentos em aberto.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "expiringThisWeek": {
+            "description": "Destes, quantos com validade nos próximos 7 dias.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "wonThisMonth": {
+            "description": "Quantos viraram pedido de venda no mês corrente.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "monthValueCents": {
+            "description": "Valor dos orçamentos emitidos no mês corrente.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "previousMonthValueCents": {
+            "description": "O mesmo, no mês anterior fechado.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "monthlyValueSeries": {
+            "description": "Emitido por mês, em centavos.",
+            "$ref": "#/components/schemas/KpiSeriesDto"
+          }
+        }
+      },
+      "StockSummaryDto": {
+        "description": "Proposto. O resumo da faixa de KPI das listagens de ESTOQUE. O valor do estoque é fotografia do instante, e por isso a base de comparação é o FECHAMENTO do mês anterior — comparar com \"o mês corrente\" não faria sentido para um saldo. O DTO manda o valor de HOJE e a base de comparação, nunca o percentual pronto: variação apurada no servidor é número que o operador não consegue conferir contra nada na tela, e a derivação de dois campos visíveis ele confere. Mesma regra de `DashboardSummaryDto`.",
+        "required": [
+          "variantCount",
+          "criticalItems",
+          "stockValueCents",
+          "previousMonthStockValueCents",
+          "movementsThisMonth",
+          "monthlyValueSeries",
+          "unpricedVariants"
+        ],
+        "type": "object",
+        "properties": {
+          "variantCount": {
+            "description": "Variantes ativas com saldo.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "criticalItems": {
+            "description": "Destas, quantas com saldo abaixo do mínimo.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "stockValueCents": {
+            "description": "Valor do estoque AGORA, pelo mesmo preço de valoração que `GET /api/reports/stock-valuation` usa — não um segundo critério. Variante sem preço na empresa NÃO entra na soma (não vale zero, vale desconhecido), e é `unpricedVariants` que diz quantas ficaram de fora: sem esse par, um buraco de cadastro apareceria como estoque barato.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "previousMonthStockValueCents": {
+            "description": "O mesmo valor no fechamento do mês anterior, pelo mesmo critério.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "movementsThisMonth": {
+            "description": "Movimentos lançados no mês corrente.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "monthlyValueSeries": {
+            "description": "Valor do estoque no fechamento de cada mês, em centavos.",
+            "$ref": "#/components/schemas/KpiSeriesDto"
+          },
+          "unpricedVariants": {
+            "description": "Variantes ativas com saldo e SEM preço — as que ficaram fora de `stockValueCents`. Zero é a resposta normal; qualquer outra coisa é cadastro para arrumar, e o número existe para o operador saber que a soma acima está incompleta antes de decidir por ela.",
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "OpportunitiesSummaryDto": {
+        "description": "Proposto. O resumo da faixa de KPI do funil de OPORTUNIDADES. `weightedValueCents` é o aberto ponderado pela probabilidade da etapa — apurado no servidor porque a probabilidade é do funil, não da tela, e a tela não tem como somá-la sem baixar o funil inteiro. O DTO manda o valor de HOJE e a base de comparação, nunca o percentual pronto: variação apurada no servidor é número que o operador não consegue conferir contra nada na tela, e a derivação de dois campos visíveis ele confere. Mesma regra de `DashboardSummaryDto`.",
+        "required": [
+          "openOpportunities",
+          "openValueCents",
+          "weightedValueCents",
+          "wonThisMonth",
+          "wonThisMonthCents",
+          "previousMonthWonCents",
+          "monthlyWonSeries"
+        ],
+        "type": "object",
+        "properties": {
+          "openOpportunities": {
+            "description": "Oportunidades em etapa aberta.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "openValueCents": {
+            "description": "Valor somado das oportunidades abertas.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "weightedValueCents": {
+            "description": "O mesmo valor, ponderado pela probabilidade da etapa.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "wonThisMonth": {
+            "description": "Quantas foram ganhas no mês corrente.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "wonThisMonthCents": {
+            "description": "Valor ganho no mês corrente.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "previousMonthWonCents": {
+            "description": "Valor ganho no mês anterior fechado.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "monthlyWonSeries": {
+            "description": "Ganho por mês, em centavos.",
+            "$ref": "#/components/schemas/KpiSeriesDto"
+          }
+        }
+      },
+      "NavCountersDto": {
+        "description": "Proposto. Os contadores que a NAVEGAÇÃO mostra ao lado dos itens — o número que diz \"tem coisa aqui\" antes de a pessoa entrar.\n\n**É UMA chamada, e não uma por módulo, de propósito:** a sidebar mostra os oito ao mesmo tempo, e oito consultas para desenhar uma coluna dariam oito instantes diferentes no mesmo quadro — o item some de um contador e aparece noutro sem nunca ter existido nos dois. Um DTO é uma leitura só, coerente consigo mesma.\n\nContagem, nunca dinheiro: badge de navegação que mostra valor obriga a ler antes de decidir para onde ir, que é o contrário do que ela serve. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.",
+        "required": [
+          "quotesOpen",
+          "ordersOpen",
+          "purchaseOrdersOpen",
+          "goodsReceiptsPending",
+          "opportunitiesOpen",
+          "tasksDue",
+          "todosOpen",
+          "stockCritical"
+        ],
+        "type": "object",
+        "properties": {
+          "quotesOpen": {
+            "description": "Orçamentos em aberto.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "ordersOpen": {
+            "description": "Pedidos de venda ainda não concluídos.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "purchaseOrdersOpen": {
+            "description": "Ordens de compra ainda não recebidas por inteiro.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "goodsReceiptsPending": {
+            "description": "Recebimentos conferidos e ainda não lançados.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "opportunitiesOpen": {
+            "description": "Oportunidades em etapa aberta.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "tasksDue": {
+            "description": "Tarefas do usuário da sessão com prazo hoje ou vencido.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "todosOpen": {
+            "description": "Itens de A fazer não concluídos, do usuário da sessão.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "stockCritical": {
+            "description": "Variantes com saldo abaixo do mínimo.",
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "SavedViewColor": {
+        "type": "string",
+        "description": "Proposto. Matiz do quadradinho da view — **nome da rampa, nunca hex**. O tema escuro reescreve os degraus de cada matiz, então uma cor gravada em hexadecimal nasceria certa no claro e errada no escuro, e ninguém a corrigiria porque ela já estaria no banco. `neutro` é a view que não escolheu cor.",
+        "enum": ["neutro", "lime", "indigo", "mint", "sky", "amber", "rose", "violet", "teal"]
+      },
+      "SavedViewDto": {
+        "required": ["id", "route", "name", "color", "filters", "joinOperator", "favorite"],
+        "type": "object",
+        "description": "Proposto. Uma consulta salva pelo usuário: o que ele filtra toda segunda-feira, com nome, cor e lugar na barra lateral. **Guarda o que a CONSULTA é, não o que a tela mostrou** — `page` e `q` ficam de fora de propósito: a página é onde ele parou de rolar e o `q` é pergunta pontual, e restaurar os dois abriria o favorito na página 4 de uma busca que ninguém lembra ter feito.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "route": {
+            "type": "string",
+            "description": "Rota da tela a que a view pertence (`/compras/ordens`). É a IDENTIDADE da listagem para quem lê de fora — a sidebar precisa saber para onde o favorito leva, e uma chave interna de cache não é endereço que se possa navegar."
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome que o operador deu — é o rótulo da aba e do item de Favoritos."
+          },
+          "color": {
+            "$ref": "#/components/schemas/SavedViewColor"
+          },
+          "filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ListFilter"
+            },
+            "description": "As condições do filtro estruturado, na MESMA forma que viaja na query da listagem. Guardar o texto já url-encoded pouparia uma conversão e custaria a conferência: campo fora da whitelist só apareceria como 400 no dia em que alguém abrisse a view."
+          },
+          "joinOperator": {
+            "$ref": "#/components/schemas/ListFilterJoin"
+          },
+          "sortBy": {
+            "type": ["null", "string"],
+            "description": "Campo da ordenação, na whitelist do recurso. `null` = a view não guardou ordem."
+          },
+          "sortDesc": {
+            "type": "boolean",
+            "description": "Ordem descendente."
+          },
+          "groupBy": {
+            "type": "string",
+            "description": "Campo que agrupa as linhas. Vazio = a view não guardou agrupamento."
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Colunas visíveis, na ordem. Vazio = as da tela — que é diferente de \"nenhuma coluna\", e é o que mantém válida a view salva antes de a tela ganhar coluna nova."
+          },
+          "mode": {
+            "type": "string",
+            "description": "Id da visão desenhada (`lista` é a tabela; `quadro`, `calendario`… são as alternativas que a tela declara). Vazio = a view não guardou visão."
+          },
+          "favorite": {
+            "type": "boolean",
+            "description": "Fixada no grupo FAVORITOS da barra lateral. É a estrela, e é por usuário como todo o resto do registro."
+          },
+          "position": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Ordem dentro da tela (e dentro de Favoritos). Empate resolve por `name`, para a lista não trocar de ordem entre dois carregamentos."
+          }
+        }
+      },
+      "SavedViewWriteRequest": {
+        "required": ["route", "name"],
+        "type": "object",
+        "description": "Proposto. Corpo de criação e de substituição da view. Sem `id` e sem dono: o id é do servidor e o dono é a sessão. **PUT substitui o registro inteiro** — campo omitido volta ao padrão, como no resto do contrato.",
+        "properties": {
+          "route": {
+            "type": "string",
+            "description": "Rota da tela a que a view pertence (`/compras/ordens`). É a IDENTIDADE da listagem para quem lê de fora — a sidebar precisa saber para onde o favorito leva, e uma chave interna de cache não é endereço que se possa navegar."
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome que o operador deu — é o rótulo da aba e do item de Favoritos."
+          },
+          "color": {
+            "$ref": "#/components/schemas/SavedViewColor"
+          },
+          "filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ListFilter"
+            },
+            "description": "As condições do filtro estruturado, na MESMA forma que viaja na query da listagem. Guardar o texto já url-encoded pouparia uma conversão e custaria a conferência: campo fora da whitelist só apareceria como 400 no dia em que alguém abrisse a view."
+          },
+          "joinOperator": {
+            "$ref": "#/components/schemas/ListFilterJoin"
+          },
+          "sortBy": {
+            "type": ["null", "string"],
+            "description": "Campo da ordenação, na whitelist do recurso. `null` = a view não guardou ordem."
+          },
+          "sortDesc": {
+            "type": "boolean",
+            "description": "Ordem descendente."
+          },
+          "groupBy": {
+            "type": "string",
+            "description": "Campo que agrupa as linhas. Vazio = a view não guardou agrupamento."
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Colunas visíveis, na ordem. Vazio = as da tela — que é diferente de \"nenhuma coluna\", e é o que mantém válida a view salva antes de a tela ganhar coluna nova."
+          },
+          "mode": {
+            "type": "string",
+            "description": "Id da visão desenhada (`lista` é a tabela; `quadro`, `calendario`… são as alternativas que a tela declara). Vazio = a view não guardou visão."
+          },
+          "favorite": {
+            "type": "boolean",
+            "description": "Fixada no grupo FAVORITOS da barra lateral. É a estrela, e é por usuário como todo o resto do registro."
+          },
+          "position": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Ordem dentro da tela (e dentro de Favoritos). Empate resolve por `name`, para a lista não trocar de ordem entre dois carregamentos."
+          }
+        }
       }
     }
   },
@@ -25158,6 +25887,14 @@
     },
     {
       "name": "financeiro"
+    },
+    {
+      "name": "nav",
+      "description": "Proposto. Os contadores que a navegação mostra — a única família cujo consumidor é o CHROME da aplicação, e não uma tela. Tag própria porque o número não pertence a módulo nenhum: ele atravessa os oito."
+    },
+    {
+      "name": "preferencias",
+      "description": "Preferência DO USUÁRIO, não da empresa. O dono sai da sessão e nunca do corpo nem da URL: um `userId` de parâmetro convidaria a ler a view do colega, e a única resposta certa para isso é não haver por onde pedir."
     }
   ]
 }

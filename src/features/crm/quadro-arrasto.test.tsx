@@ -131,6 +131,17 @@ beforeEach(() => {
   localStorage.clear()
 })
 
+/**
+ * O agrupamento deixou de ser um `<select>` e virou o chip da barra 2.0 (D9):
+ * clicar abre a lista, e a opção é um botão com o rótulo. O gesto do operador é
+ * o mesmo — escolher por onde a lista se divide —, e é isso que os casos abaixo
+ * afirmam.
+ */
+async function agruparPorResponsavel(user: ReturnType<typeof renderRoute>['user']) {
+  await user.click(screen.getByRole('button', { name: /Agrup/ }))
+  await user.click(await screen.findByRole('button', { name: 'Responsável' }))
+}
+
 describe('a decisão do gesto, sem DOM', () => {
   const coluna = CARTOES
 
@@ -297,7 +308,7 @@ describe('quadro do funil: o arrasto', () => {
     const { user } = renderRoute('/crm/funil/funil-1', servidorDoFunil(escritas))
 
     await screen.findByText('Casa Jardim')
-    await user.selectOptions(screen.getByLabelText('Agrupar por:'), 'ownerName')
+    await agruparPorResponsavel(user)
 
     // Mesma razão que tira `Topo desta etapa` do menu: soltar numa coluna de
     // responsável pediria posição relativa a cartões de etapas diferentes, e o
@@ -315,7 +326,8 @@ describe('quadro do funil: o arrasto', () => {
     await arrastarSobre(cartaoDe('Casa Jardim'), proposta)
 
     await waitFor(() => expect(proposta).toHaveAttribute('data-sob-voo'))
-    expect(proposta.className).toContain('shadow-el2')
+    // Um DEGRAU de elevação, nunca uma cor — a sombra dura de tinta 2.0.
+    expect(proposta.className).toContain('shadow-[var(--hard-1)]')
   })
 })
 

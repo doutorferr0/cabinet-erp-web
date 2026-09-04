@@ -32,26 +32,30 @@ describe('ConfirmarDesativacao', () => {
     expect(dialogo).toHaveAccessibleDescription(/não é apagado/i)
   })
 
-  // A voz do título do diálogo é Sora, e ela é DECLARADA, não herdada.
+  // A voz do título do diálogo é DECLARADA, não herdada.
   //
   // Escrito primeiro como guarda de herança (a regra do `index.css` pegava
   // `h1, h2, h3` e dava Newsreader a todos), e reescrito no mesmo dia quando o
   // user restringiu a serifa ao H1: um `Heading` sem família passou a cair no
-  // Inter do body, calado. O diálogo não é o H1 da tela — é estrutura dentro
-  // dela — então fala em Sora, como todo cabeçalho de H2 para baixo.
-  it('o título é cabeçalho de verdade, em Sora, sem caixa alta', async () => {
+  // Inter do body, calado.
+  //
+  // **2.0 (D29):** o degrau é `t-secao` (Gambarino 20), o que §Hierarquia
+  // reserva para título de diálogo — o diálogo conta como TELA PRÓPRIA e gasta
+  // o Gambarino dele. As asserções de peso saíram porque não há mais peso a
+  // asserir: Gambarino tem peso único, e a régua diz que hierarquia entre
+  // Gambarinos é TAMANHO. Um `font-bold` aqui pediria à fonte um corte que ela
+  // não tem, e o navegador o falsificaria engordando o traço.
+  it('o título é cabeçalho de verdade, em t-secao, sem caixa alta', async () => {
     montar()
     const dialogo = await screen.findByRole('alertdialog')
     const titulo = within(dialogo).getByRole('heading')
 
     // Cabeçalho de verdade: quem navega por leitor de tela pula por nível.
     expect(['H1', 'H2', 'H3']).toContain(titulo.tagName)
-    // A família não pode voltar a depender de herança — ver o comentário acima.
-    expect(titulo.className).toContain('font-display')
+    // O degrau da régua vem da CLASSE, não de herança — ver o comentário acima.
+    expect(titulo.className).toContain('t-secao')
     expect(titulo.className).not.toContain('font-nome')
     expect(titulo.className).not.toContain('uppercase')
-    expect(titulo.className).toContain('font-bold')
-    expect(titulo.className).not.toContain('font-extrabold')
   })
 
   it('NÃO fecha ao clicar fora — a saída é por botão nomeado', async () => {

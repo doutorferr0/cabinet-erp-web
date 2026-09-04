@@ -17,9 +17,16 @@ function DialogTrigger({ ...props }: DialogTriggerPrimitiveProps) {
   return <DialogTriggerPrimitive data-slot="dialog-trigger" {...props} />
 }
 
+/**
+ * O botão que fecha. Padrão **ghost** desde a D29: no rodapé de um diálogo há
+ * duas ações e só uma delas faz alguma coisa acontecer. Com as duas em caixa
+ * (`outline` + primária), o par lia como escolha entre iguais e o olho tinha de
+ * ler as duas etiquetas para achar a que confirma. Ghost ao lado da tecla é a
+ * hierarquia dita pelo desenho.
+ */
 function DialogClose({
   className,
-  variant = 'outline',
+  variant = 'ghost',
   size = 'default',
   ...props
 }: React.ComponentProps<typeof Button>) {
@@ -55,8 +62,17 @@ function DialogOverlay({
 }
 
 /**
- * A folha do diálogo é a mesma folha brut: Documento + caixa preta 2px +
- * sombra dura 5px, pousada opaca sobre o overlay (DESIGN.md §Layout).
+ * A FOLHA DO DIÁLOGO (2.0) — papel pousado sobre a cortina.
+ *
+ * Borda de **1.5px** em n-900 e sombra dura `--hard-3` (o degrau que a escada
+ * reserva para o que flutua sobre tudo, servido pelo alias `shadow-el5`). O
+ * 1.5px não é preciosismo: com 2px a folha do diálogo tinha o MESMO traço do
+ * card de página, e as duas superfícies liam como o mesmo plano — o que separa
+ * o diálogo do resto é ele estar por cima, e o traço um pouco mais fino é o que
+ * deixa a sombra fazer esse trabalho sozinha.
+ *
+ * Uma sombra dura por tela é a regra (§Hierarquia); enquanto o diálogo está
+ * aberto, a dele é a que vale — o que está atrás está sob a cortina.
  */
 function Dialog({
   className,
@@ -75,9 +91,7 @@ function Dialog({
       <ModalPrimitive
         data-slot="dialog-content"
         className={cn(
-          // Raio de PAINEL e `el-5`: o diálogo é a superfície mais alta da
-          // tela, e é o degrau que a escada de elevação reserva para modal.
-          'fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-panel border-2 border-border bg-card p-4 text-sm text-card-foreground pop-spring shadow-el5 outline-none sm:max-w-sm',
+          'fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-panel border-[1.5px] border-border bg-card p-4 t-corpo text-card-foreground pop-spring shadow-el5 outline-none sm:max-w-sm',
           className,
         )}
       >
@@ -115,11 +129,15 @@ function DialogFooter({
   return (
     <div
       data-slot="dialog-footer"
+      // Ações à DIREITA (§Hierarquia): a leitura vai do texto para a decisão, e
+      // a decisão fica onde o polegar e o olho terminam. Em coluna
+      // (`flex-col-reverse`, telas estreitas) a primária sobe para o topo da
+      // pilha pelo mesmo motivo.
       className={cn('flex flex-col-reverse gap-2 sm:flex-row sm:justify-end', className)}
       {...props}
     >
       {children}
-      {showCloseButton && <DialogClose variant="outline">Fechar</DialogClose>}
+      {showCloseButton && <DialogClose>Fechar</DialogClose>}
     </div>
   )
 }
@@ -129,25 +147,19 @@ function DialogTitle({ className, ...props }: Omit<React.ComponentProps<typeof H
     <Heading
       slot="title"
       data-slot="dialog-title"
-      // Sem caixa alta e em 700: ver a nota do `SheetTitle`.
-      // Sora explícito, e não herdado: desde que a regra do `index.css` passou a
-      // valer só para `h1` (2026-08-13), um `Heading` sem família cai no Inter
-      // do body — e a regra é "de H2 para baixo, Sora". Herança que sumiu, e
-      // sumiu calada: o título continuava renderizando, só que na voz errada.
-      className={cn('font-display text-base leading-none font-bold', className)}
+      // `t-secao` (Gambarino 20): §Hierarquia trata o diálogo como TELA
+      // PRÓPRIA, e é por isso que ele pode gastar um Gambarino sem contar
+      // contra o da página que está atrás da cortina. A família vem da
+      // utility, e não herdada — herança de `font-display` já sumiu calada uma
+      // vez aqui, quando a regra do `index.css` passou a valer só para `h1`.
+      className={cn('t-secao', className)}
       {...props}
     />
   )
 }
 
 function DialogDescription({ className, ...props }: Omit<React.ComponentProps<'div'>, 'slot'>) {
-  return (
-    <div
-      data-slot="dialog-description"
-      className={cn('text-sm text-muted-foreground', className)}
-      {...props}
-    />
-  )
+  return <div data-slot="dialog-description" className={cn('t-meta', className)} {...props} />
 }
 
 export {

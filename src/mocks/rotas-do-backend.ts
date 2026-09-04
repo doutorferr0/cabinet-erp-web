@@ -1345,6 +1345,48 @@ const SUPORTE_DA_PLATAFORMA: readonly RotaNoMock[] = (
 }))
 
 /**
+ * OS CINCO AGREGADOS DE KPI (D11, #479) — a primeira família a nascer DEPOIS do
+ * congelamento do Node, e por isso a primeira `spring-pendente` de verdade.
+ *
+ * As cinco são caminho NOVO publicado aqui hoje: `/api/purchases/orders-summary`,
+ * `/api/sales/quotes-summary`, `/api/stock/summary`,
+ * `/api/crm/opportunities-summary` e `/api/nav/counters`. A cópia do contrato do
+ * `cabinet-erp-api` não as conhece, então lá elas caem no `setNotFoundHandler` e
+ * respondem **404 `Este caminho não existe no contrato`** — `sem-contrato`, não
+ * `sem-handler`, e a diferença é o próximo passo que o console imprime.
+ *
+ * **A época, porém, não é `node-congelado`.** O `sync:contract` de lá fecharia a
+ * janela do 404, mas o handler que viria depois não vem: o Node parou em
+ * 2026-08-28 e quem serve estas cinco é o Spring. Declarar `node-congelado`
+ * mandaria alguém abrir o `servidor.ts` de um repositório que não fecha mais
+ * lacuna nenhuma — que é exatamente o erro que `EpocaDoServidor` existe para
+ * impedir, e é por isso que o recenseamento fechado de `rotas-do-backend.test.ts`
+ * reprova quem tentar.
+ *
+ * **Elas TÊM handler de mock desde o mesmo commit** (`src/mocks/api/agregados.ts`).
+ * Isso não é detalhe: rota declarada mockada sem handler cai no fallback da SPA
+ * e devolve `index.html` com **200** — o pior caso que este arquivo descreve, e
+ * o que a entrega (G4) e o recebimento (G3) já pagaram. Aqui a faixa de KPI
+ * responde nos dois ambientes desde o primeiro dia.
+ */
+const AGREGADOS_DE_KPI: readonly RotaNoMock[] = (
+  [
+    '/api/purchases/orders-summary',
+    '/api/sales/quotes-summary',
+    '/api/stock/summary',
+    '/api/crm/opportunities-summary',
+    '/api/nav/counters',
+  ] as const
+).map((caminho) => ({
+  metodo: 'get' as const,
+  caminho,
+  motivo:
+    'agregado de KPI publicado NESTE repo pela #479 (D11) — a cópia do contrato do api ainda não conhece o caminho, e quem vai servi-lo é o Spring, não o Node parado',
+  natureza: 'sem-contrato' as const,
+  servidor: 'spring-pendente' as const,
+}))
+
+/**
  * O reagendamento do Planner (`web#XXX`), publicado NESTE PR.
  *
  * `sem-contrato`, e sem precisar de par local para afirmá-lo: o caminho nasce
@@ -1366,6 +1408,41 @@ const SUPORTE_DA_PLATAFORMA: readonly RotaNoMock[] = (
 const REAGENDAR_SEM_CONTRATO_LA =
   'PATCH do item do plano publicado neste PR: a cópia do contrato do api ainda não o conhece. ' +
   'Próximo passo lá: pnpm sync:contract + pnpm codegen, e só então o handler.'
+
+/**
+ * As VIEWS SALVAS do usuário (`/api/me/views`), publicadas NESTE PR pela #481 (D13).
+ *
+ * `sem-contrato`, e sem precisar de par local para afirmá-lo — o caminho nasce
+ * aqui e a cópia do contrato do api vem da `main` deste repo. Quem vai servi-lo
+ * é o Spring: o Node foi congelado em 28/08 e não fecha mais lacuna nenhuma.
+ *
+ * **Têm handler de mock** (`src/mocks/api/views.ts`), que é a condição escrita
+ * no bloco de `cost-profiles`: sem handler, a rota cairia no fallback da SPA e
+ * devolveria `index.html` com 200 — pior que o 404 honesto.
+ *
+ * **O preço, sabido:** este é o único mock que grava em `localStorage`, porque a
+ * view precisa durar mais que a sessão. No par local isso significa que as views
+ * ficam no navegador enquanto o servidor não as conhece — e no dia em que o
+ * Spring servir a família, a lista do operador estará vazia do lado de lá. É
+ * migração de dado pessoal, não perda de registro de negócio, e o passo é o
+ * mesmo das outras: `sync:contract` + `codegen` lá, depois o handler, e então
+ * estas quatro linhas migram para `ROTAS_DO_BACKEND`.
+ */
+const VIEWS_SALVAS: readonly RotaNoMock[] = (
+  [
+    { metodo: 'get', caminho: '/api/me/views' },
+    { metodo: 'post', caminho: '/api/me/views' },
+    { metodo: 'put', caminho: '/api/me/views/{id}' },
+    { metodo: 'delete', caminho: '/api/me/views/{id}' },
+  ] as const
+).map(({ metodo, caminho }) => ({
+  metodo,
+  caminho,
+  motivo:
+    'views salvas por usuário publicadas NESTE repo pela #481 (D13) — a cópia do contrato do api ainda não conhece o caminho, e quem vai servi-lo é o Spring, não o Node parado',
+  natureza: 'sem-contrato' as const,
+  servidor: 'spring-pendente' as const,
+}))
 
 export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
   ...RECEBIMENTO,
@@ -1456,6 +1533,8 @@ export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
     natureza: 'sem-contrato',
     servidor: 'node-congelado',
   },
+  ...AGREGADOS_DE_KPI,
+  ...VIEWS_SALVAS,
 ]
 
 /**

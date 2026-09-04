@@ -4,6 +4,7 @@ import {
 } from '@/components/cabinet/estado-de-consulta'
 import { obterOportunidade, oportunidadeVazia } from '@/data/crm-api'
 import { OportunidadeForm } from '@/features/crm/oportunidade-form'
+import { StepperDeEtapas } from '@/features/crm/stepper-de-etapas'
 import { PainelDeAtividades } from '@/features/tarefas/painel-atividades'
 import { isConsulta } from '@/lib/modo-consulta'
 import { useQuery } from '@tanstack/react-query'
@@ -65,6 +66,13 @@ function OportunidadePage() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* O ANDAMENTO vem antes do formulário e FORA dele: a fita escreve pelo
+          `PATCH .../stage`, que é escrita própria e imediata. Dentro do `<form>`
+          os botões dela disputariam o submit do cadastro — o mesmo motivo pelo
+          qual o painel de atividades mora aqui embaixo. E em `Incluir` não
+          existe: negócio que ainda não foi gravado não tem etapa para avançar. */}
+      {isNovo ? null : <StepperDeEtapas oportunidade={registro} readOnly={readOnly} />}
+
       <OportunidadeForm
         oportunidade={registro}
         readOnly={readOnly}

@@ -141,3 +141,143 @@ describe('shortcutLabel', () => {
     expect(shortcutLabel('ctrl+k')).toBe('Ctrl+K')
   })
 })
+
+/**
+ * SEQUÊNCIA `g` + letra (Reface 2.0, D6) — dois passos, não um acorde.
+ *
+ * O `g` arma e a letra seguinte navega. É o que dá três destinos sem gastar
+ * três modificadores, e o que evita colisão com o navegador, que não publica
+ * sequência nenhuma.
+ */
+describe('sequência de duas teclas', () => {
+  it('dispara quando a segunda tecla vem depois da primeira', () => {
+    const handler = vi.fn()
+    const off = bindShortcut('g c', handler)
+
+    tecla({ key: 'g' })
+    expect(handler).not.toHaveBeenCalled()
+    tecla({ key: 'c' })
+    expect(handler).toHaveBeenCalledTimes(1)
+
+    off()
+  })
+
+  it('a segunda tecla sozinha não faz nada — o `g` é que arma', () => {
+    const handler = vi.fn()
+    const off = bindShortcut('g c', handler)
+
+    tecla({ key: 'c' })
+    expect(handler).not.toHaveBeenCalled()
+
+    off()
+  })
+
+  /** Tecla no meio desarma: `g x c` não é `g c`. */
+  it('tecla estranha no meio cancela a sequência', () => {
+    const handler = vi.fn()
+    const off = bindShortcut('g c', handler)
+
+    tecla({ key: 'g' })
+    tecla({ key: 'x' })
+    tecla({ key: 'c' })
+    expect(handler).not.toHaveBeenCalled()
+
+    off()
+  })
+
+  it('modificador cancela — `Ctrl+G` é comando do navegador', () => {
+    const handler = vi.fn()
+    const off = bindShortcut('g c', handler)
+
+    tecla({ key: 'g', ctrlKey: true })
+    tecla({ key: 'c' })
+    expect(handler).not.toHaveBeenCalled()
+
+    off()
+  })
+
+  /**
+   * Duas sequências com o mesmo primeiro passo rastreiam o `g` separadamente —
+   * é o que permite `g c` e `g e` coexistirem sem uma roubar a outra.
+   */
+  it('sequências irmãs não se atropelam', () => {
+    const compras = vi.fn()
+    const estoque = vi.fn()
+    const offC = bindShortcut('g c', compras)
+    const offE = bindShortcut('g e', estoque)
+
+    tecla({ key: 'g' })
+    tecla({ key: 'e' })
+    expect(estoque).toHaveBeenCalledTimes(1)
+    expect(compras).not.toHaveBeenCalled()
+
+    offC()
+    offE()
+  })
+
+  it('o rótulo sai com espaço, como o gesto — `G C`, não `G+C`', () => {
+    expect(shortcutLabel('g c')).toBe('G C')
+    expect(shortcutLabel('ctrl+k')).toBe('Ctrl+K')
+  })
+})
+
+/**
+ * TECLA NUA só fora de campo de texto — senão digitar "novo" numa busca abriria
+ * um cadastro em branco no meio da frase. Acorde com modificador continua
+ * valendo em qualquer lugar: é o caminho de quem já está no formulário.
+ */
+describe('guarda de digitação', () => {
+  function teclaEm(alvo: Element, init: KeyboardEventInit) {
+    alvo.dispatchEvent(new KeyboardEvent('keydown', { ...init, bubbles: true, cancelable: true }))
+  }
+
+  it('tecla nua não dispara dentro de um input', () => {
+    const handler = vi.fn()
+    const off = bindShortcut('n', handler)
+    const input = document.createElement('input')
+    document.body.append(input)
+
+    teclaEm(input, { key: 'n' })
+    expect(handler).not.toHaveBeenCalled()
+
+    input.remove()
+    off()
+  })
+
+  it('mas dispara fora dele', () => {
+    const handler = vi.fn()
+    const off = bindShortcut('n', handler)
+
+    tecla({ key: 'n' })
+    expect(handler).toHaveBeenCalledTimes(1)
+
+    off()
+  })
+
+  it('sequência também não começa dentro de um input', () => {
+    const handler = vi.fn()
+    const off = bindShortcut('g c', handler)
+    const input = document.createElement('input')
+    document.body.append(input)
+
+    teclaEm(input, { key: 'g' })
+    teclaEm(input, { key: 'c' })
+    expect(handler).not.toHaveBeenCalled()
+
+    input.remove()
+    off()
+  })
+
+  it('acorde com modificador continua valendo dentro do campo', () => {
+    const handler = vi.fn()
+    const off = bindShortcut('alt+p', handler)
+    const input = document.createElement('input')
+    document.body.append(input)
+
+    teclaEm(input, { key: 'p', altKey: true })
+    expect(handler).toHaveBeenCalledTimes(1)
+
+    input.remove()
+    off()
+  })
+})

@@ -1,8 +1,11 @@
 import {
   type EmployeeDetailDto,
+  type EmployeeDto,
   type EmployeeLinkRequest,
   type EmployeeTenantLinkDto,
   type EmployeeWriteRequest,
+  type InvitationDto,
+  type ListEmployeesParams,
   type PagedResultOfEmployeeDto,
   type PagedResultOfRoleDto,
   type PermissionCatalogDto,
@@ -11,6 +14,7 @@ import {
   createEmployee,
   createRole,
   getRole,
+  inviteEmployee,
   linkEmployee,
   listEmployeeLinks,
   listEmployees,
@@ -21,7 +25,8 @@ import {
   updateRole,
 } from '@/api/gerado'
 import type { RoleWriteRequest } from '@/api/gerado'
-import { type RespostaDaApi, dadosOuErro } from '@/data/api-provider'
+import { type RespostaDaApi, dadosOuErro, queryDaTabela } from '@/data/api-provider'
+import type { PagedResult, TableQueryState } from '@/lib/table-query'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 /**
@@ -114,6 +119,55 @@ export function useUsuariosDeAcesso(q: string) {
         pageSize: 100,
       })
       return dadosOuErro<PagedResultOfEmployeeDto>(resposta, 'Falha ao consultar os colaboradores.')
+    },
+  })
+}
+
+/**
+ * A listagem de usuários como consulta de SERVIDOR — o fetcher da DataTable.
+ *
+ * `useUsuariosDeAcesso` continua servindo quem só precisa das linhas (o combo
+ * de vínculo). Esta é a forma que a listagem 2.0 pede: busca, ordenação e
+ * paginação viajam para `GET /api/employees` em vez de a tela cortar 100 linhas
+ * e ordenar no navegador.
+ *
+ * A whitelist de `sortBy` do contrato é `name`, `sector`, `jobTitle`, `active`.
+ * Coluna fora dela é 400 no primeiro clique do cabeçalho, e por isso a tela
+ * marca `enableSorting: false` no que não está aqui.
+ */
+export function listarUsuariosDeAcesso(state: TableQueryState): Promise<PagedResult<EmployeeDto>> {
+  return listEmployees(queryDaTabela(state) as ListEmployeesParams).then(
+    (resposta: RespostaDaApi) => {
+      const pagina = dadosOuErro<PagedResultOfEmployeeDto>(
+        resposta,
+        'Falha ao consultar os colaboradores.',
+      )
+      return { rows: pagina.rows ?? [], total: pagina.total ?? 0 }
+    },
+  )
+}
+
+/**
+ * CONVIDAR — a alternativa à senha provisória, e a `proximaAcao` da listagem.
+ *
+ * As duas cobrem a MESMA falta (a conta que `CreateEmployee` cria sem
+ * credencial utilizável) e a diferença é quem fica sabendo do segredo: na
+ * provisória o administrador lê a senha na tela e a repassa por algum canal;
+ * aqui ele não vê senha nenhuma e quem escolhe é a própria pessoa.
+ *
+ * Convidar é a primeira escolha porque o segredo não passa por terceiro — mas
+ * só quando o e-mail cadastrado é dela: o 409 do contrato é exatamente
+ * "colaborador sem e-mail, ou desativado", e é ele que manda o administrador de
+ * volta para a senha provisória. Por isso as duas ações convivem na linha.
+ *
+ * Convidar de novo INVALIDA o convite anterior — dois links vivos dobram a
+ * janela de quem interceptou um.
+ */
+export function useConvidarUsuario() {
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const resposta: RespostaDaApi = await inviteEmployee(id)
+      return dadosOuErro<InvitationDto>(resposta, 'Falha ao enviar o convite.')
     },
   })
 }

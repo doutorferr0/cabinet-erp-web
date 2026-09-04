@@ -124,9 +124,9 @@ export function EmpresaFormDialog({
         <DialogTitle>{empresaId ? 'Alterar empresa' : 'Nova empresa'}</DialogTitle>
       </DialogHeader>
 
-      <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-6 gap-3">
-          <div className="col-span-1 flex flex-col gap-1">
+      <div className="flex flex-col gap-[var(--s-4)]">
+        <div className="grid grid-cols-6 gap-[var(--s-3)]">
+          <div className="col-span-1 flex flex-col gap-[var(--s-1)]">
             <Label htmlFor="empresa-code">Código</Label>
             <Input
               id="empresa-code"
@@ -135,7 +135,7 @@ export function EmpresaFormDialog({
               onChange={(e) => setCode(e.target.value)}
             />
           </div>
-          <div className="col-span-5 flex flex-col gap-1">
+          <div className="col-span-5 flex flex-col gap-[var(--s-1)]">
             <Label htmlFor="empresa-name">Nome fantasia</Label>
             <Input id="empresa-name" value={nome} onChange={(e) => setNome(e.target.value)} />
           </div>
@@ -143,19 +143,19 @@ export function EmpresaFormDialog({
 
         {/* O fantasia NÃO é a razão social, e a tela diz onde a outra mora —
             senão alguém digita a razão aqui e o impresso continua sem ela. */}
-        <p className="text-muted-foreground text-sm leading-snug">
+        <p className="t-meta">
           O nome fantasia é o rótulo do seletor de empresa. A razão social, o CNPJ e o endereço que
           o documento impresso carimba são o <strong>timbre</strong>, e ele se edita na empresa
           ativa, pelo botão Timbre da linha.
         </p>
 
-        <div className="flex flex-col gap-2">
-          <span className="font-medium text-sm">O que esta empresa opera</span>
+        <div className="flex flex-col gap-[var(--s-2)]">
+          <span className="t-bloco">O que esta empresa opera</span>
           {/* Estas caixas mudam a BARRA LATERAL de quem trabalha na empresa — é
               a única alteração desta tela cujo efeito aparece na tela de outra
               pessoa. O texto diz isso; esconder seria deixar alguém desligar
               Fornecedores achando que mexeu num rótulo. */}
-          <p className="text-muted-foreground text-sm leading-snug">
+          <p className="t-meta">
             Desmarcar some com o menu correspondente para todo mundo desta empresa. Nada é apagado —
             remarcar traz tudo de volta.
           </p>
@@ -167,7 +167,7 @@ export function EmpresaFormDialog({
             >
               <span className="flex flex-col">
                 <span>{recurso.label}</span>
-                <span className="text-muted-foreground text-xs leading-snug">{recurso.ajuda}</span>
+                <span className="t-meta">{recurso.ajuda}</span>
               </span>
             </Checkbox>
           ))}

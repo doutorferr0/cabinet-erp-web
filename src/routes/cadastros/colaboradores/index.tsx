@@ -1,7 +1,7 @@
 import type { EmployeeDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
-import { Nome } from '@/components/cabinet/nome'
+import type { OpcaoDeAgrupamento } from '@/components/cabinet/data-table'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
 import { useReadOnlyPorPapel } from '@/data/papeis'
@@ -32,18 +32,19 @@ export const Route = createFileRoute('/cadastros/colaboradores/')({
  */
 const columns: ColumnDef<EmployeeDto>[] = [
   {
-    accessorKey: 'name',
+    id: 'name',
     header: 'Nome',
-    cell: ({ getValue }) => <Nome>{getValue<string>()}</Nome>,
+    // O CARGO vira subtítulo da pessoa — é como ela é apresentada ("Ana, do
+    // financeiro") — e a coluna própria some da grade em vez de repetir.
+    accessorFn: (row) => ({
+      nome: row.name,
+      ...(row.jobTitle ? { subtitulo: row.jobTitle } : {}),
+    }),
+    meta: { tipo: 'entidade' },
   },
   {
     accessorKey: 'sector',
     header: 'Setor',
-    cell: ({ getValue }) => getValue<string | null>() ?? '—',
-  },
-  {
-    accessorKey: 'jobTitle',
-    header: 'Cargo',
     cell: ({ getValue }) => getValue<string | null>() ?? '—',
   },
   {
@@ -74,6 +75,26 @@ const columns: ColumnDef<EmployeeDto>[] = [
  * este repo, e depois handler no api. Enquanto isso a busca é o `q`, que o
  * servidor serve.
  */
+
+/** Colaborador desligado fica na lista e sai da disputa por atenção. */
+function decoracaoDoColaborador(c: EmployeeDto) {
+  return c.active ? undefined : ('muted' as const)
+}
+
+/**
+ * Setor e cargo são como a empresa se enxerga, e é por eles que a lista de
+ * pessoas é lida. `Situação` tinge (é estado); os outros dois, não.
+ */
+const AGRUPAMENTOS: readonly OpcaoDeAgrupamento<EmployeeDto>[] = [
+  { id: 'sector', rotulo: 'Setor', valorDaLinha: (c) => c.sector ?? '—' },
+  { id: 'jobTitle', rotulo: 'Cargo', valorDaLinha: (c) => c.jobTitle ?? '—' },
+  {
+    id: 'active',
+    rotulo: 'Situação',
+    valorDaLinha: (c) => (c.active ? 'Ativo' : 'Inativo'),
+    tomDoValor: (valor) => (valor === 'Ativo' ? 'done' : 'void'),
+  },
+]
 
 function ColaboradoresPage() {
   const navigate = useNavigate()
@@ -106,6 +127,8 @@ function ColaboradoresPage() {
         columns={columns}
         queryKey={['colaboradores']}
         fetcher={data.colaboradores.list}
+        decoracao={decoracaoDoColaborador}
+        agrupamentos={AGRUPAMENTOS}
         actions={actions}
         origem={data.colaboradores.origem}
         // O SELETOR DE COLUNAS continua, e é função diferente do filtro: o

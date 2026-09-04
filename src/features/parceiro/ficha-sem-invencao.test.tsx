@@ -90,6 +90,10 @@ describe('a ficha não inventa o que o contrato não cobre', () => {
     // O nome aparece duas vezes de propósito — no cabeçalho da ficha e no
     // campo do módulo —, então a asserção é sobre existir, não sobre ser único.
     expect((await screen.findAllByText('PROVA CURL LTDA')).length).toBeGreaterThan(0)
-    expect(screen.getByText(CNPJ)).toBeInTheDocument()
+    // O documento também aparece duas vezes desde a D19 (#487): o cartão de
+    // identidade da lateral traz nome + documento + cidade, e o módulo
+    // `Identificação` traz o campo. Mesma razão do nome logo acima — a asserção
+    // é sobre existir, não sobre ser único.
+    expect(screen.getAllByText(CNPJ).length).toBeGreaterThan(0)
   })
 })

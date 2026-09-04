@@ -1,18 +1,36 @@
 import { AbasDeConsulta } from '@/components/cabinet/filtros/abas-de-consulta'
+import { interpretarBusca } from '@/components/cabinet/filtros/busca-com-prefixo'
 import { consultaDaUrl } from '@/components/cabinet/filtros/filtro-na-url'
-import { PilulasDeFiltro } from '@/components/cabinet/filtros/pilulas-de-filtro'
 import { SincroniaComAUrl } from '@/components/cabinet/filtros/sincronia-com-a-url'
 import { ListaDeFiltros } from '@/components/cabinet/lista-de-filtros'
+import { type AcaoDeLinha, AcoesDeLinha } from '@/components/cabinet/listagem/acoes-de-linha'
+import { BarraDeFiltros } from '@/components/cabinet/listagem/barra-de-filtros'
+import {
+  IconeDeTipo,
+  LARGURA_DO_TIPO,
+  type TipoDeColuna,
+  classeDoTipo,
+  ehTipoComposto,
+  renderTipo,
+  tomDoValor,
+} from '@/components/cabinet/listagem/celulas-tipadas'
 import {
   PontoDoModulo,
   colunasDaGrade,
   idsDeclarados,
   moduloDaColuna,
 } from '@/components/cabinet/listagem/colunas-da-grade'
-import { ColunasPorModulo } from '@/components/cabinet/listagem/colunas-por-modulo'
+import { gruposDoModulo } from '@/components/cabinet/listagem/colunas-por-modulo'
 import { FiltroPorModulo } from '@/components/cabinet/listagem/filtro-por-modulo'
+import { useFlipDasLinhas } from '@/components/cabinet/listagem/flip-das-linhas'
+import {
+  DICA_DA_PLANILHA,
+  EditorDaCelula,
+  useModoPlanilha,
+} from '@/components/cabinet/listagem/modo-planilha'
 import { ModuloEmConstrucao } from '@/components/cabinet/modulo-em-construcao'
 import { Ornamento, OrnamentoDoModulo } from '@/components/cabinet/ornamento'
+import { Stamp, type StampTom } from '@/components/cabinet/stamp'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -23,7 +41,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty'
-import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -59,26 +76,59 @@ import {
   filtrosNormalizados,
   filtrosValidos,
 } from '@/lib/filtro-de-consulta'
+import { formatMoneyBRL } from '@/lib/formatters'
 import type { TableFetcher, TableQueryState, TableSort } from '@/lib/table-query'
 import { cn } from '@/lib/utils'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
-import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table'
+import {
+  type ColumnDef,
+  type Row,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from '@tanstack/react-table'
 import {
   ArrowDown,
   ArrowUp,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   type LucideIcon,
   Rows3,
-  Search,
 } from 'lucide-react'
-import { type ReactNode, useCallback, useEffect, useId, useMemo, useState } from 'react'
+import {
+  Fragment,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 
 declare module '@tanstack/react-table' {
   interface ColumnMeta<TData, TValue> {
     /** Coluna de valor: numerais tabulares alinhados à direita (DESIGN.md, Regra do Número Tabular). */
     numeric?: boolean
+    /**
+     * O QUE aquele valor é — id, entidade, data, dinheiro, situação, progresso
+     * ou texto. Decide a moldura da célula (mono, alinhamento, truncagem), o
+     * ícone do cabeçalho e, na situação, se a linha inteira fica apagada.
+     * Ver `listagem/celulas-tipadas.tsx`.
+     */
+    tipo?: TipoDeColuna
+    /**
+     * A célula aceita edição inline no modo Planilha (D33).
+     *
+     * Sem isto, Enter na célula ABRE o registro — que é o que nove em cada dez
+     * colunas de uma listagem de ERP querem, porque listagem confere e o
+     * formulário é que grava. Ligar exige a tela passar `aoEditarCelula`: a
+     * coluna diz que ACEITA, a tela diz o que FAZER com o valor, e uma sem a
+     * outra abriria um editor cujo Enter não grava em lugar nenhum.
+     */
+    editavel?: boolean
   }
 }
 
@@ -137,29 +187,135 @@ export interface VisaoDaListagem<T> {
   render: (dados: { rows: T[]; agruparPor: string }) => ReactNode
 }
 
-/** Campo pelo qual a visão que agrupa monta as colunas. */
-export interface OpcaoDeAgrupamento {
+/**
+ * Campo pelo qual a listagem se parte — nas COLUNAS da visão que agrupa e, desde
+ * a D10, nas FAIXAS da tabela.
+ *
+ * `valorDaLinha` é o que separa os dois usos: a visão sabe ler as próprias
+ * linhas (o quadro do funil tem o mapa de etapas), a tabela não sabe nada sobre
+ * `T`. Campo sem `valorDaLinha` continua valendo para a visão e **não** aparece
+ * no chip `Agrupar` — oferecer na barra um campo que a tabela não sabe ler daria
+ * um clique que não faz nada, que é pior que a ausência do campo.
+ */
+export interface OpcaoDeAgrupamento<T = unknown> {
   id: string
   rotulo: string
+  /** O valor do grupo desta linha, já na forma de exibição. */
+  valorDaLinha?: (linha: T) => string
+  /**
+   * O tom do valor quando o campo é SITUAÇÃO — é ele que tinge a faixa do
+   * grupo. Sem ele a faixa fica no tint neutro: agrupar por vendedor não tem
+   * cor, e inventar uma pintaria a listagem de decoração sem significado
+   * (§Hierarquia: cor decorativa em linha de dado é proibida).
+   */
+  tomDoValor?: (valor: string) => StampTom | undefined
+}
+
+/**
+ * DECORAÇÃO DA LINHA — o estado que a linha anuncia sozinha (D10, Odoo).
+ *
+ * Não é cor decorativa: cada tom responde a uma pergunta que o operador faria
+ * varrendo a coluna de data. `warn` é o que ainda dá tempo (vence hoje),
+ * `bad` é o que já passou (atrasado, bloqueado), `muted` é o que saiu do jogo
+ * (cancelado, inativo) e por isso não deve competir com o resto por atenção.
+ *
+ * A tela decide o que é cada um: a tabela não conhece prazo nem situação.
+ */
+export type DecoracaoDaLinha = 'warn' | 'bad' | 'muted'
+
+/** Um grupo montado pela tabela: o valor, as linhas e a soma (quando há). */
+export interface GrupoDaTabela<T> {
+  valor: string
+  linhas: T[]
+  /** Soma em CENTAVOS INTEIROS; `null` quando a listagem não declara subtotal. */
+  subtotal: number | null
+}
+
+/**
+ * Parte as linhas em grupos, na ordem em que cada valor APARECEU.
+ *
+ * Ordem de primeira aparição, e não alfabética: a ordenação da tabela é uma
+ * pergunta que o operador já fez (clicou no cabeçalho, o servidor respondeu), e
+ * reordenar os grupos por conta própria responderia outra. Ordenar por `Valor`
+ * decrescente com os grupos em ordem alfabética mostraria o maior grupo no meio.
+ *
+ * A soma é de INTEIROS, sempre: dinheiro trafega em centavos (CLAUDE.md), e o
+ * subtotal de um grupo é a soma dos centavos das linhas dele — nunca a soma dos
+ * reais formatados, que perderia o centavo em cada linha e devolveria um total
+ * que não bate com a coluna acima dele.
+ */
+export function agruparLinhas<T>(
+  linhas: readonly T[],
+  valorDaLinha: (linha: T) => string,
+  subtotalDaLinha?: (linha: T) => number,
+): GrupoDaTabela<T>[] {
+  const porValor = new Map<string, GrupoDaTabela<T>>()
+  for (const linha of linhas) {
+    const valor = valorDaLinha(linha)
+    const grupo = porValor.get(valor) ?? {
+      valor,
+      linhas: [],
+      subtotal: subtotalDaLinha ? 0 : null,
+    }
+    grupo.linhas.push(linha)
+    if (subtotalDaLinha) grupo.subtotal = (grupo.subtotal ?? 0) + subtotalDaLinha(linha)
+    porValor.set(valor, grupo)
+  }
+  return [...porValor.values()]
 }
 
 /**
  * DENSIDADE da linha — escolha do operador, não do designer.
  *
- * `padrao` é a célula de 52px do `DESIGN.md` §DataTable; `compacta` é 40px, o
- * piso da faixa consolidada (40–44px). Quem confere cinquenta linhas quer as
- * cinquenta na tela; quem lê uma a uma quer respiro. Fixar um dos dois é
- * escolher pelo outro.
+ * `confortavel` é a célula de 52px do mockup, com subtítulo da entidade;
+ * `compacta` é 40px, o piso da faixa consolidada (40–44px), sem subtítulo. Quem
+ * confere cinquenta linhas quer as cinquenta na tela; quem lê uma a uma quer
+ * respiro. Fixar um dos dois é escolher pelo outro.
+ *
+ * `planilha` (D33) é a terceira, e é a única que muda o GESTO e não só a
+ * altura: a unidade passa a ser a célula, as setas andam por ela e `⌘C` copia o
+ * que está marcado. Ela entra aqui, ao lado das outras duas, porque é a mesma
+ * pergunta — "como você quer olhar esta lista hoje" —, e um interruptor
+ * separado obrigaria o operador a descobrir que existem dois lugares onde a
+ * grade muda de cara.
+ *
+ * A planilha herda a ALTURA da compacta, e não a do mockup: a célula é a
+ * unidade de cópia, e o subtítulo da entidade dentro dela faria `⌘C` levar duas
+ * linhas de texto para a planilha do operador. O que se copia tem de ser o
+ * valor, não o valor mais o que o explica.
  *
  * A troca é CSS puro sobre a mesma marcação — nada de reconsultar nem remontar
  * a tabela, porque densidade não muda o que a consulta trouxe.
  */
 export const DENSIDADES = [
-  { id: 'padrao', rotulo: 'Padrão' },
-  { id: 'compacta', rotulo: 'Compacta' },
+  { id: 'compacta', rotulo: 'Compacta', altura: 'Linha de 40px, sem subtítulo' },
+  { id: 'confortavel', rotulo: 'Confortável', altura: 'Linha de 52px, com subtítulo' },
+  {
+    id: 'planilha',
+    rotulo: 'Planilha',
+    altura: 'Célula selecionável: setas navegam, Enter edita, Esc cancela',
+  },
 ] as const
 
 export type Densidade = (typeof DENSIDADES)[number]['id']
+
+/** A densidade com que toda listagem abre. */
+const DENSIDADE_PADRAO: Densidade = 'confortavel'
+
+/**
+ * Densidade vinda de FORA (consulta favorita gravada no navegador).
+ *
+ * `padrao` era o nome do confortável antes desta rodada, e há favoritos
+ * gravados com ele em máquina de operador. Descartá-los devolveria a tela à
+ * densidade inicial sem ninguém ter mexido no seletor — e o operador atribuiria
+ * o salto ao filtro que acabou de aplicar, não a uma renomeação.
+ */
+function densidadeLida(valor: unknown): Densidade | null {
+  if (valor === 'compacta') return 'compacta'
+  if (valor === 'planilha') return 'planilha'
+  if (valor === 'confortavel' || valor === 'padrao') return 'confortavel'
+  return null
+}
 
 export interface VitraDataTableProps<T> {
   columns: ColumnDef<T>[]
@@ -217,8 +373,28 @@ export interface VitraDataTableProps<T> {
    * Sem esta prop não há alternador: a listagem segue tabela e ponto.
    */
   visoes?: readonly VisaoDaListagem<T>[]
-  /** Campos oferecidos no `Agrupar por` da visão que agrupa. */
-  agrupamentos?: readonly OpcaoDeAgrupamento[]
+  /**
+   * Campos oferecidos no `Agrupar por` da visão que agrupa **e** no chip
+   * `Agrupar` da tabela (D10). Quem entra no chip é só o campo que declara
+   * `valorDaLinha` — ver `OpcaoDeAgrupamento`.
+   */
+  agrupamentos?: readonly OpcaoDeAgrupamento<T>[]
+  /**
+   * O que cada linha soma no subtotal do grupo, em CENTAVOS INTEIROS.
+   *
+   * Opcional porque nem toda listagem agrupada soma dinheiro: agrupar cidades
+   * por UF dá contagem, não total. Sem ela a faixa do grupo mostra `n itens` e
+   * mais nada — um `R$ 0,00` inventado seria pior, porque tem a forma de um
+   * total conferido.
+   */
+  subtotalDoGrupo?: (linha: T) => number
+  /**
+   * O ESTADO que a linha anuncia sozinha: faixa lateral e tint (D10).
+   *
+   * Devolve `undefined` para a linha normal — que é a maioria delas, e é o que
+   * faz a decorada saltar. Listagem que decora tudo não decora nada.
+   */
+  decoracao?: (linha: T) => DecoracaoDaLinha | undefined
   /**
    * Com que visão a tela ABRE. Padrão: a tabela. O funil abre no quadro porque
    * o quadro é o que a tela é — abrir na tabela obrigaria um clique diário para
@@ -265,6 +441,19 @@ export interface VitraDataTableProps<T> {
    */
   acoesDeSelecao?: readonly DataTableAction<T>[]
   /**
+   * Ações que agem sobre UMA linha, no lugar onde o olho já está: aparecem no
+   * hover e no foco da própria linha, na última coluna.
+   *
+   * A barra de lote responde "o que faço com as marcadas"; estas respondem "o
+   * que faço com ESTA". Sem elas, imprimir um pedido custa marcar a linha,
+   * subir até a barra e voltar — três gestos para o que é um.
+   *
+   * `Abrir` NÃO entra aqui: a grade a deriva sozinha de `aoAbrirLinha`, porque
+   * toda listagem que abre registro tem a mesma, e repeti-la em oito telas é
+   * oito chances de escrever um rótulo diferente.
+   */
+  acoesDeLinha?: readonly AcaoDeLinha<T>[]
+  /**
    * A saída do vazio de MÓDULO — "não há nada cadastrado aqui" com o botão que
    * resolve isso (#201).
    *
@@ -277,6 +466,78 @@ export interface VitraDataTableProps<T> {
    * o vazio termina em cadastro que ninguém pediu no meio de outro formulário.
    */
   acaoDoVazio?: { label: string; onClick: () => void }
+  /**
+   * O que fazer com o valor digitado numa célula do modo Planilha (D33).
+   *
+   * Só é chamada em coluna que declara `meta.editavel` — e as duas condições
+   * são separadas de propósito: a COLUNA sabe se o campo é editável (uma
+   * situação derivada não é), a TELA sabe para onde o valor vai. Sem esta prop
+   * nenhuma coluna edita, mesmo declarando `editavel`, e Enter volta a abrir o
+   * registro: um editor que aceita a digitação e perde o valor no Enter é pior
+   * que editor nenhum.
+   *
+   * Hoje NENHUMA das onze listagens a liga, e isso não é esquecimento: listagem
+   * confere e o formulário grava, e a escrita em lote não existe na fronteira
+   * (ver `BarraDeSelecao`). A capacidade fica pronta para a grade de itens do
+   * documento, que é onde a edição em célula é o trabalho.
+   */
+  aoEditarCelula?: (linha: T, colunaId: string, valor: string) => void
+}
+
+/**
+ * A tinta da FAIXA DE GRUPO, por tom da situação (2.0, mockup §Ordens).
+ *
+ * A faixa é TINT — a terceira ferramenta de separação da §Hierarquia, que
+ * separa região por natureza. Ela e o `<Stamp>` que carrega dizem a mesma
+ * coisa: por isso a tinta é a semântica do próprio estado (`--ok-bg`,
+ * `--info-bg`, `--bad-bg`) e não uma cor nova — duas famílias de verde na
+ * mesma linha leriam como duas informações.
+ *
+ * São os tokens ALPHA do 2.0, deitados sobre o `n-50` que a linha de grupo já
+ * tem: `--ok-bg` e companhia são `color-mix(… , transparent)`, então a
+ * composição dá exatamente o `matiz sobre folha-2` do mockup, e a mesma
+ * declaração serve os dois temas — o `n-50` é que troca de valor no escuro.
+ * Um `#FEF8EC` cravado aqui viraria mancha clara no tema escuro.
+ */
+const TINT_DO_GRUPO: Record<StampTom, string> = {
+  // `neutral` fica no `n-50` puro da faixa: o grupo sem estado (Rascunho, no
+  // mockup) é justamente o que não deve chamar. Uma quinta tinta cinza sobre
+  // cinza seria ruído com forma de sinal.
+  neutral: '',
+  open: '[&>td]:bg-[var(--info-bg)]',
+  done: '[&>td]:bg-[var(--ok-bg)]',
+  void: '[&>td]:bg-[var(--bad-bg)]',
+}
+
+/**
+ * A DECORAÇÃO da linha: faixa lateral de 3px + tint (D10).
+ *
+ * A faixa vai na PRIMEIRA célula, não na `<tr>`: sob `border-collapse` a linha
+ * não pinta `box-shadow` — é a mesma razão pela qual o anel de foco daqui é
+ * montado nas células.
+ *
+ * `muted` não ganha faixa nem tint, e a assimetria é a regra §Hierarquia: quem
+ * saiu do jogo (cancelado, inativo) precisa PARAR de competir por atenção, e
+ * uma faixa cinza seria mais um sinal na coluna, não menos. Rebaixar o texto é
+ * a ferramenta mais barata que resolve.
+ *
+ * O tint da LINHA é mais fraco que o do grupo (8% contra os 18–22% dos
+ * `--*-bg`) porque a §Hierarquia proíbe cor decorativa em linha de dado: aqui
+ * quem informa é a FAIXA, e o fundo só a acompanha. É a fórmula do mockup
+ * (`color-mix(… 8%, folha)`), com as rampas 2.0.
+ *
+ * `bad` usa o token semântico `--bad`; `warn` usa o par de rampas
+ * `--amber-600`/`--amber-400` porque `--warn` (como `--info`) ainda é
+ * REDEFINIDO pelo `:root` 1.x do `index.css`, que vem depois do import de
+ * `tokens-2.0.css` e o vence — ali `--warn` são três números HSL soltos, e
+ * `var(--warn)` numa sombra não pinta nada. Os aliases da D1 resolvem a
+ * colisão; até lá a rampa dá o mesmo valor nos dois temas, sem depender de
+ * quem mergeia primeiro (registrado na #469).
+ */
+const DECORACAO_DA_LINHA: Record<DecoracaoDaLinha, string> = {
+  warn: '[&>td]:bg-[color-mix(in_oklab,var(--amber-400)_8%,var(--n-0))] [&>td:first-child]:shadow-[inset_3px_0_0_var(--amber-600)] dark:[&>td:first-child]:shadow-[inset_3px_0_0_var(--amber-400)]',
+  bad: '[&>td]:bg-[color-mix(in_oklab,var(--rose-400)_8%,var(--n-0))] [&>td:first-child]:shadow-[inset_3px_0_0_var(--bad)]',
+  muted: 'text-muted-foreground',
 }
 
 const SEARCH_DEBOUNCE_MS = 300
@@ -442,32 +703,75 @@ function BarraDeSelecao<T>({
   acoes,
   linhas,
   aoLimpar,
+  saindo,
 }: {
   quantidade: number
   acoes: readonly DataTableAction<T>[]
   linhas: readonly T[]
   aoLimpar: () => void
+  /** A saída é mais rápida que a entrada (90ms contra 200ms, pesquisa §8). */
+  saindo: boolean
 }) {
   const varias = quantidade > 1
   return (
+    // TINTA CHEIA, e é a única peça escura da listagem. A barra aparece por
+    // cima da grade e some junto com a seleção: em papel claro, uma faixa
+    // invertida é lida como modo — "a tela está em outro estado agora" —, que é
+    // exatamente o que ela é. Fosse mais uma caixa clara, passaria por
+    // cabeçalho e o operador agiria em lote achando que agia em uma.
+    //
+    // Na 2.0 ela FLUTUA (pesquisa §4): pílula de raio total, tinta a 92% com
+    // desfoque atrás, sombra dura + a difusa que a solta do plano. Glass aqui
+    // não é decoração — é o único lugar da listagem onde ele cabe pela regra
+    // ("glass só no que flutua"), e o que ele comunica é que a barra está SOBRE
+    // a grade, não dentro dela: por baixo continua a linha que o operador
+    // marcou, meio visível, que é o que ele quer conferir antes de apertar
+    // `Cancelar ordens`.
     <div
       data-slot="barra-de-selecao"
-      className="flex flex-wrap items-center gap-2 rounded-card border-2 border-border bg-muted px-3 py-2"
+      className={cn(
+        'flex flex-wrap items-center gap-2.5 rounded-[var(--r-pill)] py-2 pr-2.5 pl-3.5',
+        'bg-[color-mix(in_oklab,var(--n-900)_92%,transparent)] backdrop-blur-[6px]',
+        // A sombra dura é a do sistema (`--hard-3`, a de dialog e ⌘K); a difusa
+        // por baixo é a §5 da pesquisa, e existe porque a pílula está no ar:
+        // sem ela, a tinta chapada encostaria na grade como um adesivo.
+        'shadow-[var(--hard-3),0_20px_40px_-16px_color-mix(in_oklab,var(--n-900)_55%,transparent)]',
+        // Entrada de 200ms subindo — o `cab-rise` da fundação, que é
+        // exatamente o `cab-pop` do mockup depois de a centragem sair do
+        // `transform` e ir para o `flex` do ancoradouro. Um keyframe novo com
+        // outro nome para o mesmo movimento seria a segunda fonte da mesma
+        // decisão, e `tokens-2.0.css` é zona de D1 nesta rodada.
+        saindo
+          ? 'animate-[cab-fade_90ms_var(--ease)_reverse_both]'
+          : 'animate-[cab-rise_var(--dur-2)_var(--ease-out)_both]',
+      )}
     >
       {/* `<output>`: o número muda a cada checkbox e quem não vê a tela precisa
-          ouvir o total, não o evento. */}
-      <output className="font-semibold text-sm">
-        {quantidade === 1 ? '1 linha marcada' : `${quantidade} linhas marcadas`}
+          ouvir o total, não o evento. O NÚMERO em mono, a palavra em Inter — é
+          contagem, e contagem se compara.
+          As classes `t-*` trazem a cor do degrau (tinta sobre papel); aqui o
+          papel é a tinta, então a cor é sobrescrita com `!` — sem isso o texto
+          sairia preto sobre preto conforme a ordem de carga do CSS. */}
+      <output className="t-ui text-card!">
+        <span className="t-dado text-card!">{quantidade}</span>{' '}
+        {quantidade === 1 ? 'selecionada' : 'selecionadas'}
       </output>
-      <div className="ml-auto flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {acoes.map((acao) => {
           const morta = acao.disabled === true || varias
           return (
             <Button
               key={acao.id}
-              variant={acao.variant ?? 'outline'}
+              variant="outline"
               size="sm"
               disabled={morta}
+              // Botão de contorno sobre tinta: a borda e o texto viram cor de
+              // papel, senão o `outline` desenharia traço preto sobre preto.
+              // Sem `disabled:opacity-40`: o `Button` já carrega a receita
+              // `desabilitado` (index.css), que apaga FUNDO e TRAÇO e devolve a
+              // tinta do tema — opacidade no conteúdo é o que a regra proíbe, e
+              // `ui/desabilitado.test.tsx` varre as fontes atrás disso.
+              className="border-muted-foreground bg-transparent text-card! shadow-none hover:bg-muted-foreground/25"
               title={
                 acao.disabled === true
                   ? acao.title
@@ -477,15 +781,33 @@ function BarraDeSelecao<T>({
               }
               onClick={() => acao.onClick?.(linhas[0] ?? null)}
             >
-              {acao.icon ? <acao.icon aria-hidden="true" className="text-modulo" /> : null}
+              {acao.icon ? <acao.icon aria-hidden="true" /> : null}
               {acao.label}
             </Button>
           )
         })}
-        <Button type="button" variant="ghost" size="sm" onClick={aoLimpar}>
-          Limpar seleção
-        </Button>
       </div>
+      {/* A saída fica na PONTA, e diz a tecla que já funciona. `esc` limpando a
+          seleção é o gesto que quem usa lista espera; anunciá-lo aqui é o que
+          impede que ele seja atalho secreto — o botão continua existindo para
+          quem usa o mouse. */}
+      <button
+        type="button"
+        onClick={aoLimpar}
+        className="ml-auto inline-flex items-center gap-2 rounded-item px-2 py-1 t-meta text-card/75! hover:text-card! focus-visible:focus-ring"
+      >
+        Limpar seleção
+        {/* `bg-transparent!` — a regra global `kbd { background: var(--card) }`
+            do `index.css` está FORA de camada e vence toda utility sem `!`. O
+            resultado media na tela como uma tecla de papel branco sobre a
+            pílula escura, com o texto (já sobrescrito para `--card`) invisível
+            dentro dela. A cor tinha `!` desde sempre; o fundo, não — e o
+            defeito só aparece na captura, porque o teste continua achando o
+            `esc` pelo texto. */}
+        <kbd className="rounded-item border border-muted-foreground bg-transparent! px-1 t-dado-meta text-card/75!">
+          esc
+        </kbd>
+      </button>
     </div>
   )
 }
@@ -504,11 +826,15 @@ export function VitraDataTable<T>({
   consultaNoEndereco = false,
   visoes,
   agrupamentos,
+  subtotalDoGrupo,
+  decoracao,
   visaoInicial = VISAO_LISTA,
   entidade,
   aoAbrirLinha,
   acoesDeSelecao,
+  acoesDeLinha,
   acaoDoVazio,
+  aoEditarCelula,
 }: VitraDataTableProps<T>) {
   /**
    * O ENDEREÇO É O PONTO DE PARTIDA da consulta (#199).
@@ -555,6 +881,27 @@ export function VitraDataTable<T>({
       atuais.includes(linha) ? atuais.filter((l) => l !== linha) : [...atuais, linha],
     )
   }
+
+  /**
+   * `esc` desfaz a seleção — e a barra de lote DIZ isso, em vez de escondê-lo.
+   *
+   * Não é atalho novo no sentido que o CLAUDE.md proíbe: a mesma saída existe
+   * como botão na barra, e nenhum fluxo depende da tecla. É o gesto que quem
+   * usa lista já tem no dedo, e o custo de não tê-lo é o operador com trinta
+   * linhas marcadas por engano procurando onde desfazer.
+   *
+   * Só escuta enquanto HÁ seleção: fora disso a tecla é de quem estiver por
+   * cima (dialog, popover), e um ouvinte permanente no documento roubaria o
+   * `esc` de todos eles.
+   */
+  useEffect(() => {
+    if (selecionadas.length === 0) return
+    function aoTeclar(e: KeyboardEvent) {
+      if (e.key === 'Escape') setSelecionadas([])
+    }
+    document.addEventListener('keydown', aoTeclar)
+    return () => document.removeEventListener('keydown', aoTeclar)
+  }, [selecionadas.length])
   // Rascunho do filtro, como `qInput` é o rascunho da busca: o painel responde
   // à tecla na hora e só a frase COMPLETA vira consulta, depois do debounce.
   // Sem isso, cada letra digitada num valor viraria uma ida ao servidor.
@@ -564,21 +911,84 @@ export function VitraDataTable<T>({
   // e é por isso que o estado nasce aqui e não na tela: quem monta a listagem
   // escolhe a identidade da linha, não o que o operador quer ver hoje.
   const [colunasExtras, setColunasExtras] = useState<string[]>([])
+  /**
+   * O que o operador ESCONDEU e em que ordem ele pôs o que sobrou.
+   *
+   * Estado de tela, como a densidade: não muda o que o servidor traz, muda o
+   * que se lê. Nasce vazio — a grade que a tela declarou é a ordem certa até
+   * alguém dizer o contrário —, e por isso `ordemDasColunas` fica `[]` em vez
+   * de uma cópia dos ids: cópia envelheceria no dia em que a tela ganhasse uma
+   * coluna, escondendo a nova atrás de uma ordem gravada antes dela existir.
+   */
+  const [colunasOcultas, setColunasOcultas] = useState<string[]>([])
+  const [ordemDasColunas, setOrdemDasColunas] = useState<string[]>([])
 
   // A visão e o agrupamento não entram no `TableQueryState`: nenhum dos dois
   // muda o CONJUNTO de registros, só o desenho. Somá-los à chave de cache faria
   // alternar quadro ⇄ lista refazer uma consulta cuja resposta é a mesma.
   const [visaoId, setVisaoId] = useState(visaoInicial)
-  const [densidade, setDensidade] = useState<Densidade>('padrao')
+  const [densidade, setDensidade] = useState<Densidade>(DENSIDADE_PADRAO)
   // O `name` agrupa os rádios, e precisa ser único por INSTÂNCIA: duas
   // listagens na mesma página (a janela de busca sobre a tela) dividiriam o
   // grupo e uma desmarcaria a visão da outra.
   const grupoDeVisao = useId()
-  const agrupamentoInicial = agrupamentos?.[0]?.id ?? ''
-  const [agruparPor, setAgruparPor] = useState(agrupamentoInicial)
+  const [agruparPor, setAgruparPor] = useState('')
+  /**
+   * A listagem NASCE SEM AGRUPAMENTO, e a D10 mudou isto de propósito.
+   *
+   * Antes o estado nascia no primeiro campo declarado, porque o único
+   * consumidor era a visão que agrupa (o quadro do funil), e um quadro sem
+   * campo não tem colunas. Agora a TABELA também responde a este estado, e
+   * nascer agrupada partiria em faixas toda listagem que declarasse
+   * `agrupamentos` — ninguém pediu, e a lista corrida é o que a maioria abre
+   * para conferir.
+   *
+   * A visão continua vendo o que via: `agrupamentoDaVisao` cai no primeiro
+   * campo quando o estado está vazio. É por isso que "sem agrupamento" é o
+   * vazio e não uma opção `— Nenhum —`: para a tabela é um estado de verdade,
+   * para o quadro não existe.
+   */
+  const agrupamentoDaVisao = agruparPor === '' ? (agrupamentos?.[0]?.id ?? '') : agruparPor
+  /**
+   * Campos que a TABELA sabe agrupar — os que declaram `valorDaLinha`.
+   *
+   * O quadro do funil declara `agrupamentos` desde os view modes e nenhum deles
+   * lê a linha (quem lê é o quadro). Oferecer esses no chip mostraria `Agrupar:
+   * Etapa` sobre uma tabela idêntica à de antes.
+   */
+  const camposAgrupaveis = useMemo(
+    () => (agrupamentos ?? []).filter((opcao) => opcao.valorDaLinha !== undefined),
+    [agrupamentos],
+  )
   // Id desconhecido (favorito gravado antes de a visão ser renomeada) cai na
   // tabela em vez de derrubar a tela: a tabela responde a mesma pergunta.
   const visaoAtiva = visoes?.find((visao) => visao.id === visaoId) ?? null
+  /**
+   * O campo que a TABELA está agrupando agora — `null` quando não há.
+   *
+   * Depende da visão ativa: numa visão que não é a lista não existe faixa nem
+   * subtotal para desenhar, e o mesmo estado passa a significar "coluna do
+   * quadro". Um só estado para os dois desenhos é o que garante que alternar
+   * lista ⇄ quadro não troque a pergunta no caminho.
+   */
+  const agrupamentoDaTabela =
+    visaoAtiva === null ? (camposAgrupaveis.find((opcao) => opcao.id === agruparPor) ?? null) : null
+  /**
+   * O que o chip `Agrupar` da barra oferece AGORA.
+   *
+   * Depende do desenho ativo, e é a mesma razão do `agrupamentoDaTabela` acima:
+   * na visão que agrupa quem lê a linha é ela (o quadro tem o mapa de etapas),
+   * então valem todos os campos declarados; na TABELA vale só quem declara
+   * `valorDaLinha`, porque é a tabela que vai ter de ler cada linha para montar
+   * a faixa. Vazio = a barra não desenha o chip, que é o certo para uma
+   * listagem sem nada agrupável.
+   */
+  const camposDoChip = visaoAtiva?.agrupa ? (agrupamentos ?? []) : camposAgrupaveis
+
+  // Grupos COLAPSADOS, por valor. Lista de fechados (e não de abertos) porque o
+  // estado natural é aberto: uma consulta nova nasce mostrando o que trouxe, e
+  // guardar os abertos faria a próxima página chegar toda fechada.
+  const [gruposFechados, setGruposFechados] = useState<readonly string[]>([])
 
   // Consultas favoritas: a identidade da tela vem do `queryKey`, que já é o nome
   // estável da listagem. `useState` com inicializador preguiçoso — ler o
@@ -597,38 +1007,50 @@ export function VitraDataTable<T>({
     setState(updater)
   }
 
-  // Debounce da busca; qualquer mudança de busca volta para a página 1.
+  /**
+   * UM debounce para busca e filtro, e a fusão é o que a busca com prefixo pede.
+   *
+   * `forn: stella` é meia busca e meio filtro: o que sobra depois de tirar os
+   * prefixos vira `q`, e os pares reconhecidos viram condição. Com os dois
+   * efeitos separados que existiam aqui, o de filtro sobrescreveria `s.filtros`
+   * com os chips e apagaria o que a caixa acabou de montar — a lista voltaria
+   * ao que era 300ms depois de o realce dizer que filtrou.
+   *
+   * Só os filtros VÁLIDOS viajam: chip recém-criado ainda sem valor não pode
+   * esvaziar a listagem enquanto o operador escolhe o campo.
+   */
   useEffect(() => {
     const t = setTimeout(() => {
       setState((s) => {
-        if (s.q === qInput) return s
-        setSelecionadas([])
-        return { ...s, q: qInput, page: 1 }
-      })
-    }, SEARCH_DEBOUNCE_MS)
-    return () => clearTimeout(t)
-  }, [qInput])
-
-  // Mesmo debounce da busca, pela mesma razão. Só os filtros VÁLIDOS viajam:
-  // linha recém-adicionada ainda sem valor não pode esvaziar a listagem
-  // enquanto o operador escolhe o campo.
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setState((s) => {
+        const daBusca = interpretarBusca(qInput, camposFiltraveis ?? [])
         // Normaliza DEPOIS de decidir o que já é frase completa: um CNPJ meio
         // digitado continua sendo filtro sem valor, e limpar a máscara antes
         // não muda isso.
-        const validos = filtrosNormalizados(filtrosValidos(filtrosInput), camposFiltraveis ?? [])
-        if (
+        const dosChips = filtrosNormalizados(filtrosValidos(filtrosInput), camposFiltraveis ?? [])
+        const validos = [...dosChips, ...daBusca.filtros]
+        const mesmoFiltro =
           assinaturaDoFiltro(s.filtros, s.juncao ?? 'and') === assinaturaDoFiltro(validos, juncao)
-        )
-          return s
+        if (s.q === daBusca.q && mesmoFiltro) return s
         setSelecionadas([])
-        return { ...s, filtros: validos, juncao, page: 1 }
+        return { ...s, q: daBusca.q, filtros: validos, juncao, page: 1 }
       })
     }, SEARCH_DEBOUNCE_MS)
     return () => clearTimeout(t)
-  }, [filtrosInput, juncao, camposFiltraveis])
+  }, [qInput, filtrosInput, juncao, camposFiltraveis])
+
+  /**
+   * O ENDEREÇO publica o que está NA CAIXA, não o que foi deduzido dela.
+   *
+   * Se a URL levasse o `q` já interpretado e o filtro do prefixo junto, abrir o
+   * link devolveria a mesma consulta com outra cara: o texto sumiria da busca e
+   * reapareceria como chip. O link tem de restaurar a TELA — e quem recebe
+   * precisa poder editar o `forn:` que a outra pessoa digitou.
+   */
+  const [qNoEndereco, setQNoEndereco] = useState(daUrl.q)
+  useEffect(() => {
+    const t = setTimeout(() => setQNoEndereco(qInput), SEARCH_DEBOUNCE_MS)
+    return () => clearTimeout(t)
+  }, [qInput])
 
   /** Aplica uma consulta salva: filtros, junção, ordenação, visão e agrupamento. */
   const aplicarConsulta = useCallback((favorito: FavoritoDeConsulta) => {
@@ -641,9 +1063,8 @@ export function VitraDataTable<T>({
     // pedido, e o operador atribuiria o salto ao filtro que acabou de aplicar.
     if (consulta.visao) setVisaoId(consulta.visao)
     if (consulta.agruparPor) setAgruparPor(consulta.agruparPor)
-    if (consulta.densidade === 'padrao' || consulta.densidade === 'compacta') {
-      setDensidade(consulta.densidade)
-    }
+    const gravada = densidadeLida(consulta.densidade)
+    if (gravada) setDensidade(gravada)
     // A ordenação NÃO passa pelo debounce dos filtros: ela não é digitada, e
     // esperar 300ms por ela faria a tabela reordenar depois de já ter mudado.
     setState((s) => ({ ...s, sort: consulta.sort, page: 1 }))
@@ -681,8 +1102,8 @@ export function VitraDataTable<T>({
     setFiltrosInput([])
     setJuncao('and')
     setVisaoId(visaoInicial)
-    setAgruparPor(agrupamentoInicial)
-    setDensidade('padrao')
+    setAgruparPor('')
+    setDensidade(DENSIDADE_PADRAO)
     updateState((s) => ({ ...s, sort: null, page: 1 }))
   }
 
@@ -713,8 +1134,8 @@ export function VitraDataTable<T>({
     consultaAtual.filtros.length > 0 ||
     state.sort !== null ||
     visaoId !== visaoInicial ||
-    agruparPor !== agrupamentoInicial ||
-    densidade !== 'padrao'
+    agruparPor !== '' ||
+    densidade !== DENSIDADE_PADRAO
 
   /**
    * A visão que desenha colunas pede o conjunto INTEIRO, não uma página.
@@ -756,16 +1177,515 @@ export function VitraDataTable<T>({
     getCoreRowModel: getCoreRowModel(),
     manualSorting: true,
     manualPagination: true,
+    // Visibilidade e ordem CONTROLADAS: quem guarda as duas é o estado acima,
+    // porque as duas entram na consulta favorita e no que o menu mostra. Deixar
+    // a tabela guardá-las internamente daria duas verdades sobre a mesma grade.
+    state: {
+      columnVisibility: Object.fromEntries(colunasOcultas.map((id) => [id, false])),
+      ...(ordemDasColunas.length > 0 ? { columnOrder: ordemDasColunas } : {}),
+    },
   })
 
-  // Folha total de colunas (grupos contam as folhas) + a numeração opcional.
-  const totalColSpan = table.getAllLeafColumns().length + (rowNumbers ? 1 : 0) + (marcavel ? 1 : 0)
+  /**
+   * As colunas como o menu as lê: rótulo, visível e a primeira travada.
+   *
+   * FIXA é a PRIMEIRA coluna da grade, e não uma marca no schema: é ela que
+   * identifica a linha em todas as oito listagens (código, número, nome).
+   * Esconder a primeira deixaria uma lista de datas e valores sem sujeito, e o
+   * operador só perceberia depois de fechar o menu.
+   *
+   * O rótulo sai do `header` quando ele é texto. Cabeçalho montado por função
+   * (ícone, seta, tooltip) não tem string para copiar, e o id — que é o nome
+   * que viaja para o servidor — é o que resta de honesto: inventar um rótulo
+   * bonito aqui daria dois nomes para a mesma coluna.
+   */
+  // Sem `useMemo`: o que muda entre um render e outro é a RESPOSTA de
+  // `getIsVisible()`, não a identidade da tabela — memoizar por `table` daria
+  // uma lista congelada, e listar as duas variáveis de estado como dependência
+  // é o mesmo cálculo com uma comparação a mais. São dez colunas.
+  const colunasDoMenu = table.getAllLeafColumns().map((coluna, indice) => ({
+    id: coluna.id,
+    rotulo: typeof coluna.columnDef.header === 'string' ? coluna.columnDef.header : coluna.id,
+    visivel: coluna.getIsVisible(),
+    ...(indice === 0 ? { fixa: true } : {}),
+  }))
+
+  /**
+   * O filtro que NÃO é o chip — os dois modos alternativos da barra.
+   *
+   * O modo por módulo (#104) troca a faixa de chips por uma faixa agrupada pelo
+   * módulo de origem; o modo em lista é o query-builder em popover. Os dois
+   * reusam o MESMO `filtrosInput`, então debounce, consulta salva e a recusa na
+   * fronteira continuam valendo de graça — a diferença é só como o operador
+   * monta a pergunta.
+   */
+  const temCamposFiltraveis = camposFiltraveis !== undefined && camposFiltraveis.length > 0
+  const filtroProprio =
+    !temCamposFiltraveis || !camposFiltraveis ? null : modoDeFiltro === 'modulo' && entidade ? (
+      <FiltroPorModulo entidade={entidade} filtros={filtrosInput} onChange={setFiltrosInput} />
+    ) : modoDeFiltro === 'lista' ? (
+      <ListaDeFiltros
+        campos={camposFiltraveis}
+        filtros={filtrosInput}
+        juncao={juncao}
+        onFiltrosChange={setFiltrosInput}
+        onJuncaoChange={setJuncao}
+      />
+    ) : null
+
+  /**
+   * O repertório do módulo MENOS o que a grade já desenha.
+   *
+   * Sem o corte, a mesma coluna aparecia duas vezes no popover — uma em
+   * `Na grade` e outra na oferta do módulo —, com dois checkboxes respondendo a
+   * coisas diferentes: um esconde, o outro desliga.
+   */
+  const opcionaisForaDaGrade = useMemo(() => {
+    if (!entidade) return []
+    const naGrade = new Set(colunasDoMenu.map((coluna) => coluna.id))
+    return gruposDoModulo(entidade, colunasExtras, declaradas)
+      .map((grupo) => ({
+        ...grupo,
+        colunas: grupo.colunas.filter((coluna) => !naGrade.has(coluna.id)),
+      }))
+      .filter((grupo) => grupo.colunas.length > 0)
+  }, [entidade, colunasExtras, declaradas, colunasDoMenu])
+
+  /**
+   * Desmarcar uma coluna: a que veio do módulo DESLIGA, a que a tela declarou
+   * ESCONDE.
+   *
+   * São duas coisas diferentes com o mesmo gesto, e é assim que tem de ser: uma
+   * coluna extra desmarcada volta a ser oferta (e reaparece no grupo de onde
+   * veio); uma coluna da tela desmarcada continua existindo, só não é mostrada
+   * — e é ela que o rótulo conta como oculta.
+   */
+  function alternarColuna(id: string) {
+    if (colunasExtras.includes(id)) {
+      setColunasExtras((atuais) => atuais.filter((x) => x !== id))
+      return
+    }
+    setColunasOcultas((atuais) =>
+      atuais.includes(id) ? atuais.filter((x) => x !== id) : [...atuais, id],
+    )
+  }
+
+  /**
+   * A ordenação como a barra a lê — o resumo do que o cabeçalho já mostra.
+   *
+   * Sai das colunas do menu, e não de uma tabela própria de rótulos: o `sort.id`
+   * é o nome que viaja para o servidor (em inglês nos recursos HTTP), e mostrá-lo
+   * cru na barra poria `expectedAt` onde a grade escreve `Previsão`.
+   */
+  const ordenacaoDaBarra = state.sort
+    ? {
+        rotulo:
+          colunasDoMenu.find((coluna) => coluna.id === state.sort?.id)?.rotulo ?? state.sort.id,
+        desc: state.sort.desc,
+      }
+    : null
+
+  /**
+   * As ações de linha, com `Abrir` na frente quando a tela abre registro.
+   *
+   * Derivada, e não pedida à tela: toda listagem que abre tem a mesma ação com
+   * o mesmo rótulo, e declará-la em oito lugares é oito chances de divergir. A
+   * tela acrescenta o que é dela (imprimir, duplicar, ···).
+   */
+  const acoesDaLinha = useMemo<readonly AcaoDeLinha<T>[]>(() => {
+    const abrir: AcaoDeLinha<T>[] = aoAbrirLinha
+      ? [{ id: 'abrir', label: 'Abrir', icon: ChevronRight, onClick: aoAbrirLinha }]
+      : []
+    return [...abrir, ...(acoesDeLinha ?? [])]
+  }, [aoAbrirLinha, acoesDeLinha])
+  const temAcoesDeLinha = acoesDaLinha.length > 0
+
+  /**
+   * A planilha usa a MESMA célula da compacta (40px, sem subtítulo): a unidade
+   * ali é a célula, e o subtítulo dentro dela sujaria o `⌘C`.
+   */
+  const planilha = densidade === 'planilha'
+  const compacta = densidade === 'compacta' || planilha
+
+  /**
+   * O `<table>` — dois donos, um ref.
+   *
+   * O modo Planilha o usa para achar a célula de destino e focá-la; o FLIP, para
+   * medir onde cada linha estava. Dois refs no mesmo elemento seriam duas
+   * fontes para a mesma pergunta ("qual é a grade?").
+   */
+  const refDaTabela = useRef<HTMLTableElement | null>(null)
+
+  /**
+   * Colunas que desenham o próprio conteúdo — as que o TIPO não sobrescreve.
+   *
+   * Medido AQUI e não na hora de desenhar a célula: o TanStack completa toda
+   * coluna com um `cell` padrão no `useReactTable`, então perguntar à coluna
+   * montada se ela declarou `cell` responde "sim" para todas, e o tipo nunca
+   * desenharia nada. A pergunta só tem resposta antes do merge.
+   */
+  const comCelulaPropria = useMemo(() => {
+    const ids = new Set<string>()
+    for (const coluna of colunasDaTabela) {
+      if (coluna.cell === undefined) continue
+      const id = coluna.id ?? ('accessorKey' in coluna ? String(coluna.accessorKey) : undefined)
+      if (id) ids.add(id)
+    }
+    return ids
+  }, [colunasDaTabela])
+
+  /**
+   * A SOMA da coluna de dinheiro, no rodapé, ao lado da contagem.
+   *
+   * Sai da coluna que declarou `tipo: 'dinheiro'` — perguntar à tela por uma
+   * prop `somar` repetiria em cada listagem o que a coluna já diz. Soma o que
+   * está NA TELA, e o rótulo muda conforme isso: com paginação é a soma da
+   * PÁGINA, e chamá-la de "soma filtrada" seria afirmar sobre registros que
+   * esta consulta nem trouxe. Duas páginas somando errado no relatório de
+   * alguém começa exatamente assim.
+   */
+  const colunaDeDinheiro = colunasDaTabela.find((c) => c.meta?.tipo === 'dinheiro')
+  const soma = useMemo(() => {
+    if (!colunaDeDinheiro) return null
+    const chave = (colunaDeDinheiro as { accessorKey?: string }).accessorKey
+    if (!chave) return null
+    let total = 0
+    for (const linha of rows) {
+      const valor = (linha as Record<string, unknown>)[chave]
+      if (typeof valor === 'number') total += valor
+    }
+    return total
+  }, [colunaDeDinheiro, rows])
+
+  // Folha total de colunas (grupos contam as folhas) + as colunas de serviço.
+  const totalColSpan =
+    table.getAllLeafColumns().length +
+    (rowNumbers ? 1 : 0) +
+    (marcavel ? 1 : 0) +
+    (temAcoesDeLinha ? 1 : 0)
+
+  /**
+   * Uma linha da tabela — a MESMA em lista corrida e dentro de faixa de grupo.
+   *
+   * Extraída porque o agrupamento não muda NADA na linha: mesmo gesto de
+   * seleção, mesma numeração global, mesmas ações de linha, mesma decoração.
+   * Duas cópias divergiriam na primeira mudança de comportamento, e a que
+   * fica dentro do grupo é a que ninguém lembraria de atualizar.
+   */
+  function renderLinha(row: Row<T>, linhaVisual: number) {
+    const isSelected = selecionadas.includes(row.original)
+    const tomDaLinha = decoracao?.(row.original)
+    /**
+     * Linha CONCLUÍDA ou CANCELADA fica apagada, e quem sabe
+     * disso é a coluna de situação — não uma prop que cada tela
+     * teria de passar certo. Recebida e cancelada continuam
+     * legíveis e param de disputar o olho com as que ainda pedem
+     * alguma coisa, que é o trabalho de quem abre a listagem.
+     */
+    const apagada = row
+      .getVisibleCells()
+      .some(
+        (cell) =>
+          cell.column.columnDef.meta?.tipo === 'status' &&
+          (tomDoValor(cell.getValue()) === 'done' || tomDoValor(cell.getValue()) === 'void'),
+      )
+    return (
+      // Seleção = `--primary-soft` com FAIXA de 3px em chartreuse
+      // na borda esquerda (mockup 2.0, supersede o violeta cheio
+      // da 1.x). O fundo cheio de cor de ação lavava o dado da
+      // linha justo quando o operador confere o que marcou; a
+      // faixa é o sinal, o tint é o estado, e o texto continua
+      // sendo o texto. Chartreuse aqui é ÁREA, nunca letra.
+      <TableRow
+        key={row.id}
+        // O id da linha é a IDENTIDADE que o FLIP usa para saber que a
+        // linha que estava em cima é a mesma que agora está embaixo.
+        // Medir por posição inverteria o sentido do deslize.
+        data-linha-id={row.id}
+        data-state={isSelected ? 'selected' : undefined}
+        // A linha é parada de FOCO nos dois modos, e o que ela faz
+        // muda com o gesto da tela: onde a linha abre (#198), Enter
+        // abre e o Espaço marca — o mesmo par que qualquer lista de
+        // aplicativo tem; onde a linha marca (janela de busca), os
+        // dois marcam, como era. Não é atalho: é o teclado nativo do
+        // controle, e nenhuma tecla precisa ser memorizada.
+        //
+        // No modo PLANILHA a parada sai da linha e vai para a célula
+        // ativa: com as duas, um Tab pousaria na linha e o seguinte na
+        // célula, e o operador andaria metade dos passos sem sair do
+        // lugar.
+        tabIndex={planilha ? -1 : 0}
+        aria-selected={isSelected}
+        data-apagada={apagada ? '' : undefined}
+        className={cn(
+          // O anel de foco é de LINHA, montado nas células: sob
+          // `border-collapse` o `<tr>` não pinta box-shadow, e um
+          // anel por célula viraria uma moldura por coluna.
+          // `group/linha` é o que faz as ações aparecerem no hover
+          // E no foco de teclado — nomeado, porque a célula tem
+          // grupos próprios e um `group` anônimo casaria com o de
+          // dentro.
+          'group/linha cursor-pointer outline-none hover:bg-surface-sunken focus-visible:focus-ring-row',
+          // Seleção não depende só de cor: o tint, a faixa e o
+          // `aria-selected` dizem a mesma coisa por três canais.
+          // DECORAÇÃO (D10): a linha atrasada se anuncia sem ninguém
+          // abrir filtro. Cede à SELEÇÃO — as duas desenham faixa na
+          // mesma `box-shadow` da primeira célula, e a marcada é sobre
+          // o que as ações da barra vão agir agora; deixar a decoração
+          // por cima esconderia o que o operador acabou de marcar.
+          !isSelected && tomDaLinha !== undefined && DECORACAO_DA_LINHA[tomDaLinha],
+          isSelected &&
+            '[&>td]:bg-[var(--primary-soft,hsl(var(--muted)))] [&>td:first-child]:shadow-[inset_3px_0_0_0_hsl(var(--primary))]',
+          // Concluída/cancelada: texto em `n-500`. A linha
+          // continua ali, conferível, e para de puxar o olho.
+          //
+          // Cede à `decoracao` da tela (D10) quando ela fala: o derivado
+          // lê a COLUNA de situação, a prop lê o REGISTRO, e só a tela
+          // sabe que uma ordem confirmada e vencida ainda cobra alguma
+          // coisa. Deixar os dois valerem apagaria justamente a linha
+          // que a tela mandou destacar.
+          apagada && tomDaLinha === undefined && 'text-muted-foreground',
+        )}
+        // No modo PLANILHA a linha para de responder a clique e a tecla,
+        // e a razão é a mesma que faz o modo existir: ali a unidade é a
+        // CÉLULA. Clicar numa célula posiciona o cursor de onde a próxima
+        // seta parte — abrir o registro junto tiraria da tela quem só
+        // estava mirando de onde ia copiar. E o Enter que a célula trata
+        // (editar, ou abrir) chegaria aqui de novo pela propagação,
+        // abrindo o mesmo registro duas vezes.
+        onClick={() => {
+          if (planilha) return
+          if (linhaAbre) aoAbrirLinha(row.original)
+          else alternarLinha(row.original)
+        }}
+        onKeyDown={(e) => {
+          if (planilha) return
+          if (e.key !== 'Enter' && e.key !== ' ') return
+          // Espaço rolaria a página; Enter dentro de célula com
+          // controle não deve chegar aqui duas vezes.
+          e.preventDefault()
+          if (linhaAbre && e.key === 'Enter') aoAbrirLinha(row.original)
+          else alternarLinha(row.original)
+        }}
+      >
+        {marcavel ? (
+          // A célula do checkbox NÃO propaga o clique: mirar o
+          // quadradinho é dizer "marque esta", e abrir o registro
+          // junto tiraria da tela quem só queria montar a seleção.
+          // MEDIDO: hoje a barreira é redundante — o sistema de
+          // press do react-aria já não propaga, e tirar estas duas
+          // linhas não derruba o teste. Ficam como guarda do dia em
+          // que o checkbox virar `<input>` nativo, que propaga: o
+          // sintoma seria a tela abrindo o registro no meio da
+          // montagem da seleção, e o teste que o pega é o de
+          // comportamento acima, não este arquivo.
+          <TableCell
+            className="w-10"
+            onClick={(e) => e.stopPropagation()}
+            // Barra só as teclas que a LINHA trata. Barrar tudo
+            // custou caro: o React chama `stopPropagation` no
+            // evento NATIVO, e o ouvinte do `esc` vive no
+            // document — a saída da barra de lote morria calada
+            // sempre que o foco estivesse no checkbox, que é
+            // justamente onde ele está depois de marcar.
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') e.stopPropagation()
+            }}
+          >
+            <Checkbox
+              isSelected={isSelected}
+              onChange={() => alternarLinha(row.original)}
+              aria-label={`Marcar linha ${(state.page - 1) * state.pageSize + row.index + 1}`}
+            />
+          </TableCell>
+        ) : null}
+        {rowNumbers ? (
+          // Numeração em Meta, sequencial global da consulta.
+          <TableCell className="w-10 text-right t-dado-meta">
+            {(state.page - 1) * state.pageSize + row.index + 1}
+          </TableCell>
+        ) : null}
+        {row.getVisibleCells().map((cell, indiceDaColuna) => {
+          const tipo = cell.column.columnDef.meta?.tipo
+          // Coluna que declara `cell` próprio manda no CONTEÚDO;
+          // o tipo só lhe dá a moldura. É o caso que existe hoje
+          // em oito telas — célula que já formata e só quer
+          // alinhar como as irmãs —, e reescrever o conteúdo dela
+          // aqui apagaria formatação que a tela escolheu.
+          const proprio = comCelulaPropria.has(cell.column.id)
+          const celula = { linha: linhaVisual, coluna: indiceDaColuna }
+          const valor = cell.getValue()
+          /**
+           * O `title` é o texto INTEIRO da célula truncada — a
+           * outra metade da regra da §Hierarquia ("trunca com `…` +
+           * tooltip, nunca quebra em 3 linhas"). Só onde o valor É
+           * texto: pendurar `[object Object]` no `title` de uma
+           * célula de progresso seria pior que não ter dica.
+           */
+          const textoDoValor = typeof valor === 'string' && valor !== '' ? valor : undefined
+          return (
+            <TableCell
+              key={cell.id}
+              data-tipo={tipo}
+              {...(textoDoValor ? { title: textoDoValor } : {})}
+              {...(planilha ? modoPlanilha.propsDaCelula(celula) : {})}
+              className={cn(
+                cell.column.columnDef.meta?.numeric === true && 'text-right tabular-nums',
+                classeDoTipo(tipo),
+                // `table-layout: fixed` dá a largura; a truncagem é o
+                // que impede o texto longo de atravessar a coluna
+                // vizinha, que é o que a largura fixa faria sozinha.
+                // Os tipos COMPOSTOS ficam de fora: entidade,
+                // progresso e situação montam layout próprio dentro da
+                // célula, e `white-space: nowrap` herdado ali cortaria
+                // o subtítulo em vez de truncá-lo.
+                ehTipoComposto(tipo) ? 'overflow-hidden' : 'truncate',
+                planilha && 'celula-de-planilha',
+              )}
+            >
+              {modoPlanilha.editorAberto(celula) ? (
+                <EditorDaCelula
+                  valorInicial={textoDoValor ?? String(valor ?? '')}
+                  rotulo={`${cell.column.id}, linha ${linhaVisual + 1}`}
+                  aoConfirmar={modoPlanilha.confirmarEdicao}
+                  aoCancelar={modoPlanilha.cancelarEdicao}
+                />
+              ) : tipo && !proprio ? (
+                renderTipo(tipo, valor, { compacta })
+              ) : (
+                flexRender(cell.column.columnDef.cell, cell.getContext())
+              )}
+            </TableCell>
+          )
+        })}
+        {temAcoesDeLinha ? (
+          // As ações não propagam o clique da linha (o botão
+          // barra), mas a CÉLULA também não: sobrar 20px de
+          // padding clicável que abre o registro, ao lado de três
+          // botões que fazem outra coisa, é alvo traiçoeiro.
+          <TableCell
+            className="w-[90px]"
+            onClick={(e) => e.stopPropagation()}
+            // Mesma regra da célula do checkbox: só as teclas da
+            // linha. `esc` tem de chegar ao document.
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') e.stopPropagation()
+            }}
+          >
+            <AcoesDeLinha acoes={acoesDaLinha} linha={row.original} />
+          </TableCell>
+        ) : null}
+      </TableRow>
+    )
+  }
+  /**
+   * As faixas da tabela. Agrupa as LINHAS do TanStack (e não os dados crus)
+   * porque é a `Row` que sabe desenhar célula, seleção, numeração e ações —
+   * descer para `T` e voltar obrigaria a procurar cada linha de novo pelo dado.
+   */
+  const gruposDaTabela = useMemo(() => {
+    if (!agrupamentoDaTabela?.valorDaLinha) return []
+    const valorDaLinha = agrupamentoDaTabela.valorDaLinha
+    return agruparLinhas(
+      table.getRowModel().rows,
+      (row) => valorDaLinha(row.original),
+      subtotalDoGrupo ? (row) => subtotalDoGrupo(row.original) : undefined,
+    )
+  }, [agrupamentoDaTabela, subtotalDoGrupo, table])
+
+  /**
+   * As linhas na ORDEM DA TELA — a coordenada do modo Planilha.
+   *
+   * Com agrupamento ligado, a ordem é a das faixas, e grupo FECHADO não entra:
+   * a seta para baixo tem de andar pelo que está à vista. Derivar isto de
+   * `getRowModel().rows` (que ignora grupo e colapso) faria o foco cair dentro
+   * de um grupo fechado e sumir da tela sem nada explicar — o operador só veria
+   * o anel desaparecer.
+   */
+  const linhasVisiveis = agrupamentoDaTabela
+    ? gruposDaTabela.flatMap((grupo) => (gruposFechados.includes(grupo.valor) ? [] : grupo.linhas))
+    : table.getRowModel().rows
+
+  /**
+   * Sem `useMemo`, e MEDIDO: `table` é a mesma instância entre renders, então
+   * um memo com ela na lista de dependências devolveria a lista da PRIMEIRA
+   * render — a vazia, de antes de a consulta responder. O sintoma era todo
+   * `data-celula` nascer `0:c`, dez linhas disputando o mesmo endereço, e a
+   * seta para baixo não saindo do lugar. Numerar vinte linhas por render é
+   * mais barato que a comparação que estaria errada.
+   */
+  const indiceVisual = new Map(linhasVisiveis.map((row, indice) => [row.id, indice]))
+
+  /** As colunas de DADO, na ordem em que a linha as desenha. */
+  const colunasDeDado = table.getVisibleLeafColumns()
+
+  const modoPlanilha = useModoPlanilha({
+    raiz: refDaTabela,
+    ativo: planilha,
+    linhas: linhasVisiveis.length,
+    colunas: colunasDeDado.length,
+    // A coluna PODE editar e a tela SABE gravar: as duas, ou Enter abre o
+    // registro. Ver `aoEditarCelula`.
+    editavel: (coluna) =>
+      aoEditarCelula !== undefined && colunasDeDado[coluna]?.columnDef.meta?.editavel === true,
+    aoAbrir: (linha) => {
+      const row = linhasVisiveis[linha]
+      if (row && aoAbrirLinha) aoAbrirLinha(row.original)
+    },
+    aoGravar: (celula, valor) => {
+      const row = linhasVisiveis[celula.linha]
+      const coluna = colunasDeDado[celula.coluna]
+      if (row && coluna) aoEditarCelula?.(row.original, coluna.id, valor)
+    },
+  })
+
+  /**
+   * O que AUTORIZA o deslize das linhas (FLIP): agrupamento, ordenação e
+   * colapso de grupo — os três gestos que movem uma linha para outro lugar sem
+   * mudar o conjunto.
+   *
+   * A página NÃO entra: trocar de página troca as linhas, e animar a chegada de
+   * vinte registros novos como se fossem os mesmos vinte de antes deslizando é
+   * mentira visual. Ali o que muda é o conteúdo, e o esqueleto já conta isso.
+   */
+  const ordemDasLinhas = `${agruparPor}|${state.sort?.id ?? ''}|${state.sort?.desc ? 'desc' : 'asc'}|${gruposFechados.join(',')}`
+  useFlipDasLinhas(refDaTabela, ordemDasLinhas)
 
   const temFiltro = (state.filtros?.length ?? 0) > 0
   // "Todas" é sempre "todas as DESTA PÁGINA" — ver o rótulo do checkbox do
   // cabeçalho.
   const algumaMarcada = selecionadas.length > 0
   const todasMarcadas = rows.length > 0 && selecionadas.length === rows.length
+
+  /**
+   * A barra de lote SAI, e sair leva 90ms — menos que os 200 de entrar
+   * (pesquisa §8: "a saída também anima, e mais rápido que a entrada").
+   *
+   * Uma peça que aparece com movimento e desaparece num corte parece ter sido
+   * fechada por um erro. O contrário — saída lenta — atrasa a tela depois de o
+   * operador já ter decidido.
+   *
+   * A quantidade fica CONGELADA durante a saída: a seleção já é zero nesses
+   * 90ms, e mostrar "0 selecionadas" enquanto a barra desliza para fora seria
+   * um número errado no lugar onde o operador confere quantas linhas vão ser
+   * afetadas.
+   */
+  const [barraSaindo, setBarraSaindo] = useState(false)
+  const tinhaSelecao = useRef(false)
+  const ultimaQuantidade = useRef(0)
+  useEffect(() => {
+    if (algumaMarcada) {
+      tinhaSelecao.current = true
+      ultimaQuantidade.current = selecionadas.length
+      setBarraSaindo(false)
+      return
+    }
+    if (!tinhaSelecao.current) return
+    tinhaSelecao.current = false
+    setBarraSaindo(true)
+    const fim = setTimeout(() => setBarraSaindo(false), 90)
+    return () => clearTimeout(fim)
+  }, [algumaMarcada, selecionadas.length])
 
   function toggleSort(columnId: string) {
     updateState((s) => {
@@ -785,7 +1705,7 @@ export function VitraDataTable<T>({
           barra. Fica sob `consultaNoEndereco` porque a janela de busca monta a
           MESMA tabela sobre a tela de trás. */}
       {consultaNoEndereco ? (
-        <SincroniaComAUrl q={state.q} filtros={state.filtros ?? []} juncao={juncao} />
+        <SincroniaComAUrl q={qNoEndereco} filtros={filtrosValidos(filtrosInput)} juncao={juncao} />
       ) : null}
 
       {/* As consultas salvas ficam ACIMA da barra, e não dentro dela: a barra
@@ -823,82 +1743,83 @@ export function VitraDataTable<T>({
         />
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-2">
-        {busca ? (
-          <div className="relative w-72">
-            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-            <Input
-              aria-label="Busca"
-              className="pl-8"
-              placeholder={searchPlaceholder}
-              value={qInput}
-              onChange={(e) => setQInput(e.target.value)}
-            />
-          </div>
-        ) : null}
-        {actions.map((action) => {
-          // O filtro estruturado OCUPA o lugar do botão `Filtro` da barra padrão
-          // (§9, padrão 4) em vez de somar um botão ao lado: a barra tem a mesma
-          // ordem em oito telas, e dois caminhos para "filtrar" lado a lado
-          // fariam o operador escolher qual dos dois é o de verdade.
-          // O modo por módulo (#104) troca a barra plana pela faixa de chips.
-          // Reusa o MESMO `filtrosInput`, então debounce, consulta salva e a
-          // recusa na fronteira continuam valendo de graça — a diferença é só
-          // como o operador monta a pergunta.
-          //
-          // **Este braço NÃO exige `camposFiltraveis`, e a separação é de
-          // 2026-08-25.** Enquanto ele vivia dentro do `if` do filtro, LIGAR
-          // COLUNA dependia de EXISTIR FILTRO — duas funções diferentes presas
-          // por um `&&`. A conta apareceu quando `/cadastros/colaboradores`
-          // migrou para `GET /api/employees`: o servidor não publica `filters`,
-          // os campos filtráveis saíram da tela, e o seletor de colunas foi
-          // junto sem que nada no servidor o impedisse. Recurso que o contrato
-          // não deixa FILTRAR continua podendo escolher o que MOSTRAR.
-          if (action.id === 'filtro' && modoDeFiltro === 'modulo' && entidade) {
-            // O seletor de colunas sai no MESMO slot, e não numa barra
-            // própria: filtro e colunas respondem juntos "como esta listagem
-            // está montada agora". Separá-los faria o operador procurar em
-            // dois lugares o ajuste da mesma pergunta.
-            return (
-              <span key={action.id} className="contents">
-                {camposFiltraveis && camposFiltraveis.length > 0 ? (
-                  <FiltroPorModulo
-                    entidade={entidade}
-                    filtros={filtrosInput}
-                    onChange={setFiltrosInput}
-                  />
-                ) : null}
-                <ColunasPorModulo
-                  entidade={entidade}
-                  extras={colunasExtras}
-                  fixas={declaradas}
-                  onChange={setColunasExtras}
-                />
-              </span>
-            )
-          }
+      <BarraDeFiltros
+        busca={busca}
+        textoDaBusca={qInput}
+        onBuscaChange={setQInput}
+        placeholderDaBusca={searchPlaceholder}
+        {...(camposFiltraveis && camposFiltraveis.length > 0 ? { campos: camposFiltraveis } : {})}
+        filtros={filtrosInput}
+        juncao={juncao}
+        onFiltrosChange={setFiltrosInput}
+        onJuncaoChange={setJuncao}
+        {...(filtroProprio ? { filtrosSlot: filtroProprio } : {})}
+        // O chip `Agrupar` serve DOIS desenhos com um estado só (D10): na
+        // visão que agrupa ele escolhe a COLUNA do quadro; na tabela, a FAIXA
+        // — e é por serem o mesmo estado que alternar lista ⇄ quadro não troca
+        // a pergunta no caminho. Quais campos entram, ver `camposDoChip`.
+        {...(camposDoChip.length > 0
+          ? {
+              agrupamentos: camposDoChip,
+              // O VALOR mostrado é o efetivo de cada desenho, e os dois não são
+              // o mesmo: a tabela usa o estado cru (vazio = lista corrida, que
+              // é como toda listagem abre), a visão que agrupa usa
+              // `agrupamentoDaVisao`, que cai no primeiro campo — um quadro sem
+              // campo não tem colunas, e o chip diria `Agrupar` sobre um quadro
+              // já partido por Etapa.
+              agruparPor: visaoAtiva?.agrupa ? agrupamentoDaVisao : agruparPor,
+              onAgruparPorChange: (id: string) => {
+                setAgruparPor(id)
+                // Colapso é por VALOR do grupo, e trocar de campo troca os
+                // valores: guardar a lista faria "Cancelado" fechado em
+                // Situação reaparecer fechado num campo que nem tem esse valor
+                // no dia em que os dois coincidissem.
+                setGruposFechados([])
+              },
+            }
+          : {})}
+        ordenacao={ordenacaoDaBarra}
+        onInverterOrdenacao={() =>
+          updateState((s) =>
+            s.sort ? { ...s, sort: { ...s.sort, desc: !s.sort.desc }, page: 1 } : s,
+          )
+        }
+        onLimparOrdenacao={() => updateState((s) => ({ ...s, sort: null, page: 1 }))}
+        colunas={colunasDoMenu}
+        onAlternarColuna={alternarColuna}
+        onReordenarColunas={setOrdemDasColunas}
+        {...(entidade
+          ? {
+              colunasOpcionais: opcionaisForaDaGrade,
+              onAlternarColunaOpcional: (id: string) =>
+                setColunasExtras((atuais) =>
+                  atuais.includes(id) ? atuais.filter((x) => x !== id) : [...atuais, id],
+                ),
+            }
+          : {})}
+        {...(visaoAtiva
+          ? {}
+          : {
+              densidades: DENSIDADES,
+              densidade,
+              onDensidadeChange: (id: string) => {
+                const lida = densidadeLida(id)
+                if (lida) setDensidade(lida)
+              },
+              // A dica só existe na PLANILHA, e some nas outras duas: uma
+              // legenda de teclas parada na barra o dia inteiro vira parte do
+              // cenário, e ninguém a lê no dia em que ela passa a valer.
+              ...(planilha ? { dica: DICA_DA_PLANILHA } : {}),
+            })}
+        acoes={actions.map((action) => {
+          // O filtro estruturado OCUPA o lugar do botão `Filtro` da barra
+          // padrão (§9, padrão 4) em vez de somar um botão ao lado: a barra
+          // tem a mesma ordem em oito telas, e dois caminhos para "filtrar"
+          // lado a lado fariam o operador escolher qual dos dois é o de
+          // verdade. Na barra 2.0 quem ocupa esse lugar são os chips, que
+          // já estão montados acima — então o botão simplesmente sai.
           if (action.id === 'filtro' && camposFiltraveis && camposFiltraveis.length > 0) {
-            return modoDeFiltro === 'lista' ? (
-              <span key={action.id} className="contents">
-                <ListaDeFiltros
-                  campos={camposFiltraveis}
-                  filtros={filtrosInput}
-                  juncao={juncao}
-                  onFiltrosChange={setFiltrosInput}
-                  onJuncaoChange={setJuncao}
-                />
-              </span>
-            ) : (
-              <span key={action.id} className="contents">
-                <PilulasDeFiltro
-                  campos={camposFiltraveis}
-                  filtros={filtrosInput}
-                  juncao={juncao}
-                  onFiltrosChange={setFiltrosInput}
-                  onJuncaoChange={setJuncao}
-                />
-              </span>
-            )
+            return null
           }
           return (
             <Button
@@ -910,9 +1831,9 @@ export function VitraDataTable<T>({
               }
               title={
                 // Ação de linha numa visão sem linha: o botão já ficava
-                // desabilitado (nada selecionado) e MUDO, e um botão morto sem
-                // motivo é lido como defeito. Aqui o motivo é o desenho da tela,
-                // não a falta de um clique.
+                // desabilitado (nada selecionado) e MUDO, e um botão morto
+                // sem motivo é lido como defeito. Aqui o motivo é o desenho
+                // da tela, não a falta de um clique.
                 action.needsSelection === true && visaoAtiva
                   ? `Só na visão Lista: ${visaoAtiva.rotulo} não tem linha para selecionar.`
                   : action.title
@@ -924,82 +1845,52 @@ export function VitraDataTable<T>({
             </Button>
           )
         })}
-
-        {visoes && visoes.length > 0 ? (
-          <div className="ml-auto flex flex-wrap items-center gap-2">
-            {/* `Agrupar por` fica ANTES do alternador porque descreve a visão
-                que está à direita dele — e some quando a visão ativa não agrupa,
-                em vez de virar controle sem efeito. */}
-            {visaoAtiva?.agrupa && agrupamentos && agrupamentos.length > 0 ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <label htmlFor="vitra-agrupar-por">Agrupar por:</label>
-                <select
-                  id="vitra-agrupar-por"
-                  // Mesma caixa preta 2px do seletor de tamanho de página: os
-                  // dois são escolhas sobre COMO a listagem se apresenta.
-                  className="h-8 border-2 border-input bg-card px-2 text-sm outline-none focus-visible:focus-ring"
-                  value={agruparPor}
-                  onChange={(e) => setAgruparPor(e.target.value)}
-                >
-                  {agrupamentos.map((opcao) => (
-                    <option key={opcao.id} value={opcao.id}>
-                      {opcao.rotulo}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : null}
-
-            {/* RÁDIO DE VERDADE, com pele de botão. As visões são exclusivas, e
-                o rádio nativo dá de graça o que um grupo de botões pediria à
-                mão: andar entre as opções com as setas, uma única parada de Tab
-                para o grupo inteiro e o estado dito a quem ouve. O `<input>` fica
-                em `sr-only` e o foco aparece no rótulo, senão o anel ficaria
-                num controle invisível. */}
-            <fieldset className="flex items-center gap-1">
-              <legend className="sr-only">Visão da listagem</legend>
-              {[{ id: VISAO_LISTA, rotulo: 'Lista', icon: Rows3 }, ...visoes].map((visao) => {
-                const ativa = visao.id === visaoId
-                return (
-                  <label
-                    key={visao.id}
-                    className={cn(
-                      buttonVariants({ variant: ativa ? 'default' : 'outline', size: 'sm' }),
-                      'cursor-pointer has-[:focus-visible]:focus-ring',
-                    )}
-                  >
-                    <input
-                      type="radio"
-                      className="sr-only"
-                      name={grupoDeVisao}
-                      value={visao.id}
-                      checked={ativa}
-                      onChange={() => {
-                        // A seleção é da TABELA; ao sair dela não há linha
-                        // marcada, e voltar com a seleção velha apontaria para
-                        // uma linha que a consulta pode nem ter trazido de novo.
-                        setSelecionadas([])
-                        setVisaoId(visao.id)
-                      }}
-                    />
-                    {visao.icon ? <visao.icon aria-hidden="true" /> : null}
-                    {visao.rotulo}
-                  </label>
-                )
-              })}
-            </fieldset>
-          </div>
-        ) : null}
-      </div>
-
-      {marcavel && algumaMarcada ? (
-        <BarraDeSelecao
-          quantidade={selecionadas.length}
-          acoes={acoesDeSelecao ?? []}
-          linhas={selecionadas}
-          aoLimpar={() => setSelecionadas([])}
-        />
-      ) : null}
+        {...(visoes && visoes.length > 0
+          ? {
+              modos: (
+                /* RÁDIO DE VERDADE, com pele de botão. As visões são
+                   exclusivas, e o rádio nativo dá de graça o que um grupo de
+                   botões pediria à mão: andar entre as opções com as setas, uma
+                   única parada de Tab para o grupo inteiro e o estado dito a
+                   quem ouve. O `<input>` fica em `sr-only` e o foco aparece no
+                   rótulo, senão o anel ficaria num controle invisível. */
+                <fieldset className="flex items-center gap-1">
+                  <legend className="sr-only">Visão da listagem</legend>
+                  {[{ id: VISAO_LISTA, rotulo: 'Lista', icon: Rows3 }, ...visoes].map((visao) => {
+                    const ativa = visao.id === visaoId
+                    return (
+                      <label
+                        key={visao.id}
+                        className={cn(
+                          buttonVariants({ variant: ativa ? 'default' : 'outline', size: 'sm' }),
+                          'cursor-pointer has-[:focus-visible]:focus-ring',
+                        )}
+                      >
+                        <input
+                          type="radio"
+                          className="sr-only"
+                          name={grupoDeVisao}
+                          value={visao.id}
+                          checked={ativa}
+                          onChange={() => {
+                            // A seleção é da TABELA; ao sair dela não há linha
+                            // marcada, e voltar com a seleção velha apontaria
+                            // para uma linha que a consulta pode nem ter
+                            // trazido de novo.
+                            setSelecionadas([])
+                            setVisaoId(visao.id)
+                          }}
+                        />
+                        {visao.icon ? <visao.icon aria-hidden="true" /> : null}
+                        {visao.rotulo}
+                      </label>
+                    )
+                  })}
+                </fieldset>
+              ),
+            }
+          : {})}
+      />
 
       {visaoAtiva ? (
         // A visão troca só o DESENHO. Carregando, falha e vazio continuam sendo
@@ -1014,11 +1905,11 @@ export function VitraDataTable<T>({
               ))}
             </div>
           ) : query.isError ? (
-            <div className="rounded-data border-2 border-border py-8 shadow-el3">
+            <div className="rounded-data border border-input bg-card py-8 shadow-macia">
               <FalhaDaConsulta erro={query.error} aoTentar={() => query.refetch()} />
             </div>
           ) : rows.length === 0 ? (
-            <div className="rounded-data border-2 border-border py-8 shadow-el3">
+            <div className="rounded-data border border-input bg-card py-8 shadow-macia">
               <VazioDaConsulta
                 q={state.q}
                 temFiltro={temFiltro}
@@ -1027,20 +1918,28 @@ export function VitraDataTable<T>({
               />
             </div>
           ) : (
-            visaoAtiva.render({ rows, agruparPor })
+            visaoAtiva.render({ rows, agruparPor: agrupamentoDaVisao })
           )}
         </div>
       ) : (
-        /* Caixa de DADO (§DataTable): raio 2px, traço 2px, `el-3` e recorte —
-          sem ele, o canto arredondado do contêiner apareceria por baixo do
-          cabeçalho quadrado da primeira fileira.
+        /* Caixa de DADO: UM traço fino em `n-300` e a sombra quieta — a
+          listagem é o objeto sobre o plano, e por isso a moldura aparece uma
+          vez, aqui. Enquanto a borda era 2px de tinta e cada linha também, a
+          tela tinha vinte caixas empilhadas e nenhuma hierarquia entre elas
+          (§Separação: card por fora, hairline por dentro).
+          O recorte continua: sem ele, o canto arredondado do contêiner
+          apareceria por baixo do cabeçalho quadrado da primeira fileira.
           `overflow-clip` e NÃO `overflow-hidden`, e a diferença é medida:
            `hidden` cria um scroll container, e `position: sticky` se prende ao
            scrollport mais próximo — o cabeçalho ficaria "fixo" dentro de uma
            caixa que não rola, ou seja, parado. `clip` recorta igual e não cria
            scrollport, então a fixação passa a valer contra a rolagem da PÁGINA,
            que é onde a listagem rola de verdade. */
-        <div className="overflow-clip rounded-data border-2 border-border shadow-el3">
+        <div
+          data-slot="grade"
+          data-densidade={densidade}
+          className="overflow-clip rounded-data border border-input bg-card shadow-macia"
+        >
           {/* `tabular-nums` na TABELA inteira, e não coluna a coluna.
               Medido em `docs/design/medir-tabular.py`: no Inter do corpo o `1`
               avança 833/2048 de em e o `4`, 1323 — numa coluna de valores isso
@@ -1053,20 +1952,52 @@ export function VitraDataTable<T>({
               `meta.numeric` segue existindo, e agora só decide ALINHAMENTO à
               direita, que é outra pergunta. */}
           <Table
+            ref={refDaTabela}
+            {...(planilha ? modoPlanilha.propsDaGrade : {})}
             className={cn(
-              'tabular-nums',
+              // `table-layout: fixed` (D33, pesquisa §10): a largura da coluna
+              // deixa de ser calculada a partir do conteúdo da PÁGINA ATUAL.
+              // Enquanto ela era automática, a mesma coluna de data media 96px
+              // numa página e 140px na seguinte, e o operador que paginava
+              // conferindo via a grade inteira se reorganizar debaixo do olho.
+              // Quem manda nas larguras agora é o `<colgroup>` abaixo.
+              'table-fixed tabular-nums',
               // A célula do shadcn traz `h-[52px]`; o seletor de descendente
               // ganha dela por especificidade, sem `!important` e sem tocar no
               // componente compartilhado — outras tabelas do app não mudam.
-              densidade === 'compacta' && '[&_td]:h-10',
+              compacta && '[&_td]:h-10',
             )}
           >
+            {/* As larguras, em UM lugar. `<colgroup>` e não `width` por `<th>`:
+                o cabeçalho agrupado tem `colSpan`, e uma largura declarada numa
+                célula que abrange três colunas não diz nada sobre nenhuma
+                delas. As colunas de SERVIÇO repetem aqui o que já vale nas
+                classes (`w-10`, `w-[90px]`) porque em `fixed` quem não declara
+                divide a sobra — e o checkbox ficaria com um sexto da tela. */}
+            <colgroup>
+              {marcavel ? <col style={{ width: 40 }} /> : null}
+              {rowNumbers ? <col style={{ width: 40 }} /> : null}
+              {colunasDeDado.map((coluna) => {
+                const largura = LARGURA_DO_TIPO[coluna.columnDef.meta?.tipo ?? 'texto']
+                return (
+                  <col
+                    key={coluna.id}
+                    {...(largura !== undefined ? { style: { width: largura } } : {})}
+                  />
+                )
+              })}
+              {temAcoesDeLinha ? <col style={{ width: 90 }} /> : null}
+            </colgroup>
             {/* Cabeçalho FIXO na rolagem (#198): numa listagem de cinquenta
                 linhas o operador perde o nome da coluna antes da décima, e passa
-                a contar posição no olho. `bg-card` é obrigatório junto do
+                a contar posição no olho. O tint `n-50` é obrigatório junto do
                 `sticky` — sem fundo opaco as linhas passam por baixo e o texto
-                do cabeçalho se mistura ao dado. */}
-            <TableHeader className="sticky top-0 z-10 bg-card">
+                do cabeçalho se mistura ao dado —, e é também a separação entre
+                header e corpo. §Separação: UMA ferramenta por fronteira — o
+                tint separa, então não há borda por baixo dele. O mockup desenha
+                as duas (tint + hairline); a régua da rodada é explícita
+                ("header separado por tint n-50, não por borda") e vence. */}
+            <TableHeader className="sticky top-0 z-10 bg-surface-sunken">
               {table.getHeaderGroups().map((headerGroup, hgIndex, headerGroups) => (
                 // Cabeçalho agrupado: fileira de grupo separada das sub-colunas
                 // por Fio (a sublinha forte fica na fileira das folhas).
@@ -1096,11 +2027,20 @@ export function VitraDataTable<T>({
                       header.column.columnDef.enableSorting !== false &&
                       'accessorKey' in header.column.columnDef
                     const active = state.sort?.id === header.column.id
-                    const numeric = header.column.columnDef.meta?.numeric === true
+                    const tipo = header.column.columnDef.meta?.tipo
+                    const numeric =
+                      header.column.columnDef.meta?.numeric === true ||
+                      tipo === 'dinheiro' ||
+                      tipo === 'progresso'
                     // A origem da coluna só existe onde a tela declarou a
                     // entidade do schema — nas outras a grade segue sem ponto,
                     // em vez de inventar um módulo para caber no desenho.
                     const modulo = entidade ? moduloDaColuna(entidade, header.column.id) : undefined
+                    // Só a folha carrega largura: um cabeçalho agrupado abrange
+                    // três colunas, e um `min-width` nele falaria de uma coluna
+                    // que não existe.
+                    const larguraDoCabecalho =
+                      header.colSpan > 1 ? undefined : LARGURA_DO_TIPO[tipo ?? 'texto']
                     return (
                       <TableHead
                         key={header.id}
@@ -1116,29 +2056,90 @@ export function VitraDataTable<T>({
                               : 'none'
                             : undefined
                         }
-                        className={cn(header.colSpan > 1 && 'text-center', numeric && 'text-right')}
+                        // O `<colgroup>` dá a largura; o `min-width` aqui é o
+                        // PISO. Em `table-layout: fixed` o navegador comprime
+                        // as colunas declaradas quando a soma não cabe, e uma
+                        // coluna de dinheiro espremida a 70px quebra o valor
+                        // no meio — com o piso, quem cede é a coluna flexível,
+                        // e abaixo disso aparece a rolagem horizontal que o
+                        // contêiner da tabela já tem.
+                        {...(larguraDoCabecalho !== undefined
+                          ? { style: { minWidth: larguraDoCabecalho } }
+                          : {})}
+                        // `overflow-hidden` porque a largura agora é FIXA: o
+                        // `--t-rotulo` é caixa alta com tracking, e "NOSSO
+                        // CÓDIGO" não cabe nos 110px da coluna de id — sem
+                        // isto ele atravessava o cabeçalho da coluna vizinha e
+                        // as duas palavras se sobrepunham. O rótulo inteiro
+                        // fica no `title`, como o valor da célula.
+                        className={cn(
+                          'overflow-hidden',
+                          header.colSpan > 1 && 'text-center',
+                          numeric && 'text-right',
+                        )}
                       >
-                        {header.isPlaceholder ? null : <PontoDoModulo cor={modulo?.cor} />}
-                        {header.isPlaceholder ? null : sortable ? (
-                          <button
-                            type="button"
-                            className="inline-flex items-center gap-1 uppercase hover:text-foreground"
-                            onClick={() => toggleSort(header.column.id)}
+                        {/* Cabeçalho = ícone de TIPO + rótulo + seta. O ícone
+                            diz a natureza da coluna antes de o olho ler a
+                            palavra; à direita ele vem depois do rótulo, senão
+                            ficaria colado no dado da coluna vizinha.
+                            Sem caixa por célula: o `--t-rotulo` da §Hierarquia
+                            não tem fundo nem borda próprios. */}
+                        {header.isPlaceholder ? null : (
+                          <span
+                            className={cn(
+                              'flex max-w-full items-center gap-1.5',
+                              numeric && 'flex-row-reverse',
+                            )}
+                            {...(typeof header.column.columnDef.header === 'string'
+                              ? { title: header.column.columnDef.header }
+                              : {})}
                           >
-                            {flexRender(header.column.columnDef.header, header.getContext())}
-                            {active &&
-                              (state.sort?.desc ? (
-                                <ArrowDown className="size-3.5" />
-                              ) : (
-                                <ArrowUp className="size-3.5" />
-                              ))}
-                          </button>
-                        ) : (
-                          flexRender(header.column.columnDef.header, header.getContext())
+                            {tipo ? (
+                              <IconeDeTipo tipo={tipo} />
+                            ) : (
+                              <PontoDoModulo cor={modulo?.cor} />
+                            )}
+                            {sortable ? (
+                              <button
+                                type="button"
+                                // `uppercase` REPETIDO aqui de propósito: o
+                                // `text-transform` do `.t-rotulo` mora no `<th>`
+                                // e seria herdado, não fosse o UA stylesheet
+                                // declarar `text-transform: none` em `button` —
+                                // o resultado media na tela como meia grade em
+                                // caixa alta (as colunas sem ordenação) e meia
+                                // em caixa mista (as com), sem nada no código
+                                // dizendo por quê.
+                                className="flex min-w-0 items-center gap-1 truncate uppercase hover:text-foreground focus-visible:focus-ring"
+                                onClick={() => toggleSort(header.column.id)}
+                              >
+                                {flexRender(header.column.columnDef.header, header.getContext())}
+                                {active &&
+                                  (state.sort?.desc ? (
+                                    <ArrowDown className="size-3 text-foreground" />
+                                  ) : (
+                                    <ArrowUp className="size-3 text-foreground" />
+                                  ))}
+                              </button>
+                            ) : (
+                              flexRender(header.column.columnDef.header, header.getContext())
+                            )}
+                          </span>
                         )}
                       </TableHead>
                     )
                   })}
+                  {/* A coluna das ações de linha não tem rótulo: o que ela
+                      contém aparece no hover, e um cabeçalho "Ações" ocuparia
+                      permanentemente a largura para nomear o óbvio. Ela existe
+                      no cabeçalho só para reservar a largura desde o primeiro
+                      quadro — sem isso a grade se reorganiza quando o mouse
+                      entra na primeira linha. */}
+                  {temAcoesDeLinha && hgIndex === 0 ? (
+                    <TableHead className="w-[90px]" rowSpan={headerGroups.length}>
+                      <span className="sr-only">Ações da linha</span>
+                    </TableHead>
+                  ) : null}
                 </TableRow>
               ))}
             </TableHeader>
@@ -1171,6 +2172,10 @@ export function VitraDataTable<T>({
                         <Skeleton className={LARGURAS_DE_ESQUELETO[(linha + indice) % 3]} />
                       </TableCell>
                     ))}
+                    {/* A coluna das ações entra no esqueleto vazia: elas só
+                        aparecem no hover, e uma barra cinza ali prometeria
+                        conteúdo que nunca fica visível parado. */}
+                    {temAcoesDeLinha ? <TableCell className="w-[90px]" /> : null}
                   </TableRow>
                 ))
               ) : query.isError ? (
@@ -1190,106 +2195,174 @@ export function VitraDataTable<T>({
                     />
                   </TableCell>
                 </TableRow>
-              ) : (
-                table.getRowModel().rows.map((row, rowIndex) => {
-                  const isSelected = selecionadas.includes(row.original)
+              ) : agrupamentoDaTabela ? (
+                gruposDaTabela.map((grupo) => {
+                  const fechado = gruposFechados.includes(grupo.valor)
+                  const tom = agrupamentoDaTabela.tomDoValor?.(grupo.valor)
                   return (
-                    // Seleção = VIOLETA cheio com texto branco (§DataTable): o
-                    // violeta é a cor da AÇÃO, e a linha selecionada é sobre o
-                    // que as ações da barra vão agir. O marcador amarelo saiu com
-                    // ele — amarelo agora é foco, e foco e seleção são estados
-                    // diferentes que precisam de sinais diferentes.
-                    <TableRow
-                      key={row.id}
-                      data-state={isSelected ? 'selected' : undefined}
-                      // A linha é parada de FOCO nos dois modos, e o que ela faz
-                      // muda com o gesto da tela: onde a linha abre (#198), Enter
-                      // abre e o Espaço marca — o mesmo par que qualquer lista de
-                      // aplicativo tem; onde a linha marca (janela de busca), os
-                      // dois marcam, como era. Não é atalho: é o teclado nativo do
-                      // controle, e nenhuma tecla precisa ser memorizada.
-                      tabIndex={0}
-                      aria-selected={isSelected}
-                      className={cn(
-                        // O anel de foco é de LINHA, montado nas células: sob
-                        // `border-collapse` o `<tr>` não pinta box-shadow, e um
-                        // anel por célula viraria uma moldura por coluna.
-                        'cursor-pointer outline-none hover:bg-muted focus-visible:focus-ring-row',
-                        // Seleção não depende só de cor: além do violeta, a linha
-                        // fica em negrito e `aria-selected` diz o estado a quem
-                        // ouve. Dinheiro perde a zona aqui — verde sobre violeta
-                        // não se lê, e a linha inteira já está marcada.
-                        isSelected &&
-                          'font-semibold [&>td]:bg-primary [&>td]:text-primary-foreground [&>td_.bg-zone-money]:bg-transparent',
-                      )}
-                      onClick={() => {
-                        if (linhaAbre) aoAbrirLinha(row.original)
-                        else alternarLinha(row.original)
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key !== 'Enter' && e.key !== ' ') return
-                        // Espaço rolaria a página; Enter dentro de célula com
-                        // controle não deve chegar aqui duas vezes.
-                        e.preventDefault()
-                        if (linhaAbre && e.key === 'Enter') aoAbrirLinha(row.original)
-                        else alternarLinha(row.original)
-                      }}
-                    >
-                      {marcavel ? (
-                        // A célula do checkbox NÃO propaga o clique: mirar o
-                        // quadradinho é dizer "marque esta", e abrir o registro
-                        // junto tiraria da tela quem só queria montar a seleção.
-                        // MEDIDO: hoje a barreira é redundante — o sistema de
-                        // press do react-aria já não propaga, e tirar estas duas
-                        // linhas não derruba o teste. Ficam como guarda do dia em
-                        // que o checkbox virar `<input>` nativo, que propaga: o
-                        // sintoma seria a tela abrindo o registro no meio da
-                        // montagem da seleção, e o teste que o pega é o de
-                        // comportamento acima, não este arquivo.
-                        <TableCell
-                          className="w-10"
-                          onClick={(e) => e.stopPropagation()}
-                          onKeyDown={(e) => e.stopPropagation()}
-                        >
-                          <Checkbox
-                            isSelected={isSelected}
-                            onChange={() => alternarLinha(row.original)}
-                            aria-label={`Marcar linha ${(state.page - 1) * state.pageSize + rowIndex + 1}`}
-                          />
+                    <Fragment key={grupo.valor}>
+                      <TableRow
+                        data-slot="linha-de-grupo"
+                        data-grupo={grupo.valor}
+                        // TINT, e só ele: a faixa separa REGIÃO por natureza,
+                        // que é a terceira ferramenta da §Hierarquia. Somar
+                        // borda à tinta seria duas ferramentas na mesma
+                        // fronteira — e a hairline entre linhas, que já existe,
+                        // é a de baixo.
+                        className={cn(
+                          // `n-50` é a folha-2 do 2.0 — o mesmo tint do header
+                          // da tabela, porque as duas faixas fazem o mesmo
+                          // trabalho: dizer que ali não há dado. O hover fica
+                          // preso: a faixa não é linha de registro e piscar sob
+                          // o cursor prometeria uma seleção que não existe.
+                          'bg-[var(--n-50)] hover:bg-[var(--n-50)]',
+                          tom !== undefined && TINT_DO_GRUPO[tom],
+                        )}
+                      >
+                        <TableCell colSpan={totalColSpan} className="h-9 bg-transparent p-0">
+                          {/* O alvo é a FAIXA INTEIRA: colapsar é o gesto
+                                repetido de quem agrupou para ver os totais, e
+                                mirar um chevron de 16px trinta vezes é o que faz
+                                a pessoa desistir do agrupamento. */}
+                          <button
+                            type="button"
+                            className="flex h-9 w-full items-center gap-[var(--s-3)] px-3 text-left outline-none focus-visible:focus-ring"
+                            aria-expanded={!fechado}
+                            onClick={() =>
+                              setGruposFechados((atuais) =>
+                                atuais.includes(grupo.valor)
+                                  ? atuais.filter((v) => v !== grupo.valor)
+                                  : [...atuais, grupo.valor],
+                              )
+                            }
+                          >
+                            {fechado ? (
+                              <ChevronRight aria-hidden="true" className="size-4 shrink-0" />
+                            ) : (
+                              <ChevronDown aria-hidden="true" className="size-4 shrink-0" />
+                            )}
+                            {/* O VALOR do grupo é carimbo quando é situação e
+                                  texto de interface quando não é — agrupar por
+                                  fornecedor não tem estado, e um carimbo neutro
+                                  em volta de "Stella" faria de um nome próprio
+                                  um estado do sistema. */}
+                            {tom !== undefined ? (
+                              <Stamp tom={tom} label={grupo.valor} />
+                            ) : (
+                              <span className="t-ui truncate">{grupo.valor}</span>
+                            )}
+                            {/* Contagem em `--t-dado-meta`: é número que se
+                                  compara entre faixas (mono, tabular), não
+                                  rótulo — e mono é dado, sem exceção.
+                                  A UNIDADE é a da entidade quando a tela a
+                                  declara (`2 ordens`, como no mockup) e cai em
+                                  `itens` quando não — o schema de módulos já
+                                  sabe o nome no singular e no plural, e "itens"
+                                  numa tela de ordens é o sistema falando de si
+                                  mesmo em vez de falar do trabalho. */}
+                            <span className="t-dado-meta">
+                              {grupo.linhas.length}{' '}
+                              {grupo.linhas.length === 1
+                                ? (entidade?.nome.toLocaleLowerCase('pt-BR') ?? 'item')
+                                : (entidade?.plural.toLocaleLowerCase('pt-BR') ?? 'itens')}
+                            </span>
+                            {/* O subtotal é `--t-dado`, o mesmo degrau da coluna
+                                  de dinheiro acima dele: é para ser comparado
+                                  com ela, e um degrau diferente sugeriria outra
+                                  natureza de número. */}
+                            {grupo.subtotal !== null ? (
+                              <span className="t-dado ml-auto">
+                                {formatMoneyBRL(grupo.subtotal)}
+                              </span>
+                            ) : null}
+                          </button>
                         </TableCell>
-                      ) : null}
-                      {rowNumbers ? (
-                        // Numeração em Meta, sequencial global da consulta.
-                        <TableCell className="w-10 text-right font-mono text-[11px] tabular-nums tracking-[0.12em] text-muted-foreground">
-                          {(state.page - 1) * state.pageSize + rowIndex + 1}
-                        </TableCell>
-                      ) : null}
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell
-                          key={cell.id}
-                          className={cn(
-                            cell.column.columnDef.meta?.numeric === true &&
-                              'text-right tabular-nums',
+                      </TableRow>
+                      {fechado
+                        ? null
+                        : grupo.linhas.map((row) =>
+                            renderLinha(row, indiceVisual.get(row.id) ?? 0),
                           )}
-                        >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </TableCell>
-                      ))}
-                    </TableRow>
+                    </Fragment>
                   )
                 })
+              ) : (
+                table
+                  .getRowModel()
+                  .rows.map((row) => renderLinha(row, indiceVisual.get(row.id) ?? 0))
               )}
             </TableBody>
           </Table>
+
+          {/* O ANCORADOURO da barra de lote — altura ZERO, de propósito.
+              Ele é o que faz a barra flutuar SEM empurrar a grade: no 1.x ela
+              entrava no fluxo acima da tabela, e marcar uma linha descia a
+              grade inteira alguns pixels — a linha que o operador acabou de
+              mirar saía de baixo do cursor no exato instante em que ele a
+              marcou. Com `h-0` o layout não sabe que a barra existe; quem a põe
+              na tela é o `translate` do filho.
+              `sticky bottom-3` e não `absolute`: numa consulta de cinquenta
+              linhas o fim da grade está fora da janela, e uma barra presa ao
+              rodapé do card só apareceria depois de rolar até lá. Grudada,
+              ela acompanha a leitura. A caixa da grade usa `overflow-clip`, que
+              recorta sem criar scrollport — então quem manda no `sticky` é a
+              rolagem da PÁGINA, que é onde a listagem rola.
+              A barra vive AQUI, dentro do card, e não no rodapé da tela: as
+              visões alternativas (quadro) não têm linha para marcar, e uma
+              pílula de lote pairando sobre um quadro sem seleção possível seria
+              a promessa de uma ação que não existe ali. */}
+          <div
+            data-slot="ancora-da-barra-de-selecao"
+            // `items-start` importa: num flex de altura zero o alinhamento
+            // padrão (`stretch`) esticaria a pílula PARA zero, e aí o
+            // `-translate-y-full` do filho — que é 100% da altura dele —
+            // moveria zero pixel. A barra ficava colada no fim da caixa e
+            // recortada pelo `overflow-clip`; só a captura mostrou.
+            className="pointer-events-none sticky bottom-3 z-20 flex h-0 items-start justify-center"
+          >
+            {marcavel && (algumaMarcada || barraSaindo) ? (
+              <div className="-translate-y-full pointer-events-auto pb-1">
+                <BarraDeSelecao
+                  quantidade={algumaMarcada ? selecionadas.length : ultimaQuantidade.current}
+                  acoes={acoesDeSelecao ?? []}
+                  linhas={selecionadas}
+                  aoLimpar={() => setSelecionadas([])}
+                  saindo={barraSaindo}
+                />
+              </div>
+            ) : null}
+          </div>
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-        {/* Contagem em Meta (rótulo de rodapé de tabela); paginação em tabular. */}
-        <span className="font-mono text-[11px] uppercase tracking-[0.12em]">
+      <div className="flex flex-wrap items-center gap-3">
+        {/* O rodapé responde DUAS perguntas, e por isso tem dois lados: à
+            esquerda "o que estou vendo e quanto isso soma"; à direita "como
+            ando por dentro disso". Antes havia só a contagem, e a soma da
+            coluna de dinheiro — o número que o operador confere contra o
+            fornecedor — não existia em tela nenhuma. */}
+        <span className="t-meta" data-testid="contagem-da-grade">
           {/* Consulta que falhou não tem contagem: "0 registros" seria afirmar
               que a consulta voltou vazia, que é exatamente o que não se sabe. */}
-          {query.isError ? '— registros' : `${total} registro${total === 1 ? '' : 's'}`}
+          {query.isError ? (
+            '— registros'
+          ) : (
+            <>
+              <span className="t-dado">{rows.length}</span> de{' '}
+              <span className="t-dado">{total}</span> registro{total === 1 ? '' : 's'}
+              {soma !== null ? (
+                <>
+                  {' · '}
+                  {/* "da página" quando há mais do que coube: chamar de "soma
+                      filtrada" o total de vinte linhas de uma consulta de mil
+                      seria um número certo com o nome errado — e ele acabaria
+                      copiado para um relatório. */}
+                  {total > rows.length ? 'soma da página ' : 'soma filtrada '}
+                  <span className="t-dado">{formatMoneyBRL(soma)}</span>
+                </>
+              ) : null}
+            </>
+          )}
         </span>
 
         {visaoAtiva ? (
@@ -1305,30 +2378,13 @@ export function VitraDataTable<T>({
             </output>
           ) : null
         ) : (
-          <div className="ml-auto flex items-center gap-2">
-            {/* Densidade ao lado do tamanho de página: os dois respondem à
-                mesma pergunta — quanto cabe na tela — e separá-los mandaria o
-                operador procurar em dois cantos. Só na visão TABELA, porque é
-                a altura da LINHA que ela muda; num quadro não haveria o que
-                encolher. */}
-            <label htmlFor="vitra-densidade">Linha:</label>
-            <select
-              id="vitra-densidade"
-              className="h-8 border-2 border-input bg-card px-2 text-sm outline-none focus-visible:focus-ring"
-              value={densidade}
-              onChange={(e) => setDensidade(e.target.value as Densidade)}
-            >
-              {DENSIDADES.map((opcao) => (
-                <option key={opcao.id} value={opcao.id}>
-                  {opcao.rotulo}
-                </option>
-              ))}
-            </select>
-            <label htmlFor="vitra-page-size">Por página:</label>
+          <div className="ml-auto flex items-center gap-3">
+            <label htmlFor="vitra-page-size" className="t-meta">
+              Por página
+            </label>
             <select
               id="vitra-page-size"
-              // Mesma caixa preta 2px dos selects do formulário (radius 0 é lei).
-              className="h-8 border-2 border-input bg-card px-2 text-sm tabular-nums outline-none focus-visible:focus-ring"
+              className="h-8 rounded-control border border-input bg-card px-2 t-ui tabular-nums outline-none focus-visible:focus-ring"
               value={state.pageSize}
               onChange={(e) =>
                 updateState((s) => ({ ...s, pageSize: Number(e.target.value), page: 1 }))
@@ -1340,30 +2396,47 @@ export function VitraDataTable<T>({
                 </option>
               ))}
             </select>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={state.page <= 1}
-              onClick={() => updateState((s) => ({ ...s, page: s.page - 1 }))}
-            >
-              {/* A seta é a DIREÇÃO, e vem do lado para onde ela leva: à esquerda
-                no Anterior, à direita no Próxima. O rótulo continua escrito —
-                paginação por seta muda é o clássico que obriga a adivinhar. */}
-              <ChevronLeft aria-hidden="true" />
-              Anterior
-            </Button>
-            <span className="tabular-nums">
-              Página {state.page} de {pageCount}
+            {/* A FAIXA, não o número da página: "1–20 de 340" diz onde o
+                operador está dentro do conjunto; "Página 2 de 17" o obriga a
+                multiplicar para saber a mesma coisa. */}
+            <span className="t-dado-meta" data-testid="faixa-da-pagina">
+              {total === 0
+                ? '0 de 0'
+                : `${(state.page - 1) * state.pageSize + 1}–${Math.min(
+                    state.page * state.pageSize,
+                    total,
+                  )} de ${total}`}
             </span>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={state.page >= pageCount}
-              onClick={() => updateState((s) => ({ ...s, page: s.page + 1 }))}
-            >
-              Próxima
-              <ChevronRight aria-hidden="true" />
-            </Button>
+            {/* Seta SEM rótulo, e a mudança é deliberada: `Anterior`/`Próxima`
+                escritos ocupavam metade do rodapé para dizer o que a direção já
+                diz, e o par de setas encostado é o padrão que todo operador
+                reconhece. O nome continua existindo para quem ouve
+                (`aria-label`) e para quem para o mouse em cima (`title`) — o
+                que não pode existir é seta MUDA. */}
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-8"
+                aria-label="Página anterior"
+                title="Página anterior"
+                disabled={state.page <= 1}
+                onClick={() => updateState((s) => ({ ...s, page: s.page - 1 }))}
+              >
+                <ChevronLeft aria-hidden="true" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="size-8"
+                aria-label="Próxima página"
+                title="Próxima página"
+                disabled={state.page >= pageCount}
+                onClick={() => updateState((s) => ({ ...s, page: s.page + 1 }))}
+              >
+                <ChevronRight aria-hidden="true" />
+              </Button>
+            </div>
           </div>
         )}
       </div>

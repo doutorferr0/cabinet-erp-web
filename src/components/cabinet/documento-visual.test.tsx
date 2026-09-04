@@ -1,65 +1,226 @@
+import type { EstadoDoAutosave } from '@/components/cabinet/alteracoes-nao-salvas'
 import {
+  CabecalhoDoRegistro,
   DocumentoBloco,
-  DocumentoFrame,
-  DocumentoHeader,
   DocumentoTotais,
+  IndicadorDeGravacao,
+  LayoutDoRegistro,
 } from '@/components/cabinet/documento'
+import { renderWithQuery } from '@/test/utils'
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+const OCIOSO: EstadoDoAutosave = { fase: 'ocioso', salvoEm: null, erro: null }
 
 /**
- * Anatomia do documento (DESIGN.md §DocumentoHeader / §DocumentoTotais):
- * número-herói em display condensado à direita; o Total é o FECHO — bloco
- * próprio, fora da tira, em 48px (#236).
+ * CABEÇALHO DO REGISTRO 2.0 (#483, mockup aba Formulário). A banda preta com o
+ * número-herói saiu: o título diz o que o registro é, o id ao lado é dado que
+ * se copia, a linha de meta diz em que pé está, e a única peça forte é o
+ * PRÓXIMO PASSO do fluxo — nunca "Gravar".
  */
-describe('DocumentoHeader', () => {
-  it('título em Headline à esquerda e número em Número do Documento à direita', () => {
-    render(<DocumentoHeader titulo="Orçamento" numero="ORÇ-2026-00184" />)
-    // FUSÃO v5 r3 (decisão do user, 2026-08-19): o título da banda fala em
-    // display CONDENSADO (Bebas Neue) e CAIXA ALTA — a regra "serifada não
-    // leva caixa alta" era da Newsreader e sai junto com ela AQUI; a serifa
-    // continua sendo a voz de QUEM no <Nome> e nos H1 de cadastro.
-    const titulo = screen.getByRole('heading', { name: 'Orçamento' })
-    expect(titulo.className).toContain('font-[family-name:var(--font-display-condensada)]')
-    expect(titulo.className).toContain('uppercase')
-    // #236: o título do DOCUMENTO sobe a 36px — é o par do número ao lado.
-    // A banda de qualquer outra tela fica em 28px; ver banda-identidade.test.
-    expect(titulo.className).toContain('text-[2.25rem]')
-    // Nº do Documento: número-herói, display condensado a 36px, na caixa preta.
-    const numero = screen.getByText('ORÇ-2026-00184')
-    expect(numero.className).toContain('font-[family-name:var(--font-display-condensada)]')
-    expect(numero.className).toContain('text-[2.25rem]')
-    expect(numero.className).toContain('tabular-nums')
-    // A caixa preta continua sendo dele: é a única peça escura do cabeçalho.
-    expect(numero.className).toContain('bg-primary')
-  })
+describe('CabecalhoDoRegistro', () => {
+  it('título em Gambarino e id em mono ao lado, não numa caixa preta', () => {
+    const { container } = render(<CabecalhoDoRegistro titulo="Ordem de compra" id="OC-5102" />)
 
-  // O cabeçalho de documento é a MESMA banda de identidade do cadastro: quem
-  // muda a faixa muda os dois. Antes era um `<header>` com régua de 1px que
-  // repetia, com outros valores, o que a banda já dizia.
-  it('é a banda de identidade, não um cabeçalho paralelo', () => {
-    const { container } = render(<DocumentoHeader titulo="Pedido de Compra" numero="PC-001" />)
-    const banda = screen.getByRole('heading', { level: 1 }).closest('div')
-    // r5: zona de identidade em gradiente — ver banda-identidade.test.
-    expect(banda?.className).toContain('hsl(var(--zone-id))')
-    expect(banda?.className).toContain('border-2')
-    expect(container.querySelector('header')).toBeNull()
-  })
+    const titulo = screen.getByRole('heading', { name: /Ordem de compra/ })
+    // §Hierarquia: título de ficha é o degrau `--t-registro`, por classe. Um
+    // `text-[24px]` aqui é o que a régua proíbe e o D30 grepa.
+    expect(titulo.className).toContain('t-registro')
 
-  it('modo é contexto ao lado do título, não sufixo dentro dele', () => {
-    const { container } = render(<DocumentoHeader titulo="Orçamento" modo="Incluir" />)
-    // O `<h1>` diz o documento; o Meta ao lado diz o modo. Colados, o leitor de
-    // tela anunciava "Orçamento — Incluir" como se fosse o nome do documento.
-    expect(screen.getByRole('heading', { name: 'Orçamento' })).toBeInTheDocument()
-    expect(screen.getByText('Incluir')).toBeInTheDocument()
+    const id = container.querySelector('[data-slot="registro-id"]')
+    expect(id).toHaveTextContent('OC-5102')
+    // A caixa preta do número-herói era a única peça escura do cabeçalho e
+    // pesava mais que o nome do documento. O id agora é dado, em mono n-500.
+    expect(id?.getAttribute('style')).toContain('var(--font-mono)')
     expect(container.querySelector('[data-slot="documento-numero"]')).toBeNull()
   })
 
-  it('carimbo de situação aparece ao lado do número quando presente', () => {
+  it('em inclusão não há id — e o cabeçalho não finge que há', () => {
+    const { container } = render(<CabecalhoDoRegistro titulo="Pedido de compra" />)
+    expect(container.querySelector('[data-slot="registro-id"]')).toBeNull()
+  })
+
+  /**
+   * O cabeçalho de documento é o MESMO `PageHeader` de toda tela — só a
+   * variante muda (D5). Uma faixa própria aqui teria o mesmo desenho com
+   * outros valores, que é a deriva que a guarda de rota daquela issue existe
+   * para impedir.
+   */
+  it('é o cabeçalho de página na variante registro, sem caixa em volta', () => {
+    render(<CabecalhoDoRegistro titulo="Pedido de compra" id="PC-001" />)
+    const cabecalho = screen.getByRole('heading', { level: 1 }).closest('header')
+
+    expect(cabecalho).toHaveAttribute('data-slot', 'page-header')
+    expect(cabecalho).toHaveAttribute('data-variante', 'registro')
+    // Nem a zona lilás da banda, nem o traço de 2px: a fronteira com o que vem
+    // abaixo é espaço.
+    expect(cabecalho?.className).not.toContain('zone-id')
+    expect(cabecalho?.className).not.toContain('border-2')
+  })
+
+  it('badge fica junto do id; a procedência desce para a linha de baixo', () => {
     render(
-      <DocumentoHeader titulo="Orçamento" numero="184" stamp={{ tom: 'open', label: 'ABERTO' }} />,
+      <CabecalhoDoRegistro
+        titulo="Ordem de compra"
+        id="OC-5102"
+        modo="Consulta"
+        badge={{ tom: 'info', label: 'Enviada' }}
+        meta="Mister LED · criada 20/08/2026 por Henrique · reagendada 1×"
+      />,
     )
-    expect(screen.getByText('ABERTO')).toHaveAttribute('data-tom', 'open')
+
+    expect(screen.getByText('Enviada')).toHaveAttribute('data-slot', 'badge')
+    const meta = screen.getByText(/reagendada 1×/)
+    expect(meta).toHaveAttribute('data-slot', 'page-header-subtitulo')
+    expect(meta.className).toContain('t-meta')
+    // O modo é RÓTULO ao lado do título, não parte dele: colados, o leitor de
+    // tela anunciava "Ordem de compra — Consulta" como nome do documento.
+    expect(screen.getByText('Consulta')).toHaveAttribute('data-slot', 'page-header-contexto')
+    expect(screen.getByRole('heading', { name: 'Ordem de compra' })).toBeInTheDocument()
+  })
+
+  /**
+   * O DoD da #483 pede a prova por ESTADO: a primária é o próximo passo do
+   * fluxo, então ela muda com o estado do registro e SOME quando não há passo
+   * seguinte. Botão morto no lugar mais forte da tela ensina a não ler aquele
+   * lugar.
+   */
+  it('a primária é o próximo passo — e some no registro que não tem para onde ir', () => {
+    const confirmar = vi.fn()
+    const { rerender, container } = render(
+      <CabecalhoDoRegistro
+        titulo="Ordem de compra"
+        proximaAcao={{ id: 'receber', label: 'Confirmar recebimento', onClick: confirmar }}
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'Confirmar recebimento' })).toBeInTheDocument()
+
+    rerender(<CabecalhoDoRegistro titulo="Ordem de compra" />)
+    expect(container.querySelector('[data-slot="proxima-acao"]')).toBeNull()
+  })
+
+  it('não existe Gravar no cabeçalho da ficha que grava sozinha', () => {
+    render(
+      <CabecalhoDoRegistro
+        titulo="Orçamento"
+        autosave={{ fase: 'salvo', salvoEm: Date.now(), erro: null }}
+        proximaAcao={{ id: 'enviar', label: 'Enviar orçamento' }}
+      />,
+    )
+    expect(screen.queryByRole('button', { name: /Gravar/ })).not.toBeInTheDocument()
+  })
+
+  it('as ações fracas ficam à vista; o perigoso fica atrás do ···', async () => {
+    const cancelar = vi.fn()
+    const { user } = renderWithQuery(
+      <CabecalhoDoRegistro
+        titulo="Orçamento"
+        acoes={[
+          { id: 'imprimir', label: 'Imprimir' },
+          { id: 'duplicar', label: 'Duplicar' },
+        ]}
+        menu={[
+          { id: 'cancelar', label: 'Cancelar orçamento', destrutiva: true, onClick: cancelar },
+        ]}
+      />,
+    )
+
+    expect(screen.getByRole('button', { name: 'Imprimir' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Duplicar' })).toBeInTheDocument()
+    // Cancelar não está na faixa: só depois de abrir o menu.
+    expect(screen.queryByText('Cancelar orçamento')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Mais ações' }))
+    await user.click(await screen.findByText('Cancelar orçamento'))
+    expect(cancelar).toHaveBeenCalledOnce()
+  })
+
+  it('sem estado de autosave o cabeçalho não fala de gravação', () => {
+    const { container } = render(<CabecalhoDoRegistro titulo="Orçamento" />)
+    expect(container.querySelector('[data-slot="autosave"]')).toBeNull()
+  })
+})
+
+/**
+ * O indicador é o que ficou no lugar da confirmação que o botão `Gravar` dava.
+ * Ele é permanente e não um toast: quem chega no meio da tarefa precisa poder
+ * OLHAR e saber, sem ter estado aqui quando a mensagem passou.
+ */
+describe('IndicadorDeGravacao', () => {
+  it('ocioso não mostra nada — nada foi gravado ainda', () => {
+    const { container } = render(<IndicadorDeGravacao estado={OCIOSO} />)
+    expect(container.querySelector('[data-slot="autosave"]')).toBeNull()
+  })
+
+  it('salvando fala no presente e apaga o ponto de sucesso', () => {
+    const { container } = render(
+      <IndicadorDeGravacao estado={{ fase: 'salvando', salvoEm: null, erro: null }} />,
+    )
+    expect(screen.getByText('salvando…')).toBeInTheDocument()
+    const ponto = container.querySelector('[data-slot="autosave-ponto"]')
+    expect(ponto?.getAttribute('style')).toContain('var(--n-500)')
+  })
+
+  it('salvo mostra o tempo desde a gravação, com o ponto em --ok', () => {
+    const { container } = render(
+      <IndicadorDeGravacao estado={{ fase: 'salvo', salvoEm: Date.now() - 12_000, erro: null }} />,
+    )
+    expect(screen.getByText('salvo há 12 s')).toBeInTheDocument()
+    const ponto = container.querySelector('[data-slot="autosave-ponto"]')
+    expect(ponto?.getAttribute('style')).toContain('var(--ok)')
+  })
+
+  it('passado um minuto o relógio para de contar segundos', () => {
+    render(
+      <IndicadorDeGravacao estado={{ fase: 'salvo', salvoEm: Date.now() - 200_000, erro: null }} />,
+    )
+    expect(screen.getByText('salvo há 3 min')).toBeInTheDocument()
+  })
+
+  it('erro sai em --bad e traz o botão que o autosave deve ao operador', async () => {
+    const tentar = vi.fn()
+    const { user } = renderWithQuery(
+      <IndicadorDeGravacao
+        estado={{ fase: 'erro', salvoEm: null, erro: 'sem servidor' }}
+        onTentarDeNovo={tentar}
+      />,
+    )
+    expect(screen.getByText('erro ao salvar').getAttribute('style')).toContain('var(--bad)')
+    await user.click(screen.getByRole('button', { name: 'Tentar de novo' }))
+    expect(tentar).toHaveBeenCalledOnce()
+  })
+})
+
+/**
+ * DUAS COLUNAS (mockup: `minmax(0,1fr) 320px`). A quebra é por `flex-wrap`,
+ * sem `@media` (regra 7 da rodada): a principal cresce com peso desproporcional
+ * e a lateral fica na base de 320px enquanto as duas couberem na linha.
+ */
+describe('LayoutDoRegistro', () => {
+  it('lateral fica em 320px e a principal absorve o resto', () => {
+    const { container } = render(
+      <LayoutDoRegistro principal={<p>itens</p>} lateral={<p>fornecedor</p>} />,
+    )
+    const principal = container.querySelector('[data-slot="registro-principal"]')
+    const lateral = container.querySelector('[data-slot="registro-lateral"]')
+    expect(principal?.getAttribute('style')).toContain('999')
+    expect(lateral?.getAttribute('style')).toContain('320px')
+    // Sem ponto de quebra escrito à mão em lugar nenhum.
+    expect(container.querySelector('[data-slot="layout-do-registro"]')?.className).toContain(
+      'flex-wrap',
+    )
+  })
+
+  it('documento sem nada a orbitar fica de uma coluna só', () => {
+    const { container } = render(<LayoutDoRegistro principal={<p>itens</p>} />)
+    expect(container.querySelector('[data-slot="registro-lateral"]')).toBeNull()
+  })
+
+  it('a lateral é `aside` — o que orbita não é o documento', () => {
+    const { container } = render(
+      <LayoutDoRegistro principal={<p>itens</p>} lateral={<p>andamento</p>} />,
+    )
+    expect(container.querySelector('aside[data-slot="registro-lateral"]')).not.toBeNull()
   })
 })
 
@@ -71,13 +232,21 @@ describe('DocumentoTotais', () => {
         ajustes={[{ label: 'Desconto', valorCentavos: 10_000, sinal: -1 }]}
       />,
     )
-    const total = screen.getByText('Total:')
-    expect(total.className).toContain('font-mono')
-    expect(total.className).toContain('uppercase')
+    // O rótulo do fecho perdeu os dois-pontos com o 2.0 (#479): ele é
+    // `--t-rotulo`, o único uppercase da régua, e uppercase já separa rótulo de
+    // dado sem pontuação ajudando.
+    const total = screen.getByText('Total')
+    expect(total.className).toContain('t-rotulo')
     // O fecho é o `TotalBox`, e não mais um item da tira separado por régua.
     expect(total.closest('[data-slot="total-box"]')).not.toBeNull()
     // Total derivado: 1000,00 - 100,00 = 900,00
     expect(screen.getByLabelText('Total')).toHaveTextContent('900')
+  })
+
+  it('rótulo da tira é `.t-rotulo` e o valor é `.t-dado` — nada de literal', () => {
+    render(<DocumentoTotais subtotalCentavos={100_000} />)
+    expect(screen.getByText('SubTotal:').className).toContain('t-rotulo')
+    expect(screen.getByLabelText('SubTotal').className).toContain('t-dado')
   })
 
   it('tira tem canto de 4px (rounded-lg) e borda em Régua', () => {
@@ -89,95 +258,37 @@ describe('DocumentoTotais', () => {
     expect(tira?.className).toContain('border')
   })
 
-  // O fecho NÃO fica dentro da tira: se ficasse, a tela sem grade teria um
-  // total de 48px espremido entre dois pares de 14px, e a decisão do #236
-  // apareceria como desalinho em vez de hierarquia.
+  // O fecho NÃO fica dentro da tira: se ficasse, o total ficaria espremido
+  // entre dois pares de 14px, e a decisão do #236 apareceria como desalinho em
+  // vez de hierarquia. Continua valendo com o fecho já em 24px (#479).
   it('o fecho é bloco próprio, irmão da tira e não item dela', () => {
     const { container } = render(<DocumentoTotais subtotalCentavos={100_000} />)
     const fecho = container.querySelector('[data-slot="total-box"]')
     expect(fecho).not.toBeNull()
     expect(fecho?.closest('.rounded-lg')).toBeNull()
-    expect(screen.getByLabelText('Total').firstElementChild?.className).toContain('text-[3rem]')
+    // O valor é MONO tabular, não mais display condensado a 48px: a Bebas saiu
+    // na D1 e §Hierarquia não tem degrau acima de 30px fora do display — e
+    // "mono = dado, sem exceção" (#479).
+    expect(screen.getByLabelText('Total')).toHaveStyle({ fontVariantNumeric: 'tabular-nums' })
   })
 })
 
 /**
- * MOLDURA-MÃE e CARD AGRUPADOR (fusão v5 §3 "subdivisão explícita"): a moldura
- * envolve a entidade e carrega a etiqueta sobreposta na borda; o bloco é o pano
- * semi-transparente que faz as seções-filhas brancas saltarem.
+ * O card quiet do mockup 2.0. Era semi-transparente sobre a moldura-mãe da
+ * fusão v5 — que saiu com a rodada: a fronteira do documento agora é a COLUNA,
+ * que é espaço, a ferramenta mais barata que resolve.
  */
-describe('DocumentoFrame', () => {
-  it('renderiza a etiqueta com tipo e número do documento', () => {
-    render(
-      <DocumentoFrame tipo="Orçamento" numero="184">
-        <span>conteúdo</span>
-      </DocumentoFrame>,
-    )
-    const etiqueta = screen.getByText('DOCUMENTO · Orçamento Nº 184')
-    expect(etiqueta).toHaveAttribute('data-slot', 'documento-etiqueta')
-  })
-
-  it('em inclusão a etiqueta omite o número', () => {
-    render(
-      <DocumentoFrame tipo="Orçamento">
-        <span>conteúdo</span>
-      </DocumentoFrame>,
-    )
-    expect(screen.getByText('DOCUMENTO · Orçamento')).toBeInTheDocument()
-  })
-
-  it('a etiqueta é o NOME acessível da moldura, não texto solto ao lado dela', () => {
-    render(
-      <DocumentoFrame tipo="Orçamento" numero="184">
-        <span>conteúdo</span>
-      </DocumentoFrame>,
-    )
-    // Sem o `aria-labelledby` a moldura seria uma região anônima e a etiqueta,
-    // um fragmento de texto sem dono — a fronteira que ela desenha na tela
-    // não existiria para quem navega por leitor.
-    expect(screen.getByRole('region', { name: 'DOCUMENTO · Orçamento Nº 184' })).toBeInTheDocument()
-  })
-
-  it('moldura usa traço estrutural, raio de moldura, fundo translúcido e sombra macia', () => {
-    const { container } = render(
-      <DocumentoFrame tipo="Pedido de Compra" numero="PC-001">
-        <span>conteúdo</span>
-      </DocumentoFrame>,
-    )
-    const frame = container.querySelector('[data-slot="documento-frame"]')
-    expect(frame?.className).toContain('border-2')
-    expect(frame?.className).toContain('border-rule-strong')
-    expect(frame?.className).toContain('bg-card/40')
-    expect(frame?.className).toContain('shadow-macia')
-    // Raio 20 contra os 12 da seção-filha: é o degrau que torna a contenção
-    // legível. `rounded-card` aqui empataria mãe e filha.
-    expect(frame?.className).toContain('rounded-frame')
-  })
-
-  it('a etiqueta é chip invertido — legível nos dois temas, não lima de tema único', () => {
-    render(
-      <DocumentoFrame tipo="Orçamento" numero="9">
-        <span>conteúdo</span>
-      </DocumentoFrame>,
-    )
-    const etiqueta = screen.getByText('DOCUMENTO · Orçamento Nº 9')
-    expect(etiqueta.className).toContain('bg-foreground')
-    expect(etiqueta.className).toContain('text-background')
-    // `text-modulo` seria lilás claro sobre fundo claro no tema escuro.
-    expect(etiqueta.className).not.toContain('text-modulo')
-  })
-})
-
 describe('DocumentoBloco', () => {
-  it('renderiza o card agrupador semi-transparente', () => {
+  it('é card opaco com hairline e sombra macia, sem pano translúcido', () => {
     const { container } = render(
       <DocumentoBloco>
         <span>seções</span>
       </DocumentoBloco>,
     )
     const bloco = container.querySelector('[data-slot="documento-bloco"]')
-    expect(bloco?.className).toContain('bg-card/55')
+    expect(bloco?.className).toContain('bg-card')
+    expect(bloco?.className).not.toContain('bg-card/55')
     expect(bloco?.className).toContain('rounded-card')
-    expect(bloco?.className).toContain('border')
+    expect(bloco?.className).toContain('shadow-macia')
   })
 })

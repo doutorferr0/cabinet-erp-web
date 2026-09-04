@@ -74,6 +74,15 @@ const DIVIDAS: Record<string, string> = {
   // acesso a dado de terceiro.
   'data/suporte-api.ts':
     'órfã desde o item 6 da fundação (PR #369); religa no console de suporte, que é trilho próprio — o mock e as guardas já respondem sem ela',
+
+  // INTEGRAÇÃO 2.0 (Cowork, 2026-09-03) — órfãos nascidos do merge de 30 PRs
+  // paralelas; quem religa ou apaga é a D37 (#532), passada de consistência.
+  'components/cabinet/ficha/ficha-de-cadastro.tsx':
+    'D16 escreveu a ficha genérica; D19 montou as 9 fichas sobre ficha-de-registro — D37 decide qual fica',
+  'components/cabinet/regiao-de-avisos.tsx':
+    'D5 desenhou a faixa de avisos; o shell da D4 não a monta — D37 liga no shell',
+  'components/cabinet/selo.tsx':
+    'D3 manteve Selo como alias do Badge; os consumidores migraram para Badge — D37 apaga',
 }
 
 function arquivosDe(dir: string): string[] {

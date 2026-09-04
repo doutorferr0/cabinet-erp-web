@@ -1,5 +1,7 @@
 import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
+import { DetalheTecnico } from '@/components/cabinet/detalhe-tecnico'
+import { FormaDoModulo } from '@/components/cabinet/forma'
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { moduloDoErro } from '@/data/modulos-em-construcao'
 import { detalheDoErro } from '@/lib/erros'
 import { cn } from '@/lib/utils'
@@ -17,6 +19,13 @@ import { cn } from '@/lib/utils'
  * botão, portanto, pela mesma razão que `SemPermissao` não tem um: botão que
  * não resolve é promessa que a tela não cumpre, e o operador clica três vezes
  * antes de desconfiar.
+ *
+ * ## A forma é a do módulo, em n-400 e parada (D35)
+ *
+ * É o mesmo desenho que o vazio e o hub daquele módulo mostram — quem chega aqui
+ * reconhece ONDE está antes de ler. Sem tint e em n-400 porque a peça não está
+ * pronta: cor cheia aqui prometeria um módulo que responde. E parada, nunca
+ * respirando: forma que pulsa é a de carregando, e isto não vai carregar.
  *
  * ## A cor é de PENDÊNCIA, não de erro
  *
@@ -42,17 +51,30 @@ export function ModuloEmConstrucao({ erro, className }: { erro?: unknown; classN
 
   return (
     <Empty data-slot="modulo-em-construcao" className={className}>
+      <EmptyMedia className="[&_svg]:size-auto">
+        <FormaDoModulo tamanho={120} className="text-[var(--n-400)]" />
+      </EmptyMedia>
       <EmptyHeader>
+        {/* A MESMA palavra do menu. O item que ainda não tem tela sai da
+            sidebar marcado `futuro`; quem chega aqui chegou pelo caminho que já
+            existe e encontra um pedaço que ainda não. Repetir o vocabulário é o
+            que liga as duas coisas — dois nomes para o mesmo estado fariam o
+            operador achar que são dois problemas.
+
+            Sem caixa, sem borda e sem fundo: §Hierarquia diz que `--t-rotulo`
+            nunca tem caixa própria. A pílula que a sidebar desenha é herança da
+            1.x e sai quando a D4 passar por lá. */}
+        <span className="t-rotulo">futuro</span>
         <EmptyTitle>{modulo ? `${modulo.nome} em construção` : 'Módulo em construção'}</EmptyTitle>
         <EmptyDescription>
           {modulo
             ? `O servidor ainda não guarda ${modulo.falta}. Esta parte do sistema já está desenhada, mas ainda não há onde gravá-la — não adianta tentar de novo.`
             : 'Esta parte do sistema já está desenhada, mas o servidor ainda não a atende. Não adianta tentar de novo.'}
         </EmptyDescription>
-        {/* O `detail` é a única informação daquela ocorrência específica.
-            Trocá-lo pela frase do registro jogaria fora o que o backend
-            escolheu dizer sobre ESTE pedido. */}
-        {detalhe ? <EmptyDescription>{detalhe}</EmptyDescription> : null}
+        {/* O `detail` é a única informação daquela ocorrência específica, e é
+            escrito para quem abre chamado — fechado, em mono, para não se ler
+            como continuação da frase acima, que é para quem opera. */}
+        <DetalheTecnico detalhe={detalhe} />
       </EmptyHeader>
 
       {modulo ? (
@@ -99,7 +121,11 @@ export function GravacaoEmConstrucao({ erro, className }: { erro: unknown; class
           : 'O servidor ainda não guarda esta parte do registro.'}{' '}
         Nada foi gravado e o que você preencheu continua aqui.
       </p>
-      {detalhe ? <p className="text-muted-foreground">{detalhe}</p> : null}
+      {/* Mesmo tratamento do bloco de tela: o `detail` é escrito para quem abre
+          chamado, e solto em Inter ao lado da frase da tela ele se lia como
+          continuação dela. Ficava impresso aqui enquanto os outros estados já
+          o tinham fechado — a mesma peça contando duas histórias. */}
+      <DetalheTecnico detalhe={detalhe} />
       {modulo ? (
         <p>
           <span className="font-semibold">O que já funciona:</span> {modulo.funciona}

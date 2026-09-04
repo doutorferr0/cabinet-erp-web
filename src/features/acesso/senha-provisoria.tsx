@@ -42,14 +42,18 @@ export function SenhaProvisoriaDialog({
         <DialogTitle>Senha provisória de {nome}</DialogTitle>
       </DialogHeader>
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-[var(--s-3)]">
         <output
           aria-label="Senha provisória"
-          className="select-all border-2 border-border bg-muted px-3 py-2 text-center font-mono text-lg tracking-wider"
+          // `t-dado` porque senha É dado — algo que se copia e se compara —, e o
+          // `text-lg` fica: este é o único lugar do sistema onde o dado é o
+          // objeto inteiro da tela e vai ser DITADO em voz alta para outra
+          // pessoa. A rampa de mono para em 12.5px, tamanho de célula de grade.
+          className="t-dado select-all border-2 border-border bg-muted px-3 py-2 text-center text-lg tracking-wider"
         >
           {senha}
         </output>
-        <p className="text-muted-foreground text-sm leading-snug">
+        <p className="t-meta">
           Ela aparece <strong>só desta vez</strong> — não há como consultá-la depois. Entregue à
           pessoa; no primeiro acesso o sistema exige a troca por uma senha própria.
         </p>

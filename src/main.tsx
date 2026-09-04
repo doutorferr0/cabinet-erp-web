@@ -8,10 +8,12 @@ import './index.css'
 // montava — e o próprio comentário de então dizia que a troca era de quem
 // viesse depois: "quando Libs-1/2/3 montarem os componentes, mover cada import
 // para o módulo que o usa faz o Vite empacotá-lo no chunk daquela rota".
-// Libs-1/2/3 montaram, e agora cada import mora no módulo que o usa:
-// `features/agenda/schedule-x.ts` (polyfill + tema) e `features/planner`
-// (tema do gantt). Entrada global aqui = folha e polyfill em TODA página,
-// inclusive na de login, por causa de duas telas.
+// Libs-1/2/3 montaram, e agora cada import mora no módulo que o usa —
+// hoje só `features/planner` (tema do gantt). A porta do Schedule-X, que era a
+// outra dona, SUMIU na D12: a agenda passou a usar o calendário do próprio
+// sistema, e com ela foram embora o polyfill do Temporal e o tema da lib.
+// Entrada global aqui = folha e polyfill em TODA página, inclusive na de
+// login, por causa de duas telas.
 import { configurarApi } from '@/api/cliente'
 import { Providers } from '@/app/providers'
 import { opcoesDoRouter } from '@/app/router'

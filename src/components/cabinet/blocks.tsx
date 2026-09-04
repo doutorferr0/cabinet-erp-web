@@ -12,6 +12,27 @@ import { useFormContext } from 'react-hook-form'
  * Blocos compartilhados da transcrição (§9 convenções globais).
  * Todos usam `prefix` — os campos vivem no form único da tela como
  * `<prefix>.<campo>` (1 form por tela, nunca por aba).
+ *
+ * ## Reface 2.0 — o que mudou aqui, e o que NÃO mudou
+ *
+ * Estes blocos não são caixa: são fileiras de campos que vivem DENTRO de uma
+ * `Secao` (que na 2.0 é um `DCard`). Envolvê-los num card próprio criaria o
+ * terceiro nível de aninhamento que §Hierarquia proíbe (página › card › nunca um
+ * terceiro), então a caixa continua sendo de quem os monta.
+ *
+ * O que mudou é a tipografia dos textos que **não são campo** — e eram três
+ * vozes inventadas aqui:
+ *
+ * - **UF** é rótulo derivado da cidade, e é CÓDIGO: fala em `.t-dado` (mono
+ *   tabular), não em `text-sm` de corpo. "Mono = dado, sem exceção."
+ * - **O código IBGE da cidade** é contagem/identificador de apoio: `.t-dado-meta`.
+ * - **O `<select>` de comunicador** era um quarto vocabulário de controle no
+ *   repo (`rounded-md border border-input bg-transparent px-3`), diferente do
+ *   `SelectField` de `form-controls.tsx` que faz a mesma coisa duas pastas ao
+ *   lado. Passa a ter a MESMA forma dele. Continua montado à mão por um motivo
+ *   de dado, não de desenho: `SelectField` guarda `''` no vazio e estes campos
+ *   guardam `null`, e trocar isso mexeria no que vai para o servidor.
+ *   TODO(D16): unificar quando `form-controls` ganhar um select que aceite nulo.
  */
 
 /** Endereço — transcrição §9: Endereço, Número, Complemento, Bairro, Cidade, UF, CEP. */
@@ -87,9 +108,7 @@ export function EnderecoBlock({
         onBuscar={onBuscaCidade}
         className="col-span-12 sm:col-span-4"
       >
-        {cidadeCodigo && (
-          <span className="w-12 shrink-0 text-sm text-muted-foreground">{cidadeCodigo}</span>
-        )}
+        {cidadeCodigo && <span className="t-dado-meta w-12 shrink-0">{cidadeCodigo}</span>}
         <Input
           id={`${prefix}.cidadeNome`}
           {...register(`${prefix}.cidadeNome`)}
@@ -98,10 +117,10 @@ export function EnderecoBlock({
         />
       </CampoComBusca>
       {/* UF é rótulo derivado da cidade (transcrição §5), não campo: `h-9` casa a
-          altura do input para a fileira fechar. */}
+          altura do input para a fileira fechar. E é CÓDIGO — fala em `.t-dado`. */}
       <div className="col-span-6 flex flex-col gap-1 sm:col-span-2">
         <Label>UF</Label>
-        <p className="flex h-9 items-center text-sm">{uf ?? '—'}</p>
+        <p className="t-dado flex h-9 items-center">{uf ?? '—'}</p>
       </div>
     </div>
   )
@@ -121,7 +140,9 @@ export function ComunicadoresBlock({ prefix }: { prefix: string }) {
             <Label htmlFor={`${prefix}.comunicador${n}Tipo`}>Comunicador {n}</Label>
             <select
               id={`${prefix}.comunicador${n}Tipo`}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+              // A MESMA forma do `SelectField` de `form-controls.tsx` — ver a
+              // nota no topo do arquivo.
+              className="t-ui flex h-9 w-full border-2 border-input bg-card px-2.5 py-1 outline-none focus-visible:focus-ring"
               value={(watch(`${prefix}.comunicador${n}Tipo`) as string | null) ?? ''}
               onChange={(e) =>
                 setValue(`${prefix}.comunicador${n}Tipo`, e.target.value || null, {

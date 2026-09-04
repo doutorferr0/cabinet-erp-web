@@ -8,6 +8,7 @@ import {
   TextField,
   TextareaField,
 } from '@/components/cabinet/form-controls'
+import { FormRow } from '@/components/cabinet/form-grid'
 import type { LookupKind } from '@/data/lookups-api'
 import type { CampoCadastro, ModuloCadastro } from '@/features/cadastro/modulos'
 import { cn } from '@/lib/utils'
@@ -50,12 +51,26 @@ import { useFormContext, useWatch } from 'react-hook-form'
  * `features/profissional/` faria uma tela de cadastro depender de outra.
  */
 
-/** Largura no grid de 12 colunas. Vazio = a linha inteira, como o schema diz. */
-function largura(campo: CampoCadastro): string {
-  if (campo.w === 'curto') return 'col-span-6 sm:col-span-2'
-  if (campo.w === 'medio') return 'col-span-6 sm:col-span-3'
-  return 'col-span-12 sm:col-span-6'
-}
+/**
+ * A grade de 12 colunas SAIU na D16, e a perda é declarada.
+ *
+ * Ela traduzia o peso do schema (`w`: curto 2/12 · médio 3/12 · longo 6/12) em
+ * `col-span-*` com prefixo `sm:` — ou seja, media query: media a JANELA para
+ * decidir a largura de um campo que vive dentro de uma COLUNA de 320px, e a
+ * rodada proíbe `@media` para quebra justamente por isso. Numa ficha de duas
+ * colunas, `sm:col-span-6` deixava seis campos espremidos na lateral porque a
+ * janela era larga.
+ *
+ * `FormRow` dobra por `auto-fit`, que mede o CONTÊINER. O preço é a
+ * granularidade: cada campo ocupa UMA célula, e o `w` do schema deixa de mudar
+ * largura. Um `col-span-2` sem media query transbordaria a fileira no instante
+ * em que ela dobrasse para uma coluna só — trocar seis campos espremidos por um
+ * campo estourando a lateral não é conserto.
+ *
+ * A exceção é o campo de ÁREA: texto longo em uma terça parte da fileira vira
+ * uma coluna de duas palavras, então ele toma a fileira inteira (`col-span-full`
+ * funciona em qualquer contagem de colunas, inclusive uma).
+ */
 
 /**
  * `kind` da lista de apoio, quando o campo do schema corresponde a uma que o
@@ -79,18 +94,17 @@ export function CampoDoModulo({ campo }: { campo: CampoCadastro }) {
   const nome = campo.campo
   if (!nome) return null
 
-  const className = largura(campo)
   const kind = KIND_POR_CAMPO[nome]
 
   switch (campo.t) {
     case 'data':
-      return <DateField name={nome} label={campo.r} className={className} />
+      return <DateField name={nome} label={campo.r} />
     case 'check':
-      return <CheckboxField name={nome} label={campo.r} className={className} />
+      return <CheckboxField name={nome} label={campo.r} />
     case 'area':
-      return <TextareaField name={nome} label={campo.r} className="col-span-12" />
+      return <TextareaField name={nome} label={campo.r} className="col-span-full" />
     case 'dinheiro':
-      return <MoneyField name={nome} label={campo.r} className={className} />
+      return <MoneyField name={nome} label={campo.r} />
     case 'seg':
       return (
         <RadioField
@@ -105,20 +119,19 @@ export function CampoDoModulo({ campo }: { campo: CampoCadastro }) {
               .toUpperCase(),
             label: op,
           }))}
-          className={className}
         />
       )
     case 'select':
       return kind ? (
-        <LookupSelectField name={nome} label={campo.r} kind={kind} className={className} />
+        <LookupSelectField name={nome} label={campo.r} kind={kind} />
       ) : (
-        <TextField name={nome} label={campo.r} className={className} />
+        <TextField name={nome} label={campo.r} />
       )
     case 'busca':
       return kind ? (
-        <LookupField name={nome} label={campo.r} kind={kind} className={className} />
+        <LookupField name={nome} label={campo.r} kind={kind} />
       ) : (
-        <TextField name={nome} label={campo.r} className={className} />
+        <TextField name={nome} label={campo.r} />
       )
     default:
       return (
@@ -126,7 +139,6 @@ export function CampoDoModulo({ campo }: { campo: CampoCadastro }) {
           name={nome}
           label={campo.r}
           {...(campo.k === 'nome' || campo.k === 'apres' ? { voz: 'nome' as const } : {})}
-          className={className}
         />
       )
   }
@@ -145,13 +157,13 @@ export function CamposDoModulo({
   omitir = [],
 }: { modulo: ModuloCadastro; omitir?: readonly string[] }) {
   return (
-    <div className="grid grid-cols-12 items-end gap-3">
+    <FormRow colunas={3} className="items-start">
       {modulo.campos
         .filter((campo) => !omitir.includes(campo.k))
         .map((campo) => (
           <CampoDoModulo key={campo.k} campo={campo} />
         ))}
-    </div>
+    </FormRow>
   )
 }
 
@@ -172,7 +184,7 @@ export function Pendencias({ modulo }: { modulo: ModuloCadastro }) {
   const faltam = modulo.campos.filter((campo) => !campo.campo && !campo.sub)
   if (faltam.length === 0) return null
   return (
-    <p className="mt-2 text-muted-foreground text-xs">
+    <p className="t-meta mt-[var(--s-2)]">
       Ainda não guardamos: {faltam.map((campo) => campo.r).join(' · ')}.
     </p>
   )
@@ -209,21 +221,25 @@ export function ProgressoDeObrigatorios({ campos }: { campos: readonly CampoCada
       data-slot="progresso-obrigatorios"
       data-testid="progresso"
       className={cn(
-        'flex flex-wrap items-baseline gap-x-2 gap-y-1 border-2 border-border px-3 py-2 text-sm',
-        // Pendência é o dono do amarelo; completo sai do estado e volta ao
+        // Tint, não caixa: a §Hierarquia separa REGIÃO POR NATUREZA com tint, e
+        // a caixa preta de 2px que estava aqui era a mesma ferramenta do card
+        // logo acima, na fronteira de dentro dele.
+        't-corpo flex flex-wrap items-baseline gap-x-[var(--s-2)] gap-y-[var(--s-1)] rounded-[var(--r-item)] px-[var(--s-3)] py-[var(--s-2)]',
+        // Pendência é o dono do âmbar; completo sai do estado e volta ao
         // neutro, em vez de virar verde — verde tem dono, e é dinheiro.
-        completo ? 'bg-card' : 'bg-zone-warn',
+        completo ? '[background:var(--n-50)]' : '[background:var(--tint-sand)]',
       )}
     >
-      <strong className="tabular-nums">
-        {preenchidos} de {obrigatorios.length} obrigatórios
-      </strong>
+      {/* O espaço entre os dois é DADO, não formatação: sem ele o texto lido em
+          voz alta (e o `textContent` do teste) vira "1 de 6obrigatórios". */}
+      <strong className="t-dado">
+        {preenchidos} de {obrigatorios.length}
+      </strong>{' '}
+      <span className="t-rotulo">obrigatórios</span>
       {completo ? (
-        <span className="text-muted-foreground">Pode gravar.</span>
+        <span className="t-meta">Pode gravar.</span>
       ) : (
-        <span className="text-muted-foreground">
-          Falta: {faltando.map((campo) => campo.r).join(' · ')}
-        </span>
+        <span className="t-meta">Falta: {faltando.map((campo) => campo.r).join(' · ')}</span>
       )}
     </div>
   )

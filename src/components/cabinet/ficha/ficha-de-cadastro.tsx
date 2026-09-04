@@ -1,5 +1,7 @@
+import { BlocoIdentidade } from '@/components/cabinet/ficha/bloco-identidade'
 import { FichaDeModulos } from '@/components/cabinet/ficha/ficha-de-modulos'
 import { IndiceDeModulos } from '@/components/cabinet/ficha/indice-de-modulos'
+import { textoDoCampo } from '@/components/cabinet/ficha/valores'
 import { PageHeader } from '@/components/cabinet/page-header'
 import type { EntidadeCadastro } from '@/features/cadastro/modulos'
 import { Pencil } from 'lucide-react'
@@ -54,6 +56,35 @@ import type { ReactNode } from 'react'
  * a tira colada no rodapé.
  */
 
+/**
+ * Chaves de campo que respondem "quem é este registro", em ordem de preferência.
+ *
+ * Vêm do schema de módulos (`campo.k`), não de um mapa por entidade: o mesmo
+ * `k` já significa a mesma coisa em cliente, fornecedor, profissional e
+ * colaborador — é para isso que o schema é único. Um mapa por tela seria a
+ * quarta cópia da mesma pergunta, e a primeira a envelhecer.
+ */
+const CHAVES_DO_NOME = ['nome', 'apres', 'fantasia'] as const
+const CHAVES_DO_DOCUMENTO = ['doc', 'cnpj', 'cpf'] as const
+const CHAVES_DA_CIDADE = ['cidade'] as const
+
+function primeiroTexto(
+  entidade: EntidadeCadastro,
+  registro: unknown,
+  chaves: readonly string[],
+  rotulos?: Readonly<Record<string, string>>,
+): string | undefined {
+  for (const chave of chaves) {
+    for (const modulo of entidade.modulos) {
+      const campo = modulo.campos.find((c) => c.k === chave)
+      if (!campo) continue
+      const texto = textoDoCampo(registro, campo, rotulos)
+      if (texto) return texto
+    }
+  }
+  return undefined
+}
+
 export interface FichaDeCadastroProps {
   /** Schema de módulos da entidade — a mesma fonte que gera o formulário. */
   entidade: EntidadeCadastro
@@ -90,6 +121,24 @@ export function FichaDeCadastro({
   aoEditar,
   rotulos,
 }: FichaDeCadastroProps) {
+  const nome = primeiroTexto(entidade, registro, CHAVES_DO_NOME, rotulos)
+  const documento = primeiroTexto(entidade, registro, CHAVES_DO_DOCUMENTO, rotulos)
+  const cidade = primeiroTexto(entidade, registro, CHAVES_DA_CIDADE, rotulos)
+
+  /**
+   * O `contexto` do cabeçalho some quando é o NOME e o card lateral já o diz.
+   *
+   * As rotas passam o nome do registro como contexto — era a única forma de a
+   * tela dizer "quem está aberto" quando o cabeçalho era a única peça de
+   * identidade. Com o `BlocoIdentidade` no lugar, mantê-lo escreveria o mesmo
+   * nome duas vezes na mesma dobra, uma delas em `--t-rotulo`, que é o degrau
+   * de RÓTULO — e nome de entidade não é rótulo de nada.
+   *
+   * Só quando são iguais: `contexto` também carrega o MODO em outras telas
+   * ("Consulta", "Incluir"), e esse não repete nada.
+   */
+  const contextoDoCabecalho = contexto && contexto !== nome ? contexto : undefined
+
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4" data-slot="ficha-de-cadastro">
       {/* Cabeçalho de página (Polaris-2, #197): `Alterar` como a única peça
@@ -104,19 +153,30 @@ export function FichaDeCadastro({
           mesmo lugar em todas — inclusive nas que não tinham nenhum. */}
       <PageHeader
         titulo={titulo}
-        {...(contexto ? { contexto } : {})}
+        {...(contextoDoCabecalho ? { contexto: contextoDoCabecalho } : {})}
         primaria={{ id: 'alterar', label: 'Alterar', icon: Pencil, onClick: () => aoEditar() }}
       />
       {aviso}
 
-      <div className="flex min-w-0 items-start gap-4">
-        {/* O índice é NAVEGAÇÃO da página, não conteúdo dela: some no estreito,
-            onde a coluna única já entrega a mesma leitura por rolagem. */}
-        <IndiceDeModulos
-          entidade={entidade}
-          registro={registro}
-          className="sticky top-4 hidden w-52 shrink-0 lg:block"
-        />
+      <div className="flex min-w-0 items-start gap-[var(--s-4)]">
+        {/* Coluna lateral: quem é o registro, e depois por onde navegar.
+            A ordem importa — identidade antes de índice. O `BlocoIdentidade` é o
+            que sobrou da `BandaDeIdentidade` (D16): ela dizia o nome da TELA numa
+            faixa de largura inteira, ele diz de QUEM é o registro, no lugar onde
+            o olho procura contexto.
+            Some no estreito junto com o índice: numa coluna só, o dado de
+            identidade já está no primeiro bloco da ficha, e repeti-lo acima
+            empurraria a ficha inteira para baixo. */}
+        <div className="sticky top-4 hidden w-52 shrink-0 flex-col gap-[var(--s-4)] lg:flex">
+          {nome ? (
+            <BlocoIdentidade
+              nome={nome}
+              {...(documento ? { documento } : {})}
+              {...(cidade ? { cidade } : {})}
+            />
+          ) : null}
+          <IndiceDeModulos entidade={entidade} registro={registro} />
+        </div>
 
         <div className="min-w-0 flex-1">
           <FichaDeModulos

@@ -28,7 +28,7 @@ export const TIPOS: Record<AgendaEventDtoKind, { rotulo: string; modulo?: Modulo
 export const TIPOS_NA_ORDEM: AgendaEventDtoKind[] = ['delivery', 'quote', 'meeting', 'payment']
 
 /**
- * A marca de cor de um tipo. Não é ornamento — é DADO codificado em cor, e por
+ * A marca de cor de um tipo. Não é decoração — é DADO codificado em cor, e por
  * isso pode ser verde onde o significado é dinheiro.
  *
  * Cor sozinha nunca diz o que é (WCAG 1.4.1): a legenda ao lado nomeia cada

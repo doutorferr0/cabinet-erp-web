@@ -204,7 +204,7 @@ describe('a aba existe, e é grade — não moldura à espera de print', () => {
     // 4 × R$ 120,00 — a mesma conta da grade de itens, uma fórmula só. Aparece
     // duas vezes de propósito: na célula da linha e no pé da aba.
     expect(screen.getAllByText('R$ 480,00')).toHaveLength(2)
-    expect(screen.getByLabelText('Total dos Serviços')).toHaveTextContent('R$ 480,00')
+    expect(screen.getByLabelText('Total dos Serviços')).toHaveTextContent('480,00')
     // O que o instalador recebe vem do SERVIDOR. A tela não refaz a conta: o
     // número vira pagamento de gente, e um arredondamento por cliente sobre ele
     // é diferença que ninguém procura depois.
@@ -266,8 +266,14 @@ describe('o total do documento soma as DUAS coleções', () => {
     // R$ 1.000,00 de pendente + R$ 480,00 de instalação, que é o `totalCents`
     // que o próprio servidor devolveu. Antes desta PR o fecho mostrava
     // R$ 1.000,00 e o documento fechava por outro número.
-    await waitFor(() => expect(screen.getByLabelText('Total')).toHaveTextContent('R$ 1.480,00'))
-    expect(screen.getByLabelText('SubTotal')).toHaveTextContent('R$ 1.480,00')
+    // O número é o que este caso mede: o símbolo pode vir colado (Money/KpiTile
+    // partem símbolo · inteiros · centavos) ou com espaço — por isso regex.
+    await waitFor(() => expect(screen.getByLabelText('Total')).toHaveTextContent(/1\.480,00/))
+    // O EXTRATO mostra de onde vem cada parte (D17): o subtotal é o dos
+    // PRODUTOS e os serviços entram como parcela nomeada. Estas linhas prendem
+    // a conta inteira.
+    expect(screen.getByLabelText('Subtotal')).toHaveTextContent(/1\.000,00/)
+    expect(screen.getByLabelText('Serviços')).toHaveTextContent(/480,00/)
   })
 })
 

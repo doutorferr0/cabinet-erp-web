@@ -1,5 +1,6 @@
-import { ColunasPorModulo } from '@/components/cabinet/listagem/colunas-por-modulo'
+import { gruposDoModulo } from '@/components/cabinet/listagem/colunas-por-modulo'
 import { FiltroPorModulo } from '@/components/cabinet/listagem/filtro-por-modulo'
+import { MenuDeColunas } from '@/components/cabinet/listagem/menu-de-colunas'
 import {
   ativosDoModulo,
   filtroDoCampo,
@@ -259,16 +260,46 @@ describe('FiltroPorModulo', () => {
   })
 })
 
-describe('ColunasPorModulo', () => {
+/**
+ * As colunas por módulo deixaram de ter painel próprio na Reface 2.0: elas são
+ * os GRUPOS do menu `Colunas` da barra. O que se afirma continua sendo o mesmo —
+ * agrupado por origem, fixa não desmarca, opcional liga e desliga —, porque é
+ * disso que a #104 trata; o que mudou foi onde o operador clica.
+ */
+describe('colunas por módulo, dentro do menu Colunas', () => {
   function ComColunas() {
     const [extras, setExtras] = useState<string[]>([])
-    return <ColunasPorModulo entidade={profissional} extras={extras} onChange={setExtras} />
+    return (
+      <MenuDeColunas
+        colunas={[]}
+        onAlternar={() => undefined}
+        onReordenar={() => undefined}
+        opcionais={gruposDoModulo(profissional, extras)}
+        onAlternarOpcional={(id) =>
+          setExtras((atuais) =>
+            atuais.includes(id) ? atuais.filter((x) => x !== id) : [...atuais, id],
+          )
+        }
+      />
+    )
   }
 
   /** Só o mock tem mais de um módulo com lastro — ver o teste da faixa acima. */
   function ComColunasMock() {
     const [extras, setExtras] = useState<string[]>([])
-    return <ColunasPorModulo entidade={entidadeMock} extras={extras} onChange={setExtras} />
+    return (
+      <MenuDeColunas
+        colunas={[]}
+        onAlternar={() => undefined}
+        onReordenar={() => undefined}
+        opcionais={gruposDoModulo(entidadeMock, extras)}
+        onAlternarOpcional={(id) =>
+          setExtras((atuais) =>
+            atuais.includes(id) ? atuais.filter((x) => x !== id) : [...atuais, id],
+          )
+        }
+      />
+    )
   }
 
   /**

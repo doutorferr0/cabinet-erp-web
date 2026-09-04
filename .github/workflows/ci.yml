@@ -2,9 +2,11 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'design/2.0']
   pull_request:
-    branches: [main]
+    # Reface 2.0 (2026-09-02): as 30 PRs da rodada miram design/2.0 ou uma branch
+    # design/d*-… em cadeia — sem isto nenhuma delas tinha CI.
+    branches: [main, 'design/**']
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

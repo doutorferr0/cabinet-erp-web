@@ -1,5 +1,6 @@
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
+import { Stamp } from '@/components/cabinet/stamp'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
@@ -70,7 +71,7 @@ export function VinculosDoUsuarioDialog({
         <DialogTitle>Empresas de {usuario?.nome ?? ''}</DialogTitle>
       </DialogHeader>
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-[var(--s-4)]">
         <Table>
           <TableHeader>
             <TableRow>
@@ -87,18 +88,21 @@ export function VinculosDoUsuarioDialog({
                 <TableRow key={vinculo.tenantId}>
                   <TableCell>
                     {vinculo.tenantName}
+                    {/* Selo, não caixa própria: o chip trazia `text-[0.5625rem]`
+                        — literal fora da rampa, que a §Hierarquia proíbe em
+                        componente — e desenhava uma segunda borda dentro de uma
+                        célula que a hairline da linha já delimita. `Stamp` é o
+                        mesmo selo de `Ativo` no resto do sistema. */}
                     {eAtiva ? (
-                      <span className="ml-2 border-2 border-border px-1 font-mono text-[0.5625rem] uppercase tracking-[0.06em]">
-                        ativa
+                      <span className="ml-[var(--s-2)] inline-flex align-middle">
+                        <Stamp tom="neutral" label="ativa" />
                       </span>
                     ) : null}
                   </TableCell>
                   {/* Papel `null` é vínculo herdado de antes de o papel
                       existir. "—" e não um papel plausível: inventar aqui
                       esconderia exatamente a linha que precisa de conserto. */}
-                  <TableCell className="text-muted-foreground">
-                    {vinculo.roleName ?? '— sem papel'}
-                  </TableCell>
+                  <TableCell className="t-meta">{vinculo.roleName ?? '— sem papel'}</TableCell>
                   <TableCell>
                     <CelulaAtivo ativo={vinculo.active} />
                   </TableCell>
@@ -122,7 +126,7 @@ export function VinculosDoUsuarioDialog({
               <TableRow>
                 {/* Lista vazia é ESTADO, não falha: é o de quem foi criado e
                     ainda não entrou em empresa nenhuma. */}
-                <TableCell colSpan={4} className="text-muted-foreground">
+                <TableCell colSpan={4} className="t-meta">
                   Esta pessoa ainda não entra em nenhuma empresa do grupo.
                 </TableCell>
               </TableRow>
@@ -130,16 +134,16 @@ export function VinculosDoUsuarioDialog({
           </TableBody>
         </Table>
 
-        <div className="flex flex-col gap-1 border-2 border-border p-2.5">
+        <div className="flex flex-col gap-[var(--s-1)] border-2 border-border p-2.5">
           <Label htmlFor="vinculos-papel">Papel em {ativa?.name ?? 'nenhuma empresa ativa'}</Label>
-          <p className="text-muted-foreground text-sm leading-snug">
+          <p className="t-meta">
             A escrita é sempre na empresa ATIVA. Para mexer noutra, use “Ativar e editar” na linha
             dela.
           </p>
-          <div className="flex gap-2">
+          <div className="flex gap-[var(--s-2)]">
             <select
               id="vinculos-papel"
-              className="flex h-9 w-full border-2 border-input bg-card px-2.5 py-1 text-sm outline-none focus-visible:focus-ring"
+              className="t-ui flex h-9 w-full border-2 border-input bg-card px-2.5 py-1 outline-none focus-visible:focus-ring"
               value={roleId}
               disabled={!ativa}
               onChange={(e) => setRoleId(e.target.value)}

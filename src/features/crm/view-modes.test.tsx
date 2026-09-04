@@ -106,6 +106,17 @@ beforeEach(() => {
   localStorage.clear()
 })
 
+/**
+ * O agrupamento deixou de ser um `<select>` e virou o chip da barra 2.0 (D9):
+ * clicar abre a lista, e a opção é um botão com o rótulo. O gesto do operador é
+ * o mesmo — escolher por onde a lista se divide —, e é isso que os casos abaixo
+ * afirmam.
+ */
+async function agruparPorResponsavel(user: ReturnType<typeof renderRoute>['user']) {
+  await user.click(screen.getByRole('button', { name: /Agrup/ }))
+  await user.click(await screen.findByRole('button', { name: 'Responsável' }))
+}
+
 describe('colunasDoQuadro', () => {
   it('por ETAPA usa as configuradas, na ordem do funil e incluindo as vazias', () => {
     const colunas = colunasDoQuadro([CARTOES[0] as CrmOpportunityDto], ETAPAS, 'stageName')
@@ -190,7 +201,7 @@ describe('alternador de visão', () => {
     await screen.findByRole('region', { name: 'Contato' })
     const antes = consultas.length
 
-    await user.selectOptions(screen.getByLabelText('Agrupar por:'), 'ownerName')
+    await agruparPorResponsavel(user)
 
     expect(await screen.findByRole('region', { name: 'Ana' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Bruno' })).toBeInTheDocument()
@@ -208,7 +219,7 @@ describe('alternador de visão', () => {
     const { user } = renderRoute('/crm/funil/funil-1', servidorDoFunil([]))
 
     await screen.findByRole('region', { name: 'Contato' })
-    await user.selectOptions(screen.getByLabelText('Agrupar por:'), 'ownerName')
+    await agruparPorResponsavel(user)
 
     const colunaDaAna = await screen.findByRole('region', { name: 'Ana' })
     expect(within(colunaDaAna).getByText('Contato')).toBeInTheDocument()
@@ -231,7 +242,7 @@ describe('alternador de visão', () => {
     expect(await screen.findByRole('menuitem', { name: 'Topo desta etapa' })).toBeInTheDocument()
     await user.keyboard('{Escape}')
 
-    await user.selectOptions(screen.getByLabelText('Agrupar por:'), 'ownerName')
+    await agruparPorResponsavel(user)
     await user.click(await screen.findByRole('button', { name: 'Ações de Sala Norte' }))
 
     expect(await screen.findByRole('menuitem', { name: 'Proposta' })).toBeInTheDocument()
@@ -244,7 +255,7 @@ describe('consulta favorita guarda a visão', () => {
     const { user } = renderRoute('/crm/funil/funil-1', servidorDoFunil([]))
 
     await screen.findByRole('region', { name: 'Contato' })
-    await user.selectOptions(screen.getByLabelText('Agrupar por:'), 'ownerName')
+    await agruparPorResponsavel(user)
 
     await user.click(screen.getByRole('button', { name: /Salvar consulta/ }))
     await user.type(screen.getByLabelText('Nome'), 'Por vendedor')

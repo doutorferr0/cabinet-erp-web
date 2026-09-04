@@ -759,3 +759,138 @@ main.bg-paper-grid > * {
     animation: none !important;
   }
 }
+
+/* =====================================================================
+   PROFUNDIDADE E HOVER (user, 2026-09-04: "mais animações de hover e mais
+   profundidade nos itens"). Camada por data-slot, por cima das utilities:
+   - toda peça que é OBJETO (card, KPI, tarefa, cartão lateral, bloco de form,
+     item de nav, aba, chip, linha da grade, monograma) tem repouso com relevo e
+     um hover que RESPONDE — levanta, aprofunda a sombra, acende o fundo.
+   - física de papel: sombra dura + ambiente no matiz; nunca blur solto.
+   - reduced-motion: tudo continua, sem transição.
+   ===================================================================== */
+:where(
+    [data-slot="kpi-tile"],
+    [data-slot="dcard"],
+    [data-slot="painel"],
+    [data-slot="cartao-lateral"],
+    [data-slot="form-block"],
+    [data-slot="tarefa"],
+    [data-slot="carga-por-responsavel"]
+  ) {
+  transition: transform var(--dur-1, 120ms) var(--ease, ease), box-shadow var(--dur-1, 120ms)
+    var(--ease, ease), border-color var(--dur-1, 120ms) var(--ease, ease);
+}
+/* cards quietos: relevo de repouso mais fundo (n-300 3px + ambiente) e hover que levanta */
+:where(
+    [data-slot="dcard"],
+    [data-slot="painel"],
+    [data-slot="cartao-lateral"],
+    [data-slot="form-block"],
+    [data-slot="carga-por-responsavel"]
+  ) {
+  box-shadow: 3px 3px 0 0 var(--n-300), 0 12px 24px -16px
+    color-mix(in oklab, var(--n-900) 45%, transparent);
+}
+:where(
+    [data-slot="dcard"],
+    [data-slot="painel"],
+    [data-slot="cartao-lateral"],
+    [data-slot="form-block"],
+    [data-slot="carga-por-responsavel"]
+  ):hover {
+  transform: translate(-1px, -1px);
+  border-color: var(--n-900);
+  box-shadow: 4px 4px 0 0 var(--n-300), 0 16px 28px -16px
+    color-mix(in oklab, var(--n-900) 55%, transparent);
+}
+/* KPI: já tem hard-1 + ambiente; o hover sobe um degrau */
+[data-slot="kpi-tile"]:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 0 var(--n-900), 0 18px 32px -14px
+    color-mix(in oklab, var(--kc, var(--n-900)) 55%, transparent);
+}
+/* tarefa do quadro: tecla de papel */
+[data-slot="tarefa"] {
+  box-shadow: var(--hard-soft);
+}
+[data-slot="tarefa"]:hover {
+  transform: translate(-1px, -1px);
+  border-color: var(--n-900);
+  box-shadow: var(--hard-1), 0 12px 24px -12px
+    color-mix(in oklab, var(--cc, var(--n-900)) 40%, transparent);
+}
+[data-slot="tarefa"]:active {
+  transform: scale(0.985);
+  transition-duration: 60ms;
+}
+
+/* linha da grade: acende com o matiz do acento e ganha faixa à esquerda no hover */
+[data-slot="grade"] tbody tr:not([data-grupo]):hover > td {
+  background: color-mix(in oklab, var(--lime-400) 9%, var(--n-0));
+}
+[data-slot="grade"] tbody tr:not([data-grupo]):hover > td:first-child {
+  box-shadow: inset 3px 0 0 var(--lime-400);
+}
+[data-slot="grade"] tbody tr > td {
+  transition: background var(--dur-1, 120ms) var(--ease, ease);
+}
+
+/* item de navegação: desliza 2px e acende; ativo não se move */
+[data-slot="sidebar-nav"] a,
+[data-slot="sidebar-nav"] button {
+  transition: background var(--dur-1, 120ms), color var(--dur-1, 120ms), transform
+    var(--dur-1, 120ms) var(--ease, ease), box-shadow var(--dur-1, 120ms);
+}
+[data-slot="sidebar-nav"] a:not([aria-current]):hover {
+  transform: translateX(2px);
+}
+[data-slot="sidebar-nav"] a[aria-current] {
+  box-shadow: var(--hard-soft);
+}
+
+/* monograma e badge: relevo de adesivo, e o monograma vira "botão" no hover da linha */
+[data-slot="celula-entidade"] > :first-child,
+[data-slot="monograma"] {
+  box-shadow: 0 1px 0 0 var(--n-300);
+  transition: transform var(--dur-1, 120ms) var(--ease, ease), box-shadow var(--dur-1, 120ms);
+}
+tr:hover [data-slot="celula-entidade"] > :first-child,
+tr:hover [data-slot="monograma"] {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 0 0 var(--n-900);
+}
+[data-slot="badge"] {
+  box-shadow: 0 1px 0 0 color-mix(in oklab, currentColor 30%, transparent);
+}
+
+/* abas de visão e chips de filtro: fundo que acende, sem pular */
+[role="tab"] {
+  transition: background var(--dur-1, 120ms), color var(--dur-1, 120ms);
+}
+[role="tab"]:hover {
+  background: color-mix(in oklab, var(--n-900) 6%, transparent);
+}
+[data-slot="barra-de-filtros"] button:hover,
+[data-slot="barra-de-filtros"] label:hover {
+  background: color-mix(in oklab, var(--n-900) 6%, transparent);
+}
+
+/* seletor de empresa e botão de recolher: tecla que levanta */
+/* (o seletor da D6 declara a tecla por style inline — o seletor casa nele) */
+[data-slot="sidebar-nav"] button[style*="key-1"]:hover,
+[data-slot="sidebar-nav"] button[aria-label^="Empresa"]:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 0 0 var(--n-900);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where([data-slot]),
+  [data-slot="grade"] tbody tr > td,
+  [role="tab"] {
+    transition: none !important;
+  }
+  :where([data-slot]):hover {
+    transform: none !important;
+  }
+}

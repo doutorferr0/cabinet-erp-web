@@ -243,14 +243,22 @@ async function capturar(
   url: string,
   arquivo: string,
   esperaExtra: number,
-): Promise<{ bytes: number; erro?: string }> {
+): Promise<{ bytes: number; erro?: string; desviou?: string }> {
   let ultimo = ''
   for (let tentativa = 1; tentativa <= 4; tentativa++) {
     try {
       await irPara(pagina, url, esperaExtra)
       mkdirSync(path.dirname(arquivo), { recursive: true })
       await pagina.screenshot({ path: arquivo })
-      return { bytes: statSync(arquivo).size }
+      // A guarda pode ter mandado a tela para outro lugar — `/trocar-senha` sem
+      // sessão cai no login. Sem esta linha o arquivo leva o nome de uma tela e
+      // mostra outra, que é o pior tipo de prova.
+      const pedido = new URL(url).pathname
+      const chegou = new URL(pagina.url()).pathname
+      return {
+        bytes: statSync(arquivo).size,
+        desviou: chegou === pedido ? undefined : chegou,
+      }
     } catch (e) {
       ultimo = e instanceof Error ? e.message.split('\n')[0] : String(e)
       // Depois de um 504 do optimizer, recarregar pega a árvore já pronta.
@@ -434,6 +442,23 @@ async function varrer(): Promise<void> {
               bytes: r.bytes,
               erro: r.erro,
             }
+            if (r.desviou) {
+              const nota = `a guarda desviou para \`${r.desviou}\` — a imagem é daquela tela`
+              linha.aviso = linha.aviso?.includes(nota)
+                ? linha.aviso
+                : [linha.aviso, nota].filter(Boolean).join(' · ')
+            }
+            // Overlay pedido e não aplicado: o router descarta parâmetro que a
+            // rota não declara em `validateSearch`, e a captura sai sem grade.
+            if (
+              grid &&
+              !(await pagina.evaluate(() => 'grid' in document.documentElement.dataset))
+            ) {
+              const nota = 'o `?grid` não sobreviveu ao router — esta captura não tem a grade'
+              linha.aviso = linha.aviso?.includes(nota)
+                ? linha.aviso
+                : [linha.aviso, nota].filter(Boolean).join(' · ')
+            }
             console.log(
               `  ${r.erro ? '✗' : '✓'} ${nome}${sufixo} ${r.erro ?? `${Math.round(r.bytes / 1024)} kB`}`,
             )
@@ -502,8 +527,8 @@ function montarReadme(): void {
     '',
   )
   for (const [rotulo, m] of [
-    ['1.7 (`main`)', antes],
-    ['2.0 (`design/2.0`)', depois],
+    ['1.7 — `main` no commit anterior à rodada', antes],
+    ['2.0 — a rodada como está hoje', depois],
   ] as const) {
     if (m) {
       linhas.push(
@@ -514,16 +539,33 @@ function montarReadme(): void {
     }
   }
   linhas.push('')
-  linhas.push('Regenerar: `node --experimental-strip-types scripts/capturas.ts --versao=2.0`.')
-  linhas.push('')
+  linhas.push(
+    '**A varredura é uma FOTO, e a rodada continua andando.** Quando a base mudar, o par de',
+    'novo vale mais que a leitura de quem lembra da versão velha:',
+    '',
+    '```',
+    'node --experimental-strip-types scripts/capturas.ts --versao=2.0',
+    'node --experimental-strip-types scripts/capturas.ts --readme',
+    '```',
+    '',
+    'A 1.7 não precisa ser refeita — ela é um commit fixo. Para refazê-la, rode o script numa',
+    'worktree daquele commit apontando `--saida` para `docs/design/capturas/1.7`.',
+    '',
+    'As pastas aqui também guardam capturas avulsas de outras issues da rodada (`d34/`, e os',
+    '`ficha-*.png` de `2.0/`), com outra convenção de nome. Quem manda nesta página é o',
+    '`manifesto.json` de cada versão: o que não está nele não saiu desta varredura.',
+    '',
+  )
 
   for (const rota of rotas) {
     const a = antes?.rotas.find((l) => l.rota === rota)
     const d = depois?.rotas.find((l) => l.rota === rota)
     linhas.push(`## \`${rota}\``)
     linhas.push('')
-    if (!a) linhas.push('> Rota **inexistente na 1.7** — nasceu na rodada.', '')
-    if (!d) linhas.push('> Rota **inexistente na 2.0** — saiu na rodada.', '')
+    // Só é ausência de ROTA se a outra varredura existir: sem manifesto do
+    // lado de lá, o que falta é a medição, não a tela.
+    if (antes && !a) linhas.push('> Rota **inexistente na 1.7** — nasceu na rodada.', '')
+    if (depois && !d) linhas.push('> Rota **inexistente na 2.0** — saiu na rodada.', '')
     for (const aviso of [a?.aviso, d?.aviso].filter(Boolean)) linhas.push(`> ${aviso}`, '')
     linhas.push('| | 1.7 | 2.0 |')
     linhas.push('|---|---|---|')

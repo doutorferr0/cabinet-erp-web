@@ -1,5 +1,10 @@
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
-import { FaixaDeKpi, KpiTile, type TintDeKpi } from '@/components/cabinet/kpi-tile'
+import {
+  type EscalaDeKpi,
+  FaixaDeKpi,
+  KpiTile,
+  type TintDeKpi,
+} from '@/components/cabinet/kpi-tile'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useResumoDoDashboard, variacaoDoMes } from '@/data/dashboard-api'
 import { Link } from '@tanstack/react-router'
@@ -39,13 +44,35 @@ import { Link } from '@tanstack/react-router'
  * O link envolve o tile em vez de virar prop do tile: a borda, a sombra dura e o
  * padding são do cartão, e um `<a>` com a geometria do cartão duplicaria a
  * decisão de desenho fora do arquivo que a tomou.
+ *
+ * ## Rodada 5 (D34, #529): a fileira igual virou BENTO
+ *
+ * Os quatro tiles eram do mesmo tamanho, e a fileira não dizia qual número
+ * importa. `pesquisa-estilos-2026-09-02.md` §11 aplica bento *"só em hub e
+ * dashboard"*, com um herói 1,6× — e o mockup nomeia o herói: **`Vendas do
+ * mês`**, a 40px, com a curva a 120px.
+ *
+ * A escolha não é estética. Dos quatro números, três são FILA (o que vence, o
+ * que chega, o que falta) e existem para o operador ir a algum lugar; um é
+ * RESULTADO, e é o que ele confere ao abrir a tela. Fila e resultado com o
+ * mesmo peso obrigam a ler os quatro para descobrir isso.
+ *
+ * **O herói é o primeiro no DOM**, e não o quarto movido por `grid-row` como no
+ * mockup: a ordem de leitura e a de tabulação seguem a visual. Consequência
+ * visível: `Vendas do mês` deixa de ser o último e passa a abrir a fileira.
  */
 
 interface Indicador {
   rotulo: string
   tint: TintDeKpi
-  /** Contagem já formatada. Mutuamente exclusivo com `valorCentavos`. */
-  valor?: string
+  /** O herói do bento é o único em `heroi`; os outros três ficam no padrão. */
+  escala: EscalaDeKpi
+  /**
+   * Contagem, em NÚMERO — não `String(n)`. É o que liga a contagem crescente e
+   * o agrupamento de milhar do `KpiTile`. Mutuamente exclusivo com
+   * `valorCentavos`.
+   */
+  valor?: number
   /** Dinheiro em CENTAVOS. */
   valorCentavos?: number
   nota: string
@@ -68,15 +95,18 @@ function Tile({ indicador }: { indicador: Indicador }) {
       {...(indicador.alerta && { alerta: true })}
       nota={indicador.nota}
       tint={indicador.tint}
-      escala="destaque"
-      className={indicador.href ? 'h-full' : undefined}
+      escala={indicador.escala}
+      // `h-full` sempre, e não só sob link: no bento os tiles dividem a linha
+      // por `align-items: stretch`, e um tile que encolhe ao conteúdo deixaria
+      // um degrau na base da fileira.
+      className="h-full"
     />
   )
 
   if (!indicador.href) return tile
 
   return (
-    <Link to={indicador.href} className="flex min-w-0 no-underline focus-visible:focus-ring">
+    <Link to={indicador.href} className="flex min-w-0 flex-1 no-underline focus-visible:focus-ring">
       <span className="flex min-w-0 flex-1 flex-col">{tile}</span>
     </Link>
   )
@@ -86,10 +116,13 @@ export function Indicadores() {
   const query = useResumoDoDashboard()
 
   if (query.isPending) {
+    // O esqueleto herda a assimetria do bento — o herói mais largo e mais alto.
+    // Um esqueleto de quatro caixas iguais prometeria uma fileira que não é a
+    // que vai chegar, e o salto ao chegar seria maior que a espera.
     return (
-      <FaixaDeKpi>
-        {['k1', 'k2', 'k3', 'k4'].map((chave) => (
-          <Skeleton key={chave} className="h-[92px] w-full" />
+      <FaixaDeKpi heroi={<Skeleton className="h-[132px] w-full" />}>
+        {['k2', 'k3', 'k4'].map((chave) => (
+          <Skeleton key={chave} className="h-[132px] w-full" />
         ))}
       </FaixaDeKpi>
     )
@@ -109,39 +142,16 @@ export function Indicadores() {
   const variacao = variacaoDoMes(resumo)
   const anterior = resumo.previousMonthSalesCents
 
+  /**
+   * O HERÓI vem primeiro na lista porque vem primeiro na tela — a lista é a
+   * ordem de leitura, e uma lista que discorda dela precisaria de um índice
+   * mágico ("o quarto é o herói") que ninguém mantém.
+   */
   const indicadores: Indicador[] = [
-    {
-      rotulo: 'Orçamentos abertos',
-      tint: 'lilac',
-      valor: String(resumo.openQuotes),
-      nota:
-        resumo.openQuotesDueThisWeek === 1
-          ? '1 vence esta semana'
-          : `${resumo.openQuotesDueThisWeek} vencem esta semana`,
-      href: '/vendas/orcamentos',
-    },
-    {
-      rotulo: 'Pedidos a receber',
-      tint: 'sky',
-      valor: String(resumo.incomingOrders),
-      nota:
-        resumo.incomingOrdersToday === 1
-          ? '1 chega hoje'
-          : `${resumo.incomingOrdersToday} chegam hoje`,
-      href: '/compras/pedidos',
-    },
-    {
-      rotulo: 'Estoque crítico',
-      tint: 'sand',
-      valor: String(resumo.criticalStockItems),
-      nota: 'abaixo do mínimo',
-      // O `.kpi.warn` do mockup: o número é problema, e o valor vai para `--bad`
-      // enquanto a tinta do tile continua sendo a do assunto.
-      alerta: resumo.criticalStockItems > 0,
-    },
     {
       rotulo: 'Vendas do mês',
       tint: 'mint',
+      escala: 'heroi',
       valorCentavos: resumo.monthSalesCents,
       // Sem base de comparação a tela DIZ isso, em vez de mostrar "+0%": zero
       // por cima de zero é conta que ninguém pode conferir.
@@ -157,11 +167,45 @@ export function Indicadores() {
       // linha subindo do chão diria "cresceu infinito".
       ...(anterior === 0 ? {} : { serie: [anterior, resumo.monthSalesCents] }),
     },
+    {
+      rotulo: 'Orçamentos abertos',
+      tint: 'lilac',
+      escala: 'padrao',
+      valor: resumo.openQuotes,
+      nota:
+        resumo.openQuotesDueThisWeek === 1
+          ? '1 vence esta semana'
+          : `${resumo.openQuotesDueThisWeek} vencem esta semana`,
+      href: '/vendas/orcamentos',
+    },
+    {
+      rotulo: 'Pedidos a receber',
+      tint: 'sky',
+      escala: 'padrao',
+      valor: resumo.incomingOrders,
+      nota:
+        resumo.incomingOrdersToday === 1
+          ? '1 chega hoje'
+          : `${resumo.incomingOrdersToday} chegam hoje`,
+      href: '/compras/pedidos',
+    },
+    {
+      rotulo: 'Estoque crítico',
+      tint: 'sand',
+      escala: 'padrao',
+      valor: resumo.criticalStockItems,
+      nota: 'abaixo do mínimo',
+      // O `.kpi.warn` do mockup: o número é problema, e o valor vai para `--bad`
+      // enquanto a tinta do tile continua sendo a do assunto.
+      alerta: resumo.criticalStockItems > 0,
+    },
   ]
 
+  const [heroi, ...resto] = indicadores as [Indicador, ...Indicador[]]
+
   return (
-    <FaixaDeKpi>
-      {indicadores.map((indicador) => (
+    <FaixaDeKpi heroi={<Tile indicador={heroi} />}>
+      {resto.map((indicador) => (
         <Tile key={indicador.rotulo} indicador={indicador} />
       ))}
     </FaixaDeKpi>

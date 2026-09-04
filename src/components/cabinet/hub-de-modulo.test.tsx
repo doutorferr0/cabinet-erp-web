@@ -37,6 +37,25 @@ const RESUMO_DE_COMPRAS = {
   monthlyValueSeries: [12_000_00, 14_000_00, 18_240_00],
 }
 
+/**
+ * Uma atividade concluída, com alvo que TEM ficha (`quote`) — é o que faz a
+ * linha virar link e prova o recorte do feed no hub.
+ */
+const ATIVIDADES = [
+  {
+    id: 'atv-1',
+    entityType: 'quote',
+    entityId: 'orc-1',
+    kind: 'call',
+    title: 'Enviar a proposta revisada',
+    dueDate: null,
+    doneAt: '2026-09-02T15:40:00Z',
+    assigneeEmployeeId: 'emp-1',
+    assigneeName: 'Lívia Moraes',
+    notes: null,
+  },
+]
+
 let fetchStub: FetchStub
 
 beforeEach(() => {
@@ -49,6 +68,9 @@ beforeEach(() => {
       expiresAt: '2026-12-01T00:00:00Z',
     }),
     '/api/purchases/orders-summary': () => RESUMO_DE_COMPRAS,
+    // O feed do card 2×2 do bento: as CONCLUÍDAS da empresa, sem o par
+    // entityType/entityId (que o contrato exige junto ou nenhum).
+    '/api/activities': () => ({ rows: ATIVIDADES, total: ATIVIDADES.length }),
   })
   fetchStub = servidor.fetch
 })
@@ -57,9 +79,17 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-/** A grade de atalhos, pelo rótulo que a `<section>` publica. */
-function grade() {
-  return screen.getByRole('region', { name: 'Telas do módulo' })
+/**
+ * O BENTO, pelo rótulo que a `<section>` publica.
+ *
+ * Era uma região por assunto (`Indicadores…` e `Telas do módulo`); a rodada 5
+ * (#529) juntou KPIs, atividade e atalhos numa grade só — duas regiões dentro
+ * de uma grade pediriam `display: contents` nas seções, e essa técnica já
+ * apagou papel de elemento em navegador de produção. Sobrou uma região, e o
+ * ponto de partida dos atalhos ficou num título invisível.
+ */
+function bento(titulo = 'Compras') {
+  return screen.getByRole('region', { name: `Painel de ${titulo}` })
 }
 
 describe('hub de módulo', () => {
@@ -68,7 +98,11 @@ describe('hub de módulo', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Compras' })).toBeInTheDocument()
 
-    const atalhos = within(grade()).getAllByRole('link')
+    // O título dos atalhos continua no documento — invisível, e fora de fluxo
+    // para não ocupar célula do bento.
+    expect(screen.getByRole('heading', { level: 2, name: 'Telas do módulo' })).toBeInTheDocument()
+
+    const atalhos = within(bento()).getAllByRole('link')
     const destinos = atalhos.map((a) => a.getAttribute('href'))
     expect(destinos).toContain('/compras/ordens')
     expect(destinos).toContain('/compras/pedidos')
@@ -79,7 +113,7 @@ describe('hub de módulo', () => {
     renderRoute('/compras', fetchStub)
     await screen.findByRole('heading', { level: 1, name: 'Compras' })
 
-    const destinos = within(grade())
+    const destinos = within(bento())
       .getAllByRole('link')
       .map((a) => a.getAttribute('href'))
     // A raiz é o pai colapsável, não uma tela: card que leva onde já se está.
@@ -97,7 +131,7 @@ describe('hub de módulo', () => {
     renderRoute('/estoque', fetchStub)
     await screen.findByRole('heading', { level: 1, name: 'Estoque' })
 
-    const destinos = within(grade())
+    const destinos = within(bento('Estoque'))
       .getAllByRole('link')
       .map((a) => a.getAttribute('href'))
     expect(destinos).toContain('/estoque/movimentacao')
@@ -113,10 +147,10 @@ describe('hub de módulo', () => {
     renderRoute('/compras', fetchStub)
     await screen.findByRole('heading', { level: 1, name: 'Compras' })
 
-    const incluir = within(grade()).getByRole('link', { name: 'Incluir em Ordem de Compra' })
+    const incluir = within(bento()).getByRole('link', { name: 'Incluir em Ordem de Compra' })
     expect(incluir).toHaveAttribute('href', '/compras/ordens/novo')
     expect(
-      within(grade()).queryByRole('link', { name: 'Incluir em Previsão de Chegada' }),
+      within(bento()).queryByRole('link', { name: 'Incluir em Previsão de Chegada' }),
     ).toBeNull()
   })
 
@@ -129,7 +163,7 @@ describe('hub de módulo', () => {
     renderRoute('/compras', fetchStub)
     await screen.findByRole('heading', { level: 1, name: 'Compras' })
 
-    const faixa = await screen.findByRole('region', { name: 'Indicadores de Compras' })
+    const faixa = await screen.findByRole('region', { name: 'Painel de Compras' })
     for (const [rotulo, valor] of [
       ['Ordens em aberto', '14'],
       ['Chegando esta semana', '7'],
@@ -137,10 +171,61 @@ describe('hub de módulo', () => {
     ] as const) {
       const tile = (await within(faixa).findByText(rotulo)).closest('[data-slot="kpi-tile"]')
       expect(tile).not.toBeNull()
-      expect(tile).toHaveTextContent(valor)
+      // Com ESPERA: a contagem crescente da rodada 5 põe zero no primeiro
+      // quadro, e o número pedido chega alguns quadros depois.
+      await waitFor(() => expect(tile).toHaveTextContent(valor))
     }
     // Dinheiro em centavos vira R$ só na borda de exibição.
-    expect(faixa).toHaveTextContent('182.400')
+    await waitFor(() => expect(faixa).toHaveTextContent('182.400'))
+
+    // O dinheiro do mês é o HERÓI do bento: 40px e dobro da largura. É o número
+    // que o operador confere ao abrir o módulo; os outros três são fila.
+    const heroi = (await within(faixa).findByText('Comprado no mês')).closest(
+      '[data-slot="kpi-tile"]',
+    ) as HTMLElement
+    expect(heroi.dataset.escala).toBe('heroi')
+  })
+
+  /**
+   * BENTO (rodada 5, #529). Três coisas podem sair erradas sem ninguém notar: a
+   * área de cada peça, a garantia de duas colunas (sem a qual o `span 2`
+   * estoura a caixa na janela estreita, onde ninguém olha) e o RECORTE da
+   * atividade, que é da empresa e não do módulo.
+   */
+  it('o card de atividade ocupa 2×2 — lista precisa de altura para valer mais que resumo', async () => {
+    renderRoute('/compras', fetchStub)
+    await screen.findByRole('heading', { level: 1, name: 'Compras' })
+
+    const feed = await screen.findByRole('heading', { level: 3, name: 'Atividade' })
+    const peca = feed.closest('[style*="grid-row"]') as HTMLElement
+    expect(peca).not.toBeNull()
+    expect(peca.style.gridColumn).toBe('span 2')
+    expect(peca.style.gridRow).toBe('span 2')
+  })
+
+  it('a atividade do hub é a da EMPRESA, e o cabeçalho diz isso', async () => {
+    // `GET /api/activities` responde 400 a `entityType` sem `entityId`, então
+    // não existe "a atividade de Compras". Mostrar o feed da empresa sem
+    // nomear o recorte faria o operador ler "Atividade" como "de Compras" —
+    // dado certo com rótulo errado é pior que dado ausente.
+    renderRoute('/compras', fetchStub)
+    await screen.findByRole('heading', { level: 1, name: 'Compras' })
+
+    expect(await screen.findByText('concluídas · na empresa')).toBeInTheDocument()
+  })
+
+  it('a grade nunca tem menos de DUAS colunas — senão o `span 2` estoura a caixa', async () => {
+    // `min(100%, 15rem)` daria uma coluna na janela estreita, e aí o herói e o
+    // card de atividade criariam uma segunda coluna IMPLÍCITA, passando da
+    // largura. Limitar o mínimo a metade da largura (menos metade do vão) é o
+    // que garante as duas colunas em qualquer largura.
+    renderRoute('/compras', fetchStub)
+    await screen.findByRole('heading', { level: 1, name: 'Compras' })
+
+    const grade = document.querySelector('[data-slot="bento-do-hub"]') as HTMLElement
+    expect(grade.style.gridTemplateColumns).toContain('auto-fit')
+    expect(grade.style.gridTemplateColumns).toContain('calc(50% - var(--s-3) / 2)')
+    expect(grade.style.gridAutoFlow).toBe('dense')
   })
 
   it('abre hub em estoque, vendas e crm', async () => {

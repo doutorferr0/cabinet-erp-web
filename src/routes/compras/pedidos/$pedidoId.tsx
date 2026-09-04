@@ -40,10 +40,10 @@ function PedidoCompraEditPage() {
           badge: {
             tom:
               pedido.situacao === 'cancelled'
-                ? 'void'
+                ? 'bad'
                 : pedido.situacao === 'ordered'
-                  ? 'done'
-                  : 'open',
+                  ? 'ok'
+                  : 'info',
             label: SITUACAO_DO_PEDIDO[pedido.situacao],
           },
           meta: [pedido.cliente || 'compra para estoque', formatDateBR(pedido.dataEmissao)]

@@ -71,7 +71,7 @@ function ProdutoEditPage() {
         // tela. "Cadastro de Produtos" dizia onde o operador está — ele já sabe.
         titulo="Produto"
         {...(produto.nossoCodigo ? { id: produto.nossoCodigo } : {})}
-        badge={produto.ativo ? { tom: 'open', label: 'Ativo' } : { tom: 'void', label: 'Inativo' }}
+        badge={produto.ativo ? { tom: 'info', label: 'Ativo' } : { tom: 'bad', label: 'Inativo' }}
         {...(readOnly ? { meta: 'Consulta' } : isNovo ? { meta: 'Incluir' } : {})}
         // Em `Incluir` não há registro a ativar: o próximo passo é gravar, e
         // quem oferece isso é o rodapé do formulário.

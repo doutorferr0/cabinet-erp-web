@@ -33,10 +33,10 @@ function PedidoDeVendaEditPage() {
       cabecalho={(pedido) => ({
         badge:
           pedido.situacao === 'cancelled'
-            ? { tom: 'void', label: 'Cancelado' }
+            ? { tom: 'bad', label: 'Cancelado' }
             : pedido.situacao === 'concluded'
-              ? { tom: 'done', label: 'Concluído' }
-              : { tom: 'open', label: 'Em aberto' },
+              ? { tom: 'ok', label: 'Concluído' }
+              : { tom: 'info', label: 'Em aberto' },
         meta: [
           pedido.cliente,
           pedido.obra || pedido.descricaoObra,

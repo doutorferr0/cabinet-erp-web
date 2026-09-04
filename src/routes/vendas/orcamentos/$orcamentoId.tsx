@@ -48,10 +48,10 @@ function OrcamentoEditPage() {
       erroAoCarregar="Não foi possível carregar o orçamento."
       cabecalho={(orcamento) => ({
         badge: orcamento.cancelado
-          ? { tom: 'void', label: 'Cancelado' }
+          ? { tom: 'bad', label: 'Cancelado' }
           : orcamento.dataFechamento
-            ? { tom: 'done', label: 'Fechado' }
-            : { tom: 'open', label: 'Em aberto' },
+            ? { tom: 'ok', label: 'Fechado' }
+            : { tom: 'info', label: 'Em aberto' },
         meta: [orcamento.cliente, orcamento.descricaoObra].filter(Boolean).join(' · '),
         ...(orcamento.id && !orcamento.cancelado && !readOnly
           ? {

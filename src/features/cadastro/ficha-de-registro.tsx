@@ -109,9 +109,10 @@ export function FichaDeRegistro({
         {...(id !== undefined && id !== '' ? { id } : {})}
         // `open`/`done` e não uma cor inventada: o vocabulário de situação é o
         // do `Stamp`, e cadastro ativo é registro EM USO, não concluído.
-        badge={ativo ? { tom: 'open', label: 'Ativo' } : { tom: 'void', label: 'Inativo' }}
-        {...(meta ? { meta } : {})}
-        secundarias={[{ id: 'alterar', label: 'Alterar', icon: Pencil, onClick: () => aoEditar() }]}
+        badge={ativo ? { tom: 'info', label: 'Ativo' } : { tom: 'bad', label: 'Inativo' }}
+        // O cabeçalho da D15 recebe meta como TEXTO; ReactNode fica para o corpo.
+        {...(typeof meta === 'string' && meta ? { meta } : {})}
+        acoes={[{ id: 'alterar', label: 'Alterar', icon: Pencil, onClick: () => aoEditar() }]}
         {...(aoAlternarAtivo
           ? {
               proximaAcao: {

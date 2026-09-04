@@ -73,8 +73,7 @@ function OrdemCompraEditPage() {
       erroAoCarregar="Não foi possível carregar a ordem de compra."
       cabecalho={(ordem) => ({
         badge: {
-          tom:
-            ordem.situacao === 'cancelled' ? 'void' : ordem.situacao === 'sent' ? 'done' : 'open',
+          tom: ordem.situacao === 'cancelled' ? 'bad' : ordem.situacao === 'sent' ? 'ok' : 'info',
           label: SITUACAO_DA_ORDEM[ordem.situacao],
         },
         meta: [ordem.fornecedor, formatDateBR(ordem.dataOrdem)].filter(Boolean).join(' · '),

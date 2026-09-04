@@ -1,0 +1,205 @@
+/*
+ * A PINTURA DA BARRA — tokens 2.0, e só eles.
+ *
+ * ## Por que a barra tem CSS próprio em vez de utilities
+ *
+ * As utilities do repo (`bg-sidebar`, `border-sidebar-border`, `bg-modulo`)
+ * ainda resolvem para os tokens 1.x: a D1 (#469) é quem os mapeia para a escala
+ * nova, e enquanto ela não passar, pintar por elas daria a barra 2.0 com as
+ * cores de 2026-08. A regra da rodada é usar os NOMES de
+ * `src/styles/tokens-2.0.css`, que já está no repo e importado pelo
+ * `index.css` — então a barra os lê direto.
+ *
+ * Nada aqui é hexadecimal: cada declaração é `var(--n-…)`, `var(--main…)` ou
+ * `var(--s-…)`. Quando a D1 apagar os nomes 1.x, este arquivo não muda.
+ *
+ * ## §Hierarquia
+ *
+ * Tamanho de fonte NÃO se declara aqui. Os onze degraus vêm das classes
+ * `.t-display … .t-dado-meta` que a fundação publica; o TSX as veste. Este
+ * arquivo cuida de superfície, fronteira e espaço — e o espaço sai dos seis
+ * `--s-1…--s-6`.
+ *
+ * ## Uma ferramenta de separação por fronteira
+ *
+ * - barra × conteúdo: `border-right` de 1px em `--n-300`;
+ * - topo × lista × rodapé: `border` de 1px em `--n-200` (hairline);
+ * - grupo × grupo: ESPAÇO (`--s-5`), não régua — a régua já separa os blocos
+ *   da casca, e repeti-la dentro faria duas fronteiras para uma divisão;
+ * - "onde eu estou": a caixa do item ativo (folha + tinta + faixa).
+ * Colapsada, o espaço do grupo some junto com o rótulo, e aí a hairline entra
+ * no lugar dele — é a mesma fronteira na ferramenta que sobra.
+ */
+
+.cabinet-nav {
+  --nav-largura: var(--nav-w, 236px);
+  --nav-largura-colapsada: 56px;
+
+  background: var(--bancada);
+  border-right: 1px solid var(--hairline-2);
+  color: var(--ink-2);
+
+  /*
+   * STICKY, e não uma coluna de altura fixa.
+   *
+   * A barra tem `100svh` e a lista rola por dentro dela. Sem `sticky`, isso só
+   * funciona enquanto a PÁGINA cabe na viewport: numa listagem longa a coluna
+   * de 100svh fica ancorada no topo do documento e sai da vista junto com o
+   * cabeçalho — o operador rola até o fim de uma grade e perde a navegação
+   * inteira, que é o oposto do que uma barra global existe para fazer.
+   *
+   * É também o que o mockup passou a fazer (`.nav{position:sticky}`, rodada 5).
+   */
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100svh;
+}
+
+/*
+ * COR DE TEXTO NA BANCADA — o desvio medido, e por que ele é local.
+ *
+ * As classes `.t-rotulo` e `.t-dado-meta` da fundação nascem em `--n-500`, que
+ * é o degrau de "meta, rótulo, texto terciário". Medido contra a superfície
+ * desta barra, que é a BANCADA e não a folha, `--n-500` dá **3,62:1 no tema
+ * claro** — abaixo do piso de 4,5:1 da WCAG 1.4.3. E o problema não é da
+ * bancada: contra a própria FOLHA o mesmo par dá **4,35:1**, que também
+ * reprova. É a fundação que precisa de um degrau, e está comentado na #469.
+ *
+ * Enquanto ela não muda, a barra sobe rótulo de grupo, contador e meta para
+ * `--ink-2` (n-700): **7,75:1 no claro, 9,32:1 no escuro**. É cor de contexto,
+ * não tamanho nem peso — a §Hierarquia continua mandando no que ela manda, e
+ * os degraus `.t-*` seguem sendo os únicos a decidir tipo.
+ */
+.cabinet-nav .t-rotulo,
+.cabinet-nav .t-dado-meta,
+.cabinet-nav .t-meta {
+  color: var(--ink-2);
+}
+
+/* O bloco do topo e o do rodapé, contra a lista que rola entre eles. */
+.cabinet-nav [data-faixa] {
+  border-color: var(--hairline);
+}
+
+/*
+ * ITEM — repouso, hover e ativo.
+ *
+ * Repouso é texto secundário sobre a bancada: a barra inteira em tinta cheia
+ * competiria com o conteúdo da página, que é o que se veio ler.
+ */
+.cabinet-nav [data-item] {
+  color: var(--ink-2);
+  border: 1px solid transparent;
+  border-radius: var(--r-ctrl);
+}
+.cabinet-nav [data-item]:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+.cabinet-nav [data-item] svg {
+  color: var(--ink-3);
+}
+.cabinet-nav [data-item]:hover svg,
+.cabinet-nav [data-item][data-ativo="true"] svg {
+  color: var(--ink);
+}
+
+/*
+ * ATIVO — folha chartreuse, borda de tinta, relevo de papel e a faixa.
+ *
+ * `--main-soft` e não o matiz do módulo: decisão do user (comentário na #472,
+ * 2026-09-02). O matiz do módulo fica no quadradinho do grupo e nos KPIs; a
+ * marca de "onde eu estou" é uma só no sistema inteiro, e é o acento.
+ */
+.cabinet-nav [data-item][data-ativo="true"] {
+  background: var(--main-soft);
+  color: var(--ink);
+  border-color: var(--ink);
+  box-shadow: var(--hard-soft);
+}
+
+/*
+ * A FAIXA de 3px à esquerda do item ativo.
+ *
+ * Em `::before` posicionado, e não em `border-left`, porque a borda de tinta já
+ * ocupa os quatro lados: a faixa é a marca do acento POR CIMA dela.
+ */
+.cabinet-nav [data-item][data-ativo="true"]::before {
+  content: "";
+  position: absolute;
+  inset-block: 2px;
+  left: -1px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--main);
+  border: 1px solid var(--ink);
+}
+
+/* Tela FUTURA: apagada no FUNDO e no traço, nunca no contraste do texto. */
+.cabinet-nav [data-futuro="true"] {
+  color: var(--disabled);
+  cursor: not-allowed;
+}
+.cabinet-nav [data-futuro="true"] svg {
+  color: var(--disabled);
+}
+
+/* O quadradinho de 7px que diz de quem é o grupo. */
+.cabinet-nav [data-quadradinho] {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--cor-do-modulo, var(--n-400));
+}
+
+/* Etiqueta `futuro` e teclas (`⌘K`, `[`): traço fino, texto terciário. */
+.cabinet-nav [data-etiqueta] {
+  border: 1px solid var(--hairline-2);
+  border-radius: var(--r-data);
+  color: var(--ink-3);
+  padding: 0 var(--s-1);
+}
+
+/* A ★ do favorito: some em repouso, aparece no hover e no foco, fica no marcado. */
+.cabinet-nav [data-estrela] {
+  color: var(--n-400);
+  opacity: 0;
+}
+.cabinet-nav [data-item-linha]:hover [data-estrela],
+.cabinet-nav [data-estrela]:focus-visible,
+.cabinet-nav [data-estrela][data-marcado="true"] {
+  opacity: 1;
+}
+.cabinet-nav [data-estrela][data-marcado="true"] {
+  color: var(--warn);
+}
+
+/* A hairline que substitui o rótulo do grupo com a barra colapsada. */
+.cabinet-nav [data-divisor] {
+  border-top: 1px solid var(--hairline);
+}
+
+/* O seletor de empresa e a busca: folha sobre bancada, com traço de controle. */
+.cabinet-nav [data-caixa] {
+  background: var(--folha);
+  border: 1px solid var(--hairline-2);
+  border-radius: var(--r-ctrl);
+  color: var(--ink-3);
+}
+.cabinet-nav [data-caixa]:hover {
+  border-color: var(--ink);
+}
+
+/* Foco: o anel amarelo do sistema, sempre visível sobre qualquer superfície. */
+.cabinet-nav :focus-visible {
+  outline: none;
+  box-shadow: var(--focus);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cabinet-nav,
+  .cabinet-nav * {
+    transition: none !important;
+  }
+}

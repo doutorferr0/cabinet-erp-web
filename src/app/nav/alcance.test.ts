@@ -44,6 +44,10 @@ const FORA_DA_BARRA: ReadonlyArray<readonly [string, string]> = [
     '/ajuda/atalhos',
     'referência que se consulta uma vez; mora no menu do operador, no rodapé da barra, e não na lista de operação',
   ],
+  [
+    '/boletim',
+    'APELIDO, não tela: redireciona para `/`, que a barra publica como `Início`. O nome existe porque o sistema inteiro chama a folha do dia de "Boletim" (o 404, a ação do Dashboard) e o endereço dava 404 (#488). Publicar os DOIS na barra daria dois itens para uma tela; publicar só este apagaria a rota que a guarda de sessão devolve depois do login.',
+  ],
 ]
 
 /** Todo caminho que o roteador atende, sem os parâmetros e sem duplicata. */

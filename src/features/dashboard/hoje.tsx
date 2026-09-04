@@ -1,6 +1,6 @@
 import type { AgendaEventDto } from '@/api/gerado'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
-import { Painel } from '@/components/cabinet/painel'
+import { DCard, MarcaDeCard } from '@/components/cabinet/painel'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -16,101 +16,173 @@ import {
   nomeDoMes,
 } from '@/lib/datas'
 import { cn } from '@/lib/utils'
+import { Link } from '@tanstack/react-router'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
+import { FeedDeAtividade } from './atividade'
 import { MarcaDeTipo, TIPOS, TIPOS_NA_ORDEM, eventosDoDia } from './tipos-de-evento'
 
 /**
- * A LINHA DO "HOJE" — calendário do mês, agenda do dia e a lista A fazer.
+ * A GRADE DO DASHBOARD 2.0 — três colunas de card QUIETO, `1.2fr 1fr 1fr`.
  *
- * Calendário e agenda leem a MESMA consulta (`useAgenda` do mês visível) e é
- * decisão: são duas vistas do mesmo dado, e duas consultas fariam o dia marcado
- * no calendário e a linha da agenda virem de instantes diferentes — o operador
- * veria um ponto no dia 12 e uma agenda que não o conhece.
+ * Coluna larga: `Agenda de hoje` e `Atividade`, no MESMO card, separadas por uma
+ * hairline (é o que o mockup desenha, aba Dashboard). Coluna do meio: `A fazer`.
+ * Coluna estreita: o calendário compacto.
  *
- * ## De onde vem a cor de cada um dos três painéis
+ * ## O que mudou da versão 1.x, por regra
  *
- * O mockup de cores dá ao calendário o azul de Estoque e à agenda o par de
- * Compras. É EMPRÉSTIMO de cor de módulo para uma região temática, e não é
- * novidade nesta tela: `tipos-de-evento.tsx` já empresta os mesmos pares aos
- * tipos de compromisso (entrega é Estoque, reunião é Compras), e o Planner faz
- * o mesmo com os tipos de item. A faixa do painel passa a repetir a cor que a
- * marca de cada linha já usa por baixo, em vez de introduzir uma cor nova.
+ * - **Nada aqui tem borda preta.** Os três cards são `--hard-soft` sobre borda
+ *   `n-300`; a única sombra de tinta da tela é dos quatro KPIs acima
+ *   (auditoria §2.4, §Hierarquia "uma sombra dura de tinta por tela").
+ * - **A pastel saiu das LINHAS.** A agenda 1.x pintava a linha inteira com a
+ *   pastel do módulo do tipo, e três linhas de três cores diferentes numa lista
+ *   de três itens é enfeite, não dado. Fica a faixa de 4px, que é a marca que a
+ *   legenda do calendário ensina — e é UMA ferramenta na fronteira.
+ * - **Fronteira entre linhas = hairline**, entre colunas = espaço `--s-4` (16),
+ *   sem linha nenhuma.
+ * - **Calendário e agenda continuam lendo a MESMA consulta** (`useAgenda` do mês
+ *   visível): são duas vistas do mesmo dado, e duas consultas fariam o ponto do
+ *   dia 12 e a linha da agenda virem de instantes diferentes.
  *
- * `A fazer` é o que quebra o padrão, e de propósito: pendência é ESTADO, não
- * assunto, então a faixa lê a zona de foco. Sem selo — amarelo é cor com dono, e
- * ornamento não usa as três cores com dono.
+ * ## Uma divergência do mockup, e é a régua que manda
+ *
+ * O mockup escreve o nome do mês em Gambarino de 17px. §Hierarquia proíbe
+ * Gambarino abaixo de 20px **e** limita a tela a um Gambarino (dois no máximo) —
+ * a saudação já é o desta. Então o mês fala em `.t-bloco`, que é o degrau de
+ * título de bloco. Onde régua e mockup divergem em NÚMERO, a régua é lei; o
+ * precedente é o de `kpi-tile.tsx`.
  */
 
-function Contador({ n }: { n: number }) {
-  // Contador é DADO, e dado mora dentro de caixa (staging neobrutalism-aria).
+/**
+ * Uma linha da agenda: hora mono · faixa do tipo · assunto · tag.
+ *
+ * Grade de quatro colunas com a hora em largura fixa (`52px`), como o mockup: em
+ * `flex` a hora encolheria conforme o texto do compromisso e as três horas
+ * deixariam de formar coluna — que é o único jeito de ler uma agenda de relance.
+ */
+function LinhaDaAgenda({ evento }: { evento: AgendaEventDto }) {
+  const tipo = TIPOS[evento.kind]
+
   return (
-    <span className="rounded-item border-2 px-1.5 font-mono text-[0.75rem] font-medium tabular-nums">
-      {n}
-    </span>
+    <li
+      data-slot="agenda-linha"
+      className="grid items-center border-[var(--hairline)] border-b last:border-b-0"
+      style={{
+        gridTemplateColumns: '52px 4px minmax(0, 1fr) auto',
+        gap: 'var(--s-3)',
+        padding: 'var(--s-2) var(--s-4)',
+      }}
+    >
+      <span className="t-dado">{horaLocal(evento.startsAt)}</span>
+      <MarcaDeTipo kind={evento.kind} className="h-7 w-1 rounded-[2px]" />
+      <span className="min-w-0">
+        <span className="t-ui block truncate">{evento.title}</span>
+        {evento.context ? <span className="t-meta block truncate">{evento.context}</span> : null}
+      </span>
+      {/* A tag NOMEIA a cor da faixa — é o que cumpre WCAG 1.4.1 sem legenda
+          própria nesta lista. `.t-rotulo` e, como manda a régua, sem caixa,
+          borda ou fundo. */}
+      <span className="t-rotulo">{tipo.rotulo}</span>
+    </li>
   )
 }
 
 /**
- * As duas setas do mês. Ficam no `acao` do painel, e o MÊS é o título dele —
- * antes o nome do mês era um terceiro elemento no meio das setas, competindo
- * com a legenda do compartimento, que dizia "Calendário". Duas coisas nomeando
- * a mesma região.
+ * O card largo: agenda + atividade. Dois cabeçalhos num card só, e não dois
+ * cards — a coluna da esquerda é UM objeto no mockup, e dois cards ali daria
+ * duas bordas onde o desenho tem uma.
  */
-function NavegacaoDoMes({ mes, aoTrocarMes }: { mes: Mes; aoTrocarMes: (novo: Mes) => void }) {
+function AgendaEAtividade({
+  eventos,
+  carregando,
+  className,
+}: { eventos: AgendaEventDto[]; carregando: boolean; className?: string }) {
+  const doDia = eventosDoDia(eventos, diaLocalISO())
+
   return (
-    <>
-      <Button
-        variant="outline"
-        size="icon-sm"
-        onClick={() => aoTrocarMes(mesDeslocado(mes, -1))}
-        aria-label="Mês anterior"
-      >
-        <ChevronLeft />
-      </Button>
-      <Button
-        variant="outline"
-        size="icon-sm"
-        onClick={() => aoTrocarMes(mesDeslocado(mes, 1))}
-        aria-label="Próximo mês"
-      >
-        <ChevronRight />
-      </Button>
-    </>
+    <DCard
+      titulo="Agenda de hoje"
+      marca={<MarcaDeCard cor={TIPOS.quote.cor} />}
+      nota={
+        carregando
+          ? undefined
+          : doDia.length === 1
+            ? '1 compromisso'
+            : `${doDia.length} compromissos`
+      }
+      {...(className ? { className } : {})}
+    >
+      {carregando ? (
+        <div className="flex flex-col" style={{ gap: 'var(--s-2)', padding: 'var(--s-4)' }}>
+          {['a1', 'a2', 'a3'].map((chave) => (
+            <Skeleton key={chave} className="h-10 w-full" />
+          ))}
+        </div>
+      ) : doDia.length === 0 ? (
+        <p className="t-meta text-center" style={{ padding: 'var(--s-5) var(--s-4)' }}>
+          Nenhum compromisso para hoje.
+        </p>
+      ) : (
+        <ul className="flex flex-col">
+          {doDia.map((evento) => (
+            <LinhaDaAgenda key={evento.id} evento={evento} />
+          ))}
+        </ul>
+      )}
+
+      <FeedDeAtividade />
+    </DCard>
   )
 }
 
+/** O calendário compacto: mês, grade de 7, ponto por tipo e legenda. */
 function Calendario({
   mes,
   aoTrocarMes,
   eventos,
   carregando,
+  className,
 }: {
   mes: Mes
   aoTrocarMes: (novo: Mes) => void
   eventos: AgendaEventDto[]
   carregando: boolean
+  className?: string
 }) {
   const hoje = diaLocalISO()
   const celulas = gradeDoMes(mes)
 
   return (
-    // `flex-[0_1_300px]`: encolhe (`shrink`) antes dos outros dois, mas nunca
-    // CRESCE (`grow:0`) além de 300px — é o painel mais estreito da fileira, e
-    // o mockup não quer que ele vire o mais largo só porque sobrou espaço.
-    <Painel
-      titulo={nomeDoMes(mes)}
-      modulo="estoque"
-      acao={<NavegacaoDoMes mes={mes} aoTrocarMes={aoTrocarMes} />}
-      className="min-w-0 flex-[0_1_300px]"
-    >
+    // Sem `titulo`: o mês É o título, e ele mora na barra de navegação junto com
+    // as setas. Um cabeçalho "Calendário" acima do nome do mês seriam duas
+    // coisas nomeando a mesma região — defeito que a versão 1.x já tinha
+    // consertado e que não se reintroduz aqui.
+    <DCard {...(className ? { className } : {})} corpoComPadding>
+      <div className="flex items-center" style={{ gap: 'var(--s-2)' }}>
+        <b className="t-bloco first-letter:uppercase">{nomeDoMes(mes)}</b>
+        <div className="ml-auto flex items-center" style={{ gap: 'var(--s-1)' }}>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            onClick={() => aoTrocarMes(mesDeslocado(mes, -1))}
+            aria-label="Mês anterior"
+          >
+            <ChevronLeft />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            onClick={() => aoTrocarMes(mesDeslocado(mes, 1))}
+            aria-label="Próximo mês"
+          >
+            <ChevronRight />
+          </Button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-7 gap-0.5 text-center">
         {DIAS_DA_SEMANA.map((dia) => (
-          <abbr
-            key={dia.nome}
-            title={dia.nome}
-            className="pb-1 font-mono text-[0.75rem] font-medium uppercase no-underline text-muted-foreground"
-          >
+          <abbr key={dia.nome} title={dia.nome} className="t-rotulo h-5 no-underline">
             {dia.inicial}
           </abbr>
         ))}
@@ -121,26 +193,29 @@ function Calendario({
           return (
             <div
               key={celula.iso}
-              // Célula do calendário é ITEM: canto reto, encostada na vizinha.
-              // `py-2` (8px) é o respiro do Dashboard (§@casca-global).
               className={cn(
-                'flex min-h-8 flex-col items-center justify-center gap-0.5 rounded-item py-2 text-sm tabular-nums',
-                celula.deFora && 'text-muted-foreground opacity-60',
-                // Hoje é o único estado FORTE da grade — violeta é a cor do que
-                // está ativo no sistema (§Acentos).
-                ehHoje && 'bg-primary font-bold text-primary-foreground',
+                't-dado-meta relative grid h-[30px] place-items-center rounded-[var(--r-ctrl)]',
+                // HOJE é o único estado forte da grade — quadrado de tinta, como
+                // no mockup. É marca de POSIÇÃO, não de assunto: por isso n-900
+                // e não a cor de um dos quatro tipos.
+                ehHoje && 'font-medium',
               )}
+              style={{
+                ...(celula.deFora ? { color: 'var(--n-400)' } : { color: 'var(--n-700)' }),
+                ...(ehHoje ? { background: 'var(--n-900)', color: 'var(--n-0)' } : {}),
+              }}
               {...(ehHoje && { 'data-hoje': 'true' })}
             >
-              <span>{celula.dia}</span>
-              {/* Os pontos dizem QUANTOS e DE QUE TIPO sem abrir espaço para
-                  texto: no máximo três, porque a partir daí a fileira estoura a
-                  célula e vira borrão. O quarto compromisso continua na agenda. */}
-              <span className="flex h-1.5 items-center gap-0.5">
-                {doDia.slice(0, 3).map((evento) => (
-                  <MarcaDeTipo key={evento.id} kind={evento.kind} className="size-1.5 border" />
-                ))}
-              </span>
+              {celula.dia}
+              {/* Um ponto só, e é decisão: a célula tem 30px e o mockup marca
+                  presença, não quantidade. Três pontos de 4px numa célula de
+                  30px viram um borrão, e quem quer saber quantos abre o dia. */}
+              {doDia.length > 0 ? (
+                <MarcaDeTipo
+                  kind={(doDia[0] as AgendaEventDto).kind}
+                  className="absolute bottom-[3px] size-1 rounded-full"
+                />
+              ) : null}
             </div>
           )
         })}
@@ -149,120 +224,74 @@ function Calendario({
       {carregando ? (
         <Skeleton className="h-4 w-full" />
       ) : (
-        // `gap-2.75` (11px) e `pt-4.5` (18px): respiro do Dashboard
-        // (§@casca-global).
-        <ul className="grid grid-cols-2 gap-2.75 border-t pt-4.5">
+        <ul className="flex flex-wrap" style={{ gap: 'var(--s-2) var(--s-3)' }}>
           {TIPOS_NA_ORDEM.map((kind) => (
-            <li key={kind} className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <MarcaDeTipo kind={kind} className="size-2.5" />
+            <li
+              key={kind}
+              className="t-meta inline-flex items-center"
+              style={{ gap: 'var(--s-1)' }}
+            >
+              <MarcaDeTipo kind={kind} className="size-2 rounded-[2px]" />
               {TIPOS[kind].rotulo}
             </li>
           ))}
         </ul>
       )}
-    </Painel>
+    </DCard>
   )
 }
 
-function Agenda({ eventos, carregando }: { eventos: AgendaEventDto[]; carregando: boolean }) {
-  const doDia = eventosDoDia(eventos, diaLocalISO())
-
-  return (
-    // `flex-[1_1_330px]`: cresce e encolhe a partir de 330px, igual ao painel
-    // de pendentes — os dois dividem o espaço que sobra depois do calendário.
-    <Painel
-      titulo="Agenda de hoje"
-      modulo="compras"
-      acao={<Contador n={doDia.length} />}
-      className="min-w-0 flex-[1_1_330px]"
-    >
-      {carregando ? (
-        <div className="flex flex-col gap-2">
-          {['a1', 'a2', 'a3'].map((chave) => (
-            <Skeleton key={chave} className="h-12 w-full" />
-          ))}
-        </div>
-      ) : doDia.length === 0 ? (
-        <p className="py-6 text-center text-sm text-muted-foreground">
-          Nenhum compromisso para hoje.
-        </p>
-      ) : (
-        // `gap-3.5` entre linhas e `p-3.5` dentro de cada uma (14px): respiro
-        // do Dashboard (§@casca-global).
-        <ul className="flex flex-col gap-3.5">
-          {doDia.map((evento) => {
-            const tipo = TIPOS[evento.kind]
-            return (
-              <li
-                key={evento.id}
-                // A linha inteira passa a levar a pastel do TIPO — antes a cor do
-                // compromisso cabia só na barrinha de 6px da esquerda, e a agenda
-                // inteira se lia como uma pilha de linhas brancas iguais. A barra
-                // fica: é ela que dá a cheia /01 ao lado da pastel, e é o par que
-                // a legenda do calendário ensina.
-                {...(tipo.modulo && { 'data-modulo': tipo.modulo })}
-                className={cn(
-                  'flex items-center gap-3 rounded-card border-2 p-3.5',
-                  tipo.modulo ? 'bg-modulo' : 'bg-zone-money',
-                )}
-              >
-                <MarcaDeTipo kind={evento.kind} className="h-8 w-1.5" />
-                <span className="font-mono text-sm font-semibold tabular-nums">
-                  {horaLocal(evento.startsAt)}
-                </span>
-                <span className="min-w-0">
-                  <span className="block truncate font-semibold">{evento.title}</span>
-                  {evento.context ? (
-                    <span className="block truncate text-sm text-muted-foreground">
-                      {evento.context}
-                    </span>
-                  ) : null}
-                </span>
-              </li>
-            )
-          })}
-        </ul>
-      )}
-    </Painel>
-  )
-}
-
-function AFazer() {
+/**
+ * A fazer — checkbox, texto riscado no concluído, e o `+ Adicionar` no pé.
+ *
+ * **Sem a coluna de responsável do mockup**, e é falta de DADO, não de desenho:
+ * `TodoDto` publica `id`, `title` e `done`, e nada mais. As iniciais "HF"/"RA"
+ * do mockup viriam de um campo que o contrato não tem — inventá-las daria dado
+ * de mentira com cara de dado do servidor.
+ *
+ * `+ Adicionar tarefa` leva a `/tarefas`, que é onde a fila se TRABALHA. Um
+ * campo de digitação aqui abriria uma segunda porta de criação para a mesma
+ * lista, com metade dos campos da outra.
+ */
+function AFazer({ className }: { className?: string }) {
   const query = useTodos()
   const marcar = useMarcarTodo()
   const itens = query.data ?? []
-  const pendentes = itens.filter((item) => !item.done).length
+  const feitos = itens.filter((item) => item.done).length
 
   return (
-    // `flex-[1_1_330px]`: mesma base da Agenda — os dois se ajustam juntos.
-    <Painel
+    <DCard
       titulo="A fazer"
-      tinta="warn"
-      acao={<Contador n={pendentes} />}
-      className="min-w-0 flex-[1_1_330px]"
+      marca={<MarcaDeCard cor="var(--n-900)" />}
+      nota={query.isPending || query.isError ? undefined : `${feitos} / ${itens.length}`}
+      {...(className ? { className } : {})}
     >
       {query.isPending ? (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col" style={{ gap: 'var(--s-2)', padding: 'var(--s-4)' }}>
           {['t1', 't2', 't3'].map((chave) => (
-            <Skeleton key={chave} className="h-7 w-full" />
+            <Skeleton key={chave} className="h-6 w-full" />
           ))}
         </div>
       ) : query.isError ? (
-        <FalhaDoPainel
-          titulo="A lista não carregou"
-          erro={query.error}
-          aoTentar={() => query.refetch()}
-        />
+        <div style={{ padding: 'var(--s-4)' }}>
+          <FalhaDoPainel
+            titulo="A lista não carregou"
+            erro={query.error}
+            aoTentar={() => query.refetch()}
+          />
+        </div>
       ) : itens.length === 0 ? (
-        <p className="py-6 text-center text-sm text-muted-foreground">Nada anotado.</p>
+        <p className="t-meta text-center" style={{ padding: 'var(--s-5) var(--s-4)' }}>
+          Nada anotado.
+        </p>
       ) : (
         <ul className="flex flex-col">
           {itens.map((item) => (
-            // Divisória TRACEJADA (mockup): dentro de um painel de pendência a
-            // régua cheia lia como separador de seção. Tracejada é a mesma
-            // separação com menos voz.
-            // `py-3.5` (14px): respiro do Dashboard (§@casca-global).
-            <li key={item.id} className="border-b border-dashed py-3.5 last:border-b-0">
+            <li
+              key={item.id}
+              className="border-[var(--hairline)] border-b last:border-b-0"
+              style={{ padding: 'var(--s-2) var(--s-4)' }}
+            >
               {/* O rótulo é o próprio texto do item: clicar na frase marca, que
                   é o alvo que o dedo e o mouse procuram. */}
               <Checkbox
@@ -270,7 +299,14 @@ function AFazer() {
                 onChange={(feito) => marcar.mutate({ id: item.id, feito })}
                 isDisabled={marcar.isPending}
               >
-                <span className={cn(item.done && 'text-muted-foreground line-through')}>
+                <span
+                  className="t-corpo"
+                  style={
+                    item.done
+                      ? { color: 'var(--n-500)', textDecoration: 'line-through' }
+                      : undefined
+                  }
+                >
                   {item.title}
                 </span>
               </Checkbox>
@@ -278,7 +314,23 @@ function AFazer() {
           ))}
         </ul>
       )}
-    </Painel>
+
+      {/* Fronteira TRACEJADA, como no mockup: o pé não é um item da lista, é a
+          porta de saída dela — e o tracejado é a mesma separação com menos voz.
+          `--primary-text` é o único texto com acento que a régua libera (link,
+          id); chartreuse cheia em texto está proibida. */}
+      <Link
+        to="/tarefas"
+        className="t-ui mt-auto block no-underline"
+        style={{
+          padding: 'var(--s-2) var(--s-4)',
+          borderTop: '1px dashed var(--n-300)',
+          color: 'var(--primary-text)',
+        }}
+      >
+        + Adicionar tarefa
+      </Link>
+    </DCard>
   )
 }
 
@@ -302,17 +354,32 @@ export function LinhaDeHoje() {
   }
 
   return (
-    // `flex flex-wrap`, nunca `@media` (§@casca-global — regra de quebra):
-    // os três painéis espremem primeiro, dentro dos limites de `flex-basis` de
-    // cada um, e só quebram pra baixo quando nem espremendo cabem mais — o que
-    // acontece antes com a gaveta de notificações aberta do que sem ela, e o
-    // grid de breakpoint fixo (`lg:`) não sabia disso.
-    // `gap-5.5` (22px): respiro do Dashboard (§@casca-global) — o mesmo salto
-    // que a fileira de KPIs recebeu.
-    <div className="flex flex-wrap gap-5.5">
-      <Calendario mes={mes} aoTrocarMes={setMes} eventos={eventos} carregando={agenda.isPending} />
-      <Agenda eventos={eventos} carregando={agenda.isPending} />
-      <AFazer />
+    // `1.2fr 1fr 1fr` é o mockup — e sai de `flex-wrap` com `flex-basis`, não de
+    // `grid-template-columns`, porque a quebra não pode vir de `@media`
+    // (proibição 7 da rodada) e `auto-fit` só sabe fazer colunas IGUAIS. Com
+    // flex, as três dividem 1,2 : 1 : 1 enquanto couberem na linha e quebram
+    // sozinhas quando não couberem — o que acontece antes com a sidebar aberta
+    // do que com ela recolhida, e é justamente o que um breakpoint fixo não sabe.
+    //
+    // Fronteira entre colunas = espaço `--s-4` (16), sem linha nenhuma.
+    <div
+      data-slot="grade-do-dashboard"
+      className="flex flex-wrap items-start"
+      style={{ gap: 'var(--s-4)' }}
+    >
+      <AgendaEAtividade
+        eventos={eventos}
+        carregando={agenda.isPending}
+        className="flex-[1.2_1_340px]"
+      />
+      <AFazer className="flex-[1_1_260px]" />
+      <Calendario
+        mes={mes}
+        aoTrocarMes={setMes}
+        eventos={eventos}
+        carregando={agenda.isPending}
+        className="flex-[1_1_260px]"
+      />
     </div>
   )
 }

@@ -85,6 +85,9 @@ export function ligarTransicaoDeRota(router: AnyRouter, doc: Document = document
     // começar outra descartaria a foto que já está na tela.
     if (liberar !== null) return
     if (doc.readyState !== 'complete') return
+    // Aba oculta (ou captura de tela via CDP): o navegador aborta a transição
+    // com InvalidStateError e a foto fica presa até o teto. Não vale começar.
+    if (doc.visibilityState === 'hidden') return
     if (doc.defaultView?.matchMedia('(prefers-reduced-motion: reduce)').matches === true) return
 
     marcarTitulo(doc)
@@ -92,10 +95,19 @@ export function ligarTransicaoDeRota(router: AnyRouter, doc: Document = document
       liberar = resolve
     })
     expiracao = setTimeout(encerrar, TETO_MS)
-    void doc
-      .startViewTransition(() => espera)
-      .finished.catch(() => {})
-      .finally(() => desmarcarTitulos(doc))
+    let transicao: ViewTransition
+    try {
+      transicao = doc.startViewTransition(() => espera)
+    } catch {
+      // Sem transição possível agora (estado inválido): navega sem foto.
+      encerrar()
+      desmarcarTitulos(doc)
+      return
+    }
+    // `ready` rejeita quando o navegador aborta (aba oculta, outra transição,
+    // captura) — sem o catch vira exceção não tratada no console.
+    void transicao.ready?.catch?.(() => {})
+    void transicao.finished.catch(() => {}).finally(() => desmarcarTitulos(doc))
   })
 
   // O título novo é outro nó (a folha remonta por `key`), então ele precisa ser

@@ -781,7 +781,9 @@ main.bg-paper-grid > * {
   transition: transform var(--dur-1, 120ms) var(--ease, ease), box-shadow var(--dur-1, 120ms)
     var(--ease, ease), border-color var(--dur-1, 120ms) var(--ease, ease);
 }
-/* cards quietos: relevo de repouso mais fundo (n-300 3px + ambiente) e hover que levanta */
+/* `!important`: o DCard (dcard/painel) declara borda e sombra por style inline —
+   sem isso a camada não chegava nele (medido 2026-09-04).
+   cards quietos: relevo de repouso mais fundo (n-300 3px + ambiente) e hover que levanta */
 :where(
     [data-slot="dcard"],
     [data-slot="painel"],
@@ -789,8 +791,9 @@ main.bg-paper-grid > * {
     [data-slot="form-block"],
     [data-slot="carga-por-responsavel"]
   ) {
+  border-color: var(--n-400) !important;
   box-shadow: 3px 3px 0 0 var(--n-300), 0 12px 24px -16px
-    color-mix(in oklab, var(--n-900) 45%, transparent);
+    color-mix(in oklab, var(--n-900) 45%, transparent) !important;
 }
 :where(
     [data-slot="dcard"],
@@ -800,9 +803,9 @@ main.bg-paper-grid > * {
     [data-slot="carga-por-responsavel"]
   ):hover {
   transform: translate(-1px, -1px);
-  border-color: var(--n-900);
+  border-color: var(--n-900) !important;
   box-shadow: 4px 4px 0 0 var(--n-300), 0 16px 28px -16px
-    color-mix(in oklab, var(--n-900) 55%, transparent);
+    color-mix(in oklab, var(--n-900) 55%, transparent) !important;
 }
 /* KPI: já tem hard-1 + ambiente; o hover sobe um degrau */
 [data-slot="kpi-tile"]:hover {
@@ -972,7 +975,8 @@ tr:hover [data-slot="monograma"] {
 }
 
 /* --- card do painel (dashboard) e seção do documento: faixa de título --- */
-:is([data-slot="dcard"], [data-slot="secao"]) > [data-slot="dcard-cabecalho"] {
+/* o DCard troca o próprio slot (painel, secao, dcard) — o cabeçalho é o gancho estável */
+[data-slot="dcard-cabecalho"] {
   min-height: 40px;
   background: color-mix(in oklab, var(--cc, var(--n-900)) 7%, var(--n-0));
   border-bottom: 1px solid color-mix(in oklab, var(--cc, var(--n-900)) 22%, transparent);
@@ -1097,11 +1101,11 @@ tr:hover [data-slot="monograma"] {
 }
 /* dentro da pasta, o bloco de formulário é a segunda caixa (teto: 2) — sem relevo próprio */
 [data-slot="tabs-content"] [data-slot="form-block"] {
-  box-shadow: none;
+  box-shadow: none !important;
 }
 [data-slot="tabs-content"] [data-slot="form-block"]:hover {
   transform: none;
-  box-shadow: none;
+  box-shadow: none !important;
 }
 
 /* --- aviso de cobertura (dados de exemplo): faixa lateral no matiz, não bloco chapado --- */

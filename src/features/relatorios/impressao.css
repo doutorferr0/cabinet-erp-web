@@ -1,0 +1,88 @@
+/*
+  CSS DE IMPRESSÃO DOS RELATÓRIOS — o "PDF" do botão Exportar.
+
+  Não há gerador de PDF no cliente e não deve haver: o navegador já tem um,
+  "Salvar como PDF" é o destino padrão do diálogo em toda plataforma, e ele
+  respeita a fonte e o zoom que o operador escolheu.
+
+  ## Por que ISOLAR por visibilidade, e não esconder o shell
+
+  Esconder sidebar, appbar e barra de rodapé exigiria seletor em cada um deles —
+  arquivos fora da zona desta issue. A técnica abaixo faz o contrário: apaga a
+  página inteira e reacende só a subárvore marcada com `data-impressao`, que é da
+  moldura. Nenhum arquivo fora de `src/features/relatorios/` precisou mudar, e
+  um shell novo amanhã não quebra a impressão.
+
+  `visibility` (e não `display: none`) porque `display: none` no ancestral
+  apagaria o descendente junto — não há como reacender filho de pai desligado.
+
+  ## O que sai do papel
+
+  Filtro, paginação e os próprios botões de exportar (`data-fora-da-impressao`).
+  Todos são controles: no papel viram tinta que não faz nada. O RECORTE em vigor
+  continua legível porque a moldura o escreve por extenso no contexto do
+  cabeçalho e no rótulo da grade — quem lê a folha precisa saber de que depósito
+  e de que instante ela é.
+
+  A marca `data-imprimindo` no `body` é posta e retirada por `imprimirRelatorio`
+  (`exportar.ts`). Sem ela nada aqui vale — inclusive quando o operador manda
+  imprimir pelo Ctrl+P do navegador, e aí a folha sai com a tela inteira, que é
+  o comportamento que ele pediu.
+*/
+
+@media print {
+  body[data-imprimindo="relatorio"] * {
+    visibility: hidden;
+  }
+
+  body[data-imprimindo="relatorio"] [data-impressao="relatorio"],
+  body[data-imprimindo="relatorio"] [data-impressao="relatorio"] * {
+    visibility: visible;
+  }
+
+  body[data-imprimindo="relatorio"] [data-impressao="relatorio"] {
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+  }
+
+  /* Controle não vira tinta. */
+  body[data-imprimindo="relatorio"] [data-fora-da-impressao] {
+    display: none !important;
+  }
+
+  /*
+    O cabeçalho da tabela se repete em toda folha, e nenhuma linha é partida ao
+    meio. Sem as duas, um relatório de três páginas tem duas sem cabeçalho e uma
+    linha cortada na dobra — que é o defeito mais comum de relatório impresso.
+  */
+  body[data-imprimindo="relatorio"] thead {
+    display: table-header-group;
+  }
+
+  body[data-imprimindo="relatorio"] tr,
+  body[data-imprimindo="relatorio"] [data-grupo-do-relatorio] {
+    break-inside: avoid;
+  }
+
+  /*
+    A barra de quebra do grupo não pode ser a última coisa da folha: título de
+    grupo sozinho no pé da página manda o leitor virar para descobrir do que ele
+    é. `break-after: avoid` cola o grupo às suas primeiras linhas.
+  */
+  body[data-imprimindo="relatorio"] [data-grupo-do-relatorio] {
+    break-after: avoid;
+  }
+
+  /*
+    Papel é branco, e sombra e borda de 2px viram borrão de tinta. A hairline
+    fica: é ela que separa uma linha da outra, e sem ela a grade some.
+  */
+  body[data-imprimindo="relatorio"] [data-impressao="relatorio"] * {
+    box-shadow: none !important;
+  }
+
+  @page {
+    margin: 12mm;
+  }
+}

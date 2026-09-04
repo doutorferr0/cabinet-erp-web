@@ -205,7 +205,10 @@ describe('estoque valorizado', () => {
     // Zero aqui somaria à conta de cabeça de quem lê a coluna: o item não vale
     // zero, vale desconhecido.
     expect(within(itens).getByText('sem preço')).toBeInTheDocument()
-    expect(screen.getByText('Sem preço')).toBeInTheDocument()
+    // A contagem NÃO é um KPI próprio: a faixa tem quatro casas e o que ela
+    // qualifica é o valor total, então ela vive na dica dele. Um quinto tile
+    // custaria uma casa da faixa para dizer o que o primeiro já precisa dizer.
+    expect(screen.getByText('1 item ficou de fora por não ter preço.')).toBeInTheDocument()
   })
 
   it('carimba o instante da foto — o das 9h não é o das 18h', async () => {
@@ -314,8 +317,13 @@ describe('orçado × estoque', () => {
     renderRoute('/estoque/relatorios/orcado-x-estoque', falso.fetch)
 
     const itens = await tabela()
-    await within(itens).findByText(/PENDENTE VIDRO FUMÊ/)
-    expect(within(itens).getByText('8')).toBeInTheDocument()
+    // A LINHA, e não a tabela: desde a 2.0 o `8` da falta aparece três vezes na
+    // grade — na linha, na barra do grupo e no rodapé de somas. Asserir na
+    // tabela inteira casaria com qualquer um dos três.
+    const linha = (await within(itens).findByText(/PENDENTE VIDRO FUMÊ/)).closest(
+      'tr',
+    ) as HTMLElement
+    expect(within(linha).getByText('8')).toBeInTheDocument()
     // Sem recorte, a falta é da empresa — e aí é compra, não transferência.
     expect(screen.getByText(/é a lista de compras/)).toBeInTheDocument()
   })
@@ -330,5 +338,251 @@ describe('orçado × estoque', () => {
     // A mesma coluna responde outra pergunta, e a tela diz qual: o orçamento
     // promete a peça, não o depósito de onde ela sai.
     await screen.findByText(/pode ser transferência, não compra/)
+  })
+})
+
+/**
+ * A LISTAGEM 2.0 (web#493 · D25) — KPIs, quebra, decoração, somas e exportar.
+ *
+ * O que cada caso trava:
+ *
+ * 1. **Os KPIs continuam sendo do RECORTE.** A faixa saiu do painel "Resumo" e
+ *    virou faixa da página; o que não mudou é a ORIGEM dos números, e um KPI
+ *    somado das linhas visíveis é o defeito que a #352 já evitava.
+ * 2. **Agrupar sobe `pageSize` ao teto do contrato.** A quebra é do cliente — o
+ *    servidor não publica `groupBy` —, e uma quebra montada sobre 50 de 400
+ *    linhas mostra três faixas onde há cinco.
+ * 3. **O corte é DITO.** Recorte maior que o carregado põe a frase na tela antes
+ *    de o operador clicar em Exportar; sem ela, um CSV de 100 linhas de um
+ *    recorte de 400 sai com cara de relatório completo.
+ * 4. **O CSV leva o que está à vista.** Mesmas colunas, mesmos números — e a
+ *    célula decorada sai como TEXTO, não como `[object Object]`.
+ */
+
+const PARADO_EM_FAIXAS: StockAgingReportDto = {
+  asOf: '2026-08-25T15:00:00.000Z',
+  page: 1,
+  pageSize: 100,
+  total: 3,
+  summary: { itemCount: 3, neverSoldCount: 1, valueCents: 5_000_000 },
+  rows: [
+    {
+      variantId: 'var-1',
+      description: 'PENDENTE VIDRO FUMÊ 30CM · PRETO FOSCO',
+      productGroup: 'PENDENTE',
+      quantity: '12.000',
+      valueCents: 2_278_800,
+      lastSaleAt: '2026-06-01',
+      daysWithoutSale: 85,
+      daysInStock: 300,
+    },
+    {
+      variantId: 'var-2',
+      description: 'ARANDELA TUBULAR · DOURADO',
+      productGroup: 'ARANDELA',
+      quantity: '4.000',
+      valueCents: 1_000_000,
+      lastSaleAt: '2024-01-10',
+      daysWithoutSale: 600,
+      daysInStock: 900,
+    },
+    {
+      variantId: 'var-3',
+      description: 'TRILHO ELETRIFICADO 1M · BRANCO',
+      productGroup: 'TRILHO',
+      quantity: '2.000',
+      valueCents: null,
+      daysInStock: 40,
+    },
+  ],
+}
+
+/** O mesmo recorte, mas com o teto cortando: 3 linhas de 400. */
+const PARADO_CORTADO: StockAgingReportDto = { ...PARADO_EM_FAIXAS, total: 400 }
+
+/**
+ * Lê um Blob como texto — por `FileReader`, e não por `blob.text()`.
+ *
+ * O `Blob` do jsdom não implementa `text()`: a chamada morre com
+ * `blob.text is not a function`, e o caso do CSV reprovava por isso ANTES de
+ * chegar a olhar uma vírgula do arquivo. `FileReader.readAsText` é a API que o
+ * jsdom implementa, decodifica UTF-8 como o navegador e devolve o BOM intacto,
+ * que é justamente o byte que este teste precisa ver.
+ */
+function lerBlob(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const leitor = new FileReader()
+    leitor.onload = () => resolve(String(leitor.result))
+    leitor.onerror = () => reject(leitor.error ?? new Error('não deu para ler o arquivo'))
+    leitor.readAsText(blob)
+  })
+}
+
+/**
+ * Captura o CSV que o botão manda o navegador baixar.
+ *
+ * `createObjectURL` não existe no jsdom e o `click` de uma âncora com `download`
+ * tentaria navegar — os dois viram espião. O que sobra é o Blob, que é onde o
+ * arquivo de verdade está.
+ */
+function capturarDownload() {
+  const blobs: Blob[] = []
+  Object.defineProperty(URL, 'createObjectURL', {
+    configurable: true,
+    value: (blob: Blob) => {
+      blobs.push(blob)
+      return 'blob:teste'
+    },
+  })
+  Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: () => {} })
+  const clique = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+  return {
+    clique,
+    async texto() {
+      const blob = blobs.at(-1)
+      if (!blob) throw new Error('nenhum arquivo foi baixado')
+      // O BOM que o Excel pt-BR precisa entra no arquivo e sai da asserção.
+      return (await lerBlob(blob)).replace(/^﻿/, '')
+    },
+  }
+}
+
+describe('relatório 2.0 — KPIs, quebra, decoração e exportar', () => {
+  it('o KPI derivado sai do SUMMARY, e não da soma das linhas à vista', async () => {
+    const falso = servidor('/api/reports/stock-valuation', comEco(VALORIZADO))
+    renderRoute('/estoque/relatorios/valorizado', falso.fetch)
+
+    // 91.500,00 / 2 itens do recorte. Somar as duas linhas da página daria
+    // 22.788,00 / 2 = 11.394,00 — o valor médio dos cinquenta primeiros com
+    // cara de valor médio do relatório.
+    await screen.findByText('Valor médio por item')
+    expect(screen.getByText('R$ 45.750,00')).toBeInTheDocument()
+  })
+
+  it('estoque parado nasce quebrado por FAIXA, e cada faixa conta os seus', async () => {
+    const falso = servidor('/api/reports/stock-aging', comEco(PARADO_EM_FAIXAS))
+    renderRoute('/estoque/relatorios/parado', falso.fetch)
+
+    const itens = await tabela()
+    await within(itens).findByText(/PENDENTE VIDRO FUMÊ/)
+
+    // As três faixas que estes dados têm — e "Nunca vendeu" é faixa própria, não
+    // a ponta de cima da régua de dias.
+    expect(within(itens).getByText('Até 90 dias')).toBeInTheDocument()
+    expect(within(itens).getByText('Mais de 365 dias')).toBeInTheDocument()
+    expect(within(itens).getByText('Nunca vendeu')).toBeInTheDocument()
+    expect(within(itens).getAllByText('1 item')).toHaveLength(3)
+  })
+
+  it('agrupar pede o TETO do contrato — quebra sobre uma página é quebra falsa', async () => {
+    const falso = servidor('/api/reports/stock-aging', comEco(PARADO_EM_FAIXAS))
+    renderRoute('/estoque/relatorios/parado', falso.fetch)
+    await screen.findByText(/PENDENTE VIDRO FUMÊ/)
+
+    expect(primeiraQuery(falso, '/api/reports/stock-aging').get('pageSize')).toBe('100')
+  })
+
+  it('desligar a quebra devolve a paginação normal', async () => {
+    const falso = servidor('/api/reports/stock-aging', comEco(PARADO_EM_FAIXAS))
+    const { user } = renderRoute('/estoque/relatorios/parado', falso.fetch)
+    await screen.findByText(/PENDENTE VIDRO FUMÊ/)
+
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Agrupar por' }), '')
+
+    expect(ultimaQuery(falso, '/api/reports/stock-aging').get('pageSize')).toBe('50')
+    const itens = await tabela()
+    expect(within(itens).queryByText('Até 90 dias')).toBeNull()
+  })
+
+  it('o rodapé soma o que está carregado, e o topo segue sendo do recorte', async () => {
+    const falso = servidor('/api/reports/stock-aging', comEco(PARADO_EM_FAIXAS))
+    renderRoute('/estoque/relatorios/parado', falso.fetch)
+
+    const itens = await tabela()
+    await within(itens).findByText('Total desta página')
+    // 22.788,00 + 10.000,00 — a terceira linha não tem preço e não entra.
+    expect(within(itens).getByText('R$ 32.788,00')).toBeInTheDocument()
+    // E o KPI continua dizendo o número do recorte inteiro.
+    expect(screen.getByText('R$ 50.000,00')).toBeInTheDocument()
+  })
+
+  it('quando o teto corta, a tela DIZ antes de alguém exportar', async () => {
+    const falso = servidor('/api/reports/stock-aging', comEco(PARADO_CORTADO))
+    renderRoute('/estoque/relatorios/parado', falso.fetch)
+
+    await screen.findByText(/cobrem as/)
+    expect(screen.getByText(/linhas carregadas/)).toBeInTheDocument()
+  })
+
+  it('recorte que cabe inteiro não mostra aviso de corte', async () => {
+    const falso = servidor('/api/reports/stock-aging', comEco(PARADO_EM_FAIXAS))
+    renderRoute('/estoque/relatorios/parado', falso.fetch)
+    await screen.findByText(/PENDENTE VIDRO FUMÊ/)
+
+    expect(screen.queryByText(/linhas carregadas/)).toBeNull()
+  })
+
+  it('Exportar CSV baixa as mesmas colunas e os mesmos números da grade', async () => {
+    const download = capturarDownload()
+    const falso = servidor('/api/reports/stock-valuation', comEco(VALORIZADO))
+    const { user } = renderRoute('/estoque/relatorios/valorizado', falso.fetch)
+    await screen.findByText(/PENDENTE VIDRO FUMÊ/)
+
+    await user.click(screen.getByRole('button', { name: /Exportar CSV/ }))
+
+    const csv = await download.texto()
+    const linhas = csv.split('\r\n')
+    expect(linhas[0]).toBe('Descrição;Tipo;Saldo;Mínimo;Preço;Valor;Abaixo do mínimo')
+    expect(linhas[1]).toContain('PENDENTE VIDRO FUMÊ 30CM · PRETO FOSCO;PENDENTE;12;2;')
+    // A célula decorada sai como TEXTO: `sim`, e não `[object Object]`.
+    expect(linhas[2]?.endsWith(';sim')).toBe(true)
+    expect(csv).not.toContain('[object Object]')
+
+    download.clique.mockRestore()
+  })
+
+  it('PDF chama a impressão do navegador — não há gerador no cliente', async () => {
+    const print = vi.fn()
+    vi.stubGlobal('print', print)
+    const falso = servidor('/api/reports/stock-valuation', comEco(VALORIZADO))
+    const { user } = renderRoute('/estoque/relatorios/valorizado', falso.fetch)
+    await screen.findByText(/PENDENTE VIDRO FUMÊ/)
+
+    await user.click(screen.getByRole('button', { name: 'PDF' }))
+
+    expect(print).toHaveBeenCalledOnce()
+  })
+
+  it('sem linha nenhuma, exportar fica desligado — arquivo vazio não é relatório', async () => {
+    const vazio: StockValuationReportDto = { ...VALORIZADO, total: 0, rows: [] }
+    const falso = servidor('/api/reports/stock-valuation', comEco(vazio))
+    renderRoute('/estoque/relatorios/valorizado', falso.fetch)
+
+    await screen.findByText(/Nenhum item no recorte/)
+    expect(screen.getByRole('button', { name: /Exportar CSV/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'PDF' })).toBeDisabled()
+  })
+
+  it('a coluna da falta muda de nome com o recorte — comprar não é transferir', async () => {
+    const falso = servidor('/api/reports/quote-vs-stock', comEco(ORCADO))
+    const { user } = renderRoute('/estoque/relatorios/orcado-x-estoque', falso.fetch)
+    await screen.findByText(/PENDENTE VIDRO FUMÊ/)
+
+    // Sem recorte, a falta é da empresa: é lista de compras.
+    expect(screen.getByRole('button', { name: 'Ordenar por A comprar' })).toBeInTheDocument()
+
+    await user.selectOptions(await screen.findByRole('combobox', { name: /depósito/i }), 'dep-2')
+
+    // Com o recorte confirmado, o que falta aqui pode estar sobrando lá.
+    await screen.findByRole('button', { name: 'Ordenar por Falta aqui' })
+  })
+
+  it('cobertura sai dos dois números do summary, e 0% não é verde', async () => {
+    const falso = servidor('/api/reports/quote-vs-stock', comEco(ORCADO))
+    renderRoute('/estoque/relatorios/orcado-x-estoque', falso.fetch)
+
+    await screen.findByText('Cobertura')
+    // 1 orçado, 1 faltando: nenhum atendido.
+    expect(screen.getByText('0%')).toBeInTheDocument()
   })
 })

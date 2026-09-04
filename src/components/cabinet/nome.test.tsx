@@ -12,7 +12,7 @@ describe('Nome', () => {
     const nome = container.querySelector('[data-slot="nome"]')
     expect(nome).toHaveTextContent('Construtora Almeida Ltda')
     expect(nome).toHaveClass('font-nome')
-    expect(nome).toHaveClass('text-[1.15em]')
+    expect(nome).toHaveClass('text-[1.1em]')
   })
 
   it('só o peso forte engrossa — coluna inteira em 700 não destaca nada', () => {
@@ -31,8 +31,10 @@ describe('Produto', () => {
     const { container } = renderWithQuery(<Produto>Pendente Bordeaux</Produto>)
 
     const produto = container.querySelector('[data-slot="produto"]')
-    expect(produto).toHaveClass('font-display')
-    expect(produto).toHaveClass('text-muted-foreground')
+    // O QUÊ: Inter 500, tinta cheia — é a coluna que se lê primeiro (2026-09-04).
+    expect(produto).toHaveClass('font-sans')
+    expect(produto).toHaveClass('font-medium')
+    expect(produto).toHaveClass('text-foreground')
   })
 
   it('a classe de quem chama vence, para onde o produto é o assunto', () => {

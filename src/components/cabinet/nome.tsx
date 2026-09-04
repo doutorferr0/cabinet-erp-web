@@ -44,7 +44,7 @@ export interface NomeProps {
 }
 
 /** +2px a 14px. Em `em` para acompanhar o vizinho em qualquer contexto. */
-const DEGRAU = 'text-[1.15em]'
+const DEGRAU = 'text-[1.1em] font-medium'
 
 /**
  * A voz de QUEM como CLASSE — a única exceção à regra "componente, nunca
@@ -89,7 +89,13 @@ export function Produto({
   className,
 }: { children: React.ReactNode; className?: string }) {
   return (
-    <span data-slot="produto" className={cn('font-display text-muted-foreground', className)}>
+    // O QUÊ (produto, serviço) é DADO em Inter 500, tinta cheia: é a coluna que o
+    // operador lê primeiro. Descrição vem em caixa alta do legado — tracking leve
+    // para as maiúsculas respirarem; nunca display, nunca apagado.
+    <span
+      data-slot="produto"
+      className={cn('font-sans font-medium tracking-[0.01em] text-foreground', className)}
+    >
       {children}
     </span>
   )

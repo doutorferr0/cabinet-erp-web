@@ -109,9 +109,7 @@ export function PerderOportunidadeDialog({
         {/* O título do negócio, e não só "esta oportunidade": o diálogo pode ter
             vindo da barra, onde a linha selecionada some de vista ao abrir. */}
         <p className="text-sm text-muted-foreground">
-          <span className="font-display font-semibold text-foreground">
-            {oportunidade?.name ?? ''}
-          </span>{' '}
+          <span className="font-nome font-medium text-foreground">{oportunidade?.name ?? ''}</span>{' '}
           sai de <span className="text-foreground">{oportunidade?.stageName ?? ''}</span>.
         </p>
 

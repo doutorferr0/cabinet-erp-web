@@ -176,6 +176,7 @@ describe('cabeçalho de página em toda rota', () => {
       'features/login/pagina-de-auth.tsx',
       'features/planner/planner.tsx',
       'features/tarefas/tarefas.tsx',
+      'features/login/pagina-de-auth.tsx',
     ])
     const soltos = [...arquivosDe(join(SRC, 'routes')), ...arquivosDe(join(SRC, 'features'))]
       .filter((arquivo) => /<h1[\s>]/.test(readFileSync(arquivo, 'utf-8')))

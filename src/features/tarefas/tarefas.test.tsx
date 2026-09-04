@@ -1,6 +1,6 @@
 import type { TaskDto } from '@/api/gerado'
 import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 function tarefa(over: Partial<TaskDto> = {}): TaskDto {
@@ -239,8 +239,15 @@ describe('tela Tarefas', () => {
     // O valor sai por `output` com o rótulo como nome acessível: é o que
     // permite afirmar sobre o NÚMERO do tile, e não sobre um "1" qualquer da
     // tela (a contagem da coluna também é 1).
-    expect(within(faixa).getByLabelText('Concluídas')).toHaveTextContent('1')
-    expect(within(faixa).getByLabelText('Em aberto')).toHaveTextContent('2')
+    //
+    // `waitFor` porque o `KpiTile` CONTA até o valor (D34, 600ms): na primeira
+    // montagem ele mostra 0 e sobe. Sem a espera o caso lia o zero do começo da
+    // animação e reprovava dizendo "esperava 1, recebeu 0" — o que parece erro
+    // de apuração e é tempo. É o mesmo padrão do teste da própria peça (D37).
+    await waitFor(() => {
+      expect(within(faixa).getByLabelText('Concluídas')).toHaveTextContent('1')
+      expect(within(faixa).getByLabelText('Em aberto')).toHaveTextContent('2')
+    })
     expect(within(faixa).getByText('1 em revisão')).toBeInTheDocument()
   })
 
@@ -260,7 +267,8 @@ describe('tela Tarefas', () => {
     const faixa = (await screen.findByText('Atrasadas')).closest(
       '[data-slot="faixa-de-kpi"]',
     ) as HTMLElement
-    expect(within(faixa).getByLabelText('Atrasadas')).toHaveTextContent('1')
+    // `waitFor` pela contagem do tile (D34) — ver o caso acima.
+    await waitFor(() => expect(within(faixa).getByLabelText('Atrasadas')).toHaveTextContent('1'))
     expect(within(faixa).getByText(/Cotação trilhos/)).toBeInTheDocument()
 
     // E o cartão diz o mesmo, na tira de meta: a palavra junto da cor.

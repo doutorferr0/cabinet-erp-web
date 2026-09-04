@@ -214,6 +214,30 @@ describe('hub de módulo', () => {
     expect(await screen.findByText('concluídas · na empresa')).toBeInTheDocument()
   })
 
+  /**
+   * VEIO DO `dashboard.test.tsx` na D37: o feed era do dashboard, a D20 o tirou
+   * de lá na reescrita pelo mockup e o hub ficou sendo o único lugar que o
+   * monta. O caso desceu junto com ele — cobertura que fica órfã da tela vira
+   * caso desligado, e caso desligado não é guarda de nada.
+   */
+  it('o feed mostra quem, o quê e a hora; e só linka o que tem ficha', async () => {
+    renderRoute('/compras', fetchStub)
+    await screen.findByRole('heading', { level: 1, name: 'Compras' })
+
+    // O texto da linha é `<primeiro nome> <título>`: quem fez vem antes do que
+    // foi feito, que é a ordem em que a frase se lê.
+    const linha = await screen.findByText(/Enviar a proposta revisada/)
+    expect(linha).toHaveTextContent('Lívia')
+    // `doneAt` é instante do servidor — a lista é de concluídas, então a hora
+    // existe em toda linha.
+    expect(
+      within(linha.closest('[data-slot="feed-linha"]') as HTMLElement).getByText(/\d{2}:\d{2}/),
+    ).toBeInTheDocument()
+
+    // `quote` tem ficha: a linha inteira é o link.
+    expect(linha.closest('a')).toHaveAttribute('href', '/vendas/orcamentos/orc-1')
+  })
+
   it('a grade nunca tem menos de DUAS colunas — senão o `span 2` estoura a caixa', async () => {
     // `min(100%, 15rem)` daria uma coluna na janela estreita, e aí o herói e o
     // card de atividade criariam uma segunda coluna IMPLÍCITA, passando da

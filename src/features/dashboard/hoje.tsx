@@ -195,6 +195,13 @@ function Agenda({ eventos, carregando }: { eventos: AgendaEventDto[]; carregando
             return (
               <li
                 key={evento.id}
+                // O slot nomeia a LINHA da agenda, e ele é consultado de fora:
+                // `orçamento` também é rótulo da legenda do calendário, então
+                // afirmar sobre a tag do tipo exige entrar na linha. A reescrita
+                // da D20/D34 trocou a marcação e o nome se perdeu no caminho —
+                // quem consultava passou a receber `null`, que em `closest` é
+                // silêncio (D37).
+                data-slot="agenda-linha"
                 // A linha inteira passa a levar a pastel do TIPO — antes a cor do
                 // compromisso cabia só na barrinha de 6px da esquerda, e a agenda
                 // inteira se lia como uma pilha de linhas brancas iguais. A barra
@@ -218,6 +225,14 @@ function Agenda({ eventos, carregando }: { eventos: AgendaEventDto[]; carregando
                     </span>
                   ) : null}
                 </span>
+                {/* A PALAVRA do tipo, ao lado da cor. `MarcaDeTipo` é
+                    `aria-hidden` — é barra de cor pura —, e a reescrita da
+                    D20/D34 deixou a linha distinguindo `entrega` de `orçamento`
+                    SÓ por matiz. Isso reprova WCAG 1.4.1 e some inteiro para
+                    quem não separa as duas pastéis; a legenda do calendário
+                    nomeia as cores, mas ela está noutro card. Restaurada na D37
+                    (é o que o teste da agenda sempre cobrou). */}
+                <span className="t-dado-meta ml-auto shrink-0">{tipo.rotulo}</span>
               </li>
             )
           })}

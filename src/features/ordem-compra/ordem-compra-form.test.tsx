@@ -128,10 +128,16 @@ describe('ordem de compra na tela', () => {
     await abrirOrdem(servidor())
 
     // As duas na tela: é a comparação entre elas que mede o fornecedor.
-    expect(screen.getByLabelText('Data reagendada')).toHaveTextContent('02/10/2026')
-    expect(screen.getByLabelText('Data reagendada')).toHaveTextContent(
-      'FORNECEDOR EM FÉRIAS COLETIVAS',
-    )
+    //
+    // Reface 2.0 (D18): a reprometida deixou de ser um campo de leitura na
+    // Identificação e virou a ETAPA da timeline, que é onde ela responde a
+    // pergunta certa — não "qual é a data", mas "onde este documento parou".
+    // O motivo viaja junto com ela; sem isso a data nova aparece como se
+    // sempre tivesse sido aquela.
+    const chegada = screen.getByText('Chegada reprometida').closest('li')
+    expect(chegada).toHaveTextContent('02/10/2026')
+    expect(chegada).toHaveTextContent('FORNECEDOR EM FÉRIAS COLETIVAS')
+    // A promessa ORIGINAL continua no campo do documento, editável.
     expect(screen.getByLabelText('Data Prevista')).toHaveValue('2026-09-03')
   })
 

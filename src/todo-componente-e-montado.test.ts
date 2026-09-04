@@ -83,6 +83,14 @@ const DIVIDAS: Record<string, string> = {
   // decisão de identidade visual, com a issue dela ainda aberta.
   'components/cabinet/stipple.tsx':
     'órfão desde o hub de módulo (D26): `/vendas/` era o único consumidor e o estado vazio dele morreu; quem decide religar ou apagar é D28 (ornamento/stipple/marca)',
+  // INTEGRAÇÃO 2.0 (Cowork, 2026-09-03) — órfãos nascidos do merge de 30 PRs
+  // paralelas; quem religa ou apaga é a D37 (#532), passada de consistência.
+  'components/cabinet/ficha/ficha-de-cadastro.tsx':
+    'D16 escreveu a ficha genérica; D19 montou as 9 fichas sobre ficha-de-registro — D37 decide qual fica',
+  'components/cabinet/regiao-de-avisos.tsx':
+    'D5 desenhou a faixa de avisos; o shell da D4 não a monta — D37 liga no shell',
+  'components/cabinet/selo.tsx':
+    'D3 manteve Selo como alias do Badge; os consumidores migraram para Badge — D37 apaga',
 }
 
 function arquivosDe(dir: string): string[] {

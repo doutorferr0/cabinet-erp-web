@@ -277,17 +277,66 @@ describe('lançamento manual de estoque', () => {
   )
 
   it(
-    'sem variante escolhida os três botões estão desabilitados, e a tela diz por quê',
+    'sem peça o segmented ABRE a gaveta, e quem recusa é o Lançar — dizendo por quê',
     async () => {
+      // A inversão do desenho 2.0. Antes os três botões nasciam desabilitados e
+      // a frase morava ao lado deles: o operador chegava para lançar e a
+      // primeira coisa que a tela mostrava era o que ele não podia fazer. Agora
+      // o clique sempre abre; a recusa desceu para o rodapé da gaveta, junto do
+      // campo que a resolve. O que NÃO mudou é que o desabilitado continua
+      // falando — botão mudo é o que faz o operador concluir que a tela quebrou.
       const falso = servidor()
-      renderRoute('/estoque/movimentacao', falso.fetch)
+      const { user } = renderRoute('/estoque/movimentacao', falso.fetch)
 
-      expect(await screen.findByRole('button', { name: 'Entrada' })).toBeDisabled()
-      expect(screen.getByRole('button', { name: 'Saída' })).toBeDisabled()
-      expect(screen.getByRole('button', { name: 'Ajuste' })).toBeDisabled()
-      // Botão desabilitado e mudo é o que faz o operador concluir que a tela
-      // está quebrada.
-      expect(screen.getByText('Escolha a variante para lançar movimento.')).toBeInTheDocument()
+      const entrada = await screen.findByRole('button', { name: 'Entrada' })
+      expect(entrada).toBeEnabled()
+      expect(screen.getByRole('button', { name: 'Saída' })).toBeEnabled()
+      expect(screen.getByRole('button', { name: 'Ajuste' })).toBeEnabled()
+
+      await user.click(entrada)
+
+      const dialogo = await screen.findByRole('dialog')
+      expect(within(dialogo).getByRole('button', { name: 'Lançar' })).toBeDisabled()
+      expect(
+        within(dialogo).getByText(/Escolha a peça: o lançamento é por variante/),
+      ).toBeInTheDocument()
+    },
+    TETO,
+  )
+
+  it(
+    'a peça se escolhe DENTRO da gaveta, e o lançamento sai de lá',
+    async () => {
+      // O caminho que a inversão criou, e o que ele prova: a gaveta não guarda
+      // estado de peça próprio — quem escolhe dentro dela escolhe para a tela
+      // inteira. Duas cópias do mesmo estado divergiriam no primeiro `Cancelar`,
+      // e o lançamento cairia na variante que a tela de trás ainda mostrava.
+      const falso = servidor()
+      const { user } = renderRoute('/estoque/movimentacao', falso.fetch)
+
+      await user.click(await screen.findByRole('button', { name: 'Saída' }))
+      const dialogo = await screen.findByRole('dialog')
+
+      // O campo de dentro é o mesmo `EscolherPeca`, sem a lupa: abrir um dialog
+      // por cima do sheet empilharia duas camadas modais, e a segunda prenderia
+      // o foco da primeira. Por isso aqui o caminho é a busca INLINE.
+      await user.type(within(dialogo).getByLabelText(/produto/i), 'PD-1')
+      await user.click(await within(dialogo).findByText('PENDENTE VIDRO FUMÊ 30CM'))
+      await user.selectOptions(
+        await within(dialogo).findByRole('combobox', { name: /variante/i }),
+        'var-1',
+      )
+
+      await preencher(user, dialogo, '2', 'Quebra na montagem')
+
+      expect(lancamentos(falso)).toHaveLength(1)
+      // Saída: o sinal saiu do GESTO, e o gesto foi o botão clicado lá atrás —
+      // não um campo dentro da gaveta.
+      expect(lancamentos(falso)[0]?.corpo).toEqual({
+        locationId: null,
+        delta: -2,
+        reason: 'Quebra na montagem',
+      })
     },
     TETO,
   )

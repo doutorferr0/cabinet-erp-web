@@ -600,14 +600,11 @@ const CAMPOS_DO_CONTRATO = {
 export function ProdutoForm({
   produto,
   readOnly = false,
-  contexto,
   aviso,
 }: {
   produto: Produto
   readOnly?: boolean
-  /** Modo ou registro aberto, ao lado do título na banda. */
-  contexto?: string
-  /** Aviso da tela — vai sob o título, acima dos campos. */
+  /** Aviso da tela — vai acima dos campos. */
   aviso?: React.ReactNode
 }) {
   const navigate = useNavigate()
@@ -666,9 +663,12 @@ export function ProdutoForm({
       readOnly={readOnly}
       gravando={gravar.isPending}
       gravou={gravar.isSuccess}
-      titulo="Cadastro de Produtos"
+      // SEM `titulo` (D19, #487): quem diz de que registro é a tela passou a ser
+      // o `CabecalhoDoRegistro` da rota — `Produto` + o código em mono + a
+      // situação. Deixar o `PageHeader` aqui escreveria "Cadastro de Produtos"
+      // logo abaixo dele, duas respostas para a mesma pergunta e a de cima
+      // certa. Com `titulo` ausente o `CadastroForm` não monta cabeçalho nenhum.
       familia="products"
-      {...(contexto ? { contexto } : {})}
       {...(aviso ? { aviso } : {})}
     >
       {/* Falha do Gravar em destaque, ANTES das abas: o `detail` do problem+json

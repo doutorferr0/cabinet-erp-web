@@ -57,13 +57,20 @@ describe('ModuloEmConstrucao', () => {
     expect(screen.queryByRole('button', { name: /tentar de novo/i })).not.toBeInTheDocument()
   })
 
-  it('mostra o `detail` do servidor por cima da frase do registro', () => {
+  it('guarda o `detail` do servidor no colapsável, sem perder a frase do registro', () => {
     renderWithQuery(<ModuloEmConstrucao erro={erro501('/api/quotes', 'Desconto por grupo.')} />)
 
-    expect(screen.getByText('Desconto por grupo.')).toBeInTheDocument()
-    // As duas convivem: o registro diz o que falta no módulo, o `detail` diz o
+    // As duas convivem: o registro diz o que falta no MÓDULO, o `detail` diz o
     // que falhou NESTE pedido. Uma não substitui a outra.
     expect(screen.getByText('Orçamento em construção')).toBeInTheDocument()
+
+    // D29: o `detail` continua na tela e deixou de estar À MOSTRA. Ele é
+    // escrito para quem abre chamado; ao lado da frase de orientação, era lido
+    // como continuação dela. `toBeVisible` é o que separa as duas coisas —
+    // `toBeInTheDocument` daria verde nas duas.
+    const detalhe = screen.getByText('Desconto por grupo.')
+    expect(detalhe).toBeInTheDocument()
+    expect(detalhe).not.toBeVisible()
   })
 
   it('caminho fora do registro perde o nome, não o aviso', () => {
@@ -155,6 +162,6 @@ describe('a listagem inteira, do 501 do servidor até a tela', () => {
     expect(await screen.findByText('Orçamento em construção')).toBeInTheDocument()
     // A tela BRANCA é o que não pode acontecer: há conteúdo, e ele diz o que há.
     expect(container.textContent).toContain('O que já funciona')
-    expect(screen.queryByText(/A consulta não chegou ao servidor/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/A consulta não foi concluída/)).not.toBeInTheDocument()
   })
 })

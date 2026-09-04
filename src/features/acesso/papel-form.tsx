@@ -105,8 +105,8 @@ export function PapelFormDialog({
         <DialogTitle>{papelId ? 'Alterar papel' : 'Incluir papel'}</DialogTitle>
       </DialogHeader>
 
-      <div className="flex max-h-[60vh] flex-col gap-3 overflow-y-auto pr-1">
-        <div className="flex flex-col gap-1">
+      <div className="flex max-h-[60vh] flex-col gap-[var(--s-3)] overflow-y-auto pr-1">
+        <div className="flex flex-col gap-[var(--s-1)]">
           <Label htmlFor="papel-nome">Nome</Label>
           <Input
             id="papel-nome"
@@ -116,7 +116,7 @@ export function PapelFormDialog({
             onChange={(e) => setNome(e.target.value)}
           />
         </div>
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-[var(--s-1)]">
           <Label htmlFor="papel-descricao">Descrição</Label>
           <Input
             id="papel-descricao"
@@ -131,15 +131,18 @@ export function PapelFormDialog({
         </Checkbox>
 
         {deSistema ? (
-          <p className="border-2 border-border bg-muted px-2.5 py-1.5 text-muted-foreground text-sm">
+          <p className="border-2 border-border bg-muted px-2.5 py-1.5 t-meta">
             Papel de sistema: existe em toda organização e não se edita. Para variar, crie um papel
             novo com as caixas que quiser.
           </p>
         ) : null}
 
         {catalogo.data?.modules.map((modulo) => (
-          <fieldset key={modulo.key} className="flex flex-col gap-1.5 border-2 border-border p-2.5">
-            <legend className="px-1 font-medium text-sm">{modulo.label}</legend>
+          <fieldset
+            key={modulo.key}
+            className="flex flex-col gap-[var(--s-2)] border-2 border-border p-2.5"
+          >
+            <legend className="px-1 t-bloco">{modulo.label}</legend>
             {modulo.permissions.map((permissao) => (
               <Checkbox
                 key={permissao.key}
@@ -150,9 +153,7 @@ export function PapelFormDialog({
                 <span className="flex flex-col">
                   <span>{permissao.label}</span>
                   {permissao.description ? (
-                    <span className="text-muted-foreground text-xs leading-snug">
-                      {permissao.description}
-                    </span>
+                    <span className="t-meta">{permissao.description}</span>
                   ) : null}
                 </span>
               </Checkbox>

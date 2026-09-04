@@ -54,9 +54,27 @@ const RECUSAS: FrasesDeRecusa = {
     'Este orçamento já virou pedido. Gerar um segundo faria a mesma venda sair duas vezes.',
 }
 
+/**
+ * O que a caixa precisa saber do orçamento — três campos, e é de propósito
+ * (D19, #487).
+ *
+ * Ela pedia o `QuoteDto` inteiro enquanto a listagem era o único lugar que a
+ * abria. A FICHA a abre agora pela próxima ação do cabeçalho, e ali o documento
+ * está na forma da tela (`Orcamento`), não na do contrato — exigir o DTO
+ * obrigaria a rota a remontar um objeto de quinze campos para usar três, e os
+ * doze inventados iriam parar aqui com cara de dado do servidor.
+ */
+export interface OrcamentoParaConverter {
+  id: string
+  number: QuoteDto['number']
+  status: QuoteDto['status']
+  /** O nome que a recusa `pedido-ja-convertido` manda o operador procurar. */
+  customerName: QuoteDto['customerName']
+}
+
 export interface GerarPedidoProps {
-  /** O orçamento selecionado na listagem. `null` mantém a caixa fechada. */
-  orcamento: QuoteDto | null
+  /** O orçamento escolhido — na listagem ou na ficha. `null` mantém a caixa fechada. */
+  orcamento: OrcamentoParaConverter | null
   onFechar: () => void
 }
 

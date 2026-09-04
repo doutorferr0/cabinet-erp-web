@@ -17,13 +17,13 @@
  * shape para "tela que não existe ainda" seria decidir identidade visual sem
  * fonte, a mesma armadilha que a fonte de campo já proíbe para conteúdo.
  */
-import { PageHeader } from '@/components/cabinet/page-header'
-
 export function TelaNaoCapturada({ titulo, menu }: { titulo: string; menu: string }) {
   return (
     <div className="flex flex-col gap-2">
-      <PageHeader titulo={titulo} />
-      <p className="text-sm text-muted-foreground">
+      {/* `t-pagina`: é o título da PÁGINA, e a régua dá um Gambarino por tela —
+          esta gasta o dela aqui. `font-nome` saiu com as famílias da 1.x. */}
+      <h1 className="t-pagina">{titulo}</h1>
+      <p className="t-meta">
         Tela do menu <strong>{menu}</strong> do SoftLux, listada mas sem transcrição de campo
         (transcricaosoftlux.md §10) — aguardando nova rodada de prints antes de modelar.
       </p>

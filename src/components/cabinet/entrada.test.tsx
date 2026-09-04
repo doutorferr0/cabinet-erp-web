@@ -1,38 +1,40 @@
-import { Entrada, ORDEM_MAXIMA, atrasoDaOrdem } from '@/components/cabinet/entrada'
-import { render, screen, waitFor } from '@testing-library/react'
+import { Entrada } from '@/components/cabinet/entrada'
+import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
+/**
+ * Entrada, depois da D16 — o componente ficou, a animação saiu.
+ *
+ * Os três casos que morreram aqui (`escalona de 80ms em 80ms`, `trava o atraso
+ * no teto`, `não aceita atraso negativo`) mediam `atrasoDaOrdem`, a função que
+ * calculava o escalonamento da mola. A regra 7 da issue-mãe #469 proíbe
+ * animação de entrada de tela; sem mola não há atraso a calcular, e um teste
+ * que continuasse verde sobre `atrasoDaOrdem` estaria fixando o comportamento
+ * que a rodada mandou apagar.
+ *
+ * O que sobra é o que sempre importou: a região aparece, e aparece VISÍVEL. Ela
+ * agora é visível no primeiro quadro, que é o ponto.
+ */
 describe('Entrada', () => {
-  it('termina VISÍVEL — a tela não pode ficar presa no primeiro quadro', async () => {
+  it('renderiza visível de imediato — sem primeiro quadro transparente', () => {
     render(
       <Entrada>
         <p>Cadastro de fornecedores</p>
       </Entrada>,
     )
-    // A ESPERA é da VISIBILIDADE, não da existência — e a diferença é o teste
-    // inteiro. A peça parte de `opacity: 0` e o estado final chega alguns quadros
-    // depois; `findByText` resolve assim que o elemento EXISTE, que é já no
-    // primeiro quadro, e uma asserção síncrona em cima disso afirma o começo da
-    // animação — justamente o estado em que ela não pode ficar. Passava por
-    // sorte, quando a mola avançava dentro do primeiro intervalo de sondagem.
-    const peca = screen.getByText('Cadastro de fornecedores')
-    await waitFor(() => {
-      expect(peca).toBeVisible()
-    })
+    // Síncrono de propósito: antes esta asserção precisava de `waitFor` porque a
+    // peça partia de `opacity: 0`. Precisar esperar ERA o defeito.
+    expect(screen.getByText('Cadastro de fornecedores')).toBeVisible()
   })
 
-  it('escalona de 80ms em 80ms', () => {
-    expect(atrasoDaOrdem(0)).toBe(0)
-    expect(atrasoDaOrdem(1)).toBeCloseTo(0.08)
-    expect(atrasoDaOrdem(3)).toBeCloseTo(0.24)
-  })
-
-  it('trava o atraso no teto — tela não monta em partes', () => {
-    expect(atrasoDaOrdem(ORDEM_MAXIMA)).toBeCloseTo(atrasoDaOrdem(40))
-    expect(atrasoDaOrdem(40)).toBeLessThanOrEqual(0.4)
-  })
-
-  it('não aceita atraso negativo', () => {
-    expect(atrasoDaOrdem(-3)).toBe(0)
+  it('repassa `data-slot` e `className` — o shell continua marcando as regiões', () => {
+    render(
+      <Entrada data-slot="page-frame" className="flex-1" ordem={3}>
+        <p>conteúdo</p>
+      </Entrada>,
+    )
+    const regiao = screen.getByText('conteúdo').parentElement
+    expect(regiao).toHaveAttribute('data-slot', 'page-frame')
+    expect(regiao?.className).toContain('flex-1')
   })
 })

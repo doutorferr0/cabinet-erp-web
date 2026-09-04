@@ -90,6 +90,8 @@ export function tintDe(nome: string): TintDeMonograma {
 
 export interface MonogramaProps {
   nome: string
+  /** Lado da caixa em px. 26 na grade (D3); 34 no bloco de identidade e 22 no lookup (D16). */
+  tamanho?: number
   /**
    * Fixa o tint em vez de derivá-lo do nome. Use quando a entidade JÁ tem cor
    * no contexto — a ficha dentro de um `[data-modulo]`, por exemplo —, para o
@@ -99,7 +101,7 @@ export interface MonogramaProps {
   className?: string
 }
 
-export function Monograma({ nome, cor, className }: MonogramaProps) {
+export function Monograma({ nome, cor, tamanho, className }: MonogramaProps) {
   const tint = cor ?? tintDe(nome)
 
   return (
@@ -107,6 +109,7 @@ export function Monograma({ nome, cor, className }: MonogramaProps) {
       aria-hidden="true"
       data-slot="monograma"
       data-tint={tint}
+      style={tamanho ? { width: tamanho, height: tamanho } : undefined}
       className={cn(
         // 26px, raio 6 (`--r-ctrl`), `.t-dado` para a tipografia.
         't-dado grid size-[26px] shrink-0 place-content-center rounded-[var(--r-ctrl)] border border-[var(--n-200)]',
@@ -118,3 +121,6 @@ export function Monograma({ nome, cor, className }: MonogramaProps) {
     </span>
   )
 }
+
+/** Alias da D16 (#484): as iniciais do nome. O nome canônico é `iniciaisDe`. */
+export const monograma = iniciaisDe

@@ -1,8 +1,8 @@
 import { TextField } from '@/components/cabinet/form-controls'
-import { PageHeader } from '@/components/cabinet/page-header'
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
 import { useTrocarSenha } from '@/data/sessao'
+import { PaginaDeAuth } from '@/features/login/pagina-de-auth'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useNavigate } from '@tanstack/react-router'
 import { useForm } from 'react-hook-form'
@@ -50,45 +50,40 @@ export function TrocarSenhaTela() {
   }
 
   return (
-    // Mesma folha da tela de entrar — sem Stipple: aqui o operador está no meio
-    // de uma tarefa obrigatória, não na porta de entrada.
-    <div className="bg-paper-grid flex min-h-screen items-center justify-center p-4">
-      <div className="w-full max-w-sm rounded-panel border-2 border-border bg-card p-4 shadow-el3">
-        <div className="mb-4">
-          <PageHeader variante="display" titulo="Cabinet" contexto="Trocar senha" />
-        </div>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(confirmar)} className="flex flex-col gap-3">
-            <TextField
-              name="currentPassword"
-              label="Senha atual"
-              type="password"
-              autoComplete="current-password"
-              autoFocus
-            />
-            <TextField
-              name="newPassword"
-              label="Senha nova"
-              type="password"
-              autoComplete="new-password"
-            />
-            <TextField
-              name="confirmacao"
-              label="Confirmar senha nova"
-              type="password"
-              autoComplete="new-password"
-            />
-            {trocar.error && (
-              <p role="alert" className="text-xs text-destructive">
-                {trocar.error.message}
-              </p>
-            )}
-            <Button type="submit" disabled={trocar.isPending} className="mt-1">
-              {trocar.isPending ? 'Trocando…' : 'Trocar senha'}
-            </Button>
-          </form>
-        </Form>
-      </div>
-    </div>
+    // Mesma página dividida da tela de entrar: quem troca a senha está no meio
+    // de uma tarefa obrigatória, e a moldura não muda por causa disso.
+    <PaginaDeAuth titulo="Trocar senha" subtitulo="Confirme a senha atual e escolha a nova.">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(confirmar)} className="flex flex-col gap-4">
+          <TextField
+            name="currentPassword"
+            label="Senha atual"
+            type="password"
+            autoComplete="current-password"
+            autoFocus
+          />
+          <TextField
+            name="newPassword"
+            label="Senha nova"
+            type="password"
+            autoComplete="new-password"
+          />
+          <TextField
+            name="confirmacao"
+            label="Confirmar senha nova"
+            type="password"
+            autoComplete="new-password"
+          />
+          {trocar.error && (
+            <p role="alert" className="t-meta text-[color:var(--bad)]">
+              {trocar.error.message}
+            </p>
+          )}
+          <Button type="submit" size="lg" disabled={trocar.isPending} className="w-full">
+            {trocar.isPending ? 'Trocando…' : 'Trocar senha'}
+          </Button>
+        </form>
+      </Form>
+    </PaginaDeAuth>
   )
 }

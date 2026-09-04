@@ -7,12 +7,27 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
 import type { Recorte } from '@/data/relatorios-api'
-import { ArrowDown, ArrowUp } from 'lucide-react'
+import {
+  type AgrupamentoDeRelatorio,
+  type TomDeRelatorio,
+  agrupar,
+} from '@/features/relatorios/agrupamento'
+import '@/features/relatorios/impressao.css'
+import '@/features/relatorios/relatorio.css'
+import {
+  baixarCsv,
+  imprimirRelatorio,
+  montarCsv,
+  nomeDoArquivo,
+} from '@/features/relatorios/exportar'
+import { cn } from '@/lib/utils'
+import { ArrowDown, ArrowUp, Download, Printer } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 /**
@@ -32,11 +47,36 @@ import type { ReactNode } from 'react'
  * apurações do mesmo número divergem no primeiro arredondamento, e a tela não
  * teria como saber qual das duas está mostrando.
  *
- * Por isso a moldura é própria e MÍNIMA: cabeçalho, barra de filtros da tela,
- * resumo, tabela, paginação. Ordenação por cabeçalho clicável, restrita à
- * whitelist que o contrato publica — coluna sem `ordenaPor` não vira botão, em
- * vez de virar botão que responde 400.
+ * ## O que a 2.0 acrescentou (web#493 · D25)
+ *
+ * Relatório virou LISTAGEM 2.0: faixa de KPIs sobre a grade, agrupamento com
+ * contagem e subtotal, decoração semântica de linha, soma no rodapé e Exportar
+ * (CSV/PDF). As três telas de estoque compõem — nenhuma reimplementa.
+ *
+ * **Os KPIs saíram de dentro de um painel.** Antes o resumo morava num
+ * `<Painel titulo="Resumo">` dentro da página, o que punha card dentro de card
+ * e dava ao número do recorte a mesma moldura da grade da página. Agora a faixa
+ * é da PÁGINA, e a única sombra forte da tela é a do painel da grade.
+ *
+ * **A separação entre as regiões é espaço, não linha.** A barra de filtros
+ * perdeu o `border-b`: header › filtros › KPIs › painel se separam por 24px, que
+ * é a ferramenta mais barata que resolve a fronteira (§Hierarquia). Dentro do
+ * painel sobraram as outras três — hairline entre linhas, tint no cabeçalho, na
+ * barra de grupo e no rodapé de somas, e o card do próprio painel.
+ *
+ * ## Agrupar mexe na paginação, e isso é decisão
+ *
+ * O servidor não agrupa: nenhuma operação de `/api/reports` publica `groupBy`, e
+ * nenhum envelope traz agregado por grupo. A quebra é do cliente, sobre o que
+ * está carregado — então escolher um agrupamento sobe `pageSize` ao TETO do
+ * contrato (100) e volta para a página 1. Quando o recorte é maior que o teto, o
+ * rodapé diz, em voz alta, que grupos, somas e CSV cobrem as linhas carregadas e
+ * não o recorte. É a mesma regra do padrão de view modes: coluna montada com uma
+ * página é coluna falsa, e o honesto é declarar o corte.
  */
+
+/** O teto de `pageSize` que as dez operações de `/api/reports` publicam. */
+export const TETO_DE_PAGINA = 100
 
 export interface ColunaDeRelatorio<T> {
   id: string
@@ -51,6 +91,21 @@ export interface ColunaDeRelatorio<T> {
   /** Números à direita; texto à esquerda (o padrão). */
   numerica?: boolean
   celula: (linha: T) => ReactNode
+  /**
+   * O MESMO dado como texto puro, para o CSV.
+   *
+   * Existe porque `celula` pode devolver marcação — um número decorado em
+   * vermelho é um `<span>`, e `String(<span/>)` no arquivo sairia
+   * `[object Object]`. Quando a célula já é texto, esta função é dispensável e a
+   * moldura usa o que `celula` devolveu.
+   */
+  texto?: (linha: T) => string
+  /**
+   * A soma da coluna — no rodapé da grade e na barra de cada grupo. Ausente = a
+   * coluna não soma, e a casa fica vazia em vez de somar o que não se soma
+   * (média de dias e "abaixo do mínimo" não têm total).
+   */
+  soma?: (linhas: readonly T[]) => ReactNode
 }
 
 export interface MolduraDeRelatorioProps<T> {
@@ -58,8 +113,8 @@ export interface MolduraDeRelatorioProps<T> {
   contexto: string
   /** A barra de filtros da tela — cada relatório publica os seus. */
   filtros: ReactNode
-  /** Os números do RECORTE inteiro, do `summary` do envelope. */
-  resumo?: ReactNode
+  /** Os KPIs do RECORTE inteiro, do `summary` do envelope. */
+  kpis?: ReactNode
   colunas: readonly ColunaDeRelatorio<T>[]
   linhas: readonly T[]
   chaveDaLinha: (linha: T) => string
@@ -75,6 +130,18 @@ export interface MolduraDeRelatorioProps<T> {
   sortDesc: boolean
   /** Clique no cabeçalho: mesmo campo inverte o sentido, campo novo recomeça. */
   aoOrdenar: (campo: string) => void
+  /** As quebras que este relatório oferece. Vazio = a tela não agrupa. */
+  agrupamentos?: readonly AgrupamentoDeRelatorio<T>[]
+  /** `null` = sem quebra (a grade corrida). */
+  agrupamentoAtivo?: string | null
+  aoTrocarAgrupamento?: (id: string | null) => void
+  /**
+   * A decoração da linha — semântica, nunca enfeite. Sai como filete à esquerda,
+   * e a cor do número que a justifica é responsabilidade da célula.
+   */
+  tomDaLinha?: (linha: T) => TomDeRelatorio
+  /** O começo do nome do CSV — `estoque-valorizado`, `estoque-parado`… */
+  baseDoArquivo: string
   /** O que o servidor fez com o recorte por depósito pedido. */
   recorte: Recorte
   /**
@@ -87,11 +154,27 @@ export interface MolduraDeRelatorioProps<T> {
   vazio: string
 }
 
+/** Filete à esquerda da linha decorada — a cor SEMPRE diz um estado. */
+const FILETE: Record<TomDeRelatorio, string> = {
+  neutro: '',
+  ok: 'border-l-4 border-l-money',
+  warn: 'border-l-4 border-l-warn',
+  bad: 'border-l-4 border-l-destructive',
+}
+
+/** Tint da barra de grupo — separa região por natureza, sem borda por cima. */
+const TINT_DO_GRUPO: Record<TomDeRelatorio, string> = {
+  neutro: 'bg-surface-sunken',
+  ok: 'bg-zone-money',
+  warn: 'bg-zone-warn',
+  bad: 'bg-zone-danger',
+}
+
 export function MolduraDeRelatorio<T>({
   titulo,
   contexto,
   filtros,
-  resumo,
+  kpis,
   colunas,
   linhas,
   chaveDaLinha,
@@ -105,17 +188,42 @@ export function MolduraDeRelatorio<T>({
   sortBy,
   sortDesc,
   aoOrdenar,
+  agrupamentos,
+  agrupamentoAtivo = null,
+  aoTrocarAgrupamento,
+  tomDaLinha,
+  baseDoArquivo,
   recorte,
   nomeDoDeposito,
   vazio,
 }: MolduraDeRelatorioProps<T>) {
   const ultimaPagina = Math.max(1, Math.ceil(total / pageSize))
+  const quebra = agrupamentos?.find((a) => a.id === agrupamentoAtivo)
+  const grupos = quebra ? agrupar(linhas, quebra) : null
+  // O teto cortou quando o recorte tem mais linhas do que as que chegaram. É a
+  // única condição que torna grupo, soma e CSV parciais — e ela é dita, não
+  // deduzida pelo operador a partir do número da página.
+  const cortado = total > linhas.length
+
+  function exportarCsv() {
+    const cabecalho = colunas.map((coluna) => coluna.titulo)
+    const corpo = linhas.map((linha) => colunas.map((coluna) => textoDaCelula(coluna, linha)))
+    baixarCsv(nomeDoArquivo(baseDoArquivo), montarCsv(cabecalho, corpo))
+  }
 
   return (
-    <div className="flex flex-col gap-4">
+    // `data-impressao`: a subárvore que o `@media print` reacende. Tudo fora
+    // dela — sidebar, appbar, rodapé do shell — apaga no papel.
+    <div data-impressao="relatorio" className="flex flex-col gap-[var(--s-5)]">
       <PageHeader titulo={titulo} contexto={contexto} />
 
-      <div className="flex flex-wrap items-end gap-3 border-rule-strong border-b pb-3">
+      <div
+        data-fora-da-impressao
+        className="flex flex-wrap items-end gap-[var(--s-3)]"
+        // A fronteira entre regiões da página é ESPAÇO. A hairline que morava
+        // aqui somava-se aos 24px do `gap` e cobrava duas ferramentas pela mesma
+        // separação (§Hierarquia — nunca duas na mesma fronteira).
+      >
         {filtros}
       </div>
 
@@ -136,16 +244,12 @@ export function MolduraDeRelatorio<T>({
         </AvisoDeCobertura>
       ) : null}
 
-      {resumo ? (
-        <Painel titulo="Resumo" modulo="estoque">
-          {/*
-            O resumo é do RECORTE INTEIRO e não da página — regra do envelope.
-            Somar as linhas visíveis faria a página 1 de 500 itens declarar que o
-            estoque vale o dos cinquenta primeiros.
-          */}
-          {resumo}
-        </Painel>
-      ) : null}
+      {/*
+        Os KPIs são do RECORTE INTEIRO e não da página — regra do envelope.
+        Somar as linhas visíveis faria a página 1 de 500 itens declarar que o
+        estoque vale o dos cinquenta primeiros.
+      */}
+      {kpis}
 
       <Painel
         titulo={
@@ -153,32 +257,83 @@ export function MolduraDeRelatorio<T>({
         }
         modulo="estoque"
         acao={
-          <span className="font-mono text-[0.75rem]" data-testid="total-de-linhas">
-            {total} {total === 1 ? 'linha' : 'linhas'}
-          </span>
+          // A contagem é DADO e o resto é CONTROLE — as duas naturezas ficam a
+          // 16px uma da outra. Encostadas, "3 linhas" e o rótulo "Agrupar por"
+          // se leem como uma frase só ("3 linhas agrupar por"), que é o que a
+          // captura da primeira rodada mostrou.
+          <div className="flex flex-wrap items-center gap-[var(--s-4)]">
+            <span className="t-dado-meta" data-testid="total-de-linhas">
+              {total} {total === 1 ? 'linha' : 'linhas'}
+            </span>
+            {agrupamentos && agrupamentos.length > 0 && aoTrocarAgrupamento ? (
+              <label data-fora-da-impressao className="flex items-center gap-[var(--s-2)]">
+                <span className="t-rotulo">Agrupar por</span>
+                <select
+                  className="t-ui h-8 border-2 border-input bg-card px-2 outline-none focus-visible:focus-ring"
+                  value={agrupamentoAtivo ?? ''}
+                  onChange={(evento) => aoTrocarAgrupamento(evento.target.value || null)}
+                  aria-label="Agrupar por"
+                >
+                  <option value="">Sem agrupamento</option>
+                  {agrupamentos.map((agrupamento) => (
+                    <option key={agrupamento.id} value={agrupamento.id}>
+                      {agrupamento.rotulo}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            <div data-fora-da-impressao className="flex items-center gap-[var(--s-1)]">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="gap-[var(--s-2)]"
+                disabled={linhas.length === 0}
+                onClick={exportarCsv}
+              >
+                <Download aria-hidden="true" className="size-3.5" />
+                Exportar CSV
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="gap-[var(--s-2)]"
+                disabled={linhas.length === 0}
+                onClick={() => imprimirRelatorio()}
+              >
+                <Printer aria-hidden="true" className="size-3.5" />
+                PDF
+              </Button>
+            </div>
+          </div>
         }
       >
         {carregando ? (
-          <output aria-busy="true" className="text-muted-foreground text-sm">
+          <output aria-busy="true" className="t-meta">
             Apurando…
           </output>
         ) : erro ? (
           <ErroDeCarregamento mensagem="O relatório não carregou." erro={erro} refazer={refazer} />
         ) : linhas.length === 0 ? (
-          <p className="text-muted-foreground text-sm">{vazio}</p>
+          <p className="t-meta">{vazio}</p>
         ) : (
           <>
             <Table>
               <TableHeader>
                 <TableRow>
                   {colunas.map((coluna) => (
-                    <TableHead key={coluna.id} className={coluna.numerica ? 'text-right' : ''}>
+                    <TableHead
+                      key={coluna.id}
+                      className={cn('t-rotulo', coluna.numerica ? 'text-right' : '')}
+                    >
                       {coluna.ordenaPor ? (
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="-mx-2 h-7 gap-1 px-2"
+                          className="t-rotulo -mx-2 h-7 gap-[var(--s-1)] px-2"
                           onClick={() => aoOrdenar(coluna.ordenaPor as string)}
                           aria-label={`Ordenar por ${coluna.titulo}`}
                         >
@@ -199,26 +354,88 @@ export function MolduraDeRelatorio<T>({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {linhas.map((linha) => (
-                  <TableRow key={chaveDaLinha(linha)}>
-                    {colunas.map((coluna) => (
+                {grupos
+                  ? grupos.map((grupo) => (
+                      <Fragmento key={grupo.chave}>
+                        <TableRow
+                          data-grupo-do-relatorio={grupo.chave}
+                          className={cn('hover:bg-transparent', TINT_DO_GRUPO[grupo.tom])}
+                        >
+                          {colunas.map((coluna, indice) => (
+                            <TableCell
+                              key={coluna.id}
+                              className={cn('py-2', coluna.numerica ? 't-dado text-right' : 't-ui')}
+                            >
+                              {indice === 0 ? (
+                                <span className="flex items-baseline gap-[var(--s-2)]">
+                                  {grupo.chave}
+                                  <span className="t-dado-meta">
+                                    {grupo.linhas.length}
+                                    {grupo.linhas.length === 1 ? ' item' : ' itens'}
+                                  </span>
+                                </span>
+                              ) : (
+                                coluna.soma?.(grupo.linhas)
+                              )}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                        {grupo.linhas.map((linha) => (
+                          <LinhaDoRelatorio
+                            key={chaveDaLinha(linha)}
+                            colunas={colunas}
+                            linha={linha}
+                            tom={tomDaLinha?.(linha) ?? 'neutro'}
+                          />
+                        ))}
+                      </Fragmento>
+                    ))
+                  : linhas.map((linha) => (
+                      <LinhaDoRelatorio
+                        key={chaveDaLinha(linha)}
+                        colunas={colunas}
+                        linha={linha}
+                        tom={tomDaLinha?.(linha) ?? 'neutro'}
+                      />
+                    ))}
+              </TableBody>
+              {colunas.some((coluna) => coluna.soma) ? (
+                <TableFooter className="bg-surface-sunken">
+                  <TableRow className="hover:bg-transparent">
+                    {colunas.map((coluna, indice) => (
                       <TableCell
                         key={coluna.id}
-                        className={coluna.numerica ? 'text-right font-mono' : ''}
+                        className={cn(coluna.numerica ? 't-dado text-right' : 't-rotulo')}
                       >
-                        {coluna.celula(linha)}
+                        {indice === 0 ? 'Total desta página' : coluna.soma?.(linhas)}
                       </TableCell>
                     ))}
                   </TableRow>
-                ))}
-              </TableBody>
+                </TableFooter>
+              ) : null}
             </Table>
 
-            <div className="mt-3 flex items-center justify-between gap-3">
-              <span className="text-muted-foreground text-sm">
+            {/*
+              O CORTE, dito antes de o operador clicar em Exportar. Sem esta
+              linha, um CSV de 100 linhas de um recorte de 4000 sai com cara de
+              relatório completo — e quem o recebe soma o que não é o total.
+            */}
+            {cortado ? (
+              <p className="t-meta">
+                Agrupamento, somas e exportação cobrem as{' '}
+                <strong className="t-dado">{linhas.length}</strong> linhas carregadas. O recorte tem{' '}
+                <strong className="t-dado">{total}</strong> — os números do topo são dele.
+              </p>
+            ) : null}
+
+            <div
+              data-fora-da-impressao
+              className="mt-[var(--s-3)] flex items-center justify-between gap-[var(--s-3)] border-rule-hair border-t pt-[var(--s-3)]"
+            >
+              <span className="t-dado-meta">
                 Página {page} de {ultimaPagina}
               </span>
-              <div className="flex gap-2">
+              <div className="flex gap-[var(--s-2)]">
                 <Button
                   type="button"
                   variant="outline"
@@ -247,36 +464,95 @@ export function MolduraDeRelatorio<T>({
 }
 
 /**
- * Um número do resumo, com o rótulo por cima — a mesma caixa nos três.
- *
- * `dica` sai por extenso ao lado, nunca no `title`: o que qualifica o número
- * (quantos itens ficaram de fora por não ter preço) é justamente o que decide se
- * dá para confiar nele, e um motivo que só aparece no hover é um motivo que
- * metade dos operadores nunca lê.
+ * Fragmento nomeado só para deixar a chave no lugar certo: a quebra rende DUAS
+ * coisas irmãs (a barra e as linhas do grupo) e `<>` não aceita `key`.
  */
-export function NumeroDoResumo({
+function Fragmento({ children }: { children: ReactNode }) {
+  return <>{children}</>
+}
+
+function LinhaDoRelatorio<T>({
+  colunas,
+  linha,
+  tom,
+}: {
+  colunas: readonly ColunaDeRelatorio<T>[]
+  linha: T
+  tom: TomDeRelatorio
+}) {
+  return (
+    <TableRow data-tom={tom}>
+      {colunas.map((coluna, indice) => (
+        <TableCell
+          key={coluna.id}
+          className={cn(
+            coluna.numerica ? 't-dado text-right' : 't-corpo',
+            // O filete entra só na PRIMEIRA célula: um fundo colorido na linha
+            // inteira seria cor decorativa em linha de dado, que a rodada 2.0
+            // proíbe. A borda diz o mesmo com uma fração da tinta.
+            indice === 0 ? FILETE[tom] : '',
+          )}
+        >
+          {coluna.celula(linha)}
+        </TableCell>
+      ))}
+    </TableRow>
+  )
+}
+
+/**
+ * A célula como texto puro. `celula` que já devolve string ou número dispensa
+ * `texto`; qualquer outra coisa (um `<span>` decorado) precisa dele, senão o CSV
+ * sairia com `[object Object]` na coluna que mais importa.
+ */
+export function textoDaCelula<T>(coluna: ColunaDeRelatorio<T>, linha: T): string {
+  if (coluna.texto) return coluna.texto(linha)
+  const conteudo = coluna.celula(linha)
+  return typeof conteudo === 'string' || typeof conteudo === 'number' ? String(conteudo) : ''
+}
+
+/**
+ * Um KPI: rótulo por cima, número embaixo, motivo ao lado.
+ *
+ * `dica` sai por extenso e nunca no `title`: o que qualifica o número (quantos
+ * itens ficaram de fora por não ter preço) é justamente o que decide se dá para
+ * confiar nele, e um motivo que só aparece no hover é um motivo que metade dos
+ * operadores nunca lê.
+ *
+ * O `tom` tinge o NÚMERO, não a caixa — 900 itens sem preço é um número ruim,
+ * não um cartão ruim, e caixa colorida em faixa de quatro vira semáforo.
+ */
+export function Kpi({
   rotulo,
   valor,
   dica,
+  tom = 'neutro',
 }: {
   rotulo: string
   valor: string
   dica?: string
+  tom?: TomDeRelatorio
 }) {
   return (
-    <div className="flex flex-col gap-1 border-2 border-border px-3 py-2">
-      <span className="font-mono text-[0.7rem] uppercase tracking-[0.06em] text-muted-foreground">
-        {rotulo}
+    <div className="kpi">
+      <span className="t-rotulo kpi-rotulo">{rotulo}</span>
+      <span className="t-dado kpi-valor" data-tom={tom}>
+        {valor}
       </span>
-      <span className="font-mono text-lg">{valor}</span>
-      {dica ? <span className="text-muted-foreground text-[0.7rem]">{dica}</span> : null}
+      {dica ? <span className="t-meta">{dica}</span> : null}
     </div>
   )
 }
 
-/** A grade dos números do resumo — uma coluna no telefone, quatro no monitor. */
-export function GradeDoResumo({ children }: { children: ReactNode }) {
-  return <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{children}</div>
+/**
+ * A faixa de KPIs — até quatro, e `auto-fit` em vez de `@media`.
+ *
+ * A regra da rodada proíbe `@media` para quebra: com `auto-fit` a faixa se
+ * reparte sozinha em qualquer largura, inclusive dentro de um painel estreito,
+ * sem ninguém decidir pontos de corte que envelhecem.
+ */
+export function FaixaDeKpis({ children }: { children: ReactNode }) {
+  return <div className="faixa-de-kpis">{children}</div>
 }
 
 /**
@@ -297,12 +573,10 @@ export function EscolhaDeDeposito({
   aoTrocar: (id: string | null) => void
 }) {
   return (
-    <label className="flex flex-col gap-1">
-      <span className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em]">
-        Depósito
-      </span>
+    <label className="flex flex-col gap-[var(--s-1)]">
+      <span className="t-rotulo">Depósito</span>
       <select
-        className="h-9 border-2 border-input bg-card px-2.5 text-sm outline-none focus-visible:focus-ring"
+        className="t-ui h-9 border-2 border-input bg-card px-2.5 outline-none focus-visible:focus-ring"
         value={valor ?? ''}
         onChange={(evento) => aoTrocar(evento.target.value || null)}
       >
@@ -329,7 +603,7 @@ export function FiltroDeMarcar({
   aoTrocar: (marcado: boolean) => void
 }) {
   return (
-    <label className="flex h-9 items-center gap-2 text-sm">
+    <label className="t-ui flex h-9 items-center gap-[var(--s-2)]">
       <input
         type="checkbox"
         className="size-4 border-2 border-input"
@@ -339,4 +613,9 @@ export function FiltroDeMarcar({
       {rotulo}
     </label>
   )
+}
+
+/** O rótulo de um campo da barra de filtros — o mesmo degrau nos três. */
+export function RotuloDeFiltro({ children }: { children: ReactNode }) {
+  return <span className="t-rotulo">{children}</span>
 }

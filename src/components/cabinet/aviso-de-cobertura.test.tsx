@@ -11,8 +11,14 @@ describe('AvisoDeCobertura', () => {
       .closest('[data-slot="aviso-de-cobertura"]')
     expect(caixa).not.toBeNull()
     // Zona de PENDÊNCIA, não de bloqueio: falta caminho no contrato, ninguém
-    // errou e não há o que corrigir na tela.
-    expect(caixa?.className).toContain('bg-zone-warn')
+    // errou e não há o que corrigir na tela. O token é `--warn-bg` (alpha, o
+    // mesmo valor nos dois temas) e não o `--tint-sand` opaco para onde a 1.x
+    // apontava — ver a nota do componente.
+    expect(caixa?.className).toContain('bg-[var(--warn-bg)]')
+    // Faixa, e só faixa: §Hierarquia dá UMA ferramenta de separação por
+    // fronteira, e o tint é a que serve a uma REGIÃO. A caixa preta por cima
+    // fazia o recado pesar como card.
+    expect(caixa?.className).not.toContain('border-2')
   })
 
   it('o erro da gravação entra na mesma caixa, e só quando existe', () => {

@@ -43,6 +43,18 @@ const SEM_CABECALHO: Record<string, string> = {
   // D12: viraram VIEWS da listagem de origem (calendário) — a rota só redireciona.
   'compras/previsao.tsx': 'desvio para /compras/ordens?modo=calendario — não é tela (D12)',
   'vendas/cargas.tsx': 'desvio para /vendas/pedidos?modo=calendario — não é tela (D12)',
+  // INTEGRAÇÃO 2.0 (Cowork, 2026-09-03): telas PRÓPRIAS entregues em paralelo à D5
+  // desenham o próprio título (saudação do dashboard, hub de módulo, quadro,
+  // planner, boletim). Unificar no PageHeader é item da D37 (#532).
+  'boletim.tsx': 'tela própria (D20) — título próprio; D37 unifica',
+  'dashboard.tsx': 'tela própria (D20) — saudação Gambarino é o título; D37 unifica',
+  'tarefas.tsx': 'tela própria (D21) — título próprio; D37 unifica',
+  'planner.tsx': 'tela própria (D23) — título próprio; D37 unifica',
+  'cadastros/index.tsx': 'hub de módulo (D26) — HubDeModulo tem o título; D37 unifica',
+  'compras/index.tsx': 'hub de módulo (D26) — HubDeModulo tem o título; D37 unifica',
+  'crm/index.tsx': 'hub de módulo (D26) — HubDeModulo tem o título; D37 unifica',
+  'estoque/index.tsx': 'hub de módulo (D26) — HubDeModulo tem o título; D37 unifica',
+  'vendas/index.tsx': 'hub de módulo (D26) — HubDeModulo tem o título; D37 unifica',
 }
 
 function arquivosDe(dir: string): string[] {
@@ -131,9 +143,17 @@ describe('cabeçalho de página em toda rota', () => {
    * tinham dois títulos.
    */
   it('nenhum título de nível 1 fora do cabeçalho', () => {
+    // INTEGRAÇÃO 2.0: telas próprias (D20/D21/D23) escrevem o próprio <h1>
+    // até a D37 (#532) unificar no PageHeader — mesma exceção da lista acima.
+    const H1_PROPRIO = new Set([
+      'features/dashboard/dashboard.tsx',
+      'features/planner/planner.tsx',
+      'features/tarefas/tarefas.tsx',
+    ])
     const soltos = [...arquivosDe(join(SRC, 'routes')), ...arquivosDe(join(SRC, 'features'))]
       .filter((arquivo) => /<h1[\s>]/.test(readFileSync(arquivo, 'utf-8')))
       .map((arquivo) => relative(SRC, arquivo).replaceAll('\\', '/'))
+      .filter((arquivo) => !H1_PROPRIO.has(arquivo))
 
     expect(
       soltos,

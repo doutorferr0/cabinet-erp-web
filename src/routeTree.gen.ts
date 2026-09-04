@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AgendaRouteImport } from './routes/agenda'
+import { Route as BoletimRouteImport } from './routes/boletim'
 import { Route as CadastrosRouteImport } from './routes/cadastros'
 import { Route as ComprasRouteImport } from './routes/compras'
 import { Route as CrmRouteImport } from './routes/crm'
@@ -31,6 +32,7 @@ import { Route as ComprasPrevisaoRouteImport } from './routes/compras/previsao'
 import { Route as ConfigIndexRouteImport } from './routes/config/index'
 import { Route as ConfigListasRouteImport } from './routes/config/listas'
 import { Route as ConfigUsuariosRouteImport } from './routes/config/usuarios'
+import { Route as CrmIndexRouteImport } from './routes/crm/index'
 import { Route as CrmMotivosRouteImport } from './routes/crm/motivos'
 import { Route as EstoqueIndexRouteImport } from './routes/estoque/index'
 import { Route as EstoqueMovimentacaoRouteImport } from './routes/estoque/movimentacao'
@@ -72,6 +74,11 @@ const IndexRoute = IndexRouteImport.update({
 const AgendaRoute = AgendaRouteImport.update({
   id: '/agenda',
   path: '/agenda',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BoletimRoute = BoletimRouteImport.update({
+  id: '/boletim',
+  path: '/boletim',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CadastrosRoute = CadastrosRouteImport.update({
@@ -173,6 +180,11 @@ const ConfigUsuariosRoute = ConfigUsuariosRouteImport.update({
   id: '/config/usuarios',
   path: '/config/usuarios',
   getParentRoute: () => rootRouteImport,
+} as any)
+const CrmIndexRoute = CrmIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CrmRoute,
 } as any)
 const CrmMotivosRoute = CrmMotivosRouteImport.update({
   id: '/motivos',
@@ -350,6 +362,7 @@ const VendasPedidosPedidoIdRoute = VendasPedidosPedidoIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/agenda': typeof AgendaRoute
+  '/boletim': typeof BoletimRoute
   '/cadastros': typeof CadastrosRouteWithChildren
   '/compras': typeof ComprasRouteWithChildren
   '/crm': typeof CrmRouteWithChildren
@@ -374,6 +387,7 @@ export interface FileRoutesByFullPath {
   '/cadastros/': typeof CadastrosIndexRoute
   '/compras/': typeof ComprasIndexRoute
   '/config/': typeof ConfigIndexRoute
+  '/crm/': typeof CrmIndexRoute
   '/estoque/': typeof EstoqueIndexRoute
   '/vendas/': typeof VendasIndexRoute
   '/cadastros/clientes/$clienteId': typeof CadastrosClientesClienteIdRoute
@@ -406,7 +420,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/agenda': typeof AgendaRoute
-  '/crm': typeof CrmRouteWithChildren
+  '/boletim': typeof BoletimRoute
   '/dashboard': typeof DashboardRoute
   '/definir-senha': typeof DefinirSenhaRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
@@ -426,6 +440,7 @@ export interface FileRoutesByTo {
   '/cadastros': typeof CadastrosIndexRoute
   '/compras': typeof ComprasIndexRoute
   '/config': typeof ConfigIndexRoute
+  '/crm': typeof CrmIndexRoute
   '/estoque': typeof EstoqueIndexRoute
   '/vendas': typeof VendasIndexRoute
   '/cadastros/clientes/$clienteId': typeof CadastrosClientesClienteIdRoute
@@ -459,6 +474,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/agenda': typeof AgendaRoute
+  '/boletim': typeof BoletimRoute
   '/cadastros': typeof CadastrosRouteWithChildren
   '/compras': typeof ComprasRouteWithChildren
   '/crm': typeof CrmRouteWithChildren
@@ -483,6 +499,7 @@ export interface FileRoutesById {
   '/cadastros/': typeof CadastrosIndexRoute
   '/compras/': typeof ComprasIndexRoute
   '/config/': typeof ConfigIndexRoute
+  '/crm/': typeof CrmIndexRoute
   '/estoque/': typeof EstoqueIndexRoute
   '/vendas/': typeof VendasIndexRoute
   '/cadastros/clientes/$clienteId': typeof CadastrosClientesClienteIdRoute
@@ -517,6 +534,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/agenda'
+    | '/boletim'
     | '/cadastros'
     | '/compras'
     | '/crm'
@@ -541,6 +559,7 @@ export interface FileRouteTypes {
     | '/cadastros/'
     | '/compras/'
     | '/config/'
+    | '/crm/'
     | '/estoque/'
     | '/vendas/'
     | '/cadastros/clientes/$clienteId'
@@ -573,7 +592,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/agenda'
-    | '/crm'
+    | '/boletim'
     | '/dashboard'
     | '/definir-senha'
     | '/esqueci-senha'
@@ -593,6 +612,7 @@ export interface FileRouteTypes {
     | '/cadastros'
     | '/compras'
     | '/config'
+    | '/crm'
     | '/estoque'
     | '/vendas'
     | '/cadastros/clientes/$clienteId'
@@ -625,6 +645,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/agenda'
+    | '/boletim'
     | '/cadastros'
     | '/compras'
     | '/crm'
@@ -649,6 +670,7 @@ export interface FileRouteTypes {
     | '/cadastros/'
     | '/compras/'
     | '/config/'
+    | '/crm/'
     | '/estoque/'
     | '/vendas/'
     | '/cadastros/clientes/$clienteId'
@@ -682,6 +704,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AgendaRoute: typeof AgendaRoute
+  BoletimRoute: typeof BoletimRoute
   CadastrosRoute: typeof CadastrosRouteWithChildren
   ComprasRoute: typeof ComprasRouteWithChildren
   CrmRoute: typeof CrmRouteWithChildren
@@ -715,6 +738,13 @@ declare module '@tanstack/react-router' {
       path: '/agenda'
       fullPath: '/agenda'
       preLoaderRoute: typeof AgendaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/boletim': {
+      id: '/boletim'
+      path: '/boletim'
+      fullPath: '/boletim'
+      preLoaderRoute: typeof BoletimRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cadastros': {
@@ -856,6 +886,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/config/usuarios'
       preLoaderRoute: typeof ConfigUsuariosRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/crm/': {
+      id: '/crm/'
+      path: '/'
+      fullPath: '/crm/'
+      preLoaderRoute: typeof CrmIndexRouteImport
+      parentRoute: typeof CrmRoute
     }
     '/crm/motivos': {
       id: '/crm/motivos'
@@ -1142,6 +1179,7 @@ const ComprasRouteWithChildren =
 
 interface CrmRouteChildren {
   CrmMotivosRoute: typeof CrmMotivosRoute
+  CrmIndexRoute: typeof CrmIndexRoute
   CrmFunilFunilIdRoute: typeof CrmFunilFunilIdRoute
   CrmFunisFunilIdRoute: typeof CrmFunisFunilIdRoute
   CrmOportunidadesOportunidadeIdRoute: typeof CrmOportunidadesOportunidadeIdRoute
@@ -1151,6 +1189,7 @@ interface CrmRouteChildren {
 
 const CrmRouteChildren: CrmRouteChildren = {
   CrmMotivosRoute: CrmMotivosRoute,
+  CrmIndexRoute: CrmIndexRoute,
   CrmFunilFunilIdRoute: CrmFunilFunilIdRoute,
   CrmFunisFunilIdRoute: CrmFunisFunilIdRoute,
   CrmOportunidadesOportunidadeIdRoute: CrmOportunidadesOportunidadeIdRoute,
@@ -1205,6 +1244,7 @@ const VendasRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgendaRoute: AgendaRoute,
+  BoletimRoute: BoletimRoute,
   CadastrosRoute: CadastrosRouteWithChildren,
   ComprasRoute: ComprasRouteWithChildren,
   CrmRoute: CrmRouteWithChildren,

@@ -57,11 +57,13 @@ export function ReentrarNaSessao<TVars>({
     <div
       role="alert"
       data-slot="reentrar-na-sessao"
-      className="flex flex-col gap-3 rounded-lg border border-destructive/40 bg-card p-3"
+      className="flex flex-col gap-3 rounded-[var(--r-card)] border border-[color:var(--bad)] bg-[color:var(--n-0)] p-4"
     >
       <div className="flex flex-col gap-1">
-        <p className="font-medium text-sm">Sua sessão expirou antes de gravar.</p>
-        <p className="text-muted-foreground text-xs">
+        {/* §Hierarquia: dentro de Inter a hierarquia é peso e cor, nunca tamanho
+            — o aviso é `t-bloco` (600) e a explicação, `t-meta` (n-500). */}
+        <p className="t-bloco">Sua sessão expirou antes de gravar.</p>
+        <p className="t-meta">
           Nada do que você preencheu foi perdido. Entre de novo e o envio é refeito.
         </p>
       </div>
@@ -97,7 +99,7 @@ export function ReentrarNaSessao<TVars>({
         </div>
       </div>
 
-      {login.error ? <p className="text-destructive text-xs">{login.error.message}</p> : null}
+      {login.error ? <p className="t-meta text-[color:var(--bad)]">{login.error.message}</p> : null}
 
       <Button type="button" onClick={entrarEReenviar} disabled={login.isPending}>
         {login.isPending ? 'Entrando…' : 'Entrar e enviar de novo'}

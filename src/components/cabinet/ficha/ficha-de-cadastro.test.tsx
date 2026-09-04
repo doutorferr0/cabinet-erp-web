@@ -26,9 +26,10 @@ describe('modo consulta mostra a ficha, não o formulário', () => {
       stubDeColaboradores(),
     )
 
-    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent(
-      'Cadastro de Colaboradores',
-    )
+    // A ENTIDADE, não o nome da tela (D19, #487): o cabeçalho 2.0 é do registro
+    // aberto, e "Cadastro de Colaboradores" respondia "que tela é esta?", que
+    // não é a pergunta de quem já abriu a ficha.
+    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('Colaborador')
     // O nome aparece DUAS vezes, e as duas contam: no contexto da banda (quem
     // está aberto) e no par de leitura do módulo (o valor do campo `nome`).
     const identificacao = container.querySelector('[data-modulo-id="identificacao"]')
@@ -123,9 +124,7 @@ describe('modo consulta mostra a ficha, não o formulário', () => {
     ])
     const { container } = renderRoute(`/cadastros/clientes/${CLIENTE}?modo=consulta`, stub)
 
-    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent(
-      'Cadastro de Clientes',
-    )
+    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('Cliente')
     await waitFor(() => {
       const identificacao = container.querySelector('[data-modulo-id="identificacao"]')
       expect(identificacao).not.toBeNull()

@@ -219,7 +219,7 @@ describe('EsqueciSenha', () => {
     const { stub } = servidorDoLink()
     const { router, user } = renderRoute('/login', stub)
 
-    await user.click(await screen.findByRole('link', { name: 'Esqueci minha senha' }))
+    await user.click(await screen.findByRole('link', { name: 'Esqueci a senha' }))
     await waitFor(() => expect(router.state.location.pathname).toBe('/esqueci-senha'))
   })
 })

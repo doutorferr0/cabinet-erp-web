@@ -149,7 +149,7 @@ export function ConfirmarCancelamento({
             />
             {/* O motivo diz a CLASSE do cancelamento; a nota diz o caso — e é
                 ela que sobrevive à pergunta "por que este aqui?". */}
-            <p className="text-xs text-muted-foreground">
+            <p className="t-meta">
               Sem motivo escolhido o cancelamento vale igual — é o que a maioria dos cancelamentos
               é.
             </p>
@@ -157,7 +157,7 @@ export function ConfirmarCancelamento({
         </div>
       ) : null}
       {erro ? (
-        <p role="alert" className="text-xs text-destructive">
+        <p role="alert" className="t-meta" style={{ color: 'var(--bad)' }}>
           {erro}
         </p>
       ) : null}

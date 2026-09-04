@@ -21,6 +21,61 @@ import { Controller, useFieldArray, useFormContext, useWatch } from 'react-hook-
  * `check` guarda boolean; `select` é combo puro; `computed` é derivado da
  * linha (não vive no form state). Default `text`.
  */
+/**
+ * FormRow — a fileira de campos dentro de um bloco (D16, issue #484; mockup
+ * `Formulário`, seletor `.fr.c2/.c3/.c4`).
+ *
+ * ## Por que não se chama `FormGrid`
+ *
+ * A espec da issue pede "`FormGrid colunas={2|3|4}` com `gap 12`". O nome já
+ * estava ocupado NESTE arquivo por outra coisa — a grade de ITENS (padrão 6 da
+ * transcrição), consumida por doze telas em cinco zonas da rodada, e uma delas
+ * (D17) é justamente quem vai substituí-la por `GradeDeItens`. Renomear agora
+ * mexeria em doze arquivos fora da zona da D16 para trocar um identificador,
+ * com conflito garantido contra a D17. O COMPORTAMENTO pedido é o que vale, e
+ * ele está aqui inteiro; o nome segue o mockup, que chama a peça de `fr` —
+ * form row.
+ *
+ * ## O gap é `--s-3`, e a coluna é `auto-fit`
+ *
+ * `gap 12` = `--s-3`, o terceiro degrau da escala. A quebra é por
+ * `repeat(auto-fit, minmax(...))` e não por `@media`: a rodada proíbe media
+ * query para quebra, e a fileira precisa dobrar quando a COLUNA encolhe (a
+ * ficha tem duas), não quando a JANELA encolhe — media query mediria a janela e
+ * deixaria quatro campos espremidos numa coluna de 320px.
+ *
+ * Irmãos se separam por `gap`, nunca por `margin` por elemento — regra 1 da
+ * §Hierarquia.
+ */
+export interface FormRowProps {
+  /** Quantas colunas no largo. Estreito dobra sozinho. */
+  colunas?: 2 | 3 | 4
+  className?: string
+  children: React.ReactNode
+}
+
+/** Largura mínima por coluna, para o `auto-fit` decidir quando dobrar. */
+const MINIMO_DA_COLUNA: Record<2 | 3 | 4, string> = {
+  2: '220px',
+  3: '180px',
+  4: '150px',
+}
+
+export function FormRow({ colunas = 2, className, children }: FormRowProps) {
+  return (
+    <div
+      data-slot="form-row"
+      data-colunas={colunas}
+      className={cn('grid min-w-0 gap-[var(--s-3)]', className)}
+      style={{
+        gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${MINIMO_DA_COLUNA[colunas]}), 1fr))`,
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
 export type FormGridCellType = 'text' | 'money' | 'percent' | 'check' | 'select' | 'computed'
 
 export interface FormGridColumn {
@@ -274,13 +329,21 @@ export function FormGrid({
         )}
         {actions?.((row) => append(row))}
       </div>
-      {/* Caixa preta 2px — o mesmo contêiner da DataTable (a malha interna é Fio). */}
-      <div data-slot="form-grid-box" className="overflow-x-auto border-2 border-border">
+      {/* 2.0: a grade mora DENTRO de um card (o `FormBlock`), e card dentro de
+          card é o terceiro nível que a §Hierarquia proíbe. A fronteira aqui é a
+          mais barata que resolve — uma hairline em volta, o cabeçalho separado
+          por tint `n-50`, e hairline entre linhas. A caixa preta de 2px saiu. */}
+      <div
+        data-slot="form-grid-box"
+        className="overflow-x-auto rounded-[var(--r-item)] border [border-color:var(--n-200)]"
+      >
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="[background:var(--n-50)] hover:[background:var(--n-50)]">
               {columns.map((col) => (
-                <TableHead key={col.key}>{col.label}</TableHead>
+                <TableHead key={col.key} className="t-rotulo">
+                  {col.label}
+                </TableHead>
               ))}
               <TableHead className="w-10" />
             </TableRow>
@@ -288,10 +351,7 @@ export function FormGrid({
           <TableBody>
             {fields.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length + 1}
-                  className="h-16 text-center font-[family-name:var(--font-nome)] text-[0.9375rem] text-muted-foreground italic"
-                >
+                <TableCell colSpan={columns.length + 1} className="t-meta h-16 text-center">
                   Nenhum item ainda — os botões acima incluem o primeiro.
                 </TableCell>
               </TableRow>
@@ -304,13 +364,11 @@ export function FormGrid({
                   return (
                     <TableRow
                       key={field.id}
-                      className="border-y-2 border-border bg-muted hover:bg-muted"
+                      className="[background:var(--n-50)] hover:[background:var(--n-50)]"
                     >
                       <TableCell colSpan={columns.length + 1} className="p-1">
                         <div className="flex h-8 items-center justify-between px-2">
-                          <span className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
-                            {String(secao)}
-                          </span>
+                          <span className="t-rotulo">{String(secao)}</span>
                           <Button
                             type="button"
                             variant="ghost"

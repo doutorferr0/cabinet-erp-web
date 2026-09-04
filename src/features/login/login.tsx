@@ -1,9 +1,8 @@
 import { TextField } from '@/components/cabinet/form-controls'
-import { Marca } from '@/components/cabinet/marca'
-import { PageHeader } from '@/components/cabinet/page-header'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
 import { useLogin } from '@/data/sessao'
+import { PaginaDeAuth } from '@/features/login/pagina-de-auth'
 import { destinoDepoisDoLogin } from '@/lib/rota-de-origem'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate, useSearch } from '@tanstack/react-router'
@@ -20,16 +19,21 @@ type LoginValores = z.infer<typeof loginSchema>
 /**
  * Tela de entrada — a única fora do shell e da guarda.
  *
- * Forma: uma folha (Regra da Folha) centrada no Papel, sem sidebar nem
- * cabeçalho — quem não entrou não tem sistema para navegar. Mesma anatomia do
- * `DocumentoHeader`: título em Headline, etiqueta em Meta, régua forte
- * fechando o bloco.
+ * Forma 2.0: página dividida (`PaginaDeAuth`) — bancada com a marca à esquerda,
+ * card com os controles à direita. Quem não entrou não tem sistema para
+ * navegar, então não há sidebar nem cabeçalho.
  *
  * Destino principal é o fluxo de senha provisória: `LoginOk.mustChangePassword
  * === true` manda para `/trocar-senha` em vez de `/`. O que ainda NÃO há:
  * `/auth/me` não carrega o flag, então quem pular a troca (fechar e voltar)
  * entra normal — a guarda não tem como saber. Pergunta ao backend registrada
  * na memória: o flag precisa vir na `SessaoAtual`.
+ *
+ * **Sem "manter conectado", e a ausência é deliberada.** O mockup pede a caixa,
+ * mas a sessão é cookie opaco e `LoginRequest` é e-mail + senha: um checkbox
+ * que não viaja no contrato ensinaria o operador que a sessão dura mais quando
+ * nada mudou. Entra quando o contrato publicar o campo — PR neste repo, fora
+ * da zona desta issue.
  */
 export function LoginTela() {
   const navigate = useNavigate()
@@ -62,55 +66,50 @@ export function LoginTela() {
   }
 
   return (
-    // Papel com grade + folha em caixa preta e sombra dura: a tela de sessão é
-    // uma folha como qualquer outra.
-    <div className="bg-paper-grid flex min-h-screen items-center justify-center p-4">
-      <div className="w-full max-w-sm rounded-panel border-2 border-border bg-card p-4 shadow-el3">
-        <div className="mb-4 flex items-center gap-3">
-          {/* A MARCA do sistema. Era uma composição de três ornamentos do
-              acervo empilhados — a "estrela radiada" que representava o Cabinet
-              enquanto ele não tinha marca própria. Tem: o símbolo do user
-              assume, e composição de empréstimo não sobrevive à marca de
-              verdade. Só o símbolo, sem o nome: quem diz "Cabinet" aqui é a
-              banda ao lado, e repetir o nome ao lado dele mesmo é ruído. */}
-          <Marca tamanho={40} className="text-foreground" />
-          <PageHeader variante="display" titulo="Cabinet" contexto="Entrar" className="flex-1" />
-        </div>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(entrar)} className="flex flex-col gap-3">
-            <TextField
-              name="email"
-              label="E-mail"
-              type="email"
-              autoComplete="email"
-              // autoFocus: a tela tem um único propósito; o cursor já chega no campo.
-              autoFocus
-            />
-            <TextField
-              name="password"
-              label="Senha"
-              type="password"
-              autoComplete="current-password"
-            />
-            {login.error && (
-              <p role="alert" className="text-xs text-destructive">
-                {login.error.message}
-              </p>
-            )}
-            <Button type="submit" disabled={login.isPending} className="mt-1">
-              {login.isPending ? 'Entrando…' : 'Entrar'}
-            </Button>
-            {/*
-              A saída de quem não consegue entrar mora AQUI, e não numa página
-              de ajuda: é neste ponto que a pessoa descobre que esqueceu a
-              senha. Discreto de propósito — o caminho principal é entrar.
-            */}
-            <Link to="/esqueci-senha" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
-              Esqueci minha senha
+    <PaginaDeAuth titulo="Entrar" subtitulo="Use o e-mail da sua empresa.">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(entrar)} className="flex flex-col gap-4">
+          <TextField
+            name="email"
+            label="E-mail"
+            type="email"
+            autoComplete="email"
+            // autoFocus: a tela tem um único propósito; o cursor já chega no campo.
+            autoFocus
+          />
+          <TextField
+            name="password"
+            label="Senha"
+            type="password"
+            autoComplete="current-password"
+          />
+          {login.error && (
+            <p role="alert" className="t-meta text-[color:var(--bad)]">
+              {login.error.message}
+            </p>
+          )}
+          {/* A tecla: 40px de altura, largura inteira do card. É a única ação
+              da tela, e o tamanho é o que diz isso sem precisar de cor. */}
+          <Button type="submit" size="lg" disabled={login.isPending} className="w-full">
+            {login.isPending ? 'Entrando…' : 'Entrar'}
+          </Button>
+          {/*
+            A saída de quem não consegue entrar mora AQUI, e não numa página de
+            ajuda: é neste ponto que a pessoa descobre que esqueceu a senha. Ao
+            lado dela, o recado de que NÃO há auto-cadastro — sem ele, quem não
+            tem conta procura um "criar conta" que nunca existiu.
+          */}
+          <div className="flex items-baseline justify-between gap-3">
+            <Link
+              to="/esqueci-senha"
+              className="t-ui shrink-0 text-[color:var(--main-text)] underline-offset-4 hover:underline"
+            >
+              Esqueci a senha
             </Link>
-          </form>
-        </Form>
-      </div>
-    </div>
+            <span className="t-meta text-right">Precisa de acesso? Fale com o administrador</span>
+          </div>
+        </form>
+      </Form>
+    </PaginaDeAuth>
   )
 }

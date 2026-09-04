@@ -126,6 +126,9 @@ function servidor() {
       if (caminho === `/api/employees/${USUARIO_ID}/reset-password`) {
         return json({ temporaryPassword: 'xK7mPq2wRt9v' })
       }
+      if (caminho === `/api/employees/${USUARIO_ID}/invite`) {
+        return json({ sentTo: 'maria@vertz.com.br', expiresAt: '2026-09-05T12:00:00Z' })
+      }
       if (caminho === '/api/roles') return json({ ...PAPEL, permissions: ['orcamento:ver'] }, 201)
       if (caminho === '/api/tenants') return json(EMPRESA_DETALHE, 201)
       if (caminho === `/api/tenants/${EMPRESA_ATIVA}`) return json(EMPRESA_DETALHE)
@@ -217,10 +220,24 @@ describe('tela de acesso', () => {
     }
     renderRoute('/config/usuarios', comFalha as typeof stub)
 
-    expect(await screen.findByText('A lista de usuários não carregou')).toBeInTheDocument()
+    // A frase é agora a da `VitraDataTable` — a listagem virou consulta de
+    // servidor na D27, e quem separa falha de vazio passou a ser ela. O que o
+    // teste trava não mudou: a tela DIZ que a leitura falhou, com o `detail` do
+    // servidor, em vez de desenhar uma tabela vazia.
+    // Timeout explícito porque o `findBy` do Testing Library espera 1s por
+    // padrão, e a `VitraDataTable` chega ao estado de falha em DOIS passos —
+    // skeleton enquanto a consulta corre, `FalhaDaConsulta` depois que ela
+    // rejeita. Um segundo é o default da biblioteca, não uma afirmação sobre o
+    // produto; com a máquina carregada ele expira antes do segundo passo e o
+    // teste acusa asserção onde só houve pressa.
+    expect(
+      await screen.findByText('Não foi possível carregar a consulta', undefined, {
+        timeout: 15000,
+      }),
+    ).toBeInTheDocument()
     expect(screen.getByText('Nenhuma empresa ativa na sessão.')).toBeInTheDocument()
     // E o vazio NÃO aparece junto — as duas frases na mesma tela se anulariam.
-    expect(screen.queryByText('Nenhum usuário nesta empresa.')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('vazio-da-consulta')).not.toBeInTheDocument()
   })
 
   it('lista os usuários da empresa ativa', async () => {
@@ -361,7 +378,12 @@ describe('tela de acesso', () => {
     const { stub } = servidor()
     const { user } = renderRoute('/config/usuarios', stub)
 
-    await user.click(await screen.findByRole('button', { name: 'Empresas e papel…' }))
+    // D27: o vínculo deixou de ser o terceiro botão da linha e virou o CLIQUE
+    // na linha — a coluna de ação carrega a próxima ação (`Convidar`), e abrir
+    // o registro é o gesto da grade, não mais um botão que competia com ela.
+    // Mesmo motivo do caso da falha: a linha só existe depois de a consulta da
+    // grade voltar, e o default de 1s do `findBy` não cobre isso sob carga.
+    await user.click(await screen.findByText('Maria Nova', undefined, { timeout: 15000 }))
 
     const dialogo = within(await screen.findByRole('dialog'))
     // E dentro dele, na TABELA: "Vendedor" é também `<option>` do combo de
@@ -376,11 +398,35 @@ describe('tela de acesso', () => {
     expect(dialogo.getAllByRole('button', { name: 'Ativar e editar' })).toHaveLength(1)
   })
 
+  /**
+   * CONVIDAR é a `proximaAcao` da linha (D27), e o recibo NÃO traz segredo.
+   *
+   * O contrato não devolve o token de propósito — ele foi para o e-mail, e é
+   * essa a diferença entre convidar e gerar senha. O que o aviso precisa dizer
+   * é para ONDE saiu, que é o que o administrador confere.
+   */
+  it('Convidar manda o link e o recibo diz para onde saiu, sem senha', async () => {
+    const { stub, escritas } = servidor()
+    const { user } = renderRoute('/config/usuarios', stub)
+
+    await user.click(await screen.findByRole('button', { name: 'Convidar' }, { timeout: 15000 }))
+
+    await waitFor(() => expect(escritas).toHaveLength(1))
+    expect(escritas[0]).toMatchObject({
+      metodo: 'POST',
+      caminho: `/api/employees/${USUARIO_ID}/invite`,
+    })
+    expect(await screen.findByText(/maria@vertz\.com\.br/)).toBeInTheDocument()
+    // A linha não abriu o diálogo de vínculos junto: a barreira de propagação
+    // da célula de ação é o que separa "agir na linha" de "abrir a linha".
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
   it('Gerar senha na linha mostra o diálogo de exibição única', async () => {
     const { stub, escritas } = servidor()
     const { user } = renderRoute('/config/usuarios', stub)
 
-    await user.click(await screen.findByRole('button', { name: 'Gerar senha' }))
+    await user.click(await screen.findByRole('button', { name: 'Gerar senha' }, { timeout: 15000 }))
 
     await waitFor(() => expect(escritas).toHaveLength(1))
     expect(await screen.findByLabelText('Senha provisória')).toHaveTextContent('xK7mPq2wRt9v')

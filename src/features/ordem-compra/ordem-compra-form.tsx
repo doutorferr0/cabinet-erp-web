@@ -1,60 +1,37 @@
-import type { PartnerDto, PurchaseOrderDto } from '@/api/gerado'
+import type { PurchaseOrderDto } from '@/api/gerado'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
-import { DocumentoBloco, fileirasTotais } from '@/components/cabinet/documento'
+import { DocumentoBloco } from '@/components/cabinet/documento'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
-import { FormBlock } from '@/components/cabinet/form-block'
 import { DateField, MoneyField, TextareaField } from '@/components/cabinet/form-controls'
-import { FormGrid, type FormGridRow } from '@/components/cabinet/form-grid'
-import { Nome } from '@/components/cabinet/nome'
 import { posGravar } from '@/components/cabinet/pos-gravar'
-import { SearchDialog } from '@/components/cabinet/search-dialog'
 import { Secao } from '@/components/cabinet/secao'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { data } from '@/data'
 import {
   DESTINO_ROTULO,
   type ItemDaOrdemDeCompra,
   type OrdemDeCompra,
   SITUACAO_DA_ORDEM,
-  faltaParaOMinimo,
   fornecedoresComLinhaAberta,
   linhasAbertasParaOrdem,
-  subtotalDaOrdem,
   useCancelarOrdemDeCompra,
-  useEnviarOrdemDeCompra,
   useGravarOrdemDeCompra,
   usePedidosComLinhaAberta,
   useReagendarOrdemDeCompra,
 } from '@/data/compras-api'
-import { useEmpresasDaSessao } from '@/data/empresas-api'
-import { useCondicoesDePagamento } from '@/data/pagamento-api'
 import { obterParceiro } from '@/data/parceiros-api'
-import { tabelas } from '@/data/tabelas'
-import { PERCENT_ESCALA, formatDateBR, formatMoneyBRL, formatPercent } from '@/lib/formatters'
-import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
+import { PERCENT_ESCALA, formatDateBR, formatPercent } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
-import type { Transportadora } from '@/mocks/transportadoras'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import type { ColumnDef } from '@tanstack/react-table'
-import {
-  Building2,
-  CalendarClock,
-  FileText,
-  Hash,
-  List,
-  Percent,
-  Search,
-  Send,
-  Truck,
-} from 'lucide-react'
+import { CalendarClock, FileText, Hash, List, Percent } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { z } from 'zod'
+import { ItensDaOrdem } from './itens-da-ordem'
+import { LateralDaOrdem } from './lateral-da-ordem'
 
 /**
  * ORDEM DE COMPRA — o COMBINADO com um fornecedor.
@@ -74,7 +51,7 @@ import { z } from 'zod'
  */
 
 /** Uma linha como a GRADE a guarda. */
-interface LinhaNoFormulario {
+export interface LinhaNoFormulario {
   linha: number
   pedidoOrigemId: string
   pedidoOrigemNumero: string
@@ -140,7 +117,7 @@ export const ordemCompraSchema = z.object({
   ),
 })
 
-function linhaParaFormulario(item: ItemDaOrdemDeCompra): LinhaNoFormulario {
+export function linhaParaFormulario(item: ItemDaOrdemDeCompra): LinhaNoFormulario {
   return {
     linha: item.linha,
     pedidoOrigemId: item.pedidoOrigemId,
@@ -189,355 +166,6 @@ export function doFormulario(valores: OrdemNoFormulario): OrdemDeCompra {
   }
 }
 
-const colunasDeFornecedor: ColumnDef<PartnerDto>[] = [
-  { accessorKey: 'code', header: 'Código' },
-  {
-    accessorKey: 'legalName',
-    header: 'Fornecedor',
-    cell: ({ getValue }) => <Nome>{getValue<string>()}</Nome>,
-  },
-  {
-    accessorKey: 'minimumBillingCents',
-    header: 'Faturamento mínimo',
-    cell: ({ getValue }) => {
-      const centavos = getValue<number | null>()
-      return centavos === null || centavos === undefined ? '—' : formatMoneyBRL(centavos)
-    },
-  },
-]
-
-const colunasDeTransportadora: ColumnDef<Transportadora>[] = [
-  { accessorKey: 'codigo', header: 'Código' },
-  {
-    accessorKey: 'nome',
-    header: 'Transportadora',
-    cell: ({ getValue }) => <Nome>{getValue<string>()}</Nome>,
-  },
-  { accessorKey: 'municipio', header: 'Município' },
-  { accessorKey: 'uf', header: 'UF' },
-]
-
-/**
- * O FORNECEDOR da ordem, e o faturamento mínimo que vem com ele.
- *
- * O mínimo é ECOADO na emissão (`minimumBillingCents`) e a partir daí é cópia
- * congelada: mudar o cadastro do fornecedor amanhã não muda a régua desta
- * ordem. Enquanto a ordem não existe, a tela usa o do cadastro — é a única
- * forma de avisar ANTES de gravar, que é quando o aviso ainda serve.
- *
- * Trocar o fornecedor com linhas na grade não é permitido: as linhas vieram de
- * pedidos DAQUELE fornecedor, e a ordem de outro com as mesmas linhas seria
- * recusada pelo servidor com uma frase que não fala de fornecedor nenhum.
- */
-function BlocoDoFornecedor({ bloqueado }: { bloqueado: boolean }) {
-  const { setValue } = useFormContext<OrdemNoFormulario>()
-  const fornecedor = useWatch({ name: 'fornecedor' }) as string
-  const itens = (useWatch({ name: 'itens' }) as LinhaNoFormulario[] | undefined) ?? []
-  const [buscaAberta, setBuscaAberta] = useState(false)
-
-  const temLinhas = itens.length > 0
-
-  return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-      <span>
-        <span className="text-muted-foreground">Fornecedor:</span>{' '}
-        <output aria-label="Fornecedor da ordem">
-          {fornecedor ? <Nome>{fornecedor}</Nome> : '—'}
-        </output>
-      </span>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        disabled={bloqueado || temLinhas}
-        title={
-          temLinhas
-            ? 'A ordem já tem linhas de pedidos deste fornecedor. Remova as linhas para trocar.'
-            : undefined
-        }
-        onClick={() => setBuscaAberta(true)}
-      >
-        <Search className="size-4" /> Escolher fornecedor
-      </Button>
-      <SearchDialog
-        open={buscaAberta}
-        onOpenChange={setBuscaAberta}
-        title="Busca de Fornecedor"
-        columns={colunasDeFornecedor}
-        queryKey={['fornecedores', 'ordem-de-compra']}
-        fetcher={(state) => data.fornecedores.list(state)}
-        onSelect={(f) => {
-          setValue('fornecedorId', f.id, { shouldDirty: true })
-          setValue('fornecedor', f.legalName ?? '', { shouldDirty: true })
-          // O mínimo do CADASTRO enquanto a ordem não tem o seu; depois da
-          // emissão o servidor devolve o congelado e este valor é sobrescrito.
-          setValue('faturamentoMinimoCentavos', f.minimumBillingCents ?? null, {
-            shouldDirty: true,
-          })
-        }}
-      />
-    </div>
-  )
-}
-
-/** A EMPRESA COMPRADORA — qual empresa do grupo está comprando (fase A0). */
-function CampoEmpresaCompradora() {
-  const { setValue } = useFormContext<OrdemNoFormulario>()
-  const { empresas, ativa } = useEmpresasDaSessao()
-  const escolhida = useWatch({ name: 'empresaCompradoraId' }) as string
-
-  // Ordem nova nasce comprando pela empresa ATIVA — é o caso comum, e deixar o
-  // campo vazio faria toda ordem começar com um 400 esperando o operador.
-  useEffect(() => {
-    if (!escolhida && ativa) {
-      setValue('empresaCompradoraId', ativa.tenantId, { shouldDirty: false })
-      setValue('empresaCompradora', ativa.name ?? '', { shouldDirty: false })
-    }
-  }, [escolhida, ativa, setValue])
-
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor="empresa-compradora">Empresa Compradora</Label>
-      <select
-        id="empresa-compradora"
-        className="flex h-9 w-full border-2 border-input bg-card px-2.5 py-1 text-sm outline-none focus-visible:focus-ring"
-        value={escolhida}
-        onChange={(evento) => {
-          const empresa = empresas.find((e) => e.tenantId === evento.target.value)
-          setValue('empresaCompradoraId', evento.target.value, { shouldDirty: true })
-          setValue('empresaCompradora', empresa?.name ?? '', { shouldDirty: true })
-        }}
-      >
-        <option value="">Selecione…</option>
-        {empresas.map((e) => (
-          <option key={e.tenantId} value={e.tenantId}>
-            {e.name}
-          </option>
-        ))}
-      </select>
-    </div>
-  )
-}
-
-/**
- * A CONDIÇÃO DE PAGAMENTO da ordem — a aba Pagamento do G1, reutilizada.
- *
- * Só a escolha da condição: o parcelamento do documento de COMPRA não está no
- * contrato (a ordem não publica `paymentInstallments`), e desenhar parcelas
- * aqui seria inventar do lado do cliente uma conta que ninguém decidiu.
- */
-function AbaPagamento() {
-  const { setValue } = useFormContext<OrdemNoFormulario>()
-  const { condicoes, carregando } = useCondicoesDePagamento()
-  const escolhida = useWatch({ name: 'condicaoPagamentoId' }) as string | null
-  const nomeCarimbado = useWatch({ name: 'condicaoPagamento' }) as string | null
-
-  return (
-    <Secao
-      numero="06"
-      titulo="Pagamento"
-      cor="money"
-      icone={FileText}
-      nota="em quantas vezes, e quando"
-    >
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-1.5 sm:max-w-sm">
-          <Label htmlFor="condicao-pagamento">Condição de pagamento</Label>
-          <select
-            id="condicao-pagamento"
-            className="flex h-9 w-full border-2 border-input bg-card px-2.5 py-1 text-sm outline-none focus-visible:focus-ring"
-            value={escolhida ?? ''}
-            disabled={carregando}
-            onChange={(evento) => {
-              const condicao = condicoes.find((c) => c.id === evento.target.value)
-              setValue('condicaoPagamentoId', evento.target.value || null, { shouldDirty: true })
-              setValue('condicaoPagamento', condicao?.name ?? null, { shouldDirty: true })
-            }}
-          >
-            <option value="">Sem condição definida</option>
-            {condicoes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        {/* A condição CARIMBADA continua legível mesmo se tiver sido desativada
-            depois — o combo só oferece as ativas, e sem esta linha o documento
-            antigo pareceria estar sem condição nenhuma. */}
-        {nomeCarimbado && !condicoes.some((c) => c.id === escolhida) ? (
-          <p className="text-muted-foreground text-sm">
-            Condição carimbada no documento: <Nome>{nomeCarimbado}</Nome>
-          </p>
-        ) : null}
-      </div>
-    </Secao>
-  )
-}
-
-function BlocoTransportadora() {
-  const { setValue } = useFormContext<OrdemNoFormulario>()
-  const transportadora = useWatch({ name: 'transportadora' }) as string | null
-  const [buscaAberta, setBuscaAberta] = useState(false)
-
-  useEffect(() => bindShortcut(SHORTCUTS.transportadora, () => setBuscaAberta(true)))
-
-  return (
-    <FormBlock legend="Transportadora">
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-        <span>
-          <span className="text-muted-foreground">Nome:</span>{' '}
-          <output aria-label="Nome da transportadora">
-            {transportadora ? <Nome>{transportadora}</Nome> : '—'}
-          </output>
-        </span>
-        <Button type="button" variant="outline" size="sm" onClick={() => setBuscaAberta(true)}>
-          <Search /> Busca <kbd>{shortcutLabel(SHORTCUTS.transportadora)}</kbd>
-        </Button>
-      </div>
-      <SearchDialog
-        open={buscaAberta}
-        onOpenChange={setBuscaAberta}
-        title="Busca de Transportadora"
-        columns={colunasDeTransportadora}
-        queryKey={['transportadoras']}
-        fetcher={(state) => data.transportadoras.list(state)}
-        onSelect={(t) => {
-          // A transportadora é PARCEIRO no contrato (`carrierId`), e a tabela de
-          // apoio daqui não tem o id dele. Enquanto o cadastro de
-          // transportadoras não existir como parceiro, o nome viaja para a tela
-          // e o `carrierId` continua nulo: id inventado casaria com parceiro
-          // que não existe, e o servidor recusaria a ordem inteira por causa da
-          // transportadora.
-          setValue('transportadora', t.nome, { shouldDirty: true })
-        }}
-      />
-    </FormBlock>
-  )
-}
-
-/**
- * O AVISO do faturamento mínimo (§7.1) — antes de gravar, não depois.
- *
- * O servidor recusa a ordem abaixo do mínimo com 409
- * (`faturamento-minimo-nao-atingido`), e essa recusa está certa. O que ela não
- * faz é impedir o comprador de montar a ordem inteira para descobrir no fim.
- * Aqui a conta é a MESMA do contrato: soma das linhas, sem o acréscimo — frete
- * e taxa não contam para o mínimo, e somá-los liberaria uma ordem que o
- * servidor recusa.
- */
-function AvisoDeFaturamentoMinimo() {
-  const minimo = useWatch({ name: 'faturamentoMinimoCentavos' }) as number | null
-  const itens = (useWatch({ name: 'itens' }) as LinhaNoFormulario[] | undefined) ?? []
-
-  if (minimo === null || minimo === undefined) return null
-
-  const falta = faltaParaOMinimo({ faturamentoMinimoCentavos: minimo, itens })
-
-  return (
-    <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
-      <span>
-        <span className="text-muted-foreground">Faturamento mínimo do fornecedor:</span>{' '}
-        <output aria-label="Faturamento mínimo">{formatMoneyBRL(minimo)}</output>
-      </span>
-      {falta === null ? (
-        <span className="text-muted-foreground">Mínimo atingido.</span>
-      ) : (
-        // `<output>` e não `<span role="status">`: o elemento semântico já É a
-        // região viva, e o biome recusa o papel posto à mão.
-        <output className="font-semibold text-warn" aria-label="Falta para o mínimo">
-          Faltam {formatMoneyBRL(falta)} para o mínimo — o fornecedor recusa a ordem abaixo dele.
-        </output>
-      )}
-    </div>
-  )
-}
-
-/**
- * "Produtos Pedidos" do legado: traz as linhas AINDA ABERTAS dos pedidos do
- * fornecedor escolhido.
- *
- * É por aqui que a ordem ganha conteúdo — ela não tem linha própria, toda linha
- * dela veio de um pedido. Só as `open` aparecem: a linha já levada por outra
- * ordem seria recusada com `item-ja-em-ordem`, e oferecê-la seria montar uma
- * ordem que só falha ao gravar.
- */
-function TrazerLinhasDePedidos({
-  fornecedorId,
-  jaNaOrdem,
-  onTrazer,
-}: {
-  fornecedorId: string
-  jaNaOrdem: readonly LinhaNoFormulario[]
-  onTrazer: (linhas: LinhaNoFormulario[]) => void
-}) {
-  const [aberto, setAberto] = useState(false)
-  const { data: pedidos, isPending, isError } = usePedidosComLinhaAberta(fornecedorId, aberto)
-
-  function trazer(indice: number) {
-    const pedido = pedidos?.[indice]
-    if (!pedido) return
-    const candidatas = linhasAbertasParaOrdem(pedido, fornecedorId)
-      .filter(
-        (linha) =>
-          !jaNaOrdem.some(
-            (existente) =>
-              existente.pedidoOrigemId === linha.pedidoOrigemId &&
-              existente.linhaDeOrigem === linha.linhaDeOrigem,
-          ),
-      )
-      .map(linhaParaFormulario)
-    onTrazer(candidatas)
-    setAberto(false)
-  }
-
-  return (
-    <>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        disabled={!fornecedorId}
-        title={!fornecedorId ? 'Escolha o fornecedor primeiro.' : undefined}
-        onClick={() => setAberto(true)}
-      >
-        <List className="size-4" /> Produtos Pedidos
-      </Button>
-      <Dialog isOpen={aberto} onOpenChange={setAberto} className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Pedidos em aberto deste fornecedor</DialogTitle>
-        </DialogHeader>
-        {isPending ? (
-          <p className="text-muted-foreground text-sm">Carregando…</p>
-        ) : isError ? (
-          <p className="text-sm text-warn">Não foi possível consultar os pedidos de compra.</p>
-        ) : (pedidos ?? []).length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            Nenhum pedido com linha em aberto para este fornecedor.
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {(pedidos ?? []).map((pedido, indice) => (
-              <li key={pedido.id} className="flex items-center justify-between gap-3 text-sm">
-                <span>
-                  <span className="font-semibold">{pedido.numero}</span>{' '}
-                  <span className="text-muted-foreground">
-                    {formatDateBR(pedido.dataEmissao)}
-                    {pedido.cliente ? ` · ${pedido.cliente}` : ' · estoque'}
-                  </span>
-                </span>
-                <Button type="button" variant="outline" size="sm" onClick={() => trazer(indice)}>
-                  Trazer linhas
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Dialog>
-    </>
-  )
-}
-
 /**
  * DESCONTO GERAL da ordem, em PERCENTUAL — e é aí que ele difere do legado.
  *
@@ -573,90 +201,6 @@ function CampoDeDesconto({ className }: { className?: string }) {
         }}
       />
     </div>
-  )
-}
-
-function GradeItens({ fornecedorId }: { fornecedorId: string }) {
-  const itens = (useWatch({ name: 'itens' }) as LinhaNoFormulario[] | undefined) ?? []
-  const desconto = (useWatch({ name: 'descontoPercentual' }) as number) ?? 0
-  const acrescimo = (useWatch({ name: 'acrescimoCentavos' }) as number) ?? 0
-
-  const subtotal = subtotalDaOrdem(itens)
-  const descontoEmCentavos = Math.round((subtotal * desconto) / 1_000_000)
-
-  return (
-    <FormGrid
-      name="itens"
-      hideAdd
-      actions={(append) => (
-        <TrazerLinhasDePedidos
-          fornecedorId={fornecedorId}
-          jaNaOrdem={itens}
-          onTrazer={(linhas) => {
-            for (const linha of linhas) append({ ...linha })
-          }}
-        />
-      )}
-      columns={[
-        {
-          // A VOLTA para o pedido: qual documento originou esta linha.
-          key: 'pedidoOrigemNumero',
-          label: 'Ped. Compra',
-          type: 'computed',
-          compute: (row: FormGridRow) => String(row.pedidoOrigemNumero ?? '') || '—',
-        },
-        { key: 'descricao', label: 'Descrição do Produto', voz: 'produto' },
-        { key: 'acabamento', label: 'Acab.' },
-        { key: 'tamanho', label: 'Tamanho' },
-        { key: 'quantidade', label: 'Quantidade' },
-        { key: 'unidade', label: 'Unidade', type: 'select', options: tabelas.unidades },
-        { key: 'custoUnitarioCentavos', label: 'Custo Unit.', type: 'money' },
-        {
-          key: 'valorTotal',
-          label: 'Valor Total',
-          type: 'computed',
-          compute: (row: FormGridRow) => {
-            const quantidade = Number(String(row.quantidade ?? '0').replace(',', '.')) || 0
-            const custo = Number(row.custoUnitarioCentavos ?? 0)
-            return formatMoneyBRL(Math.round(quantidade * custo))
-          },
-        },
-        {
-          key: 'destinoRotulo',
-          label: 'Destino',
-          type: 'computed',
-          compute: (row: FormGridRow) => String(row.destinoRotulo ?? '') || '—',
-        },
-      ]}
-      newRow={{
-        linha: 0,
-        pedidoOrigemId: '',
-        pedidoOrigemNumero: '',
-        linhaDeOrigem: 0,
-        varianteId: null,
-        descricao: '',
-        acabamento: '',
-        tamanho: '',
-        unidade: 'UN',
-        quantidade: '',
-        custoUnitarioCentavos: null,
-        totalCentavos: 0,
-        destinoRotulo: DESTINO_ROTULO.stock,
-        grupoProdutoId: null,
-        grupoProduto: null,
-      }}
-      totals={{
-        valueColumnKey: 'valorTotal',
-        rows: fileirasTotais(subtotal, [
-          {
-            label: `Desconto (${formatPercent(desconto)}%)`,
-            valorCentavos: descontoEmCentavos,
-            sinal: -1,
-          },
-          { label: 'Acréscimo', valorCentavos: acrescimo, sinal: 1 },
-        ]),
-      }}
-    />
   )
 }
 
@@ -805,76 +349,61 @@ function SementeDoPedido({ pedidoId, fornecedorId }: { pedidoId: string; fornece
   return null
 }
 
-function AbaPrincipal({ ordem }: { ordem: OrdemDeCompra }) {
-  const enviada = ordem.situacao === 'sent'
+/**
+ * A COLUNA PRINCIPAL — o que se PREENCHE.
+ *
+ * Reface 2.0 (D18): as seções `Fornecedor & Compra`, `Transportadora` e a aba
+ * `Pagamento` saíram daqui e viraram cartões tintados na lateral. O que ficou
+ * é o documento propriamente dito — os números que o operador digita e a conta
+ * que sai deles. Antes eram cinco seções numeradas e duas abas para um
+ * documento cujo miolo é uma grade.
+ */
+function ColunaPrincipal({ ordem }: { ordem: OrdemDeCompra }) {
   // Do FORMULÁRIO e não da prop: numa ordem semeada pelo pedido, o fornecedor
   // só existe depois que a semente foi aplicada — lido da prop, o "Produtos
   // Pedidos" nasceria desabilitado e nunca se habilitaria.
   const fornecedorId = (useWatch({ name: 'fornecedorId' }) as string) ?? ''
 
   return (
-    <div data-zonas className="flex flex-col gap-4">
+    <div data-zonas className="flex min-w-0 flex-col gap-4">
       <DocumentoBloco className="flex flex-col gap-4">
         <Secao
           numero="01"
-          titulo="Fornecedor & Compra"
-          cor="id"
-          icone={Building2}
-          nota="de quem se compra, e por qual empresa"
-        >
-          <div className="flex flex-col gap-3">
-            <BlocoDoFornecedor bloqueado={enviada} />
-            <div className="grid grid-cols-12 items-end gap-3">
-              <div className="col-span-12 sm:col-span-4">
-                <CampoEmpresaCompradora />
-              </div>
-            </div>
-            <AvisoDeFaturamentoMinimo />
-          </div>
-        </Secao>
-
-        <Secao
-          numero="02"
           titulo="Identificação"
           cor="info"
           icone={Hash}
           nota="números e datas do documento"
         >
+          {/* Reface 2.0 (D18): `Envio` e `Reagendada` SAÍRAM daqui. Eram dois
+              campos de leitura que diziam, em prosa e sem ordem, o que a
+              timeline da lateral diz como posição — e diziam pior: `Envio: —`
+              não informa se o envio ainda vem ou se já não vem mais, e a data
+              reagendada solta parecia sempre ter sido aquela. Repetir os dois
+              nas duas colunas daria ao operador duas fontes para a mesma
+              pergunta, e a de cima é a que ele lê primeiro. */}
           <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
-            <span className="text-sm">
-              <span className="text-muted-foreground">Número:</span>{' '}
-              <output aria-label="Número da ordem">{ordem.numero || '— a emitir'}</output>
+            <span className="t-corpo">
+              <span className="t-rotulo">Número</span>{' '}
+              <output aria-label="Número da ordem" className="t-dado">
+                {ordem.numero || '— a emitir'}
+              </output>
             </span>
-            <span className="text-sm">
-              <span className="text-muted-foreground">Situação:</span>{' '}
+            <span className="t-corpo">
+              <span className="t-rotulo">Situação</span>{' '}
               <output aria-label="Situação da ordem">{SITUACAO_DA_ORDEM[ordem.situacao]}</output>
             </span>
             <DateField name="dataOrdem" label="Data Ordem" className="w-40" />
             <DateField name="dataPrevista" label="Data Prevista" className="w-40" />
-            <span className="text-sm">
-              <span className="text-muted-foreground">Envio:</span>{' '}
-              <output aria-label="Data de envio">{formatDateBR(ordem.dataEnvio) || '—'}</output>
-            </span>
-            <span className="text-sm">
-              <span className="text-muted-foreground">Reagendada:</span>{' '}
-              <output aria-label="Data reagendada">
-                {ordem.dataReagendada
-                  ? `${formatDateBR(ordem.dataReagendada)}${
-                      ordem.motivoDoReagendamento ? ` — ${ordem.motivoDoReagendamento}` : ''
-                    }`
-                  : '—'}
-              </output>
-            </span>
           </div>
         </Secao>
       </DocumentoBloco>
 
-      <Secao numero="03" titulo="Itens" cor="info" icone={List} nota="o que se está comprando">
-        <GradeItens fornecedorId={fornecedorId} />
+      <Secao numero="02" titulo="Itens" cor="info" icone={List} nota="o que se está comprando">
+        <ItensDaOrdem fornecedorId={fornecedorId} />
       </Secao>
 
       <Secao
-        numero="04"
+        numero="03"
         titulo="Ajustes"
         cor="warn"
         icone={Percent}
@@ -891,16 +420,13 @@ function AbaPrincipal({ ordem }: { ordem: OrdemDeCompra }) {
       </Secao>
 
       <Secao
-        numero="05"
-        titulo="Entrega"
+        numero="04"
+        titulo="Observação"
         cor="info"
-        icone={Truck}
-        nota="quem leva, e o que o comprador anotou"
+        icone={FileText}
+        nota="o que o comprador anotou"
       >
-        <div className="flex flex-col gap-4">
-          <BlocoTransportadora />
-          <TextareaField name="observacao" label="Observação" rows={3} />
-        </div>
+        <TextareaField name="observacao" label="Observação" rows={3} />
       </Secao>
     </div>
   )
@@ -918,7 +444,6 @@ export function OrdemCompraForm({
 }) {
   const navigate = useNavigate()
   const gravar = useGravarOrdemDeCompra()
-  const enviar = useEnviarOrdemDeCompra()
   const cancelar = useCancelarOrdemDeCompra()
 
   function onGravar(valores: OrdemNoFormulario) {
@@ -962,18 +487,21 @@ export function OrdemCompraForm({
           <SementeDoPedido pedidoId={semente.pedidoId} fornecedorId={semente.fornecedorId} />
         ) : null}
 
-        <Tabs defaultValue="principal">
-          <TabsList className="flex-wrap">
-            <TabsTrigger value="principal">Principal</TabsTrigger>
-            <TabsTrigger value="pagamento">Pagamento</TabsTrigger>
-          </TabsList>
-          <TabsContent value="principal">
-            <AbaPrincipal ordem={ordem} />
-          </TabsContent>
-          <TabsContent value="pagamento">
-            <AbaPagamento />
-          </TabsContent>
-        </Tabs>
+        {/* PRINCIPAL › LATERAL: a fronteira entre as colunas é ESPAÇO
+            (`--s-4` = 16px), sem linha — §Hierarquia manda a ferramenta mais
+            barata que resolve, e duas colunas já se separam sozinhas.
+
+            `flex-wrap` com bases em `rem`, e não `lg:` — a rodada proíbe
+            `@media` para quebra. A lateral desce para baixo do documento
+            quando as duas bases não cabem, sem ponto de quebra decorado. */}
+        <div className="flex flex-wrap items-start gap-4">
+          <div className="min-w-0 flex-[3_1_32rem]">
+            <ColunaPrincipal ordem={ordem} />
+          </div>
+          <div className="min-w-0 flex-[1_1_18rem]">
+            <LateralDaOrdem ordem={ordem} />
+          </div>
+        </div>
       </CadastroForm>
 
       {/* FORA do `<CadastroForm>`, e é o defeito que este trecho pagou uma vez:
@@ -982,11 +510,6 @@ export function OrdemCompraForm({
           `PUT` é 409). Dentro dele, `Reagendar`, `Cancelar` e a volta para o
           pedido de origem nasciam DESABILITADOS — justamente na situação em que
           são os únicos gestos que restam. Transição de documento não é campo. */}
-      <ErroDeGravacao
-        mutacao={enviar}
-        erro={enviar.error}
-        mensagem="Não foi possível enviar a ordem ao fornecedor."
-      />
       <ErroDeGravacao
         mutacao={cancelar}
         erro={cancelar.error}
@@ -1019,17 +542,12 @@ export function OrdemCompraForm({
           ))}
         </div>
 
+        {/* `Enviar ao fornecedor` SAIU daqui (D19, #487): virou a próxima ação
+            do cabeçalho do registro, que é o lugar da transição que muda o
+            resto do documento. Reagendar e cancelar são o que se faz DEPOIS de
+            enviar, e continuam aqui — a mesma decisão que tirou `Gravar` do
+            rodapé sem tirar tudo o mais. */}
         <div className="flex flex-wrap items-center gap-2">
-          {ordem.id && ordem.situacao === 'draft' && !readOnly ? (
-            <Button
-              type="button"
-              size="sm"
-              disabled={enviar.isPending}
-              onClick={() => enviar.mutate({ id: ordem.id })}
-            >
-              <Send className="size-4" /> Enviar ao fornecedor
-            </Button>
-          ) : null}
           <DialogoDeReagendamento ordem={ordem} />
           {ordem.id && !cancelada && !readOnly ? (
             <Button

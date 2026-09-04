@@ -784,8 +784,14 @@
 
 /* LIFT DE PEÇA LISA — a outra metade do §3b.
    Para o que repousa SEM sombra e a GANHA no hover: item de menu da sidebar,
-   aba, chip clicável. Mesmo movimento do `lift-control` (pula 2px, afunda 2px),
-   um degrau abaixo na escada, porque a peça parte do plano.
+   aba, chip clicável. Um degrau abaixo do `lift-control` na escada, porque a
+   peça parte do plano.
+
+   O DESLOCAMENTO saiu na 2.0 (#498 D30, Rodada 4): a peça lisa ganha sombra e
+   traço no hover, e não pula mais. O pulo continua onde ele responde a um
+   gesto de acionamento — `lift-control` (tecla, KPI, cartão clicável). Item de
+   menu e aba não são teclas: são caminho, e caminho que se mexe sob o ponteiro
+   custa mira em quem percorre a lista inteira com o mouse encostado.
 
    Existe separada e não como `variant` porque a diferença é o REPOUSO: aqui o
    repouso é ausência de sombra, e uma utility que declarasse `box-shadow: none`
@@ -799,23 +805,16 @@
   transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
 
   &:hover {
-    transform: translate(-2px, -2px);
     box-shadow: var(--shadow-el2);
   }
 
   &:active,
   &[data-pressed] {
-    transform: translate(2px, 2px);
     box-shadow: none;
-  }
-
-  &:focus-visible {
-    transform: none;
   }
 
   &:disabled,
   &[data-disabled] {
-    transform: none;
     box-shadow: none;
   }
 }
@@ -1059,38 +1058,14 @@
   box-shadow: 0 0 0 2px color-mix(in oklab, var(--accent) 40%, transparent), var(--shadow-macia);
 }
 
-/* ENTRADA ESCALONADA (r6): as zonas sobem uma atrás da outra na montagem —
-   60ms de degrau, `backwards` para não piscar nem prender o estado final
-   (fill `both` sobrescreveria a opacidade do foco por zona para sempre). */
-@keyframes zona-sobe {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-}
-[data-zonas] > * {
-  animation: zona-sobe 0.3s cubic-bezier(0, 0, 0.2, 1) backwards;
-}
-[data-zonas] > *:nth-child(2) {
-  animation-delay: 60ms;
-}
-[data-zonas] > *:nth-child(3) {
-  animation-delay: 120ms;
-}
-[data-zonas] > *:nth-child(4) {
-  animation-delay: 180ms;
-}
-[data-zonas] > *:nth-child(5) {
-  animation-delay: 240ms;
-}
-[data-zonas] > *:nth-child(n + 6) {
-  animation-delay: 300ms;
-}
-@media (prefers-reduced-motion: reduce) {
-  [data-zonas] > * {
-    animation: none;
-  }
-}
+/* ENTRADA DE TELA — REMOVIDA na 2.0 (#498 D30, comentário Rodada 4 da #469).
+   As zonas subiam 10px em cascata de 60ms na montagem de todo documento. A
+   rodada proíbe animação de ENTRADA (regra 7 da #469): o operador que abre o
+   mesmo orçamento vinte vezes por dia paga 300ms de espera de leitura para ver
+   uma vez o que já sabe onde está. O micro-movimento COM PROPÓSITO fica — ele
+   responde a um gesto (lift de tecla/KPI/card, draw, fill, pulse, fade de aba)
+   e não atrasa a primeira leitura. `[data-zonas]` continua vivo: é o gatilho do
+   foco por zona logo acima, que é reação, não entrada. */
 
 /* Campo-herói (fusão v5 r5): o dado que define o documento — Cliente no
    orçamento, Fornecedor na ordem — fala mais alto que os irmãos.
@@ -1185,3 +1160,25 @@ h1 {
 /* POLARIS rodada 3 (2026-08-17): o user pediu linha GROSSA de volta — as
    overrides de 1px morreram e o `border-2` volta a valer os 2px nativos,
    agora com a cor firme (55%) em vez do preto puro do brutalism. */
+
+/* MOVIMENTO REDUZIDO — guarda GLOBAL (#498 D30).
+   Antes, cada peça se defendia sozinha (o dialog em dois blocos acima, o
+   `.cab-motion` de `tokens-2.0.css`, a cascata das zonas), e toda peça nova
+   nascia obrigada a lembrar. Aqui a regra é do documento: quem pediu ao sistema
+   que nada se mexa não depende de o autor da próxima peça ter lido a §Movimento.
+
+   Duração quase-zero em vez de `animation: none`: keyframe que PINTA o estado
+   final (o `cab-fill`, a barra de progresso) desapareceria com `none`, e o dado
+   sumiria junto com o movimento. Com 0.01ms o quadro final é o que fica.
+   `iteration-count: 1` mata o que repete (o pulse do Atrasada) sem apagar o
+   primeiro quadro. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,7 +1,8 @@
 import { RequireSession } from '@/app/require-session'
 import { RequireTenant } from '@/app/require-tenant'
 import { AppShell } from '@/app/shell'
-import { Outlet, createRootRoute, useRouterState } from '@tanstack/react-router'
+import { ligarTransicaoDeRota } from '@/app/transicao-de-rota'
+import { Outlet, createRootRoute, useRouter, useRouterState } from '@tanstack/react-router'
 import { useEffect } from 'react'
 
 export const Route = createRootRoute({
@@ -42,9 +43,26 @@ function useOverlayDeGrade(busca: string) {
   }, [ligado])
 }
 
+/**
+ * TROCA DE ROTA COM VIEW TRANSITIONS (#527).
+ *
+ * A mecânica inteira mora em `@/app/transicao-de-rota` — aqui fica só o ponto
+ * de ligação, que é a raiz porque a transição é da APLICAÇÃO e não de uma tela:
+ * ligá-la numa rota faria a próxima navegação desligá-la no meio do caminho.
+ *
+ * O efeito assina os eventos do router e devolve como desassinar. Ele não olha
+ * o pathname de propósito: quando um efeito de pathname roda, o DOM novo já
+ * está pintado e não há mais "antes" para fotografar.
+ */
+function useTransicaoDeRota() {
+  const router = useRouter()
+  useEffect(() => ligarTransicaoDeRota(router), [router])
+}
+
 function RootComponent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   useOverlayDeGrade(useRouterState({ select: (s) => s.location.searchStr }))
+  useTransicaoDeRota()
 
   // Login é a porta de entrada, não uma tela do sistema: sem shell (não há
   // módulo para navegar) e sem guarda (é ele quem cria a sessão).

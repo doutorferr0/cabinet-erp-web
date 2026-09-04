@@ -106,7 +106,7 @@ describe('paleta — a tecla abre e o item navega', () => {
 describe('paleta — teclas de ir para', () => {
   it('`g c` leva a Compras sem passar pela caixa', async () => {
     const { user, router } = montar()
-    await screen.findByRole('button', { name: 'Abrir a paleta de comandos' })
+    await screen.findByRole('button', { name: 'Abrir a busca' })
 
     await user.keyboard('gc')
 
@@ -115,7 +115,7 @@ describe('paleta — teclas de ir para', () => {
 
   it('`g v` leva a Vendas', async () => {
     const { user, router } = montar()
-    await screen.findByRole('button', { name: 'Abrir a paleta de comandos' })
+    await screen.findByRole('button', { name: 'Abrir a busca' })
 
     await user.keyboard('gv')
 
@@ -125,7 +125,7 @@ describe('paleta — teclas de ir para', () => {
   /** O `g` sozinho não navega — é a segunda tecla que decide. */
   it('`g` sozinho fica onde está', async () => {
     const { user, router } = montar()
-    await screen.findByRole('button', { name: 'Abrir a paleta de comandos' })
+    await screen.findByRole('button', { name: 'Abrir a busca' })
 
     await user.keyboard('g')
 
@@ -139,7 +139,7 @@ describe('paleta — teclas de ir para', () => {
    */
   it('`n` abre o registro novo da listagem aberta', async () => {
     const { user, router } = montar('/cadastros/clientes')
-    await screen.findByRole('button', { name: 'Abrir a paleta de comandos' })
+    await screen.findByRole('button', { name: 'Abrir a busca' })
 
     await user.keyboard('n')
 

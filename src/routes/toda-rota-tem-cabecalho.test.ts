@@ -40,6 +40,9 @@ const SEM_CABECALHO: Record<string, string> = {
   // DESVIO: `/crm/funil` sem id manda para o funil padrão e sai da frente.
   // Cabeçalho aqui piscaria um título que ninguém pediu antes do `replace`.
   'crm/funil/index.tsx': 'desvio para o funil padrão — não é tela',
+  // D12: viraram VIEWS da listagem de origem (calendário) — a rota só redireciona.
+  'compras/previsao.tsx': 'desvio para /compras/ordens?modo=calendario — não é tela (D12)',
+  'vendas/cargas.tsx': 'desvio para /vendas/pedidos?modo=calendario — não é tela (D12)',
 }
 
 function arquivosDe(dir: string): string[] {

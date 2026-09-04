@@ -1,12 +1,13 @@
 import type { OrderDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
+import type { OpcaoDeAgrupamento } from '@/components/cabinet/data-table'
+import type { StampTom } from '@/components/cabinet/stamp'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
 import { useReadOnlyPorPapel } from '@/data/papeis'
 import { useCancelarPedidoDeVenda } from '@/data/pedidos-venda-api'
-import { ROTULO_DA_SITUACAO } from '@/features/vendas/pedido-venda-form'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
-import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
+import { formatDateBR } from '@/lib/formatters'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 import { CalendarDays, CircleDot, HardHat, Hash, Tag, User } from 'lucide-react'
@@ -28,40 +29,69 @@ export const Route = createFileRoute('/vendas/pedidos/')({
  * clique no cabeçalho (padrão 1).
  */
 const columns: ColumnDef<OrderDto>[] = [
-  { accessorKey: 'number', header: 'Número' },
-  // Fora da whitelist do contrato: a coluna aparece e não ordena, o que é
-  // melhor que um cabeçalho clicável que responde 400.
-  { accessorKey: 'series', header: 'Série', enableSorting: false },
-  { accessorKey: 'customerName', header: 'Cliente' },
+  { accessorKey: 'number', header: 'Número', meta: { tipo: 'id' } },
   {
-    accessorKey: 'projectName',
-    header: 'Descrição da Obra',
-    cell: ({ getValue }) => getValue<string | null>() || '—',
+    id: 'customerName',
+    header: 'Cliente',
+    // A obra sobe para subtítulo do cliente pelo mesmo motivo do orçamento:
+    // as duas se leem juntas, e sozinha a coluna era `—` na maioria das linhas.
+    accessorFn: (row) => ({
+      nome: row.customerName ?? '—',
+      ...(row.projectName ? { subtitulo: row.projectName } : {}),
+    }),
+    meta: { tipo: 'entidade' },
   },
   {
     accessorKey: 'issuedAt',
     header: 'Data Emissão',
     cell: ({ getValue }) => formatDateBR(getValue<string | null>()),
+    meta: { tipo: 'data' },
   },
   {
-    accessorKey: 'status',
+    id: 'status',
     header: 'Situação',
     enableSorting: false,
-    cell: ({ getValue }) => ROTULO_DA_SITUACAO[getValue<OrderDto['status']>()] ?? '—',
+    accessorFn: (row) => ({
+      tom: TOM_DA_SITUACAO[row.status],
+      label: CARIMBO_DA_SITUACAO[row.status] ?? '—',
+    }),
+    meta: { tipo: 'status' },
   },
   {
     accessorKey: 'type',
     header: 'Tipo',
     enableSorting: false,
     cell: ({ getValue }) => (getValue<string | null>() === 'demo' ? 'Demonstração' : 'Venda'),
+    meta: { tipo: 'texto' },
   },
   {
     accessorKey: 'totalCents',
     header: 'Total',
     enableSorting: false,
-    cell: ({ getValue }) => formatMoneyBRL(getValue<number>()),
+    meta: { tipo: 'dinheiro' },
   },
 ]
+
+/** O peso de cada situação do pedido — as três do contrato. */
+const TOM_DA_SITUACAO: Record<OrderDto['status'], StampTom> = {
+  active: 'open',
+  concluded: 'done',
+  cancelled: 'void',
+}
+
+/**
+ * A palavra DENTRO do carimbo, que não é a mesma do formulário.
+ *
+ * `ROTULO_DA_SITUACAO` continua sendo a autoridade na ficha, onde há linha
+ * inteira para "Em andamento". No carimbo da grade a frase de duas palavras
+ * quebra em duas linhas e estica a altura da linha (medido na captura), então
+ * aqui vale a forma de uma palavra só — a mesma que o mockup usa.
+ */
+const CARIMBO_DA_SITUACAO: Record<OrderDto['status'], string> = {
+  active: 'Aberto',
+  concluded: 'Concluído',
+  cancelled: 'Cancelado',
+}
 
 /**
  * Campos filtráveis — a whitelist do contrato, menos o que não estreita nada.
@@ -116,6 +146,37 @@ const camposFiltraveis: readonly CampoFiltravel[] = [
   },
 ]
 
+/**
+ * `muted` no cancelado e nada no resto.
+ *
+ * O concluído NÃO é rebaixado: ele é o desfecho que a tela celebra, e o
+ * operador ainda o consulta para conferir o que saiu. Rebaixá-lo trataria
+ * "deu certo" e "foi cancelado" como a mesma coisa.
+ */
+function decoracaoDoPedido(p: OrderDto) {
+  return p.status === 'cancelled' ? ('muted' as const) : undefined
+}
+
+const AGRUPAMENTOS: readonly OpcaoDeAgrupamento<OrderDto>[] = [
+  {
+    id: 'status',
+    rotulo: 'Situação',
+    valorDaLinha: (p) => CARIMBO_DA_SITUACAO[p.status] ?? '—',
+    tomDoValor: (valor) =>
+      valor === CARIMBO_DA_SITUACAO.concluded
+        ? 'done'
+        : valor === CARIMBO_DA_SITUACAO.cancelled
+          ? 'void'
+          : 'open',
+  },
+  { id: 'customerName', rotulo: 'Cliente', valorDaLinha: (p) => p.customerName ?? '—' },
+  {
+    id: 'type',
+    rotulo: 'Tipo',
+    valorDaLinha: (p) => (p.type === 'demo' ? 'Demonstração' : 'Venda'),
+  },
+]
+
 function PedidosDeVendaPage() {
   const navigate = useNavigate()
   const [paraCancelar, setParaCancelar] = useState<OrderDto | null>(null)
@@ -162,6 +223,9 @@ function PedidosDeVendaPage() {
       fetcher={data.pedidosVenda.list}
       actions={actionsPedido}
       filtros={camposFiltraveis}
+      decoracao={decoracaoDoPedido}
+      agrupamentos={AGRUPAMENTOS}
+      subtotalDoGrupo={(p) => p.totalCents ?? 0}
       cancelamento={{
         documento: 'pedido de venda',
         registro: paraCancelar,

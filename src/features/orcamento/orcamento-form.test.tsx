@@ -27,9 +27,9 @@ describe('tela Orçamento', () => {
   it('filtro por período de emissão estreita a listagem', async () => {
     const { user } = renderRoute('/vendas/orcamentos', servidorDeOrcamentos())
     await screen.findByText('ANDRÉ BATALHA')
-    // O rodapé da grade 2.0 conta "n de N registros" (D8) — o total é o segundo
-    // número, e a contagem inteira vive no `data-testid` que ela publica.
-    expect(screen.getByTestId('contagem-da-grade')).toHaveTextContent(/de\s*17\s*registros/)
+    // O rodapé da D8 é `n de N registros` (mais a soma da coluna de dinheiro,
+    // quando há uma): a contagem total vive num nó próprio.
+    expect(screen.getByTestId('contagem-da-grade')).toHaveTextContent('17 registro')
 
     await user.click(screen.getByRole('button', { name: /^Adicionar filtro/ }))
     await user.click(await screen.findByRole('menuitem', { name: /Data Emissão/ }))
@@ -39,9 +39,9 @@ describe('tela Orçamento', () => {
     await user.type(await screen.findByLabelText('Valor do filtro 1 — de'), '2025-08-01')
     await user.type(screen.getByLabelText('Valor do filtro 1 — até'), '2025-08-02')
 
-    await waitFor(() => {
-      expect(screen.getByTestId('contagem-da-grade')).toHaveTextContent(/de\s*5\s*registros/)
-    })
+    await waitFor(() =>
+      expect(screen.getByTestId('contagem-da-grade')).toHaveTextContent('5 registro'),
+    )
   })
 
   it('o campo de data é o input nativo — o calendário vem do sistema', async () => {

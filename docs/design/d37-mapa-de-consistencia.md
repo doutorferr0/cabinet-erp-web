@@ -521,7 +521,82 @@ feature". Unificar de verdade pede uma variante de `PageHeader` que aceite o tí
 decisão de que essas telas perdem o desenho — as duas com o mockup ao lado, numa issue própria. O
 motivo está escrito na própria lista, no lugar onde o próximo agente vai olhar.
 
-## 11. O que D37 não pode fazer antes do merge
+## 11. Os onze casos que a rodada desligou "para a D37" — religados
+
+Enquanto a D37 corria, o merge serial foi pondo em `it.skip` os casos que quebravam, com o mesmo
+bilhete: *"INTEGRAÇÃO 2.0 — quebrou no merge de PRs paralelas; a D37 (#532) religa"*. Eram **onze
+casos em seis arquivos**. Todos foram religados; **sete passaram sem tocar em nada**, porque os
+consertos das §7 e §8 já os resolviam. Os outros quatro:
+
+**`tarefas` × 2 — a contagem animada lida cedo demais.** D34 deu ao `KpiTile` um count-up de 600 ms;
+o caso lia o número na primeira montagem e recebia `0` (e, no meio da animação, `-3`). Reprovava com
+"esperava 1, recebeu 0", que **parece erro de apuração e é tempo** — o tipo de vermelho que manda
+alguém depurar a função errada. Cura: `waitFor` em volta das asserções de valor, que é o padrão do
+teste da própria peça.
+
+**`dashboard` — a linha da agenda perdeu o `data-slot`** na reescrita da D20/D34, e o `closest`
+devolvia `null`. Devolvido.
+
+**`dashboard` — e aqui o teste estava certo sobre algo que sumiu.** A linha da agenda distinguia
+tipo (`entrega`, `orçamento`, `reunião`, `pagamento`) por uma barra de cor `aria-hidden` **e mais
+nada**: a palavra do tipo saiu junto na reescrita. Isso reprova WCAG 1.4.1 e some inteiro para quem
+não separa as duas pastéis — a legenda que nomeia as cores está noutro card. Restaurada.
+
+**`dashboard` — o feed de atividade não está mais nesta tela.** A D20 reescreveu o dashboard pelo
+mockup e o `FeedDeAtividade` não entrou; o commit não menciona (fala de unificar as três caixas e da
+rota `/boletim`), então ele saiu em silêncio, e hoje o único consumidor é o `HubDeModulo`.
+**Remontá-lo seria desfazer uma reescrita feita com o mockup ao lado, e a D37 não faz desenho.** O
+que ela fez foi não perder a cobertura: o caso desceu para `hub-de-modulo.test.tsx`, onde o feed é
+montado de verdade — o hub cobria a geometria do card e o rótulo do recorte, mas não "quem, o quê e
+a hora" nem o link condicional.
+
+**Uma observação de processo, porque ela vale mais que os quatro consertos:** `it.skip` com bilhete
+é bom (diz quem paga e por quê), mas os onze casos estavam desligados por **quatro razões
+diferentes** — tempo de animação, slot renomeado, elemento removido por engano e tela redesenhada de
+propósito. Só a última justificava desligar. Um caso desligado por tempo de animação fica desligado
+para sempre, e leva junto a regressão que ele pegaria.
+
+## 12. Monograma: TRÊS implementações, e a unificação exigiu uma quarta regra
+
+O §6.1 registrou duas declarações de `Monograma`. Com a rodada inteira mergeada, eram **três
+implementações da mesma pergunta** — "que duas letras representam este nome?":
+
+| onde | regra | vazio |
+|---|---|---|
+| `iniciaisDe` (D3, `components/cabinet`) | primeira + ÚLTIMA palavra, partícula fora | `—` |
+| `monograma` (D16, **no mesmo arquivo**) | duas primeiras com mais de 2 letras | 2 primeiros chars |
+| `monograma` local (D6, `company-switcher.tsx`) | duas primeiras, sem filtro nenhum | `—` |
+| `iniciaisDoFunil` (D22, `features/crm`) | duas primeiras com mais de 1 letra | `?` |
+
+A segunda anunciava a própria dívida: *"é o que `BlocoIdentidade` e `LookupCombo` esperam;
+`iniciaisDe` (D3) fica para a grade. Unificar é item da D37"*. A terceira também: *"vive aqui e não
+num `monograma.tsx` compartilhado porque essa peça é da issue D3 desta mesma rodada. **Quando ela
+chegar, este bloco vira uma chamada**"*. D3 chegou.
+
+**A mesma empresa saía com siglas diferentes conforme a tela.** `VERTZ ILUMINAÇÃO LTDA` era `VL` na
+grade e `VI` na ficha; e ninguém notava, porque cada tela mostra uma sigla só.
+
+**Unificar exigiu uma regra que nenhuma das três tinha.** Juntar D3 e D16 direto quebrava um caso
+medido: o filtro por comprimento (`length > 2`) engolia `HF` de `VIA HF` — a empresa do teste do
+switcher —, que virava `VI`. Comprimento é aproximação de *"palavra que não distingue ninguém"*, e
+a coisa que ela tenta descrever é **sufixo societário**. A regra final é:
+
+1. duas PRIMEIRAS palavras (D16/D22 — a última de uma razão social é `Ltda`);
+2. partícula fora (D3 — `Maria da Silva` é MS, não MD);
+3. **sufixo societário fora, por lista** (`ltda`, `me`, `sa`, `s/a`, `epp`, `eireli`, `mei`, `cia`) —
+   preferência, não exclusão: sobrando só sufixo, ele vale, senão `HF Ltda` ficaria sem sigla;
+4. vazio é `—`, não string vazia — a caixa tem tamanho fixo e vazia leria como falha de carga.
+
+Os casos de borda dos **quatro** testes passam sem exceção: `Vertz Iluminação Ltda`→VI ·
+`Mister LED Comercio de Iluminação Ltda`→ML · `MARIA HELENA ARQUITETURA ME`→MH · `VIA HF`→VH ·
+`Al`→AL · `Maria da Silva`→MS · `José dos Santos Oliveira`→JS · `Vertz`→VE · `de`→— · `  `→—.
+
+`monograma` virou `export const monograma = iniciaisDe`; o bloco local do `company-switcher` virou a
+chamada que o próprio comentário prometia. **`MonogramaDoFunil` continua separado** — as iniciais
+agora são as mesmas, mas ele ainda diverge em cor (papel × hash) e acessibilidade, e essas duas são
+decisão de produto (§6.1).
+
+## 13. O que D37 não pode fazer antes do merge
 
 Registrado porque a tentação é grande e o estrago é caro: os greps do DoD **já acham 136 `text-[`
 e 167 `border-2` na base pura**, e essas ocorrências são o código 1.x que as 30 PRs abertas estão

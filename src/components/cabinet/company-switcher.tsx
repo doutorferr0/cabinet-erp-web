@@ -1,3 +1,4 @@
+import { monograma } from '@/components/cabinet/monograma'
 import { Ornamento } from '@/components/cabinet/ornamento'
 import {
   AlertDialog,
@@ -32,24 +33,6 @@ const MONOGRAMA_INATIVO = {
   background: 'var(--n-100)',
   border: '1px solid var(--n-300)',
 } as const
-
-/**
- * As duas primeiras iniciais do nome da empresa (`Vertz Iluminação` → `VI`).
- *
- * Vive aqui e não num `monograma.tsx` compartilhado porque essa peça é da
- * issue D3 desta mesma rodada, e escrevê-la fora da zona daria duas versões
- * para o mesmo desenho. Quando ela chegar, este bloco vira uma chamada.
- */
-function monograma(nome: string): string {
-  const palavras = nome.trim().split(/\s+/).filter(Boolean)
-  if (palavras.length === 0) return '—'
-  return (
-    palavras
-      .slice(0, 2)
-      .map((p) => p[0]?.toUpperCase() ?? '')
-      .join('') || '—'
-  )
-}
 
 /**
  * Seletor da empresa ativa (`activeTenantId` da sessão).

@@ -245,7 +245,12 @@ test('login → parceiro → produto → orçamento → pedido, contra o Postgre
     // vários combos que consultam o servidor. Clicar aí é clicar no vazio, e a
     // falha sai como "botão não abriu o diálogo", que manda investigar o
     // componente errado. Esperar o primeiro campo é esperar o formulário.
-    await expect(page.getByLabel('Cliente')).toBeVisible({ timeout: 60_000 })
+    // `getByRole('textbox')`, e não `getByLabel('Cliente')`: `getByLabel` casa
+    // por SUBSTRING, e três peças da 2.0 carregam "Cliente" no nome acessível —
+    // a ★ da barra (`Fixar Clientes nos favoritos`, D4), o cartão lateral
+    // (`<section aria-label="Cliente">`, D18) e o campo. Nenhuma das três está
+    // errada; a busca é que precisava dizer QUE peça quer (D37).
+    await expect(page.getByRole('textbox', { name: 'Cliente' })).toBeVisible({ timeout: 60_000 })
 
     // O caminho do OPERADOR, e não o atalho de digitar o nome: o botão ao lado
     // do campo abre `SearchDialog`, que lista `GET /api/partners?role=customer`.
@@ -299,7 +304,7 @@ test('login → parceiro → produto → orçamento → pedido, contra o Postgre
     await expect(achado, 'o clique não marcou a linha').toHaveAttribute('data-state', 'selected')
     await busca.getByRole('button', { name: 'Selecionar' }).click()
     await expect(busca).toBeHidden({ timeout: 30_000 })
-    await expect(page.getByLabel('Cliente')).toHaveValue(nomeDoCliente)
+    await expect(page.getByRole('textbox', { name: 'Cliente' })).toHaveValue(nomeDoCliente)
 
     await page.getByLabel('Descrição da Obra').fill(obra)
 

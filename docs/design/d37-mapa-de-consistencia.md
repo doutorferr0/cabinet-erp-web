@@ -342,7 +342,44 @@ qualquer revisão de PR isolada.** O primeiro só aparece rodando a suíte que a
 segundo é uma frase de comentário contra uma linha de código no mesmo arquivo; o terceiro só existe
 quando duas PRs que não se tocam estão na mesma árvore.
 
-Consertados nesta PR — é `atualizar testes` do DoD, e desbloqueia as 23 PRs restantes da rodada.
+### 7.1 E não eram três — eram seis arquivos, com o pior deles mudo
+
+Rodada a suíte inteira contra a base com D1–D14, o vermelho herdado era de **seis arquivos / onze
+casos**, medidos também numa worktree da base pura para separar o que era do diff (nada era). Um
+sétimo, `profissional-form.test.tsx`, falhou só sob carga — passa isolado, e `load average` estava
+em 25 com outros agentes na máquina.
+
+| arquivo | causa | natureza |
+|---|---|---|
+| `selo.test.tsx` (2) | D3 trocou os tokens e não atualizou as asserções | teste envelhecido *(resolvido na base, por remoção dos casos)* |
+| `produto-form.test.tsx` (1) | `CelulaAtivo` não cumpre o `data-slot="stamp"` que `badge.tsx` promete | promessa escrita, não cumprida |
+| `produto-form.test.tsx` (1) | `/Marca/` global casa os `Marcar X` que D4 pôs na sidebar | conflito semântico D4 × listagem |
+| `pagina-do-inbox.test.tsx` (5) | `getByRole('list')` global: a barra da D4 tem um `<ul>` por grupo | conflito semântico D4 × D7 |
+| `desabilitado.test.tsx` (1) | `company-switcher` (D6) usa `disabled:opacity-60` | receita antiga contra a §Desabilitado |
+| `contrato-bloco2.test.ts` (1) | D13 publicou `DELETE /api/me/views/{id}` | regra do repo × necessidade nova |
+| `todo-componente-e-montado.test.ts` (1) | **`RegiaoDeAvisos` ficou órfã** | ver abaixo |
+
+**O último é uma regressão de PRODUTO, e é o achado mais caro da sessão.** D5 moveu a região de
+avisos do `providers.tsx` para o `shell.tsx` — de propósito, com o comentário no lugar de origem
+explicando a mudança ("ela virou faixa logo abaixo da appbar, e por isso monta no shell"). D4 e D7
+continuavam montando no `providers`, sem saber. **O merge das três conflitou no `shell.tsx` — o
+campo de batalha que a §2 previu — e a resolução ficou com o lado que não tinha a faixa.** Resultado
+na base: a região não é montada em lugar nenhum, e o app inteiro perdeu a confirmação de escrita
+que a #208 entregou. O operador grava um cadastro e não recebe resposta.
+
+Nada gritou. `tsc` passa (o componente existe, só ninguém o chama), os dois builds da Cloudflare
+passam, e nenhuma tela quebra — o que sumiu é uma faixa que **só aparece depois de uma ação**. Quem
+acusou foram a guarda `todo-componente-e-montado` (que existe exatamente para isso) e dois casos de
+`aviso-de-conclusao.test.tsx`. **Uma linha recolocada no `shell.tsx` devolveu 12 testes.**
+
+Sobre o `DELETE`: a guarda foi **estreitada, não afrouxada**. A regra "desativação é lógica" protege
+dado de negócio que documento antigo cita; uma consulta salva é preferência do próprio usuário, e
+guardá-la com `favorite: false` deixaria um registro vazio que ele não tem como limpar. A asserção
+passou a comparar a **lista nominal** de caminhos com `delete` — `DELETE` novo em qualquer outro
+lugar continua reprovando, e quem o quiser escreve o argumento na lista.
+
+Os seis foram consertados nesta PR: é `atualizar testes` do DoD, e desbloqueia as PRs restantes da
+rodada, que herdavam o vermelho.
 
 ## 8. Favoritos estava entregue DUAS VEZES — unificado aqui
 

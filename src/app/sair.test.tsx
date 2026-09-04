@@ -71,6 +71,7 @@ describe('Sair', () => {
     await user.click(await screen.findByRole('menuitem', { name: /sair/i }))
 
     // A tela de login é a única com heading Cabinet fora do shell.
-    expect(await screen.findByRole('heading', { name: 'Cabinet' })).toBeInTheDocument()
+    // D28: a pagina de login tem 'Entrar' como h1 (a marca e imagem, nao heading).
+    expect(await screen.findByRole('heading', { level: 1, name: 'Entrar' })).toBeInTheDocument()
   })
 })

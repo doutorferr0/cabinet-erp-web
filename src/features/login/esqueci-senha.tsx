@@ -1,8 +1,8 @@
 import { TextField } from '@/components/cabinet/form-controls'
-import { PageHeader } from '@/components/cabinet/page-header'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
 import { usePedirRecuperacao } from '@/data/sessao'
+import { PaginaDeAuth } from '@/features/login/pagina-de-auth'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link } from '@tanstack/react-router'
 import { useForm } from 'react-hook-form'
@@ -26,7 +26,8 @@ type EsqueciSenhaValores = z.infer<typeof esqueciSenhaSchema>
  * quem tem conta aqui. Por isso o aviso de sucesso é redigido no condicional:
  * *"se houver conta com esse e-mail"*.
  *
- * Pública e fora do shell, como o login: quem chega aqui não tem sessão.
+ * Pública e fora do shell, na mesma página dividida do login: quem chega aqui
+ * não tem sessão.
  */
 export function EsqueciSenhaTela() {
   const pedir = usePedirRecuperacao()
@@ -35,68 +36,60 @@ export function EsqueciSenhaTela() {
     defaultValues: { email: '' },
   })
 
-  return (
-    <div className="bg-paper-grid flex min-h-screen items-center justify-center p-4">
-      <div className="w-full max-w-sm rounded-panel border-2 border-border bg-card p-4 shadow-el3">
-        <div className="mb-4">
-          <PageHeader variante="display" titulo="Cabinet" contexto="Esqueci a senha" />
-        </div>
+  if (pedir.isSuccess) {
+    return (
+      <PaginaDeAuth titulo="Link enviado">
+        {/* `<output>` e não `<p role="status">`: o elemento já carrega o papel,
+            e o leitor de tela anuncia a mudança sem depender de um atributo
+            posto à mão. */}
+        <output className="t-meta block">
+          Se houver uma conta com esse e-mail, o link para escolher uma senha nova chegou nela. O
+          link vale por 1 hora e só pode ser usado uma vez.
+        </output>
+        <Link
+          to="/login"
+          className={buttonVariants({ variant: 'outline', size: 'lg', className: 'w-full' })}
+        >
+          Voltar para a entrada
+        </Link>
+      </PaginaDeAuth>
+    )
+  }
 
-        {pedir.isSuccess ? (
-          <>
-            {/* `<output>` e não `<p role="status">`: o elemento já carrega o
-                papel, e o leitor de tela anuncia a mudança sem depender de um
-                atributo posto à mão. */}
-            <output className="block text-sm text-muted-foreground">
-              Se houver uma conta com esse e-mail, o link para escolher uma senha nova chegou nela.
-              O link vale por 1 hora e só pode ser usado uma vez.
-            </output>
-            <Link
-              to="/login"
-              className={buttonVariants({ variant: 'outline', className: 'mt-4 w-full' })}
-            >
-              Voltar para a entrada
-            </Link>
-          </>
-        ) : (
-          <Form {...form}>
-            {/*
-              `noValidate`: com `type="email"`, o browser barra o envio ANTES do
-              Zod e mostra uma bolha própria, em inglês e fora do desenho —
-              medido, o `handleSubmit` nem chegava a rodar. A validação é do
-              schema, e a mensagem tem de sair no mesmo lugar das outras.
-            */}
-            <form
-              noValidate
-              onSubmit={form.handleSubmit(({ email }) => pedir.mutate(email))}
-              className="flex flex-col gap-3"
-            >
-              <p className="text-sm text-muted-foreground">
-                Informe o e-mail com que você entra. Mandaremos um link para escolher uma senha
-                nova.
-              </p>
-              <TextField
-                name="email"
-                label="E-mail"
-                type="email"
-                autoComplete="username"
-                autoFocus
-              />
-              {pedir.error && (
-                <p role="alert" className="text-xs text-destructive">
-                  {pedir.error.message}
-                </p>
-              )}
-              <Button type="submit" disabled={pedir.isPending} className="mt-1">
-                {pedir.isPending ? 'Enviando…' : 'Enviar link'}
-              </Button>
-              <Link to="/login" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
-                Voltar para a entrada
-              </Link>
-            </form>
-          </Form>
-        )}
-      </div>
-    </div>
+  return (
+    <PaginaDeAuth titulo="Esqueci a senha" subtitulo="Informe o e-mail com que você entra.">
+      <Form {...form}>
+        {/*
+          `noValidate`: com `type="email"`, o browser barra o envio ANTES do
+          Zod e mostra uma bolha própria, em inglês e fora do desenho —
+          medido, o `handleSubmit` nem chegava a rodar. A validação é do
+          schema, e a mensagem tem de sair no mesmo lugar das outras.
+        */}
+        <form
+          noValidate
+          onSubmit={form.handleSubmit(({ email }) => pedir.mutate(email))}
+          className="flex flex-col gap-4"
+        >
+          <p className="t-meta">
+            Mandaremos um link para escolher uma senha nova. Ele vale por 1 hora.
+          </p>
+          <TextField name="email" label="E-mail" type="email" autoComplete="username" autoFocus />
+          {pedir.error && (
+            <p role="alert" className="t-meta text-[color:var(--bad)]">
+              {pedir.error.message}
+            </p>
+          )}
+          <Button type="submit" size="lg" disabled={pedir.isPending} className="w-full">
+            {pedir.isPending ? 'Enviando…' : 'Enviar link'}
+          </Button>
+          <Link
+            to="/login"
+            className="t-ui text-[color:var(--main-text)] underline-offset-4 hover:underline"
+          >
+            Voltar para a entrada
+          </Link>
+        </form>
+      </Form>
+    </PaginaDeAuth>
   )
 }

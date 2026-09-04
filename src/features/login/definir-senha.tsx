@@ -1,8 +1,8 @@
 import { TextField } from '@/components/cabinet/form-controls'
-import { PageHeader } from '@/components/cabinet/page-header'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
 import { type LinkDeCredencial, useDefinirSenha, useLinkDeCredencial } from '@/data/sessao'
+import { PaginaDeAuth } from '@/features/login/pagina-de-auth'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useForm } from 'react-hook-form'
@@ -44,14 +44,20 @@ export function DefinirSenhaTela({ token }: { token?: string | undefined }) {
   const link = useLinkDeCredencial(token)
 
   if (!token) return <Aviso titulo="Link incompleto" recusa="invalido" />
-  if (link.isPending) return <Moldura contexto="Definir senha">Conferindo o link…</Moldura>
+  if (link.isPending) {
+    return (
+      <PaginaDeAuth titulo="Definir senha">
+        <p className="t-meta">Conferindo o link…</p>
+      </PaginaDeAuth>
+    )
+  }
   if (link.isError) {
     return (
-      <Moldura contexto="Definir senha">
-        <p role="alert" className="text-sm text-destructive">
+      <PaginaDeAuth titulo="Definir senha">
+        <p role="alert" className="t-meta text-[color:var(--bad)]">
           Não foi possível conferir o link. Tente de novo em alguns instantes.
         </p>
-      </Moldura>
+      </PaginaDeAuth>
     )
   }
   if ('recusa' in link.data) return <Aviso titulo="Link inválido" recusa={link.data.recusa} />
@@ -76,21 +82,22 @@ function Formulario({ token, link }: { token: string; link: LinkDeCredencial }) 
   }
 
   return (
-    <Moldura contexto={convite ? 'Bem-vindo' : 'Nova senha'}>
-      <p className="mb-3 text-sm text-muted-foreground">
+    <PaginaDeAuth titulo={convite ? 'Bem-vindo' : 'Nova senha'}>
+      <p className="t-meta">
         {convite ? (
           <>
-            Olá, <strong className="text-foreground">{link.name}</strong>. Escolha a senha que você
-            vai usar para entrar.
+            Olá, <strong className="font-semibold text-[color:var(--n-900)]">{link.name}</strong>.
+            Escolha a senha que você vai usar para entrar.
           </>
         ) : (
           <>
-            Escolha a nova senha de <strong className="text-foreground">{link.email}</strong>.
+            Escolha a nova senha de{' '}
+            <strong className="font-semibold text-[color:var(--n-900)]">{link.email}</strong>.
           </>
         )}
       </p>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(confirmar)} className="flex flex-col gap-3">
+        <form onSubmit={form.handleSubmit(confirmar)} className="flex flex-col gap-4">
           <TextField
             name="password"
             label="Senha"
@@ -105,16 +112,16 @@ function Formulario({ token, link }: { token: string; link: LinkDeCredencial }) 
             autoComplete="new-password"
           />
           {definir.error && (
-            <p role="alert" className="text-xs text-destructive">
+            <p role="alert" className="t-meta text-[color:var(--bad)]">
               {definir.error.message}
             </p>
           )}
-          <Button type="submit" disabled={definir.isPending} className="mt-1">
+          <Button type="submit" size="lg" disabled={definir.isPending} className="w-full">
             {definir.isPending ? 'Gravando…' : 'Definir senha'}
           </Button>
         </form>
       </Form>
-    </Moldura>
+    </PaginaDeAuth>
   )
 }
 
@@ -126,38 +133,24 @@ function Formulario({ token, link }: { token: string; link: LinkDeCredencial }) 
  */
 function Aviso({ titulo, recusa }: { titulo: string; recusa: 'invalido' | 'expirado' }) {
   return (
-    <Moldura contexto={recusa === 'expirado' ? 'Link expirado' : titulo}>
-      <p role="alert" className="text-sm text-muted-foreground">
+    <PaginaDeAuth titulo={recusa === 'expirado' ? 'Link expirado' : titulo}>
+      <p role="alert" className="t-meta">
         {recusa === 'expirado'
           ? 'Este link venceu. Peça outro e ele chegará no seu e-mail.'
           : 'Este link não vale mais — ele já foi usado, ou foi substituído por um pedido mais novo.'}
       </p>
       {recusa === 'expirado' ? (
-        <Link to="/esqueci-senha" className={buttonVariants({ className: 'mt-4 w-full' })}>
+        <Link to="/esqueci-senha" className={buttonVariants({ size: 'lg', className: 'w-full' })}>
           Pedir outro link
         </Link>
       ) : (
         <Link
           to="/login"
-          className={buttonVariants({ variant: 'outline', className: 'mt-4 w-full' })}
+          className={buttonVariants({ variant: 'outline', size: 'lg', className: 'w-full' })}
         >
           Voltar para a entrada
         </Link>
       )}
-    </Moldura>
-  )
-}
-
-/** A folha das telas de credencial — a mesma de `/trocar-senha`. */
-function Moldura({ contexto, children }: { contexto: string; children: React.ReactNode }) {
-  return (
-    <div className="bg-paper-grid flex min-h-screen items-center justify-center p-4">
-      <div className="w-full max-w-sm rounded-panel border-2 border-border bg-card p-4 shadow-el3">
-        <div className="mb-4">
-          <PageHeader variante="display" titulo="Cabinet" contexto={contexto} />
-        </div>
-        {children}
-      </div>
-    </div>
+    </PaginaDeAuth>
   )
 }

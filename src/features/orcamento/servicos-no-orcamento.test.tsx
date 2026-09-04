@@ -266,12 +266,14 @@ describe('o total do documento soma as DUAS coleções', () => {
     // R$ 1.000,00 de pendente + R$ 480,00 de instalação, que é o `totalCents`
     // que o próprio servidor devolveu. Antes desta PR o fecho mostrava
     // R$ 1.000,00 e o documento fechava por outro número.
-    // O `TotalBox` passou a ser montado sobre o `KpiTile` (D11), que parte o
-    // dinheiro em símbolo · inteiros · centavos para os centavos saírem mais
-    // leves — então o espaço depois de `R$` já não existe no `textContent`. O
-    // número, que é o que este caso mede, é o mesmo.
-    await waitFor(() => expect(screen.getByLabelText('Total')).toHaveTextContent('1.480,00'))
-    expect(screen.getByLabelText('SubTotal')).toHaveTextContent('1.480,00')
+    // O número é o que este caso mede: o símbolo pode vir colado (Money/KpiTile
+    // partem símbolo · inteiros · centavos) ou com espaço — por isso regex.
+    await waitFor(() => expect(screen.getByLabelText('Total')).toHaveTextContent(/1\.480,00/))
+    // O EXTRATO mostra de onde vem cada parte (D17): o subtotal é o dos
+    // PRODUTOS e os serviços entram como parcela nomeada. Estas linhas prendem
+    // a conta inteira.
+    expect(screen.getByLabelText('Subtotal')).toHaveTextContent(/1\.000,00/)
+    expect(screen.getByLabelText('Serviços')).toHaveTextContent(/480,00/)
   })
 })
 

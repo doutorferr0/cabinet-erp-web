@@ -1,10 +1,9 @@
 import type { PartnerDto, PurchaseOrderDto } from '@/api/gerado'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
-import { DocumentoBloco, fileirasTotais } from '@/components/cabinet/documento'
+import { DocumentoBloco } from '@/components/cabinet/documento'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { FormBlock } from '@/components/cabinet/form-block'
 import { DateField, MoneyField, TextareaField } from '@/components/cabinet/form-controls'
-import { FormGrid, type FormGridRow } from '@/components/cabinet/form-grid'
 import { Nome } from '@/components/cabinet/nome'
 import { posGravar } from '@/components/cabinet/pos-gravar'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
@@ -23,7 +22,6 @@ import {
   faltaParaOMinimo,
   fornecedoresComLinhaAberta,
   linhasAbertasParaOrdem,
-  subtotalDaOrdem,
   useCancelarOrdemDeCompra,
   useEnviarOrdemDeCompra,
   useGravarOrdemDeCompra,
@@ -33,7 +31,6 @@ import {
 import { useEmpresasDaSessao } from '@/data/empresas-api'
 import { useCondicoesDePagamento } from '@/data/pagamento-api'
 import { obterParceiro } from '@/data/parceiros-api'
-import { tabelas } from '@/data/tabelas'
 import { PERCENT_ESCALA, formatDateBR, formatMoneyBRL, formatPercent } from '@/lib/formatters'
 import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
 import { cn } from '@/lib/utils'
@@ -55,6 +52,7 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { z } from 'zod'
+import { ItensDaOrdem } from './itens-da-ordem'
 
 /**
  * ORDEM DE COMPRA — o COMBINADO com um fornecedor.
@@ -74,7 +72,7 @@ import { z } from 'zod'
  */
 
 /** Uma linha como a GRADE a guarda. */
-interface LinhaNoFormulario {
+export interface LinhaNoFormulario {
   linha: number
   pedidoOrigemId: string
   pedidoOrigemNumero: string
@@ -140,7 +138,7 @@ export const ordemCompraSchema = z.object({
   ),
 })
 
-function linhaParaFormulario(item: ItemDaOrdemDeCompra): LinhaNoFormulario {
+export function linhaParaFormulario(item: ItemDaOrdemDeCompra): LinhaNoFormulario {
   return {
     linha: item.linha,
     pedidoOrigemId: item.pedidoOrigemId,
@@ -454,91 +452,6 @@ function AvisoDeFaturamentoMinimo() {
 }
 
 /**
- * "Produtos Pedidos" do legado: traz as linhas AINDA ABERTAS dos pedidos do
- * fornecedor escolhido.
- *
- * É por aqui que a ordem ganha conteúdo — ela não tem linha própria, toda linha
- * dela veio de um pedido. Só as `open` aparecem: a linha já levada por outra
- * ordem seria recusada com `item-ja-em-ordem`, e oferecê-la seria montar uma
- * ordem que só falha ao gravar.
- */
-function TrazerLinhasDePedidos({
-  fornecedorId,
-  jaNaOrdem,
-  onTrazer,
-}: {
-  fornecedorId: string
-  jaNaOrdem: readonly LinhaNoFormulario[]
-  onTrazer: (linhas: LinhaNoFormulario[]) => void
-}) {
-  const [aberto, setAberto] = useState(false)
-  const { data: pedidos, isPending, isError } = usePedidosComLinhaAberta(fornecedorId, aberto)
-
-  function trazer(indice: number) {
-    const pedido = pedidos?.[indice]
-    if (!pedido) return
-    const candidatas = linhasAbertasParaOrdem(pedido, fornecedorId)
-      .filter(
-        (linha) =>
-          !jaNaOrdem.some(
-            (existente) =>
-              existente.pedidoOrigemId === linha.pedidoOrigemId &&
-              existente.linhaDeOrigem === linha.linhaDeOrigem,
-          ),
-      )
-      .map(linhaParaFormulario)
-    onTrazer(candidatas)
-    setAberto(false)
-  }
-
-  return (
-    <>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        disabled={!fornecedorId}
-        title={!fornecedorId ? 'Escolha o fornecedor primeiro.' : undefined}
-        onClick={() => setAberto(true)}
-      >
-        <List className="size-4" /> Produtos Pedidos
-      </Button>
-      <Dialog isOpen={aberto} onOpenChange={setAberto} className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Pedidos em aberto deste fornecedor</DialogTitle>
-        </DialogHeader>
-        {isPending ? (
-          <p className="text-muted-foreground text-sm">Carregando…</p>
-        ) : isError ? (
-          <p className="text-sm text-warn">Não foi possível consultar os pedidos de compra.</p>
-        ) : (pedidos ?? []).length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            Nenhum pedido com linha em aberto para este fornecedor.
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {(pedidos ?? []).map((pedido, indice) => (
-              <li key={pedido.id} className="flex items-center justify-between gap-3 text-sm">
-                <span>
-                  <span className="font-semibold">{pedido.numero}</span>{' '}
-                  <span className="text-muted-foreground">
-                    {formatDateBR(pedido.dataEmissao)}
-                    {pedido.cliente ? ` · ${pedido.cliente}` : ' · estoque'}
-                  </span>
-                </span>
-                <Button type="button" variant="outline" size="sm" onClick={() => trazer(indice)}>
-                  Trazer linhas
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Dialog>
-    </>
-  )
-}
-
-/**
  * DESCONTO GERAL da ordem, em PERCENTUAL — e é aí que ele difere do legado.
  *
  * A tela antiga tinha desconto em centavos, ao lado do acréscimo. O contrato
@@ -573,90 +486,6 @@ function CampoDeDesconto({ className }: { className?: string }) {
         }}
       />
     </div>
-  )
-}
-
-function GradeItens({ fornecedorId }: { fornecedorId: string }) {
-  const itens = (useWatch({ name: 'itens' }) as LinhaNoFormulario[] | undefined) ?? []
-  const desconto = (useWatch({ name: 'descontoPercentual' }) as number) ?? 0
-  const acrescimo = (useWatch({ name: 'acrescimoCentavos' }) as number) ?? 0
-
-  const subtotal = subtotalDaOrdem(itens)
-  const descontoEmCentavos = Math.round((subtotal * desconto) / 1_000_000)
-
-  return (
-    <FormGrid
-      name="itens"
-      hideAdd
-      actions={(append) => (
-        <TrazerLinhasDePedidos
-          fornecedorId={fornecedorId}
-          jaNaOrdem={itens}
-          onTrazer={(linhas) => {
-            for (const linha of linhas) append({ ...linha })
-          }}
-        />
-      )}
-      columns={[
-        {
-          // A VOLTA para o pedido: qual documento originou esta linha.
-          key: 'pedidoOrigemNumero',
-          label: 'Ped. Compra',
-          type: 'computed',
-          compute: (row: FormGridRow) => String(row.pedidoOrigemNumero ?? '') || '—',
-        },
-        { key: 'descricao', label: 'Descrição do Produto', voz: 'produto' },
-        { key: 'acabamento', label: 'Acab.' },
-        { key: 'tamanho', label: 'Tamanho' },
-        { key: 'quantidade', label: 'Quantidade' },
-        { key: 'unidade', label: 'Unidade', type: 'select', options: tabelas.unidades },
-        { key: 'custoUnitarioCentavos', label: 'Custo Unit.', type: 'money' },
-        {
-          key: 'valorTotal',
-          label: 'Valor Total',
-          type: 'computed',
-          compute: (row: FormGridRow) => {
-            const quantidade = Number(String(row.quantidade ?? '0').replace(',', '.')) || 0
-            const custo = Number(row.custoUnitarioCentavos ?? 0)
-            return formatMoneyBRL(Math.round(quantidade * custo))
-          },
-        },
-        {
-          key: 'destinoRotulo',
-          label: 'Destino',
-          type: 'computed',
-          compute: (row: FormGridRow) => String(row.destinoRotulo ?? '') || '—',
-        },
-      ]}
-      newRow={{
-        linha: 0,
-        pedidoOrigemId: '',
-        pedidoOrigemNumero: '',
-        linhaDeOrigem: 0,
-        varianteId: null,
-        descricao: '',
-        acabamento: '',
-        tamanho: '',
-        unidade: 'UN',
-        quantidade: '',
-        custoUnitarioCentavos: null,
-        totalCentavos: 0,
-        destinoRotulo: DESTINO_ROTULO.stock,
-        grupoProdutoId: null,
-        grupoProduto: null,
-      }}
-      totals={{
-        valueColumnKey: 'valorTotal',
-        rows: fileirasTotais(subtotal, [
-          {
-            label: `Desconto (${formatPercent(desconto)}%)`,
-            valorCentavos: descontoEmCentavos,
-            sinal: -1,
-          },
-          { label: 'Acréscimo', valorCentavos: acrescimo, sinal: 1 },
-        ]),
-      }}
-    />
   )
 }
 
@@ -870,7 +699,7 @@ function AbaPrincipal({ ordem }: { ordem: OrdemDeCompra }) {
       </DocumentoBloco>
 
       <Secao numero="03" titulo="Itens" cor="info" icone={List} nota="o que se está comprando">
-        <GradeItens fornecedorId={fornecedorId} />
+        <ItensDaOrdem fornecedorId={fornecedorId} />
       </Secao>
 
       <Secao

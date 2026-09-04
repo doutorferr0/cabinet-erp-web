@@ -1,17 +1,20 @@
 import type { StockLocationDto } from '@/api/gerado'
 import { RadioField, SelectIdField, TextField } from '@/components/cabinet/form-controls'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 import { Form } from '@/components/ui/form'
+import {
+  Sheet,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
+import { CHAVES_COMPRAS } from '@/data/compras-api'
 import { useLancarMovimento } from '@/data/estoque-api'
 import { mensagemDoErro } from '@/lib/erros'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useQueryClient } from '@tanstack/react-query'
+import type { ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -21,7 +24,7 @@ import { z } from 'zod'
  * O contrato publica UMA escrita de estoque (`CreateStockMovement`), com três
  * campos: `locationId`, `delta` e `reason`. Não há tipo de movimento no corpo —
  * o que separa entrada de saída é o SINAL do `delta`, e mais nada. Por isso as
- * três telas do G12 são este diálogo em três modos, e não três caminhos.
+ * três telas do G12 são esta gaveta em três modos, e não três caminhos.
  *
  * ## Por que três modos, se a chamada é uma
  *
@@ -45,7 +48,7 @@ import { z } from 'zod'
  * `docs/harvest/estoque-telas/vocabulario-de-movimento.md` e é mudança de
  * CONTRATO, não de tela.
  *
- * ## O que este diálogo NÃO confere antes de mandar
+ * ## O que esta gaveta NÃO confere antes de mandar
  *
  * 1. **Saldo suficiente.** Ele tem o saldo do depósito na tela ao lado e mesmo
  *    assim não o usa para recusar. Entre a leitura e o clique outro operador
@@ -59,6 +62,24 @@ import { z } from 'zod'
  * 3. **Depósito inativo.** Ele aparece na lista marcado, porque o saldo que
  *    ficou lá continua existindo, e o 409 do servidor é quem recusa o movimento
  *    novo.
+ *
+ * ## A GAVETA abre sempre, e o segmented deixou de recusar o clique
+ *
+ * Até aqui os três botões nasciam desabilitados sem variante escolhida, e a
+ * frase ao lado explicava por quê. Funcionava e ainda assim era a ordem errada:
+ * o operador chega à tela para LANÇAR, e a tela respondia pedindo que ele
+ * primeiro fizesse outra coisa, num campo do outro lado da folha.
+ *
+ * Agora o clique sempre abre, e a escolha da peça é o PRIMEIRO BLOCO de dentro
+ * — o mesmo `EscolherPeca` da tela, passado por `seletorDePeca`. A gaveta não
+ * guarda estado de peça: quem escolhe dentro dela escolhe para a tela inteira,
+ * e ao fechar os KPIs e as duas grades já falam da peça nova. Duas cópias do
+ * mesmo estado divergiriam no primeiro `Cancelar`.
+ *
+ * `Lançar` continua desabilitado enquanto não há variante, com a razão escrita
+ * ao lado: sem ela não há caminho a montar
+ * (`/api/variants/{variantId}/stock-movements`), e botão desabilitado e mudo é
+ * o que faz o operador concluir que a tela está quebrada.
  *
  * O que sobra de validação local são as DUAS recusas que o servidor também faz
  * com 400 (`delta` ausente, `reason` em branco) mais a quantidade positiva —
@@ -95,7 +116,7 @@ const VOZ_DO_MODO: Record<ModoDeLancamento, { titulo: string; contexto: string }
  * aceita o zero de propósito, e o negativo É a saída), mas porque aqui a
  * direção já veio do modo. Ver o cabeçalho.
  *
- * Exportada e pura: é a regra que o teste exercita sem montar o diálogo.
+ * Exportada e pura: é a regra que o teste exercita sem montar a gaveta.
  */
 export function quantidadeDoTexto(texto: string): number | null {
   const limpo = texto.trim().replace(',', '.')
@@ -143,18 +164,27 @@ export function LancarMovimento({
   variantId,
   depositos,
   depositoSugerido,
+  seletorDePeca,
+  resumoDaPeca,
   onOpenChange,
 }: {
   aberto: boolean
   modo: ModoDeLancamento
-  variantId: string
+  /** `null` = a peça ainda não foi escolhida. Ver o cabeçalho §A gaveta abre. */
+  variantId: string | null
   depositos: readonly StockLocationDto[]
   /** O depósito que o filtro da tela já escolheu — `null` = o padrão da empresa. */
   depositoSugerido: string | null
+  /** A escolha de peça, montada pela tela: a gaveta não tem estado próprio. */
+  seletorDePeca: ReactNode
+  /** Uma linha dizendo em QUE peça o lançamento vai cair. */
+  resumoDaPeca: ReactNode
   onOpenChange: (aberto: boolean) => void
 }) {
+  const cliente = useQueryClient()
   const lancar = useLancarMovimento(variantId)
   const voz = VOZ_DO_MODO[modo]
+  const temPeca = variantId !== null
 
   const vazio: Campos = {
     locationId: depositoSugerido,
@@ -175,7 +205,7 @@ export function LancarMovimento({
 
   function gravar(campos: Campos) {
     const quantidade = quantidadeDoTexto(campos.quantidade)
-    if (quantidade === null) return
+    if (quantidade === null || !temPeca) return
     lancar.mutate(
       {
         locationId: campos.locationId,
@@ -184,6 +214,12 @@ export function LancarMovimento({
       },
       {
         onSuccess: () => {
+          // `useLancarMovimento` invalida saldo e kardex — não a REPOSIÇÃO, que
+          // é de compras e é de onde vêm os KPIs de reservado e disponível.
+          // Sem esta linha, o operador lança uma entrada, vê o saldo subir e o
+          // disponível parado: dois números da mesma tela discordando sobre o
+          // que acabou de acontecer.
+          void cliente.invalidateQueries({ queryKey: CHAVES_COMPRAS.reposicao, exact: false })
           form.reset(vazio)
           onOpenChange(false)
         },
@@ -192,56 +228,71 @@ export function LancarMovimento({
   }
 
   return (
-    <Dialog isOpen={aberto} onOpenChange={onOpenChange} className="sm:max-w-md">
-      <DialogHeader>
-        <DialogTitle>{voz.titulo}</DialogTitle>
-        <DialogDescription>{voz.contexto}</DialogDescription>
-      </DialogHeader>
+    <Sheet isOpen={aberto} onOpenChange={onOpenChange} side="right">
+      <SheetHeader>
+        <SheetTitle>{voz.titulo}</SheetTitle>
+        <SheetDescription>{voz.contexto}</SheetDescription>
+      </SheetHeader>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(gravar)} className="flex flex-col gap-3">
-          <SelectIdField
-            name="locationId"
-            label="Depósito"
-            opcoes={depositos.map((deposito) => ({
-              id: deposito.id,
-              nome: deposito.active ? deposito.name : `${deposito.name} (inativo)`,
-            }))}
-            // A opção nula não é "nenhum": ela é o depósito PADRÃO da empresa,
-            // que o servidor resolve — e cria, se a empresa ainda não tem
-            // nenhum. Chamá-la de "Selecione…" faria o operador procurar o que
-            // escolher numa lista que pode estar legitimamente vazia.
-            vazio="Depósito padrão da empresa"
-          />
+        <form
+          onSubmit={form.handleSubmit(gravar)}
+          className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-4"
+        >
+          {/* A PEÇA é o primeiro bloco, e é bloco mesmo quando já está
+              escolhida: quem abriu a gaveta de outra parte da tela precisa ler,
+              antes de digitar a quantidade, sobre qual variante ela vai cair. */}
+          <div className="flex flex-col gap-2 rounded-card bg-[var(--n-50)] p-3">
+            {temPeca ? resumoDaPeca : seletorDePeca}
+          </div>
 
-          {modo === 'ajuste' ? (
-            <RadioField
-              name="sentido"
-              label="Sentido"
-              options={[
-                { value: 'acrescentar', label: 'Acrescentar' },
-                { value: 'retirar', label: 'Retirar' },
-              ]}
-            />
+          {temPeca ? (
+            <>
+              <SelectIdField
+                name="locationId"
+                label="Depósito"
+                opcoes={depositos.map((deposito) => ({
+                  id: deposito.id,
+                  nome: deposito.active ? deposito.name : `${deposito.name} (inativo)`,
+                }))}
+                // A opção nula não é "nenhum": ela é o depósito PADRÃO da
+                // empresa, que o servidor resolve — e cria, se a empresa ainda
+                // não tem nenhum. Chamá-la de "Selecione…" faria o operador
+                // procurar o que escolher numa lista que pode estar
+                // legitimamente vazia.
+                vazio="Depósito padrão da empresa"
+              />
+
+              {modo === 'ajuste' ? (
+                <RadioField
+                  name="sentido"
+                  label="Sentido"
+                  options={[
+                    { value: 'acrescentar', label: 'Acrescentar' },
+                    { value: 'retirar', label: 'Retirar' },
+                  ]}
+                />
+              ) : null}
+
+              <TextField
+                name="quantidade"
+                label="Quantidade"
+                inputMode="decimal"
+                autoFocus
+                autoComplete="off"
+              />
+
+              <TextField
+                name="reason"
+                label="Motivo"
+                autoComplete="off"
+                placeholder="Por que esta peça se moveu"
+              />
+            </>
           ) : null}
 
-          <TextField
-            name="quantidade"
-            label="Quantidade"
-            inputMode="decimal"
-            autoFocus
-            autoComplete="off"
-          />
-
-          <TextField
-            name="reason"
-            label="Motivo"
-            autoComplete="off"
-            placeholder="Por que esta peça se moveu"
-          />
-
           {lancar.isError ? (
-            <p role="alert" className="text-destructive text-sm">
+            <p role="alert" className="t-corpo text-[var(--bad)]">
               {/* O `detail` do problem+json por cima do fallback: as recusas
                   daqui (saldo negativo, depósito inativo, variante inexistente)
                   são todas explicadas pelo servidor, e a frase da tela seria
@@ -250,16 +301,27 @@ export function LancarMovimento({
             </p>
           ) : null}
 
-          <DialogFooter>
-            <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit" isDisabled={lancar.isPending}>
-              {lancar.isPending ? 'Lançando…' : 'Lançar'}
-            </Button>
-          </DialogFooter>
+          <SheetFooter className="px-0">
+            {/* A próxima ação é uma só, e tem nome de verbo: `Lançar`. O
+                desabilitado nunca fica MUDO — a frase ao lado diz o que falta,
+                que é a lição que a barra de botões desta tela já tinha
+                aprendido. */}
+            {!temPeca ? (
+              <p className="t-meta">
+                Escolha a peça: o lançamento é por variante, e o caminho da operação depende dela.
+              </p>
+            ) : null}
+            <div className="flex items-center gap-2">
+              <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" isDisabled={lancar.isPending || !temPeca}>
+                {lancar.isPending ? 'Lançando…' : 'Lançar'}
+              </Button>
+            </div>
+          </SheetFooter>
         </form>
       </Form>
-    </Dialog>
+    </Sheet>
   )
 }

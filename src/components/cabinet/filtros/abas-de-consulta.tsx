@@ -215,6 +215,9 @@ function Aba({
         'after:absolute after:inset-x-[var(--s-3)] after:-bottom-px after:h-0.5',
         'after:origin-left after:scale-x-0 after:bg-[var(--vc)] after:transition-transform',
         'aria-selected:after:scale-x-100',
+        // 2026-09-04 (user: "cada elemento tem que se diferenciar"): a aba ativa
+        // também ganha peso e fundo de folha — a linha sozinha sumia no tint.
+        'aria-selected:rounded-t-control aria-selected:bg-card aria-selected:font-semibold',
       )}
       onClick={onClick}
     >

@@ -153,9 +153,9 @@ const MATIZ: Record<TintDeKpi, string> = {
 export type EscalaDeKpi = 'padrao' | 'destaque' | 'heroi'
 
 const ESCALA: Record<EscalaDeKpi, { size: string; lh: string }> = {
-  padrao: { size: 'var(--t-kpi-valor, 26px)', lh: 'var(--t-kpi-valor-lh, 1)' },
-  destaque: { size: 'var(--t-kpi-valor-big, 32px)', lh: 'var(--t-kpi-valor-big-lh, 1)' },
-  heroi: { size: 'var(--t-kpi-valor-heroi, 40px)', lh: 'var(--t-kpi-valor-heroi-lh, 1)' },
+  padrao: { size: 'var(--t-kpi-valor, 30px)', lh: 'var(--t-kpi-valor-lh, 1)' },
+  destaque: { size: 'var(--t-kpi-valor-big, 36px)', lh: 'var(--t-kpi-valor-big-lh, 1)' },
+  heroi: { size: 'var(--t-kpi-valor-heroi, 44px)', lh: 'var(--t-kpi-valor-heroi-lh, 1)' },
 }
 
 /**
@@ -498,7 +498,7 @@ export function KpiTile({
     >
       <span
         data-slot="kpi-rotulo"
-        className="t-rotulo truncate"
+        className="t-rotulo truncate text-[var(--n-700)]"
         // O rótulo carrega o matiz do assunto sem virar cor decorativa — o
         // mesmo papel do quadradinho de grupo na barra lateral.
         //

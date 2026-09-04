@@ -218,9 +218,9 @@
      Peso e família continuam vindo de `--font-*`, que já são token. Os valores
      abaixo repetem o que está na shorthand, e `identidade-visual.test.ts` confere
      que as duas formas não divergem — a mesma disciplina da pilha de fontes. */
-  --t-display-size: 30px;
-  --t-pagina-size: 28px;
-  --t-registro-size: 24px;
+  --t-display-size: 36px;
+  --t-pagina-size: 32px;
+  --t-registro-size: 26px;
   --t-secao-size: 20px;
   --t-bloco-size: 13.5px;
   --t-corpo-size: 13.5px;
@@ -230,9 +230,9 @@
   --t-dado-size: 12.5px;
   --t-dado-meta-size: 11px;
 
-  --t-display: 400 30px / 1.05 var(--font-display);
-  --t-pagina: 400 28px / 1.1 var(--font-display);
-  --t-registro: 400 24px / 1.1 var(--font-display);
+  --t-display: 400 36px / 1.05 var(--font-display);
+  --t-pagina: 400 32px / 1.1 var(--font-display);
+  --t-registro: 400 26px / 1.1 var(--font-display);
   --t-secao: 400 20px / 1.2 var(--font-display);
   --t-bloco: 600 13.5px / 1.3 var(--font-sans);
   --t-corpo: 400 13.5px / 1.45 var(--font-sans);
@@ -465,7 +465,7 @@
 .t-display {
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: 30px;
+  font-size: 36px;
   line-height: 1.05;
   color: var(--n-900);
   text-wrap: balance;
@@ -473,7 +473,7 @@
 .t-pagina {
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: 28px;
+  font-size: 32px;
   line-height: 1.1;
   color: var(--n-900);
   text-wrap: balance;
@@ -481,7 +481,7 @@
 .t-registro {
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: 24px;
+  font-size: 26px;
   line-height: 1.1;
   color: var(--n-900);
 }

@@ -174,14 +174,14 @@ describe('KpiTile', () => {
     expect(tile.className).toContain('overflow-hidden')
   })
 
-  it('as três escalas são 26 / 32 / 40, e nenhuma escreve o número na peça', () => {
+  it('as três escalas são 30 / 36 / 44, e nenhuma escreve o número na peça', () => {
     // §Hierarquia proíbe `font-size` literal em componente: as três saem por
     // token com fallback, que é o que a regra 4 do regime paralelo autoriza
     // enquanto D1 não promove o degrau.
     const medidas: Record<string, string> = {
-      padrao: 'var(--t-kpi-valor, 26px)',
-      destaque: 'var(--t-kpi-valor-big, 32px)',
-      heroi: 'var(--t-kpi-valor-heroi, 40px)',
+      padrao: 'var(--t-kpi-valor, 30px)',
+      destaque: 'var(--t-kpi-valor-big, 36px)',
+      heroi: 'var(--t-kpi-valor-heroi, 44px)',
     }
     for (const [escala, medida] of Object.entries(medidas)) {
       const { container, unmount } = render(

@@ -65,7 +65,10 @@ async function primeiraLinha(over: Parameters<typeof montar>[0] = {}) {
 }
 
 describe('grade 2.0: separação', () => {
-  it('a régua entre linhas é HAIRLINE — nenhuma linha de 2px', async () => {
+  // 2026-09-04 (user: "não enxergo as divisões"): a régua entre linhas subiu de
+  // n-200 para n-300 (`border-input`). Continua 1px — o que o teste protege é
+  // "nenhuma linha de 2px", e isso segue de pé.
+  it('a régua entre linhas é 1px em n-300 — nenhuma linha de 2px', async () => {
     montar()
     const linha = await primeiraLinha()
 
@@ -75,16 +78,22 @@ describe('grade 2.0: separação', () => {
     expect(linha.className).toContain('border-b')
     expect(linha.className).not.toContain('border-b-2')
     const corpo = linha.closest('tbody')
-    expect(corpo?.className).toContain('border-rule-hair')
+    expect(corpo?.className).toContain('border-input')
+    expect(corpo?.className).not.toContain('border-2')
     expect(corpo?.className).not.toContain('border-b-2')
   })
 
-  it('a caixa da grade tem UM traço fino, não a borda de 2px', async () => {
+  // A grade vive dentro do PAINEL da listagem (`painel-da-listagem`: tinta 1,5px
+  // + hard-2) e não tem mais caixa própria — duas caixas aninhadas era o que
+  // sumia. O que se protege agora: a grade não desenha borda nenhuma.
+  it('a grade não desenha caixa própria — quem tem borda é o painel', async () => {
     montar()
     await primeiraLinha()
     const caixa = document.querySelector('[data-slot="grade"]')
-    expect(caixa?.className).toContain('border-input')
+    expect(caixa?.className).not.toContain('border-input')
     expect(caixa?.className).not.toContain('border-2')
+    const painel = document.querySelector('[data-slot="painel-da-listagem"]')
+    expect(painel?.className).toContain('border-[1.5px]')
   })
 })
 

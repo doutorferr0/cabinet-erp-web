@@ -418,7 +418,7 @@ export function FormGrid({
                               className={cn(
                                 'h-8 border-0 bg-transparent focus-visible:focus-ring-inset',
                                 col.voz === 'nome' && VOZ_DE_NOME,
-                                col.voz === 'produto' && 'font-display',
+                                col.voz === 'produto' && 'font-sans font-medium tracking-[0.01em]',
                               )}
                               {...register(path)}
                             />

@@ -199,7 +199,7 @@ export function TelaDeListagem<T>({
   )
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <PageHeader
         titulo={titulo}
         {...(contexto ? { contexto } : {})}

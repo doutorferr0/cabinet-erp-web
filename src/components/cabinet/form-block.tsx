@@ -4,47 +4,43 @@ import { ChevronDown, type LucideIcon } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
 
 /**
- * FormBlock — a forma-assinatura do agrupamento em formulário (DESIGN.md
- * §Shapes): `<fieldset>` + `<legend>` sobre a borda superior, citação direta
- * do groupbox do SoftLux. Compartimento fechado: borda em Régua, canto 4px,
- * goteira interna de 12px. O `<legend>` usa Meta (mono, caixa alta pequena)
- * — é o rótulo de compartimento, não um subtítulo.
+ * FormBlock — o bloco de dados da ficha no desenho 2.0 (D16, issue #484).
  *
- * `legend` é opcional porque a transcrição registra molduras sem nome (§2,
- * "Bloco separado por moldura"). Compartimento sem legenda continua sendo
- * compartimento: a caixa é o agrupamento, a legenda só o nomeia.
+ * ## O que mudou, e por quê
  *
- * Blocos irmãos NUNCA compartilham parede — cada um tem caixa própria e são
- * separados por goteira de 12px (`{spacing.md}`). Parede compartilhada é
- * gramática de grade, não de compartimento.
+ * Até a 1.7 o bloco era um `<fieldset>` com `<legend>` sobre a borda e faixa
+ * pastel do módulo: citação do groupbox do SoftLux. Ele resolvia "isto é um
+ * grupo" gastando TRÊS ferramentas de separação na mesma fronteira — caixa,
+ * faixa colorida e régua —, e a §Hierarquia da issue-mãe passou a proibir isso
+ * em uma linha: *"usar a mais barata que resolve; nunca duas na mesma
+ * fronteira"*. O 2.0 fica com UMA: o **card quiet** (borda `--n-300` +
+ * `--hard-soft`), que é a ferramenta nº 4 e a única que separa objeto do plano.
  *
- * **Fundo afundado (1.6):** o compartimento é quase-branco, não branco. A folha
- * virou branca nesta fase e com isso caixa dentro de caixa passou a se separar
- * só pelo traço; meio grau de luz devolve o degrau sem gastar cor. E é degrau,
- * não zona: quem tem cor de verdade aqui é o bloco cujo CONTEÚDO tem dono
- * (valor, identidade, pendência), e esse recebe a zona por cima desta classe.
+ * Dentro do card só entram espaço, hairline e tint — nada de card no card
+ * (máximo 2 níveis: página › card).
  *
- * ## HIERARQUIA (issue #99, mockup aprovado pelo user em 2026-08-14)
+ * O `<fieldset>` FICA. Ele não era decoração: é o que dá papel `group` com nome
+ * acessível ao conjunto e, principalmente, é o que faz `<fieldset disabled>` do
+ * `CadastroForm` desligar a ficha inteira em modo consulta. Trocar por `<div>`
+ * levaria junto o modo Consul. de vinte telas.
  *
- * Até aqui o bloco era MOLDURA, não hierarquia: o cadastro despejava 40 campos
- * de uma vez sem dizer o que é obrigatório e o que é enfeite. As três
- * propriedades novas — `colapsavel`, `obrigatorio` e `cor` — existem para o
- * operador saber, sem ler, o que precisa preencher para gravar.
+ * ## A invariante do obrigatório continua, e continua testada
  *
- * **A invariante, e ela é testada:** obrigatório mora em bloco SEMPRE ABERTO,
- * opcional pode morar em bloco recolhido, e **bloco fechado nunca esconde campo
- * obrigatório**. Por isso `obrigatorio` vence `colapsavel` em vez de os dois
- * combinarem: um bloco que é obrigatório E recolhível seria a promessa de
- * esconder o que trava o Gravar.
+ * Obrigatório mora em bloco SEMPRE ABERTO, opcional pode morar em bloco
+ * recolhido, e **bloco fechado nunca esconde campo obrigatório**. Por isso
+ * `obrigatorio` vence `colapsavel` em vez de os dois combinarem: um bloco
+ * obrigatório E recolhível seria a promessa de esconder o que trava o Gravar.
  *
  * **O corpo fechado é ESCONDIDO, não desmontado.** Desmontar tiraria os campos
  * do registro do react-hook-form e, com eles, os valores já digitados — abrir e
- * fechar um bloco apagaria o trabalho do operador. `hidden` mantém o campo no
- * DOM (e no form) e fora do alcance do foco, que é o que a gramática de
- * disclosure pede.
+ * fechar um bloco apagaria o trabalho do operador.
  *
- * A propriedade nova é OPT-IN: sem nenhuma delas o bloco renderiza exatamente
- * como sempre renderizou, e as vinte e tantas telas que já o usam não mudam.
+ * ## Carimbo sem caixa
+ *
+ * "Obrigatório", "Opcional" e o nome do bloco perderam a caixa preta: a régua
+ * diz que **`--t-rotulo` nunca tem caixa/borda/fundo próprio**. O que distingue
+ * os três agora é o degrau — título em `.t-bloco`, carimbo em `.t-rotulo`,
+ * contador em `.t-dado-meta` (é número que se compara: mono, por definição).
  */
 
 /** Controles que GUARDAM valor. Botão, checkbox e radio ficam de fora: neles
@@ -70,8 +66,38 @@ function temCampoObrigatorio(raiz: HTMLElement | null): boolean {
   return !!raiz?.querySelector('[required], [aria-required="true"]')
 }
 
+/**
+ * Tint do card, quando o bloco separa por ASSUNTO e não por posição — é o caso
+ * dos cards laterais da ficha (identidade lilás · andamento menta · logística
+ * céu · financeiro areia). Tint nunca dentro de tint: um bloco tintado não
+ * hospeda outro.
+ */
+export type TintDeBloco = 'lilac' | 'mint' | 'sky' | 'sand' | 'rose'
+
+const TINT: Record<TintDeBloco, string> = {
+  lilac: '[background:var(--tint-lilac)] [border-color:var(--indigo-200)]',
+  mint: '[background:var(--tint-mint)] [border-color:var(--mint-200)]',
+  sky: '[background:var(--tint-sky)] [border-color:var(--sky-200)]',
+  sand: '[background:var(--tint-sand)] [border-color:var(--amber-200)]',
+  rose: '[background:var(--tint-rose)] [border-color:var(--rose-200)]',
+}
+
 export interface FormBlockProps {
+  /**
+   * Nome do bloco. `titulo` é o nome do 2.0; `legend` continua aceito porque as
+   * vinte telas que já montam o bloco o passam assim, e trocar a prop em todas
+   * elas seria a issue inteira de outra pessoa.
+   */
+  titulo?: string
   legend?: string
+  /**
+   * Peça à direita do título, em `.t-rotulo` (o `up` do mockup): contagem,
+   * procedência ("Puxados de PV-21646"), um link. Nunca botão primário — a ação
+   * de peso da tela mora no cabeçalho do registro.
+   */
+  acoes?: React.ReactNode
+  /** Separa o bloco por ASSUNTO. Ver `TintDeBloco`. */
+  tint?: TintDeBloco
   className?: string
   children: React.ReactNode
   /**
@@ -90,27 +116,26 @@ export interface FormBlockProps {
    * Nasce ABERTO, mesmo sendo `colapsavel`. É o que o lápis da ficha aciona
    * (issue #103): abrir a edição de UM módulo, e não o formulário inteiro com o
    * bloco procurado ainda fechado.
-   *
-   * Só o estado INICIAL — depois disso quem manda é o gatilho. Prender o bloco
-   * ao search param faria o botão parar de funcionar enquanto a URL não mudasse.
    */
   iniciaAberto?: boolean
   /**
-   * Veste a cor de um módulo: faixa de cabeçalho na cheia `/01`, corpo na
-   * pastel `/02`. Quem resolve o par é o `[data-modulo]` do `index.css`; aqui
-   * só se diz QUAL. Ver `modulo-cores.ts` para a tinta da faixa, que é medida.
+   * Módulo a que o bloco pertence. Continua saindo como `data-modulo` no
+   * `<fieldset>` — é por ele que o tint de módulo se aplica em CSS, e é o gancho
+   * que as telas e os testes já procuram.
    */
   cor?: ModuloCor
   /**
-   * O símbolo do bloco, pousado na faixa antes do nome, na MESMA tinta preta
-   * do texto — traço nunca veste cor de módulo (regra do user, 2026-08-17).
-   * Quem escolhe o símbolo é `modulo-icones.ts`, por id de módulo.
+   * O símbolo do bloco, antes do nome, na MESMA tinta do texto — traço nunca
+   * veste cor de módulo (regra do user, 2026-08-17).
    */
   icone?: LucideIcon
 }
 
 export function FormBlock({
+  titulo,
   legend,
+  acoes,
+  tint,
   className,
   children,
   colapsavel = false,
@@ -120,33 +145,25 @@ export function FormBlock({
   icone: Icone,
 }: FormBlockProps) {
   const idCorpo = useId()
-  // A referência mora no `<fieldset>`, não no corpo: o bloco SEM cabeçalho não
-  // tem corpo embrulhado, e é justamente o formato das vinte telas de hoje —
-  // medir a partir do corpo deixaria a invariante do `required` cega nelas.
+  const idTitulo = useId()
+  const nome = titulo ?? legend
+  // A referência mora no `<fieldset>`, não no corpo: medir a partir do corpo
+  // deixaria a invariante do `required` cega no bloco sem cabeçalho.
   const blocoRef = useRef<HTMLFieldSetElement>(null)
   // `obrigatorio` VENCE `colapsavel`: ver a invariante no docstring.
   const podeColapsar = colapsavel && !obrigatorio
   const [aberto, setAberto] = useState(!podeColapsar || iniciaAberto)
   const [contagem, setContagem] = useState<Contagem>({ preenchidos: 0, total: 0 })
 
-  // O bloco com cabeçalho de verdade — faixa, carimbo, contador, gatilho.
-  // Sem nenhuma das propriedades novas, cai no compartimento de sempre.
-  const comCabecalho = podeColapsar || obrigatorio || cor !== undefined
-
   /**
    * Recontagem SEM lista de dependências, de propósito, e a razão é o
    * react-hook-form: campo registrado por `register` é NÃO CONTROLADO, então
    * digitar não re-renderiza ninguém, e `reset()` (carregar um registro) muda o
-   * valor sem disparar evento de React. Nenhuma dependência descreveria as
-   * duas coisas. Rodar a cada render cobre `reset` e re-render; o `onChange` no
-   * `<fieldset>` cobre a digitação. `setContagem` devolve o estado ANTERIOR
-   * quando os números não mudaram — sem isso, efeito sem deps que chama `set`
-   * seria laço infinito.
+   * valor sem disparar evento de React. Nenhuma dependência descreveria as duas
+   * coisas. `setContagem` devolve o estado ANTERIOR quando os números não
+   * mudaram — sem isso, efeito sem deps que chama `set` seria laço infinito.
    */
   useEffect(() => {
-    // Só quem MOSTRA contador conta. Sem esta guarda, as vinte telas que usam o
-    // bloco simples pagariam um `querySelectorAll` por render para alimentar um
-    // número que ninguém desenha.
     if (podeColapsar) {
       const proxima = medir(blocoRef.current)
       setContagem((atual) =>
@@ -158,72 +175,48 @@ export function FormBlock({
 
     if (import.meta.env.DEV && !obrigatorio && temCampoObrigatorio(blocoRef.current)) {
       throw new Error(
-        `FormBlock${legend ? ` "${legend}"` : ''}: campo obrigatório dentro de bloco que não é \`obrigatorio\`. Campo que trava o Gravar mora em bloco sempre aberto — senão o formulário esconde o que impede de gravar.`,
+        `FormBlock${nome ? ` "${nome}"` : ''}: campo obrigatório dentro de bloco que não é \`obrigatorio\`. Campo que trava o Gravar mora em bloco sempre aberto — senão o formulário esconde o que impede de gravar.`,
       )
     }
   })
 
-  // FUSÃO v5 r4 (decisão do user, 2026-08-19): a faixa NUNCA veste a cheia /01
-  // de fundo — seis blocos gritando em neon era a antítese das referências
-  // (Theo Wilder: pastel + contorno preto amarram multi-cor; Devora: cheia é
-  // ração mínima). A cheia recua para MICRO-ACENTO: barra de 4px e ícone.
-  // Fundo da faixa é a pastel /02; a tinta volta a ser a do tema.
-  const faixa = cn(
-    'relative flex w-full items-center gap-2 px-3 py-2 pl-4 text-left',
-    cor ? 'bg-modulo text-foreground' : 'bg-surface-sunken text-text-strong',
-    // Régua entre faixa e corpo só com o bloco aberto — fechado, a faixa É o
-    // bloco inteiro e uma linha embaixo dela penduraria no vazio. A separação é
-    // por ESPESSURA, nunca por cor: utility de cor de borda não vale neste repo
-    // (DESIGN.md §Medição, pendência 6).
-    aberto && 'border-b-2',
-  )
-
-  // Regra do user (2026-08-17): traço é SEMPRE preto — cor só em preenchimento.
-  // O ícone herda a tinta da faixa (preta em todos os módulos) em vez de vestir
-  // a /01; o quadrado-selo saiu junto: na faixa clara ele só somava moldura.
   const selo = Icone ? (
-    <Icone aria-hidden="true" className={cn('size-4 shrink-0', cor && 'text-modulo')} />
+    <Icone aria-hidden="true" className="size-4 shrink-0 [color:var(--n-500)]" />
   ) : null
 
-  // A cheia /01 vive AQUI, e só aqui: 4px na borda esquerda da faixa.
-  const barra = cor ? (
-    <span aria-hidden="true" className="absolute inset-y-0 left-0 w-1 bg-modulo-cheia" />
-  ) : null
-
-  const nomeDaFaixa = (
-    // `aria-hidden`: o mesmo texto já é o `<legend>` do compartimento e o
-    // `aria-label` do gatilho. Sem isto o leitor de tela diria o nome três
-    // vezes ao entrar no bloco.
-    <span
-      aria-hidden="true"
-      className="min-w-0 flex-1 truncate font-bold font-mono text-[0.75rem] uppercase tracking-[0.06em]"
-    >
-      {legend}
-    </span>
+  /**
+   * O título é `<h3>` E é o nome acessível do grupo — um texto, um papel.
+   *
+   * A 1.7 tinha `<legend class="sr-only">` com o mesmo texto do rótulo visível,
+   * e o visível ia `aria-hidden` para o leitor de tela não dizer o nome duas
+   * vezes. Isso resolvia a duplicação escondendo o `<h3>` da árvore de
+   * headings — e um heading mudo é o que o `a11y/useHeadingContent` reprova,
+   * com razão: um leitor que navega por títulos não acha o bloco.
+   *
+   * A saída é apontar: `<fieldset aria-labelledby>` para o id do `<h3>`. O
+   * grupo continua nomeado (o papel `group` do fieldset vale com
+   * `aria-labelledby` como valia com `<legend>`), o heading existe de verdade na
+   * árvore, e o texto é dito uma vez só.
+   */
+  const nomeDoBloco = (
+    <h3 id={idTitulo} className="t-bloco min-w-0 flex-1 truncate text-left">
+      {nome}
+    </h3>
   )
 
   const carimbos = (
     <>
       {obrigatorio ? (
-        <span className="shrink-0 border-2 bg-destructive px-2 py-0.5 font-bold font-mono text-[0.625rem] text-destructive-foreground uppercase tracking-[0.08em]">
+        <span data-slot="form-block-carimbo" className="t-rotulo shrink-0 [color:var(--bad)]">
           Obrigatório
         </span>
       ) : null}
       {podeColapsar ? (
         <>
-          <span className="shrink-0 border-2 bg-card px-2 py-0.5 font-bold font-mono text-[0.625rem] text-muted-foreground uppercase tracking-[0.08em]">
+          <span data-slot="form-block-carimbo" className="t-rotulo shrink-0">
             Opcional
           </span>
-          {/* Verde de PREENCHIMENTO (`fill-money`), não a tinta `--money`: é
-              fundo, e o `fill-*` é o único verde que desce de luz no escuro e
-              sobrevive à inversão da tinta (DESIGN.md §Medição). */}
-          <span
-            data-slot="form-block-contador"
-            className={cn(
-              'shrink-0 border-2 px-2 py-0.5 font-bold font-mono text-[0.6875rem] text-foreground tabular-nums',
-              contagem.preenchidos > 0 ? 'bg-fill-money' : 'bg-card',
-            )}
-          >
+          <span data-slot="form-block-contador" className="t-dado-meta shrink-0">
             {contagem.preenchidos}/{contagem.total}
           </span>
         </>
@@ -231,72 +224,77 @@ export function FormBlock({
     </>
   )
 
+  // O cabeçalho existe quando há o que pôr nele. Bloco sem nome, sem ação e sem
+  // gatilho é só a caixa — e é assim que metade das telas o usa.
+  const comCabecalho = nome !== undefined || acoes !== undefined || podeColapsar || obrigatorio
+
+  const cabecalho = (
+    <>
+      {selo}
+      {nomeDoBloco}
+      {acoes ? (
+        <span data-slot="form-block-acoes" className="t-rotulo ml-auto shrink-0">
+          {acoes}
+        </span>
+      ) : null}
+      {carimbos}
+    </>
+  )
+
   return (
     <fieldset
       ref={blocoRef}
       {...(cor ? { 'data-modulo': cor } : {})}
+      {...(nome ? { 'aria-labelledby': idTitulo } : {})}
       data-slot="form-block"
       onChange={podeColapsar ? () => setContagem(medir(blocoRef.current)) : undefined}
       className={cn(
-        'rounded-lg border',
-        comCabecalho ? 'overflow-hidden' : 'bg-surface-sunken p-3',
+        // Card quiet: a ÚNICA ferramenta de separação desta fronteira.
+        'rounded-[var(--r-panel)] border [border-color:var(--n-300)] shadow-[var(--hard-soft)]',
+        tint ? TINT[tint] : '[background:var(--n-0)]',
+        'p-[var(--s-4)]',
         className,
       )}
     >
       {comCabecalho ? (
         <>
-          {/* O `<legend>` continua sendo o nome do compartimento — e fica FORA
-              da faixa, escondido só visualmente. MEDIDO em Chrome antes de
-              decidir: `<legend>` participa da renderização da borda do
-              `<fieldset>` (o browser INTERROMPE o traço atrás dele), então um
-              legend `w-full` fazendo as vezes de faixa come a borda de cima e
-              transborda a de lado — nos dois temas, com e sem
-              `overflow-hidden`. Quatro variantes fotografadas; as duas que
-              mantêm a caixa inteira são as que NÃO usam o legend como faixa.
-              Aqui o compartimento continua nomeado por `<legend>` de verdade
-              (role `group` com nome acessível), e a faixa é peça visual. */}
-          {legend ? <legend className="sr-only">{legend}</legend> : null}
+          {/* Sem `<legend>`, e MEDIDO antes de decidir: `<legend>` participa da
+              renderização da borda do `<fieldset>` — o browser INTERROMPE o
+              traço atrás dele —, então um legend largo fazendo as vezes de
+              cabeçalho come a borda de cima e transborda a de lado. Um legend
+              `sr-only` ao lado do `<h3>` diria o nome duas vezes. Quem nomeia o
+              grupo é o `aria-labelledby` acima. */}
           {podeColapsar ? (
             <button
               type="button"
               aria-expanded={aberto}
               aria-controls={idCorpo}
-              aria-label={legend ?? 'Expandir bloco'}
+              aria-label={nome ?? 'Expandir bloco'}
               onClick={() => setAberto((estava) => !estava)}
-              className={cn(faixa, 'cursor-pointer focus-visible:focus-ring-inset')}
+              className="flex w-full cursor-pointer items-center gap-[var(--s-2)] focus-visible:focus-ring-inset"
             >
-              {barra}
-              {selo}
-              {nomeDaFaixa}
-              {carimbos}
+              {cabecalho}
               <ChevronDown
                 aria-hidden="true"
-                className={cn('size-4 shrink-0 transition-transform', aberto && 'rotate-180')}
+                className={cn(
+                  'size-4 shrink-0 [color:var(--n-500)] transition-transform',
+                  aberto && 'rotate-180',
+                )}
               />
             </button>
           ) : (
-            <div className={faixa}>
-              {barra}
-              {selo}
-              {nomeDaFaixa}
-              {carimbos}
-            </div>
+            <div className="flex items-center gap-[var(--s-2)]">{cabecalho}</div>
           )}
         </>
-      ) : legend ? (
-        // FUSÃO v5 (fase 1.7): o nome do compartimento cru veste CAIXA — pastel
-        // /02 do módulo ambiente (preenchimento, nunca traço: o contorno segue
-        // preto) + contorno fino. O groupbox ganha identidade de cor sem que
-        // nenhuma das vinte telas precise passar propriedade nova.
-        <legend className="rounded-data border bg-modulo px-2 py-0.5 font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-text-strong">
-          {legend}
-        </legend>
       ) : null}
       {comCabecalho ? (
+        // Espaço entre cabeçalho e corpo — NÃO hairline. A régua manda usar a
+        // ferramenta mais barata que resolve, e aqui o título já está a um
+        // degrau tipográfico de distância do dado.
         <div
           id={idCorpo}
           {...(podeColapsar && !aberto ? { hidden: true } : {})}
-          className={cn('p-3', cor && 'bg-card')}
+          className="mt-[var(--s-3)]"
         >
           {children}
         </div>
@@ -305,7 +303,7 @@ export function FormBlock({
         // hoje passam layout no `className` do bloco (`flex flex-col gap-3` em
         // `profissional-form`), contando que os filhos sejam filhos DIRETOS do
         // `<fieldset>`. Um `<div>` no meio faria o flex governar o embrulho e
-        // não os campos — as vinte telas mudariam de layout de graça.
+        // não os campos — as telas mudariam de layout de graça.
         children
       )}
     </fieldset>

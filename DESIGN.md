@@ -1136,8 +1136,20 @@ bloqueio (vermelho) · pendência (amarelo) · neutro (Folha). O mapeamento tom 
 continua `[a resolver]` até a enumeração real do backend.
 
 ### Campo (input · select · textarea)
-Fundo Folha, traço 2px, raio de controle, foco pela `focus-ring` (§Foco). **Rótulo é etiqueta**:
-caixa clara com traço 2px, mono 10px, caixa alta — não texto solto acima do campo.
+Fundo Folha, traço 2px, raio de controle, foco pela `focus-ring` (§Foco).
+
+**Rótulo é TEXTO, não etiqueta** — mudou na 2.0 (D16, issue #484). Até a 1.7 ele vestia caixa clara
+com traço de 2px em mono caixa alta: um selo. Selo é peça de IDENTIDADE, e rótulo de campo não
+identifica coisa nenhuma — nomeia o que se digita ao lado. Com quarenta campos numa ficha, quarenta
+selos empatavam em peso com o dado. A §Hierarquia da rodada fecha isso: `--t-rotulo` nunca tem
+caixa/borda/fundo próprio.
+
+O componente `<Campo>` (`components/cabinet/campo.tsx`) é a moldura: rótulo `.t-ui` em `n-700`,
+controle, e UMA linha embaixo — ajuda (`.t-meta`) **ou** erro (`.t-meta` em `--bad`), nunca as duas.
+O erro vence a ajuda enquanto existe: quem já sabe que errou não precisa mais da dica de como
+digitar, e mostrar as duas empurraria o campo seguinte para baixo no instante do erro. Obrigatório =
+`*` `aria-hidden` + `sr-only` "(obrigatório)"; os ids de ajuda/erro vêm de fora, porque o
+`<FormControl>` do shadcn já monta o `aria-describedby` a partir dos dele.
 
 ### DataTable (assinatura) — reescrita na 2.0 (#476 · D8)
 Caixa de dado: **UM traço de `n-300` e a sombra quieta (`--hard-soft`), `overflow-clip`**. A borda de
@@ -1193,11 +1205,48 @@ o rótulo diz isso — chamá-la de filtrada seria um número certo com o nome e
 Painel (raio 10px, `el-3`) com **faixa de acento** de 8px à esquerda e zona de identidade no fundo.
 Título em Display; contexto em Meta. Rodapé fixo com régua superior de 3px. Modo consulta via
 `<fieldset disabled>`: inalterado.
+### FormBlock (assinatura) — 2.0
+**Card quiet**: borda `--n-300` + `--hard-soft`, fundo `--n-0`, padding `--s-4`. É a ÚNICA ferramenta
+de separação da fronteira — a faixa pastel do módulo, a barra de 4px na cheia `/01` e o `<legend>`
+sobre a borda saíram todos: eram três ferramentas na mesma fronteira, e a §Hierarquia manda usar a
+mais barata que resolve, nunca duas. Dentro do card só entram espaço, hairline e tint.
 
-### FormGrid (assinatura)
-Mesma malha da DataTable; célula editável sem borda (a malha É o campo), foco pela `focus-ring-inset`.
-Faixa de seção com fundo Neutro e réguas de 2px. Totais na zona de valor, `Total` em Display com régua
-de 3px acima. Negativo em vermelho.
+Título `.t-bloco` (`<h3>`), `acoes` opcional à direita em `.t-rotulo`, `tint` opcional (`lilac` ·
+`mint` · `sky` · `sand` · `rose`) para o card que separa por ASSUNTO — é o caso dos cards laterais da
+ficha. O `<fieldset>` fica: é ele que dá papel `group` com nome acessível e é o que faz
+`<fieldset disabled>` desligar a ficha inteira em modo consulta. `data-modulo` continua no
+`<fieldset>`, que é o gancho do tint em CSS. Carimbos `Obrigatório`/`Opcional` em `.t-rotulo` sem
+caixa; contador em `.t-dado-meta` (é número que se compara — mono, por definição).
+
+Invariante preservada: obrigatório mora em bloco sempre aberto, `obrigatorio` vence `colapsavel`, e
+corpo fechado é escondido (`hidden`), não desmontado.
+
+### Identidade (assinatura) — 2.0, o que sobrou da `BandaDeIdentidade`
+A `BandaDeIdentidade` **morreu na D16**. Ela era faixa colorida de largura inteira, com gradiente da
+zona de identidade, contorno de 2px e ornamento, dizendo o nome da TELA. Respondia a pergunta errada
+— quem abriu a ficha já sabe em que tela está — e cobrava a primeira dobra da página para repetir o
+breadcrumb. O nome da tela passou ao `PageHeader` (onde já vivia em toda listagem); **quem** é o
+registro passou ao `<BlocoIdentidade>`: card lateral tintado (lilás), monograma 34px em mono, nome
+`.t-ui`, documento `.t-dado-meta`, cidade `.t-meta`, `<dl>` de até 4 pares e "Ver cadastro →" em
+`--primary-text`.
+
+### CadastroForm (assinatura)
+Cabeçalho pelo `PageHeader`, fora do `<fieldset disabled>` — identidade não é campo, e em modo
+consulta continua legível. Rodapé fixo separado por UMA hairline `n-200` (a régua forte de 3px saiu:
+competia com a borda dos cards logo acima). Modo consulta via `<fieldset disabled>`: inalterado.
+
+### FormRow (assinatura) — 2.0
+A fileira de campos dentro de um bloco: `colunas={2|3|4}`, gap `--s-3`, quebra por
+`repeat(auto-fit, minmax(...))`. Mede o CONTÊINER, não a janela — o campo vive dentro de uma coluna
+de 320px na ficha de duas colunas, e `@media` para quebra está proibido na rodada. O nome não é
+`FormGrid` porque `FormGrid` já era, no mesmo arquivo, a grade de ITENS de doze telas.
+
+### FormGrid (assinatura) — a grade de ITENS
+Célula editável sem borda (a malha É o campo), foco pela `focus-ring-inset`. Fechada por UMA hairline
+`n-200` (a caixa preta de 2px saiu — a grade mora dentro de um card, e card dentro de card é o
+terceiro nível que a §Hierarquia proíbe); cabeçalho separado por tint `n-50` em `.t-rotulo`; faixa de
+seção por tint `n-50`, não por régua dupla. Totais na zona de valor, `Total` em Display com régua de
+3px acima. Negativo em vermelho.
 
 ### Indicadores (KPI)
 Cartão (raio 6px, `el-1`; `el-4` quando é o número que a tela existe para mostrar), rótulo em etiqueta,
@@ -1523,15 +1572,17 @@ Três receitas, e a lista do que NÃO anima vale tanto quanto elas.
 
 | o quê | receita | onde mora |
 |---|---|---|
-| Entrada de tela | fade + sobe 16px, mola `{120,30}`, escalonamento ≤80ms (teto de 6 regiões) | `<Entrada>` (lib `motion`) |
+| ~~Entrada de tela~~ | **removida na 2.0 (D16)** — ver abaixo | `<Entrada>` virou embrulho sem mola |
 | Peça que aparece (popover, menu, diálogo, dica) | fade + escala 0,96→1, mola `{400,30}` | `pop-spring` (CSS) |
 | Cortina do diálogo | só opacidade, 160ms | `fade-veil` (CSS) |
 | Hover e press | §Lift, 140ms `ease-out` | `lift-control` / `lift-flat` (CSS) |
 
-**A entrada anima na MONTAGEM e só.** Quem garante "uma vez por navegação" é a `key` por caminho
-que o shell dá à folha: trocar de tela remonta e anima; paginar, ordenar e digitar mexem em search
-params ou estado, não no caminho, e não animam. Animação que se repete a cada re-render é a que faz
-o operador esperar a tela parar de se mexer.
+**A entrada de tela SAIU (D16, regra 7 da rodada 2.0).** O motivo é o mesmo que este parágrafo já
+dava em defesa dela: movimento que não informa é atrito num ERP de oito horas. "A tela trocou" o
+operador já sabe — foi ele quem clicou. O que a mola custava era meio segundo até a última região
+parar de se mexer, em toda navegação, para dizer o que o cursor já tinha dito. `<Entrada>` continua
+existindo como embrulho (o shell monta cinco regiões com ela e é zona de outra issue), sem mola e sem
+a dependência de `motion` naquele caminho.
 
 **Popover e companhia NÃO usam a lib**, e é decisão: quem os monta e desmonta é a
 `react-aria-components`, que segura o nó vivo enquanto houver animação CSS correndo e só então

@@ -211,7 +211,82 @@ merge o repositório tem um par `x.tsx`/`x.test.tsx` cujo teste não testa o `x`
 resto de `src/components/cabinet/` é que testa. Renomear o teste (para o assunto, não para o
 componente) é trabalho de D37 e não conflita com ninguém.
 
-## 6. O que D37 não pode fazer antes do merge
+## 6. Dois nomes para a mesma coisa, e um degrau que não existe
+
+### 6.1 `Monograma` está declarado duas vezes — e a duplicata mergeia limpo
+
+`src/components/cabinet/monograma.tsx` (base, reescrito por D3: 26px, `--r-ctrl`, `.t-dado`,
+hairline `--n-200`, hash do nome nas cinco `--tint-*`) e `src/features/crm/monograma.tsx`
+(**novo em D22**: 20px, iniciais do responsável no cartão do funil). Dois componentes com o mesmo
+nome, exportados dos dois lugares, com desenhos diferentes.
+
+O agravante é que **D22 mergeia sem conflito** — os arquivos são distintos, então nada acende. É a
+duplicata que a issue pede para achar, e ela só aparece procurando por nome exportado, nunca pelo
+merge. A saída é D22 consumir o componente compartilhado com um `tamanho={20}`, que a assinatura de
+`components/cabinet/monograma.tsx` já aceita.
+
+**Nem toda duplicata da varredura é da rodada:** `ParticipacaoDoPedido` já está em
+`features/vendas/` e `features/comissoes/` **na base**, desde antes da 2.0. Fora do escopo de D37.
+
+### 6.2 `Appbar` duplicado é armadilha de merge, não divergência de código
+
+D5 **move** `src/app/appbar.tsx` para `src/app/appbar/index.tsx` (mais `trilha.ts`/`trilha.test.ts`);
+D4 e D7 **modificam** `src/app/appbar.tsx` no lugar antigo. No merge real isso é um conflito
+**rename/modify**, e resolvê-lo pelo lado errado deixa os dois arquivos vivos, cada um exportando
+um `Appbar` — quem decide qual vale passa a ser o caminho do import. Foi o que aconteceu no ensaio
+deste documento, com `--theirs`: o resultado tinha os dois.
+
+Registrado aqui porque é aviso para **quem faz o merge**, não tarefa de D37: se D4 ou D7 entrarem
+depois de D5, confira que `src/app/appbar.tsx` some.
+
+### 6.3 `--t-kpi-valor` não existe, e por isso virou seis nomes com três tamanhos
+
+Nenhuma das classes abaixo tem definição em `tokens-2.0.css` nem no `index.css` — todas entram por
+`var(--x, fallback)`, e o fallback é o que efetivamente desenha:
+
+| token fantasma | D11 · D21 · D25 | D34 |
+|---|---|---|
+| `--t-kpi-valor` | **20px** | **26px** |
+| `--t-kpi-valor-big` | 24px | 32px |
+| `--t-kpi-valor-heroi` | — | 40px |
+| `--t-kpi-valor-lh` | 24px | (1) |
+| `--t-kpi-valor-big-lh` | 28px | (1) |
+| `--t-kpi-valor-heroi-lh` | — | (1) |
+
+É exatamente o que D25 previu ao registrar o pedido na #469 — *"sem o degrau, cada uma escolhe o seu
+20px"*. Aconteceu: **o mesmo token tem dois defaults**, e D34 reescreveu a escala inteira por cima
+de D11 sem que uma seja base da outra (D34 mira `design/2.0` direto). Hoje o KPI do relatório e o
+do dashboard saem em tamanhos diferentes, e nenhum grep de `font-size:` acusa isso, porque o valor
+está dentro de uma `var()`.
+
+**A unificação aqui não é renomear: é publicar o degrau.** Escolher um valor, declará-lo em
+`tokens-2.0.css`, e os fallbacks viram redundância inofensiva. Enquanto o degrau não existir,
+qualquer "alinhamento" é escolher um número na mão — que é o que produziu a divergência.
+
+Outras `.t-*` sem definição, pela mesma via: `t-badge` (D3), `t-campo` (`ui/label.tsx`),
+`t-avatar-iniciais` (D21), `t-registro-id` (`documento.tsx`), `t-total-documento`
+(`grade-de-itens.tsx`). São **seis famílias fantasma** ao lado dos onze degraus reais da
+§Hierarquia — e os reais estão bem usados (`t-meta` 148, `t-ui` 110, `t-rotulo` 87, `t-dado-meta`
+86, `t-dado` 77).
+
+### 6.4 O alinhamento `.t-*` × utility ainda não aconteceu
+
+Na união convivem 148 `t-meta`/110 `t-ui` com **177 `text-sm` e 51 `text-xs`** soltos. Não é
+contradição direta — a maioria dos `text-*` está em elemento que nenhum degrau cobre —, mas é o
+tamanho do trabalho que o item "nomes de classe `.t-*` vs utilities Tailwind equivalentes" esconde.
+Um caso é literal: `features/acesso/senha-provisoria.tsx:52` carrega `t-dado` **e** `text-lg` no
+mesmo `className`, e como as `.t-*` moram fora de `@layer`, quem ganha é o degrau — o `text-lg` não
+faz nada e mente para quem lê.
+
+### 6.5 Prop com dois nomes, além da renomeação principal
+
+`selecionadas` (18) e `selecionados` (3) coexistem; os três masculinos são cópia visível ao
+operador (`filtro-controles.tsx:214`, `"${marcados.length} selecionados"`) e não nome de prop, então
+a unificação aqui é de **cópia**, não de API — e depende de o sujeito ser "registros" ou "linhas".
+`acoesDeLinha` (5) é conceito distinto de `acoesDeSelecao` (15) e fica; renomear o segundo para
+`acoesDeLote` deixa o par mais legível, que é metade do motivo da renomeação.
+
+## 7. O que D37 não pode fazer antes do merge
 
 Registrado porque a tentação é grande e o estrago é caro: os greps do DoD **já acham 136 `text-[`
 e 167 `border-2` na base pura**, e essas ocorrências são o código 1.x que as 30 PRs abertas estão

@@ -43,18 +43,42 @@ const SEM_CABECALHO: Record<string, string> = {
   // D12: viraram VIEWS da listagem de origem (calendário) — a rota só redireciona.
   'compras/previsao.tsx': 'desvio para /compras/ordens?modo=calendario — não é tela (D12)',
   'vendas/cargas.tsx': 'desvio para /vendas/pedidos?modo=calendario — não é tela (D12)',
+  // AUTH: fora do shell. Estas quatro rotas não têm barra, appbar nem migalha —
+  // `PaginaDeAuth` (D28) É a moldura delas, com o próprio `<h1>`. Um
+  // `PageHeader` aqui traria o `BotaoVoltar` e a gramática de "estou dentro do
+  // sistema" para telas cuja premissa é que ninguém entrou ainda. Não é dívida:
+  // é a exceção que a regra sempre teve e que ninguém tinha escrito (D37).
+  'login.tsx': 'fora do shell — PaginaDeAuth (D28) é a moldura',
+  'esqueci-senha.tsx': 'fora do shell — PaginaDeAuth (D28) é a moldura',
+  'definir-senha.tsx': 'fora do shell — PaginaDeAuth (D28) é a moldura',
+  'trocar-senha.tsx': 'fora do shell — PaginaDeAuth (D28) é a moldura',
   // INTEGRAÇÃO 2.0 (Cowork, 2026-09-03): telas PRÓPRIAS entregues em paralelo à D5
   // desenham o próprio título (saudação do dashboard, hub de módulo, quadro,
-  // planner, boletim). Unificar no PageHeader é item da D37 (#532).
-  'boletim.tsx': 'tela própria (D20) — título próprio; D37 unifica',
-  'dashboard.tsx': 'tela própria (D20) — saudação Gambarino é o título; D37 unifica',
-  'tarefas.tsx': 'tela própria (D21) — título próprio; D37 unifica',
-  'planner.tsx': 'tela própria (D23) — título próprio; D37 unifica',
-  'cadastros/index.tsx': 'hub de módulo (D26) — HubDeModulo tem o título; D37 unifica',
-  'compras/index.tsx': 'hub de módulo (D26) — HubDeModulo tem o título; D37 unifica',
-  'crm/index.tsx': 'hub de módulo (D26) — HubDeModulo tem o título; D37 unifica',
-  'estoque/index.tsx': 'hub de módulo (D26) — HubDeModulo tem o título; D37 unifica',
-  'vendas/index.tsx': 'hub de módulo (D26) — HubDeModulo tem o título; D37 unifica',
+  // planner, boletim).
+  //
+  // **A D37 mediu e NÃO unificou, e o motivo é de escopo.** O `PageHeader`
+  // desenha um `<h1>` em `.t-pagina` com `BotaoVoltar`; estas nove telas têm
+  // título com DESENHO próprio — a saudação em Gambarino do dashboard e o
+  // `HubDeModulo` são o que o mockup pede ali, não um descuido. Trocá-los pelo
+  // cabeçalho padrão é REDESENHO, e a D37 é "só renomeação e alinhamento, sem
+  // feature" (regime da rodada). Unificar de verdade pede ou uma variante de
+  // `PageHeader` que aceite o título desenhado, ou a decisão de que estas telas
+  // perdem o desenho — as duas com o mockup ao lado, numa issue própria.
+  'boletim.tsx': 'tela própria (D20) — título próprio; D37 mediu: unificar é redesenho',
+  'dashboard.tsx':
+    'tela própria (D20) — saudação Gambarino é o título; D37 mediu: unificar é redesenho',
+  'tarefas.tsx': 'tela própria (D21) — título próprio; D37 mediu: unificar é redesenho',
+  'planner.tsx': 'tela própria (D23) — título próprio; D37 mediu: unificar é redesenho',
+  'cadastros/index.tsx':
+    'hub de módulo (D26) — HubDeModulo tem o título; D37 mediu: unificar é redesenho',
+  'compras/index.tsx':
+    'hub de módulo (D26) — HubDeModulo tem o título; D37 mediu: unificar é redesenho',
+  'crm/index.tsx':
+    'hub de módulo (D26) — HubDeModulo tem o título; D37 mediu: unificar é redesenho',
+  'estoque/index.tsx':
+    'hub de módulo (D26) — HubDeModulo tem o título; D37 mediu: unificar é redesenho',
+  'vendas/index.tsx':
+    'hub de módulo (D26) — HubDeModulo tem o título; D37 mediu: unificar é redesenho',
 }
 
 function arquivosDe(dir: string): string[] {
@@ -143,10 +167,13 @@ describe('cabeçalho de página em toda rota', () => {
    * tinham dois títulos.
    */
   it('nenhum título de nível 1 fora do cabeçalho', () => {
-    // INTEGRAÇÃO 2.0: telas próprias (D20/D21/D23) escrevem o próprio <h1>
-    // até a D37 (#532) unificar no PageHeader — mesma exceção da lista acima.
+    // Telas próprias (D20/D21/D23) escrevem o próprio <h1>, e a auth (D28)
+    // também: `PaginaDeAuth` é a moldura de quem ainda não entrou no sistema, e
+    // o título dela não pode vir de um cabeçalho que pressupõe o shell. Mesma
+    // exceção da lista acima, com o mesmo porquê medido na D37.
     const H1_PROPRIO = new Set([
       'features/dashboard/dashboard.tsx',
+      'features/login/pagina-de-auth.tsx',
       'features/planner/planner.tsx',
       'features/tarefas/tarefas.tsx',
     ])

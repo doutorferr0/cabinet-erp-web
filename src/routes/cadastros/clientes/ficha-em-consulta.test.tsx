@@ -106,7 +106,12 @@ describe('ficha do cliente em consulta', () => {
     expect(document.querySelector('[data-slot="registro-id"]')).toHaveTextContent('F001')
     // Dentro do CABEÇALHO: `Ativo` também é o rótulo do campo homônimo no
     // módulo `Identificação`, e uma busca solta acharia os dois.
-    const cabecalho = document.querySelector('[data-slot="cabecalho-do-registro"]') as HTMLElement
+    // O cabeçalho de registro É o `PageHeader` na variante `registro` desde a
+    // D5 — a variante é que diz o papel, e um segundo `data-slot` para a mesma
+    // peça daria dois nomes à mesma coisa (D37).
+    const cabecalho = document.querySelector(
+      '[data-slot="page-header"][data-variante="registro"]',
+    ) as HTMLElement
     expect(within(cabecalho).getByText('Ativo')).toBeInTheDocument()
   })
 
@@ -117,7 +122,7 @@ describe('ficha do cliente em consulta', () => {
     // próximo passo deste registro. O próximo passo de um cadastro ativo é
     // tirá-lo de circulação.
     const primaria = await waitFor(() => {
-      const botao = document.querySelector('[data-slot="proxima-acao"]')
+      const botao = document.querySelector('[data-slot="page-header-primaria"]')
       expect(botao).not.toBeNull()
       return botao as HTMLElement
     })

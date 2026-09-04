@@ -261,6 +261,12 @@ export function PageHeader({
         {primaria ? (
           <Button
             type="button"
+            // Título, contexto e subtítulo já se nomeavam por `data-slot`; a
+            // ação PRIMÁRIA, que é a peça mais consultada do cabeçalho, não
+            // tinha nome (D37). Dois testes a procuravam por
+            // `[data-slot="proxima-acao"]`, que era o nome dela antes de o
+            // cabeçalho de registro virar `PageHeader` — e achavam `null`.
+            data-slot="page-header-primaria"
             disabled={primaria.disabled === true}
             {...(primaria.motivo ? { title: primaria.motivo } : {})}
             onClick={() => primaria.onClick?.()}

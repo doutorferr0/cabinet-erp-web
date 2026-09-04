@@ -486,7 +486,42 @@ Nenhum desses é "esquecido": os quatro têm o número medido e o bloqueio nomea
 que foi feito é que **renomear é reversível e escolher um degrau tipográfico não é** — a segunda
 metade pede uma issue com o mockup ao lado, não uma passada de consistência.
 
-## 10. O que D37 não pode fazer antes do merge
+## 10. O que o merge de D20–D35 trouxe, e o que a D37 fez com isso
+
+A base fechou a rodada inteira (D1–D29, D32–D35) durante a sessão, e a suíte veio com mais cinco
+defeitos da mesma família — nenhum deles de asserção errada, todos de **peça que trocou de nome ou
+de lugar e deixou quem a consultava para trás**.
+
+| defeito | causa | conserto |
+|---|---|---|
+| 148 arquivos sem coletar | `@/assets/marca/cabinet-mark-compact.svg` **sumiu no merge** | restaurado da base |
+| dívida órfã em `DIVIDAS` | D26 registrou `stipple.tsx` dizendo "quem decide é D28"; D28 **apagou** o arquivo | entrada removida |
+| 4 rotas de auth sem `PageHeader` | D28 reescreveu a auth; a guarda de D5 exige cabeçalho em toda rota | exceção declarada, com o porquê |
+| `<h1>` de `pagina-de-auth.tsx` | mesma origem | acrescentado a `H1_PROPRIO` |
+| ficha em consulta (2 casos) | `[data-slot="cabecalho-do-registro"]` e `[data-slot="proxima-acao"]` **deixaram de existir** quando D5 fez o cabeçalho de registro virar `PageHeader` | ver abaixo |
+
+**Um arquivo sumiu no merge e derrubou a coleta de 148 arquivos de teste** — com apenas 4 falhas de
+asserção no relatório, que é o disfarce clássico: a contagem de `FAIL` fala de coleta, não de
+comportamento. `tsc` não pega (o import é de asset, resolvido pelo Vite), e a mensagem aparece uma
+vez no meio de 270 mil caracteres de saída. Vale a regra: **`comm -23` entre `git ls-tree` da base e
+do seu HEAD** depois de todo merge grande — leva um segundo e teria achado isto antes da suíte.
+
+**O `data-slot` da ação primária não existia.** Título, contexto e subtítulo do `PageHeader` já se
+nomeavam; a peça mais consultada do cabeçalho, não. Os dois testes que a procuravam usavam
+`proxima-acao`, o nome que ela tinha antes de D5 — e recebiam `null`, que em `querySelector` é
+silêncio, não erro. Agora ela é `page-header-primaria`, como as irmãs. O cabeçalho de registro, por
+sua vez, **é** o `PageHeader` com `data-variante="registro"`: um `data-slot` próprio para a mesma
+peça daria dois nomes à mesma coisa, que é o defeito que esta issue existe para remover.
+
+**Sobre as nove telas com "D37 unifica" na lista de exceções:** a D37 mediu e **não** unificou. O
+`PageHeader` desenha um `<h1>` em `.t-pagina` com botão de voltar; a saudação em Gambarino do
+dashboard e o `HubDeModulo` têm desenho próprio **porque o mockup pede**. Trocá-los pelo cabeçalho
+padrão é redesenho, e o regime da rodada define a D37 como "só renomeação e alinhamento, sem
+feature". Unificar de verdade pede uma variante de `PageHeader` que aceite o título desenhado, ou a
+decisão de que essas telas perdem o desenho — as duas com o mockup ao lado, numa issue própria. O
+motivo está escrito na própria lista, no lugar onde o próximo agente vai olhar.
+
+## 11. O que D37 não pode fazer antes do merge
 
 Registrado porque a tentação é grande e o estrago é caro: os greps do DoD **já acham 136 `text-[`
 e 167 `border-2` na base pura**, e essas ocorrências são o código 1.x que as 30 PRs abertas estão

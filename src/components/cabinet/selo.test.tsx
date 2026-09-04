@@ -2,6 +2,8 @@ import { renderWithQuery } from '@/test/utils'
 import { describe, expect, it } from 'vitest'
 import { Selo } from './selo'
 
+// 2.0 (D3, #505): Selo passou a ser um Badge — sem papel por baixo nem elevação por tamanho;
+// os dois testes dessas regras 1.x saíram no merge (Cowork, 2026-09-03).
 describe('Selo', () => {
   it('desenha o shape do módulo dentro da caixa', () => {
     const { container } = renderWithQuery(<Selo shape="produtos" />)
@@ -17,21 +19,5 @@ describe('Selo', () => {
     const { container } = renderWithQuery(<Selo shape="boletim" />)
 
     expect(container.querySelector('[data-slot="selo"]')).toHaveAttribute('aria-hidden', 'true')
-  })
-
-  it('leva papel branco por baixo do shape', () => {
-    // É a razão de a peça existir: o ornamento pousa sobre superfície colorida,
-    // e sem o papel a cheia /01 sumiria dentro da pastel /02 da mesma matiz.
-    const { container } = renderWithQuery(<Selo shape="clientes" />)
-
-    expect(container.querySelector('[data-slot="selo"]')).toHaveClass('bg-card')
-  })
-
-  it('o tamanho lg leva elevação, os menores não', () => {
-    const grande = renderWithQuery(<Selo shape="estoque" tamanho="lg" />)
-    expect(grande.container.querySelector('[data-slot="selo"]')).toHaveClass('shadow-el1')
-
-    const pequeno = renderWithQuery(<Selo shape="estoque" tamanho="sm" />)
-    expect(pequeno.container.querySelector('[data-slot="selo"]')).not.toHaveClass('shadow-el1')
   })
 })

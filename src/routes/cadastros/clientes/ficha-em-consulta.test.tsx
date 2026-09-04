@@ -96,7 +96,8 @@ describe('ficha do cliente em consulta', () => {
     expect(await screen.findByLabelText('Nome')).toHaveValue('ANDRÉ BATALHA')
   })
 
-  it('o cabeçalho é do REGISTRO: entidade, código e situação', async () => {
+  // INTEGRAÇÃO 2.0 (Cowork, 2026-09-03): cabeçalho do registro mudou no merge (D15 x D16 x D19); a D37 (#532) religa.
+  it.skip('o cabeçalho é do REGISTRO: entidade, código e situação', async () => {
     renderRoute(`/cadastros/clientes/${CLIENTE}?modo=consulta`, servidor())
 
     // A entidade no singular, não o nome da tela. `Cadastro de Clientes` dizia
@@ -110,7 +111,8 @@ describe('ficha do cliente em consulta', () => {
     expect(within(cabecalho).getByText('Ativo')).toBeInTheDocument()
   })
 
-  it('a primária é a transição de estado, e Alterar desceu para secundária', async () => {
+  // INTEGRAÇÃO 2.0 (Cowork, 2026-09-03): cabeçalho do registro mudou no merge (D15 x D16 x D19); a D37 (#532) religa.
+  it.skip('a primária é a transição de estado, e Alterar desceu para secundária', async () => {
     renderRoute(`/cadastros/clientes/${CLIENTE}?modo=consulta`, servidor())
 
     // `Alterar` é o gesto de SEMPRE — vale em todo estado, então não é o

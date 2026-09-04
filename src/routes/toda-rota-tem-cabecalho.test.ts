@@ -55,6 +55,11 @@ const SEM_CABECALHO: Record<string, string> = {
   'crm/index.tsx': 'hub de módulo (D26) — HubDeModulo tem o título; D37 unifica',
   'estoque/index.tsx': 'hub de módulo (D26) — HubDeModulo tem o título; D37 unifica',
   'vendas/index.tsx': 'hub de módulo (D26) — HubDeModulo tem o título; D37 unifica',
+  // D28: as quatro telas de auth usam `PaginaDeAuth` (h1 próprio, fora da casca).
+  'login.tsx': 'auth (D28) — PaginaDeAuth tem o h1; fora da casca, não há PageHeader',
+  'esqueci-senha.tsx': 'auth (D28) — PaginaDeAuth tem o h1',
+  'definir-senha.tsx': 'auth (D28) — PaginaDeAuth tem o h1',
+  'trocar-senha.tsx': 'auth (D28) — PaginaDeAuth tem o h1',
 }
 
 function arquivosDe(dir: string): string[] {
@@ -149,6 +154,7 @@ describe('cabeçalho de página em toda rota', () => {
       'features/dashboard/dashboard.tsx',
       'features/planner/planner.tsx',
       'features/tarefas/tarefas.tsx',
+      'features/login/pagina-de-auth.tsx',
     ])
     const soltos = [...arquivosDe(join(SRC, 'routes')), ...arquivosDe(join(SRC, 'features'))]
       .filter((arquivo) => /<h1[\s>]/.test(readFileSync(arquivo, 'utf-8')))

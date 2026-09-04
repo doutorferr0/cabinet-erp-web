@@ -5,7 +5,7 @@ import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import { type Produto, produtos } from '@/mocks/produtos'
 import { renderWithQuery } from '@/test/utils'
 import type { ColumnDef } from '@tanstack/react-table'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import type userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 
@@ -196,10 +196,14 @@ describe('VitraDataTable', () => {
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
     const head = screen.getByRole('columnheader', { name: /Marca/ })
 
+    // `within(head)`: com a barra 2.0 a ordenação também aparece na barra
+    // (`Ordenar: Marca ↑`), e um `getByRole` solto passaria a achar os dois.
+    const ordenar = within(head).getByRole('button', { name: /Marca/ })
+
     expect(head).toHaveAttribute('aria-sort', 'none')
-    await user.click(screen.getByRole('button', { name: /Marca/ }))
+    await user.click(ordenar)
     await waitFor(() => expect(head).toHaveAttribute('aria-sort', 'ascending'))
-    await user.click(screen.getByRole('button', { name: /Marca/ }))
+    await user.click(ordenar)
     await waitFor(() => expect(head).toHaveAttribute('aria-sort', 'descending'))
   })
 
@@ -704,18 +708,21 @@ describe('VitraDataTable — visões', () => {
   it('o `Agrupar por` só existe na visão que agrupa', async () => {
     const { user } = setupComVisao()
 
-    expect(await screen.findByLabelText('Agrupar por:')).toBeInTheDocument()
+    // Na barra 2.0 o agrupamento é um CHIP, como o filtro: os dois são
+    // condições sobre a lista, e o chip diz por qual campo sem abrir nada.
+    expect(await screen.findByRole('button', { name: /^Agrupado por/ })).toBeInTheDocument()
     await user.click(screen.getByRole('radio', { name: 'Lista' }))
 
     await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
-    expect(screen.queryByLabelText('Agrupar por:')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Agrup/ })).not.toBeInTheDocument()
   })
 
   it('o agrupamento escolhido chega à visão', async () => {
     const { user } = setupComVisao()
 
     expect(await screen.findByText('agrupado por marca')).toBeInTheDocument()
-    await user.selectOptions(screen.getByLabelText('Agrupar por:'), 'nossoCodigo')
+    await user.click(screen.getByRole('button', { name: /^Agrupado por/ }))
+    await user.click(await screen.findByRole('button', { name: 'Código' }))
     expect(await screen.findByText('agrupado por nossoCodigo')).toBeInTheDocument()
   })
 

@@ -1,9 +1,10 @@
 import { AbasDeConsulta } from '@/components/cabinet/filtros/abas-de-consulta'
+import { interpretarBusca } from '@/components/cabinet/filtros/busca-com-prefixo'
 import { consultaDaUrl } from '@/components/cabinet/filtros/filtro-na-url'
-import { PilulasDeFiltro } from '@/components/cabinet/filtros/pilulas-de-filtro'
 import { SincroniaComAUrl } from '@/components/cabinet/filtros/sincronia-com-a-url'
 import { ListaDeFiltros } from '@/components/cabinet/lista-de-filtros'
 import { type AcaoDeLinha, AcoesDeLinha } from '@/components/cabinet/listagem/acoes-de-linha'
+import { BarraDeFiltros } from '@/components/cabinet/listagem/barra-de-filtros'
 import {
   IconeDeTipo,
   type TipoDeColuna,
@@ -17,7 +18,7 @@ import {
   idsDeclarados,
   moduloDaColuna,
 } from '@/components/cabinet/listagem/colunas-da-grade'
-import { ColunasPorModulo } from '@/components/cabinet/listagem/colunas-por-modulo'
+import { gruposDoModulo } from '@/components/cabinet/listagem/colunas-por-modulo'
 import { FiltroPorModulo } from '@/components/cabinet/listagem/filtro-por-modulo'
 import { ModuloEmConstrucao } from '@/components/cabinet/modulo-em-construcao'
 import { Ornamento, OrnamentoDoModulo } from '@/components/cabinet/ornamento'
@@ -31,7 +32,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty'
-import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -73,15 +73,7 @@ import { cn } from '@/lib/utils'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
 import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from '@tanstack/react-table'
-import {
-  ArrowDown,
-  ArrowUp,
-  ChevronLeft,
-  ChevronRight,
-  type LucideIcon,
-  Rows3,
-  Search,
-} from 'lucide-react'
+import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, type LucideIcon, Rows3 } from 'lucide-react'
 import { type ReactNode, useCallback, useEffect, useId, useMemo, useState } from 'react'
 
 declare module '@tanstack/react-table' {
@@ -526,7 +518,11 @@ function BarraDeSelecao<T>({
               disabled={morta}
               // Botão de contorno sobre tinta: a borda e o texto viram cor de
               // papel, senão o `outline` desenharia traço preto sobre preto.
-              className="border-muted-foreground bg-transparent text-card! shadow-none hover:bg-muted-foreground/25 disabled:opacity-40"
+              // Desabilitado apaga o TRAÇO, não o conteúdo (regra do repo,
+              // `desabilitado.test.tsx`): opacidade sobre a barra escura some
+              // com a palavra inteira, e um botão ilegível se lê como defeito
+              // em vez de "não dá para clicar agora".
+              className="border-muted-foreground bg-transparent text-card! shadow-none hover:bg-muted-foreground/25 disabled:border-rule-disabled disabled:text-muted-foreground!"
               title={
                 acao.disabled === true
                   ? acao.title
@@ -656,6 +652,17 @@ export function VitraDataTable<T>({
   // e é por isso que o estado nasce aqui e não na tela: quem monta a listagem
   // escolhe a identidade da linha, não o que o operador quer ver hoje.
   const [colunasExtras, setColunasExtras] = useState<string[]>([])
+  /**
+   * O que o operador ESCONDEU e em que ordem ele pôs o que sobrou.
+   *
+   * Estado de tela, como a densidade: não muda o que o servidor traz, muda o
+   * que se lê. Nasce vazio — a grade que a tela declarou é a ordem certa até
+   * alguém dizer o contrário —, e por isso `ordemDasColunas` fica `[]` em vez
+   * de uma cópia dos ids: cópia envelheceria no dia em que a tela ganhasse uma
+   * coluna, escondendo a nova atrás de uma ordem gravada antes dela existir.
+   */
+  const [colunasOcultas, setColunasOcultas] = useState<string[]>([])
+  const [ordemDasColunas, setOrdemDasColunas] = useState<string[]>([])
 
   // A visão e o agrupamento não entram no `TableQueryState`: nenhum dos dois
   // muda o CONJUNTO de registros, só o desenho. Somá-los à chave de cache faria
@@ -689,38 +696,50 @@ export function VitraDataTable<T>({
     setState(updater)
   }
 
-  // Debounce da busca; qualquer mudança de busca volta para a página 1.
+  /**
+   * UM debounce para busca e filtro, e a fusão é o que a busca com prefixo pede.
+   *
+   * `forn: stella` é meia busca e meio filtro: o que sobra depois de tirar os
+   * prefixos vira `q`, e os pares reconhecidos viram condição. Com os dois
+   * efeitos separados que existiam aqui, o de filtro sobrescreveria `s.filtros`
+   * com os chips e apagaria o que a caixa acabou de montar — a lista voltaria
+   * ao que era 300ms depois de o realce dizer que filtrou.
+   *
+   * Só os filtros VÁLIDOS viajam: chip recém-criado ainda sem valor não pode
+   * esvaziar a listagem enquanto o operador escolhe o campo.
+   */
   useEffect(() => {
     const t = setTimeout(() => {
       setState((s) => {
-        if (s.q === qInput) return s
-        setSelecionadas([])
-        return { ...s, q: qInput, page: 1 }
-      })
-    }, SEARCH_DEBOUNCE_MS)
-    return () => clearTimeout(t)
-  }, [qInput])
-
-  // Mesmo debounce da busca, pela mesma razão. Só os filtros VÁLIDOS viajam:
-  // linha recém-adicionada ainda sem valor não pode esvaziar a listagem
-  // enquanto o operador escolhe o campo.
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setState((s) => {
+        const daBusca = interpretarBusca(qInput, camposFiltraveis ?? [])
         // Normaliza DEPOIS de decidir o que já é frase completa: um CNPJ meio
         // digitado continua sendo filtro sem valor, e limpar a máscara antes
         // não muda isso.
-        const validos = filtrosNormalizados(filtrosValidos(filtrosInput), camposFiltraveis ?? [])
-        if (
+        const dosChips = filtrosNormalizados(filtrosValidos(filtrosInput), camposFiltraveis ?? [])
+        const validos = [...dosChips, ...daBusca.filtros]
+        const mesmoFiltro =
           assinaturaDoFiltro(s.filtros, s.juncao ?? 'and') === assinaturaDoFiltro(validos, juncao)
-        )
-          return s
+        if (s.q === daBusca.q && mesmoFiltro) return s
         setSelecionadas([])
-        return { ...s, filtros: validos, juncao, page: 1 }
+        return { ...s, q: daBusca.q, filtros: validos, juncao, page: 1 }
       })
     }, SEARCH_DEBOUNCE_MS)
     return () => clearTimeout(t)
-  }, [filtrosInput, juncao, camposFiltraveis])
+  }, [qInput, filtrosInput, juncao, camposFiltraveis])
+
+  /**
+   * O ENDEREÇO publica o que está NA CAIXA, não o que foi deduzido dela.
+   *
+   * Se a URL levasse o `q` já interpretado e o filtro do prefixo junto, abrir o
+   * link devolveria a mesma consulta com outra cara: o texto sumiria da busca e
+   * reapareceria como chip. O link tem de restaurar a TELA — e quem recebe
+   * precisa poder editar o `forn:` que a outra pessoa digitou.
+   */
+  const [qNoEndereco, setQNoEndereco] = useState(daUrl.q)
+  useEffect(() => {
+    const t = setTimeout(() => setQNoEndereco(qInput), SEARCH_DEBOUNCE_MS)
+    return () => clearTimeout(t)
+  }, [qInput])
 
   /** Aplica uma consulta salva: filtros, junção, ordenação, visão e agrupamento. */
   const aplicarConsulta = useCallback((favorito: FavoritoDeConsulta) => {
@@ -847,7 +866,113 @@ export function VitraDataTable<T>({
     getCoreRowModel: getCoreRowModel(),
     manualSorting: true,
     manualPagination: true,
+    // Visibilidade e ordem CONTROLADAS: quem guarda as duas é o estado acima,
+    // porque as duas entram na consulta favorita e no que o menu mostra. Deixar
+    // a tabela guardá-las internamente daria duas verdades sobre a mesma grade.
+    state: {
+      columnVisibility: Object.fromEntries(colunasOcultas.map((id) => [id, false])),
+      ...(ordemDasColunas.length > 0 ? { columnOrder: ordemDasColunas } : {}),
+    },
   })
+
+  /**
+   * As colunas como o menu as lê: rótulo, visível e a primeira travada.
+   *
+   * FIXA é a PRIMEIRA coluna da grade, e não uma marca no schema: é ela que
+   * identifica a linha em todas as oito listagens (código, número, nome).
+   * Esconder a primeira deixaria uma lista de datas e valores sem sujeito, e o
+   * operador só perceberia depois de fechar o menu.
+   *
+   * O rótulo sai do `header` quando ele é texto. Cabeçalho montado por função
+   * (ícone, seta, tooltip) não tem string para copiar, e o id — que é o nome
+   * que viaja para o servidor — é o que resta de honesto: inventar um rótulo
+   * bonito aqui daria dois nomes para a mesma coluna.
+   */
+  // Sem `useMemo`: o que muda entre um render e outro é a RESPOSTA de
+  // `getIsVisible()`, não a identidade da tabela — memoizar por `table` daria
+  // uma lista congelada, e listar as duas variáveis de estado como dependência
+  // é o mesmo cálculo com uma comparação a mais. São dez colunas.
+  const colunasDoMenu = table.getAllLeafColumns().map((coluna, indice) => ({
+    id: coluna.id,
+    rotulo: typeof coluna.columnDef.header === 'string' ? coluna.columnDef.header : coluna.id,
+    visivel: coluna.getIsVisible(),
+    ...(indice === 0 ? { fixa: true } : {}),
+  }))
+
+  /**
+   * O filtro que NÃO é o chip — os dois modos alternativos da barra.
+   *
+   * O modo por módulo (#104) troca a faixa de chips por uma faixa agrupada pelo
+   * módulo de origem; o modo em lista é o query-builder em popover. Os dois
+   * reusam o MESMO `filtrosInput`, então debounce, consulta salva e a recusa na
+   * fronteira continuam valendo de graça — a diferença é só como o operador
+   * monta a pergunta.
+   */
+  const temCamposFiltraveis = camposFiltraveis !== undefined && camposFiltraveis.length > 0
+  const filtroProprio =
+    !temCamposFiltraveis || !camposFiltraveis ? null : modoDeFiltro === 'modulo' && entidade ? (
+      <FiltroPorModulo entidade={entidade} filtros={filtrosInput} onChange={setFiltrosInput} />
+    ) : modoDeFiltro === 'lista' ? (
+      <ListaDeFiltros
+        campos={camposFiltraveis}
+        filtros={filtrosInput}
+        juncao={juncao}
+        onFiltrosChange={setFiltrosInput}
+        onJuncaoChange={setJuncao}
+      />
+    ) : null
+
+  /**
+   * O repertório do módulo MENOS o que a grade já desenha.
+   *
+   * Sem o corte, a mesma coluna aparecia duas vezes no popover — uma em
+   * `Na grade` e outra na oferta do módulo —, com dois checkboxes respondendo a
+   * coisas diferentes: um esconde, o outro desliga.
+   */
+  const opcionaisForaDaGrade = useMemo(() => {
+    if (!entidade) return []
+    const naGrade = new Set(colunasDoMenu.map((coluna) => coluna.id))
+    return gruposDoModulo(entidade, colunasExtras, declaradas)
+      .map((grupo) => ({
+        ...grupo,
+        colunas: grupo.colunas.filter((coluna) => !naGrade.has(coluna.id)),
+      }))
+      .filter((grupo) => grupo.colunas.length > 0)
+  }, [entidade, colunasExtras, declaradas, colunasDoMenu])
+
+  /**
+   * Desmarcar uma coluna: a que veio do módulo DESLIGA, a que a tela declarou
+   * ESCONDE.
+   *
+   * São duas coisas diferentes com o mesmo gesto, e é assim que tem de ser: uma
+   * coluna extra desmarcada volta a ser oferta (e reaparece no grupo de onde
+   * veio); uma coluna da tela desmarcada continua existindo, só não é mostrada
+   * — e é ela que o rótulo conta como oculta.
+   */
+  function alternarColuna(id: string) {
+    if (colunasExtras.includes(id)) {
+      setColunasExtras((atuais) => atuais.filter((x) => x !== id))
+      return
+    }
+    setColunasOcultas((atuais) =>
+      atuais.includes(id) ? atuais.filter((x) => x !== id) : [...atuais, id],
+    )
+  }
+
+  /**
+   * A ordenação como a barra a lê — o resumo do que o cabeçalho já mostra.
+   *
+   * Sai das colunas do menu, e não de uma tabela própria de rótulos: o `sort.id`
+   * é o nome que viaja para o servidor (em inglês nos recursos HTTP), e mostrá-lo
+   * cru na barra poria `expectedAt` onde a grade escreve `Previsão`.
+   */
+  const ordenacaoDaBarra = state.sort
+    ? {
+        rotulo:
+          colunasDoMenu.find((coluna) => coluna.id === state.sort?.id)?.rotulo ?? state.sort.id,
+        desc: state.sort.desc,
+      }
+    : null
 
   /**
    * As ações de linha, com `Abrir` na frente quando a tela abre registro.
@@ -938,7 +1063,7 @@ export function VitraDataTable<T>({
           barra. Fica sob `consultaNoEndereco` porque a janela de busca monta a
           MESMA tabela sobre a tela de trás. */}
       {consultaNoEndereco ? (
-        <SincroniaComAUrl q={state.q} filtros={state.filtros ?? []} juncao={juncao} />
+        <SincroniaComAUrl q={qNoEndereco} filtros={filtrosValidos(filtrosInput)} juncao={juncao} />
       ) : null}
 
       {/* As consultas salvas ficam ACIMA da barra, e não dentro dela: a barra
@@ -976,82 +1101,62 @@ export function VitraDataTable<T>({
         />
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-2">
-        {busca ? (
-          <div className="relative w-72">
-            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-            <Input
-              aria-label="Busca"
-              className="pl-8"
-              placeholder={searchPlaceholder}
-              value={qInput}
-              onChange={(e) => setQInput(e.target.value)}
-            />
-          </div>
-        ) : null}
-        {actions.map((action) => {
-          // O filtro estruturado OCUPA o lugar do botão `Filtro` da barra padrão
-          // (§9, padrão 4) em vez de somar um botão ao lado: a barra tem a mesma
-          // ordem em oito telas, e dois caminhos para "filtrar" lado a lado
-          // fariam o operador escolher qual dos dois é o de verdade.
-          // O modo por módulo (#104) troca a barra plana pela faixa de chips.
-          // Reusa o MESMO `filtrosInput`, então debounce, consulta salva e a
-          // recusa na fronteira continuam valendo de graça — a diferença é só
-          // como o operador monta a pergunta.
-          //
-          // **Este braço NÃO exige `camposFiltraveis`, e a separação é de
-          // 2026-08-25.** Enquanto ele vivia dentro do `if` do filtro, LIGAR
-          // COLUNA dependia de EXISTIR FILTRO — duas funções diferentes presas
-          // por um `&&`. A conta apareceu quando `/cadastros/colaboradores`
-          // migrou para `GET /api/employees`: o servidor não publica `filters`,
-          // os campos filtráveis saíram da tela, e o seletor de colunas foi
-          // junto sem que nada no servidor o impedisse. Recurso que o contrato
-          // não deixa FILTRAR continua podendo escolher o que MOSTRAR.
-          if (action.id === 'filtro' && modoDeFiltro === 'modulo' && entidade) {
-            // O seletor de colunas sai no MESMO slot, e não numa barra
-            // própria: filtro e colunas respondem juntos "como esta listagem
-            // está montada agora". Separá-los faria o operador procurar em
-            // dois lugares o ajuste da mesma pergunta.
-            return (
-              <span key={action.id} className="contents">
-                {camposFiltraveis && camposFiltraveis.length > 0 ? (
-                  <FiltroPorModulo
-                    entidade={entidade}
-                    filtros={filtrosInput}
-                    onChange={setFiltrosInput}
-                  />
-                ) : null}
-                <ColunasPorModulo
-                  entidade={entidade}
-                  extras={colunasExtras}
-                  fixas={declaradas}
-                  onChange={setColunasExtras}
-                />
-              </span>
-            )
-          }
+      <BarraDeFiltros
+        busca={busca}
+        textoDaBusca={qInput}
+        onBuscaChange={setQInput}
+        placeholderDaBusca={searchPlaceholder}
+        {...(camposFiltraveis && camposFiltraveis.length > 0 ? { campos: camposFiltraveis } : {})}
+        filtros={filtrosInput}
+        juncao={juncao}
+        onFiltrosChange={setFiltrosInput}
+        onJuncaoChange={setJuncao}
+        {...(filtroProprio ? { filtrosSlot: filtroProprio } : {})}
+        {...(visaoAtiva?.agrupa && agrupamentos && agrupamentos.length > 0
+          ? {
+              agrupamentos,
+              agruparPor,
+              onAgruparPorChange: (id: string) => setAgruparPor(id),
+            }
+          : {})}
+        ordenacao={ordenacaoDaBarra}
+        onInverterOrdenacao={() =>
+          updateState((s) =>
+            s.sort ? { ...s, sort: { ...s.sort, desc: !s.sort.desc }, page: 1 } : s,
+          )
+        }
+        onLimparOrdenacao={() => updateState((s) => ({ ...s, sort: null, page: 1 }))}
+        colunas={colunasDoMenu}
+        onAlternarColuna={alternarColuna}
+        onReordenarColunas={setOrdemDasColunas}
+        {...(entidade
+          ? {
+              colunasOpcionais: opcionaisForaDaGrade,
+              onAlternarColunaOpcional: (id: string) =>
+                setColunasExtras((atuais) =>
+                  atuais.includes(id) ? atuais.filter((x) => x !== id) : [...atuais, id],
+                ),
+            }
+          : {})}
+        {...(visaoAtiva
+          ? {}
+          : {
+              densidades: DENSIDADES,
+              densidade,
+              onDensidadeChange: (id: string) => {
+                const lida = densidadeLida(id)
+                if (lida) setDensidade(lida)
+              },
+            })}
+        acoes={actions.map((action) => {
+          // O filtro estruturado OCUPA o lugar do botão `Filtro` da barra
+          // padrão (§9, padrão 4) em vez de somar um botão ao lado: a barra
+          // tem a mesma ordem em oito telas, e dois caminhos para "filtrar"
+          // lado a lado fariam o operador escolher qual dos dois é o de
+          // verdade. Na barra 2.0 quem ocupa esse lugar são os chips, que
+          // já estão montados acima — então o botão simplesmente sai.
           if (action.id === 'filtro' && camposFiltraveis && camposFiltraveis.length > 0) {
-            return modoDeFiltro === 'lista' ? (
-              <span key={action.id} className="contents">
-                <ListaDeFiltros
-                  campos={camposFiltraveis}
-                  filtros={filtrosInput}
-                  juncao={juncao}
-                  onFiltrosChange={setFiltrosInput}
-                  onJuncaoChange={setJuncao}
-                />
-              </span>
-            ) : (
-              <span key={action.id} className="contents">
-                <PilulasDeFiltro
-                  campos={camposFiltraveis}
-                  filtros={filtrosInput}
-                  juncao={juncao}
-                  onFiltrosChange={setFiltrosInput}
-                  onJuncaoChange={setJuncao}
-                />
-              </span>
-            )
+            return null
           }
           return (
             <Button
@@ -1063,9 +1168,9 @@ export function VitraDataTable<T>({
               }
               title={
                 // Ação de linha numa visão sem linha: o botão já ficava
-                // desabilitado (nada selecionado) e MUDO, e um botão morto sem
-                // motivo é lido como defeito. Aqui o motivo é o desenho da tela,
-                // não a falta de um clique.
+                // desabilitado (nada selecionado) e MUDO, e um botão morto
+                // sem motivo é lido como defeito. Aqui o motivo é o desenho
+                // da tela, não a falta de um clique.
                 action.needsSelection === true && visaoAtiva
                   ? `Só na visão Lista: ${visaoAtiva.rotulo} não tem linha para selecionar.`
                   : action.title
@@ -1077,104 +1182,52 @@ export function VitraDataTable<T>({
             </Button>
           )
         })}
-
-        {/* DENSIDADE na barra da consulta, e não mais no rodapé como
-            `Linha: Padrão`. Ali embaixo ela ficava ao lado da paginação, longe
-            da grade que muda, e escrita como se fosse mais um parâmetro da
-            consulta — não é: não muda o que o servidor traz, muda quanto cabe
-            na tela. Dois botões em vez de um `<select>` porque são duas
-            opções, e um menu para duas opções cobra um clique a mais para
-            mostrar o que já caberia à vista. Só na visão TABELA: é a altura da
-            LINHA que ela muda, e num quadro não há o que encolher. */}
-        {visaoAtiva ? null : (
-          <div className="ml-auto flex items-center rounded-control border border-input p-0.5">
-            {DENSIDADES.map((opcao) => {
-              const ativa = opcao.id === densidade
-              return (
-                <button
-                  key={opcao.id}
-                  type="button"
-                  title={opcao.altura}
-                  aria-pressed={ativa}
-                  onClick={() => setDensidade(opcao.id)}
-                  className={cn(
-                    'rounded-item px-2.5 py-1 t-ui focus-visible:focus-ring',
-                    ativa ? 'bg-surface-sunken' : 'text-muted-foreground hover:text-foreground',
-                  )}
-                >
-                  {opcao.rotulo}
-                </button>
-              )
-            })}
-          </div>
-        )}
-
-        {visoes && visoes.length > 0 ? (
-          <div className={cn('flex flex-wrap items-center gap-2', visaoAtiva && 'ml-auto')}>
-            {/* `Agrupar por` fica ANTES do alternador porque descreve a visão
-                que está à direita dele — e some quando a visão ativa não agrupa,
-                em vez de virar controle sem efeito. */}
-            {visaoAtiva?.agrupa && agrupamentos && agrupamentos.length > 0 ? (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <label htmlFor="vitra-agrupar-por">Agrupar por:</label>
-                <select
-                  id="vitra-agrupar-por"
-                  // Mesma caixa preta 2px do seletor de tamanho de página: os
-                  // dois são escolhas sobre COMO a listagem se apresenta.
-                  className="h-8 rounded-control border border-input bg-card px-2 t-ui outline-none focus-visible:focus-ring"
-                  value={agruparPor}
-                  onChange={(e) => setAgruparPor(e.target.value)}
-                >
-                  {agrupamentos.map((opcao) => (
-                    <option key={opcao.id} value={opcao.id}>
-                      {opcao.rotulo}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : null}
-
-            {/* RÁDIO DE VERDADE, com pele de botão. As visões são exclusivas, e
-                o rádio nativo dá de graça o que um grupo de botões pediria à
-                mão: andar entre as opções com as setas, uma única parada de Tab
-                para o grupo inteiro e o estado dito a quem ouve. O `<input>` fica
-                em `sr-only` e o foco aparece no rótulo, senão o anel ficaria
-                num controle invisível. */}
-            <fieldset className="flex items-center gap-1">
-              <legend className="sr-only">Visão da listagem</legend>
-              {[{ id: VISAO_LISTA, rotulo: 'Lista', icon: Rows3 }, ...visoes].map((visao) => {
-                const ativa = visao.id === visaoId
-                return (
-                  <label
-                    key={visao.id}
-                    className={cn(
-                      buttonVariants({ variant: ativa ? 'default' : 'outline', size: 'sm' }),
-                      'cursor-pointer has-[:focus-visible]:focus-ring',
-                    )}
-                  >
-                    <input
-                      type="radio"
-                      className="sr-only"
-                      name={grupoDeVisao}
-                      value={visao.id}
-                      checked={ativa}
-                      onChange={() => {
-                        // A seleção é da TABELA; ao sair dela não há linha
-                        // marcada, e voltar com a seleção velha apontaria para
-                        // uma linha que a consulta pode nem ter trazido de novo.
-                        setSelecionadas([])
-                        setVisaoId(visao.id)
-                      }}
-                    />
-                    {visao.icon ? <visao.icon aria-hidden="true" /> : null}
-                    {visao.rotulo}
-                  </label>
-                )
-              })}
-            </fieldset>
-          </div>
-        ) : null}
-      </div>
+        {...(visoes && visoes.length > 0
+          ? {
+              modos: (
+                /* RÁDIO DE VERDADE, com pele de botão. As visões são
+                   exclusivas, e o rádio nativo dá de graça o que um grupo de
+                   botões pediria à mão: andar entre as opções com as setas, uma
+                   única parada de Tab para o grupo inteiro e o estado dito a
+                   quem ouve. O `<input>` fica em `sr-only` e o foco aparece no
+                   rótulo, senão o anel ficaria num controle invisível. */
+                <fieldset className="flex items-center gap-1">
+                  <legend className="sr-only">Visão da listagem</legend>
+                  {[{ id: VISAO_LISTA, rotulo: 'Lista', icon: Rows3 }, ...visoes].map((visao) => {
+                    const ativa = visao.id === visaoId
+                    return (
+                      <label
+                        key={visao.id}
+                        className={cn(
+                          buttonVariants({ variant: ativa ? 'default' : 'outline', size: 'sm' }),
+                          'cursor-pointer has-[:focus-visible]:focus-ring',
+                        )}
+                      >
+                        <input
+                          type="radio"
+                          className="sr-only"
+                          name={grupoDeVisao}
+                          value={visao.id}
+                          checked={ativa}
+                          onChange={() => {
+                            // A seleção é da TABELA; ao sair dela não há linha
+                            // marcada, e voltar com a seleção velha apontaria
+                            // para uma linha que a consulta pode nem ter
+                            // trazido de novo.
+                            setSelecionadas([])
+                            setVisaoId(visao.id)
+                          }}
+                        />
+                        {visao.icon ? <visao.icon aria-hidden="true" /> : null}
+                        {visao.rotulo}
+                      </label>
+                    )
+                  })}
+                </fieldset>
+              ),
+            }
+          : {})}
+      />
 
       {marcavel && algumaMarcada ? (
         <BarraDeSelecao

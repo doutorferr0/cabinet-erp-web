@@ -96,8 +96,13 @@ describe('PilulasDeFiltro', () => {
     ).toBeInTheDocument()
   })
 
-  it('`Limpar` some junto com o último filtro — botão sem efeito é botão morto', async () => {
-    const { user } = montar([filtroDeNome('STELLA')])
+  it('com UM filtro não há `Limpar` — o `×` do chip já é o limpar', async () => {
+    montar([filtroDeNome('STELLA')])
+    expect(screen.queryByRole('button', { name: 'Limpar filtros' })).not.toBeInTheDocument()
+  })
+
+  it('`Limpar` aparece no segundo chip e some junto com os filtros', async () => {
+    const { user } = montar([filtroDeNome('STELLA', 'f1'), filtroDeNome('LUMINA', 'f2')])
     expect(screen.getByRole('button', { name: 'Limpar filtros' })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Limpar filtros' }))

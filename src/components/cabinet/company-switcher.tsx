@@ -115,7 +115,13 @@ export function CompanySwitcher() {
         // que diz 'Nenhuma empresa ativa' faria o leitor de tela anunciar o
         // contrário do que está escrito nele.
         aria-label={ativa ? `Empresa ativa: ${ativa.name}` : titulo}
-        className="flex w-full items-center gap-3 rounded-card border bg-card px-3 py-2 text-left outline-none focus-visible:focus-ring disabled:opacity-60"
+        // `desabilitado`, e não `disabled:opacity-60`: a §Desabilitado (decisão
+        // do user, 2026-08-14, #106) manda o apagamento ir para o FUNDO e o
+        // TRAÇO, nunca para o conteúdo — opacidade apaga o texto junto e é o que
+        // derruba o contraste de quem mais precisa lê-lo. A utility já existia
+        // no `index.css` e a varredura de `desabilitado.test.tsx` cobra; esta
+        // linha nasceu na D6 com a receita antiga (D37).
+        className="desabilitado flex w-full items-center gap-3 rounded-card border bg-card px-3 py-2 text-left outline-none focus-visible:focus-ring"
         style={{ borderWidth: '1.5px', borderColor: 'var(--n-900)', boxShadow: 'var(--key-1)' }}
       >
         {/* MONOGRAMA chartreuse com tinta preta — o único chartreuse desta

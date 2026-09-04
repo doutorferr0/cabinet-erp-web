@@ -13,7 +13,17 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 beforeEach(redefinirInbox)
 afterEach(redefinirInbox)
 
-const lista = () => within(screen.getByRole('list'))
+/**
+ * A lista É a do inbox, e não "a única `<ul>` da tela" (D37).
+ *
+ * `getByRole('list')` sem escopo achava uma só quando este teste foi escrito,
+ * com o shell antigo. A barra da D4 monta um `<ul>` por grupo aberto — mais o de
+ * Favoritos e o de Recentes —, e a busca global passou a reprovar com "found
+ * multiple elements", que não fala do inbox. O card da tela já se nomeia; é por
+ * ele que se entra.
+ */
+const lista = () =>
+  within(within(screen.getByRole('region', { name: /Caixa de entrada/ })).getByRole('list'))
 
 describe('caixa de entrada', () => {
   it('abre em Não lidas e mostra só o que ainda pede trabalho', async () => {
@@ -84,7 +94,10 @@ describe('caixa de entrada', () => {
     await user.click(await screen.findByRole('button', { name: 'Marcar tudo como lido' }))
 
     expect(await screen.findByText(/A caixa está limpa/)).toBeInTheDocument()
-    expect(screen.queryByRole('list')).not.toBeInTheDocument()
+    // Dentro do card, e não na tela: os `<ul>` da barra continuam lá (D37).
+    expect(
+      within(screen.getByRole('region', { name: /Caixa de entrada/ })).queryByRole('list'),
+    ).not.toBeInTheDocument()
     // Zero não vira "0 não lidas": a ausência do contexto já é a informação.
     expect(screen.queryByText(/não lidas/)).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Marcar tudo como lido' })).toBeDisabled()

@@ -164,12 +164,29 @@ describe('contatos — sub-recurso, e não uma lista dentro do parceiro', () => 
     expect(Object.keys(schemas.PartnerWriteRequest?.properties ?? {})).not.toContain('contacts')
   })
 
-  it('não existe DELETE em lugar nenhum do contrato — desativação é lógica', () => {
+  it('DELETE só onde não há dado de negócio para preservar — desativação é lógica', () => {
     // §9 padrão 8. Contato que saiu da empresa vai a `active: false` e continua
     // legível no documento antigo que o citou; apagado, a linha do pedido
     // apontaria para ninguém.
-    const verbos = new Set(Object.values(doc.paths).flatMap((p) => Object.keys(p)))
-    expect([...verbos].sort()).toEqual(['get', 'patch', 'post', 'put'])
+    //
+    // A REGRA VALE PARA DADO DE NEGÓCIO, e a D13 mostrou onde ela para: uma
+    // CONSULTA SALVA é preferência do próprio usuário, e documento nenhum a
+    // cita. Guardá-la com `favorite: false` deixaria um registro vazio que não
+    // aparece em lugar nenhum e que ele não tem como limpar — lixo em nome de
+    // uma regra escrita para outra coisa. Por isso a exceção é NOMEADA em vez de
+    // a asserção ser afrouxada: `DELETE` novo em qualquer outro caminho continua
+    // reprovando aqui, e quem o quiser precisa escrever o argumento nesta lista.
+    const COM_DELETE = ['/api/me/views/{id}']
+    const comDelete = Object.entries(doc.paths)
+      .filter(([, p]) => 'delete' in p)
+      .map(([caminho]) => caminho)
+      .sort()
+    expect(comDelete).toEqual(COM_DELETE)
+
+    const outrosVerbos = new Set(
+      Object.values(doc.paths).flatMap((p) => Object.keys(p).filter((v) => v !== 'delete')),
+    )
+    expect([...outrosVerbos].sort()).toEqual(['get', 'patch', 'post', 'put'])
     expect(schemas.PartnerContactWriteRequest?.required).toContain('active')
   })
 })

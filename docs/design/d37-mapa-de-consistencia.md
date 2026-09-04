@@ -344,7 +344,54 @@ quando duas PRs que não se tocam estão na mesma árvore.
 
 Consertados nesta PR — é `atualizar testes` do DoD, e desbloqueia as 23 PRs restantes da rodada.
 
-## 8. O que D37 não pode fazer antes do merge
+## 8. Favoritos estava entregue DUAS VEZES — unificado aqui
+
+A duplicata mais cara da rodada, e a única que já vinha com a decisão tomada: o merge de D8–D14
+deixou `src/app/nav/favoritos.test.tsx` em `describe.skip` com o motivo escrito no topo — *"a D4
+(#519) entregou a barra única com Favoritos em `localStorage`; a D13 (#513) entregou Favoritos por
+`saved_views` (contrato Proposto) montados no shell ANTIGO. No merge ficou a barra da D4;
+`GrupoFavoritos`/`EstrelaDaTela` daqui ainda não estão ligados nela. Ligar (e apagar o
+`localStorage` da D4) é item da D37"*.
+
+Estado medido antes de mexer: **`src/app/nav/favoritos.tsx` era órfão** — `git grep` de
+`GrupoFavoritos|EstrelaDaTela` fora do próprio arquivo e do seu teste devolvia **zero**. A barra
+que a rodada publicou gravava favoritos no navegador; o arquivo que falava com o contrato não era
+montado por ninguém; e quatro casos de teste ficaram desligados esperando esta issue.
+
+**O que ficou de cada uma:** a **casca é a da D4** (é a barra que existe, com a pele 2.0 e o
+`nav.css`) e a **fonte de verdade é a da D13** (é o contrato, e sobrevive a trocar de máquina).
+Concretamente:
+
+| peça | antes | agora |
+|---|---|---|
+| ★ do item de nav | `useFavoritos` (localStorage, gaveta por operador) | `useFavoritosDaTela` — `POST` da view sem filtro, `DELETE` ao soltar |
+| grupo `FAVORITOS` | montado de `todosOsItens` filtrados pelo localStorage | `<GrupoFavoritos>` sobre `viewsFavoritas`, na marcação da barra |
+| `EstrelaDaTela` (D13) | componente paralelo, órfão | **removido** — a ★ da barra faz o mesmo, com a pele certa |
+| cópia da ★ | `Marcar X` / `Desmarcar X` (D4) | `Fixar X nos favoritos` / `Tirar X dos favoritos` (a de D13, que a aba da listagem já usava) |
+| `CHAVE_FAVORITOS` no `estado.ts` | `cabinet.nav.favoritos` | apagada (com `somenteTextos`, que ficou sem chamador) |
+
+**Ganho que não é de arrumação:** a lista deixou de saber só de telas. Montada a partir dos itens
+de navegação, ela só podia mostrar o que a barra já continha; vinda das views favoritas, ela traz
+as **duas naturezas** — a tela fixada pela ★ da barra *e* a consulta salva fixada pela ★ da aba da
+listagem. Antes, uma consulta favoritada na listagem simplesmente não aparecia na barra.
+
+E o resto do `estado.ts` **ficou onde estava, de propósito**: colapso, grupos abertos e recentes
+não têm caminho no contrato, e inventar um para eles seria escrever contrato para guardar
+preferência de janela.
+
+Dois casos do teste de D13 precisaram de ajuste porque descreviam o shell antigo, não o
+comportamento: o marco de "a barra montou" era um `<nav>` por módulo (`/^Telas de/`), e a D4 nomeia
+os grupos com `<ul aria-label>` — passou a ser o `<nav aria-label="Navegação principal">` da barra;
+e fixar uma tela de OUTRO módulo exige abrir o grupo antes, porque a barra da D4 só monta os itens
+do grupo aberto. O segundo ajuste não é concessão ao teste: é o gesto real do operador, e escondê-lo
+com uma busca frouxa esconderia a regressão do dia em que o grupo parasse de abrir.
+
+O caso equivalente em `sidebar-nav.test.tsx` afirmava a chave do `localStorage`. Foi reescrito para
+afirmar a **requisição** — `POST /api/me/views` com `route`, `name`, `favorite: true` — mais a
+contraprova de que a chave da D4 não existe mais. Os quatro casos de `favoritos.test.tsx` saíram do
+skip e passam.
+
+## 9. O que D37 não pode fazer antes do merge
 
 Registrado porque a tentação é grande e o estrago é caro: os greps do DoD **já acham 136 `text-[`
 e 167 `border-2` na base pura**, e essas ocorrências são o código 1.x que as 30 PRs abertas estão
@@ -359,9 +406,24 @@ agora valeria a pena. Nenhuma passa:
 |---|---|
 | `acoesDeSelecao` → `acoesDeLote` | `data-table.tsx` e `tela-de-listagem.tsx`, oito PRs por cima |
 | `NumeroHeroi` → `KpiTile` | `kpi-tile.tsx` só existe em D11, que ainda não mergeou |
-| unificar os medidores | `medir-contraste-2.0.py` só existe em D4, D20 e D34 |
+| unificar os medidores | ver abaixo — o bloqueio mudou de razão, não sumiu |
 | `features/crm/monograma.tsx` | o arquivo nasce em D22 |
 | `vazio-com-saida.test.tsx` | o único candidato que **já está na base** — e **D35 o modifica**, e D35 é a branch que mais conflita da rodada |
 
 O último era o caso promissor e foi conferido por diff, não por suposição: `git diff --name-only
 origin/design/2.0 <branch> -- <arquivo>` sobre as 33 branches devolve exatamente uma, D35.
+
+**Remedido depois que D4 mergeou, e a conclusão não mudou.** Com D4 na base, os dois medidores
+passaram a existir lado a lado e o item pareceu destravar. Não destravou, por duas razões que a
+primeira medição não tinha:
+
+1. **Cinco branches ainda os modificam** — D1, D20, D30, D32 e D34 têm commits próprios em
+   `medir-contraste.py` ou `medir-contraste-2.0.py` fora da base. Unificar agora conflita com as
+   cinco.
+2. **`medir-contraste.py` é passo do CI.** O `ci.yml` roda `--conferir` e reprova o PR quando o
+   `DESIGN.md` sai de sincronia com `src/index.css`. Um script unificado com bug derruba a
+   verificação de **todo mundo** na rodada, num passo cuja mensagem de erro fala de `DESIGN.md` e
+   não de quem o quebrou — o pior tipo de vermelho para quem não escreveu a mudança.
+
+A regra "medir de novo antes de codar" vale nos dois sentidos: aqui ela **não** liberou o trabalho,
+apontou um risco que não estava na lista.

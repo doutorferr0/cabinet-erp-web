@@ -4,6 +4,7 @@ import { SidebarNav } from '@/app/nav/sidebar-nav'
 import { PageFrame } from '@/app/page-frame'
 import { PaletaDeComandos } from '@/app/paleta-de-comandos'
 import { RequireRecurso } from '@/app/require-recurso'
+import { RegiaoDeAvisos } from '@/components/cabinet/regiao-de-avisos'
 import { useNaoLidasDoInbox } from '@/features/inbox/estado-do-inbox'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -61,6 +62,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           naoLidas={naoLidas}
           aoAbrirNotificacoes={() => void navigate({ to: '/inbox' as never })}
         />
+        {/* A faixa de avisos é IRMÃ da appbar e vem logo abaixo dela: empurra o
+            conteúdo em vez de cobri-lo, e some sem deixar buraco (`empty:hidden`).
+            Fora do `<main>` de propósito — ela não pertence à tela, e sobrevive
+            à troca de rota que a `key` do `PageFrame` remonta.
+
+            RECOLOCADA NA D37. A D5 a moveu do `providers.tsx` para cá, e o
+            comentário que ela deixou lá explica exatamente esta linha; D4 e D7
+            continuavam montando no `providers`, sem saber da mudança. O merge
+            das três conflitou no `shell.tsx` e a resolução ficou com o lado que
+            não tinha a faixa: a região sumiu do app inteiro, e não sobrou nem
+            erro — o `RegiaoDeAvisos` virou componente órfão, gravar parou de
+            dizer que gravou (#208) e desativar parou de dizer o que aconteceu.
+            Só a guarda `todo-componente-e-montado` e os dois casos de
+            `aviso-de-conclusao` acusaram. */}
+        <RegiaoDeAvisos />
 
         {/* A área de conteúdo é Papel COM a grade de 52px; a folha (PageFrame)
             pousa opaca por cima (Regra da Grade de Fundo).

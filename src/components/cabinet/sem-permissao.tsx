@@ -1,5 +1,6 @@
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { detalheDoErro } from '@/lib/erros'
+import { Lock } from 'lucide-react'
 
 /**
  * O que a tela mostra quando o servidor recusa por PERMISSÃO (403).
@@ -22,6 +23,11 @@ import { detalheDoErro } from '@/lib/erros'
 export function SemPermissao({ erro, contexto }: { erro?: unknown; contexto?: string }) {
   return (
     <Empty data-slot="sem-permissao">
+      {/* Cadeado, e não um sinal de proibido: o segundo lê como "você fez algo
+          errado". Não fez — a conta é que não alcança esta tela. */}
+      <EmptyMedia>
+        <Lock />
+      </EmptyMedia>
       <EmptyHeader>
         <EmptyTitle>Sem permissão</EmptyTitle>
         <EmptyDescription>

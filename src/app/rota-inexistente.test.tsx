@@ -15,7 +15,7 @@ describe('rota inexistente', () => {
   it('oferece uma SAÍDA nomeada — 404 que só informa deixa o operador na barra de endereço', async () => {
     renderRoute('/nao-existe')
 
-    const saida = await screen.findByRole('link', { name: 'Ir para o Boletim' })
+    const saida = await screen.findByRole('link', { name: 'Ir para o início' })
     expect(saida).toHaveAttribute('href', '/')
   })
 })

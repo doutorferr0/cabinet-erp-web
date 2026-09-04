@@ -1,3 +1,4 @@
+import { DetalheTecnico } from '@/components/cabinet/detalhe-tecnico'
 import { GravacaoEmConstrucao } from '@/components/cabinet/modulo-em-construcao'
 import { Button } from '@/components/ui/button'
 import { ErroDaApi } from '@/data/api-provider'
@@ -57,6 +58,20 @@ export type CamposDoContrato = Readonly<Record<string, CampoDoFormulario>>
  * `setFocus` do react-hook-form. Sem a lista, o erro seria invisível de onde o
  * operador está olhando.
  *
+ * ## 2.0 (D29): sem "Tentar de novo", e o detalhe fechado
+ *
+ * A espec da rodada desenha o estado de erro com um `Tentar de novo` ao lado da
+ * frase. **Aqui não entra, e a razão é a de sempre nesta peça:** este bloco é
+ * de ESCRITA RECUSADA — o servidor respondeu, entendeu o pedido e disse não.
+ * Repetir a mesma requisição com o mesmo corpo dá o mesmo não, e o botão
+ * prometeria uma saída que a tela não pode cumprir. O `Tentar de novo` do 2.0
+ * mora onde ele é verdade: `FalhaDoPainel` e `FalhaDaConsulta`, que são LEITURA
+ * que não chegou.
+ *
+ * O `detail`, sim, mudou: sai da frase corrida e entra no colapsável em mono
+ * (`DetalheTecnico`). Ele é escrito para quem abre chamado; impresso ao lado da
+ * frase da tela, era lido como continuação dela.
+ *
  * ## Não é o `FalhaDoPainel`
  *
  * Aquele é para CONSULTA que não chegou (rede fora, painel do Dashboard) e
@@ -110,26 +125,30 @@ export function ErroDoServidor({
       // avisado, não descobrir rolando.
       role="alert"
       data-slot="erro-do-servidor"
-      className={cn('flex flex-col gap-1 border-2 border-destructive bg-card p-3', className)}
+      // Borda de 1.5px, como as outras superfícies do 2.0, e em `destructive`:
+      // é a ÚNICA ferramenta de separação aqui — sem tint por baixo, senão
+      // seriam duas na mesma fronteira. O vermelho é do traço, nunca do fundo.
+      className={cn(
+        'flex flex-col gap-1 rounded-item border-[1.5px] border-destructive bg-card p-3',
+        className,
+      )}
     >
-      <p className="font-semibold text-destructive">{daApi?.titulo ?? mensagem}</p>
+      <p className="t-bloco text-destructive">{daApi?.titulo ?? mensagem}</p>
 
       {/* Quando o `title` do servidor ocupou o cabeçalho, a frase da tela entra
           aqui: as duas dizem coisas diferentes e a de baixo é a que dá contexto. */}
-      {daApi?.titulo ? <p className="text-sm">{mensagem}</p> : null}
+      {daApi?.titulo ? <p className="t-corpo">{mensagem}</p> : null}
 
-      {daApi?.detail ? <p className="text-sm text-muted-foreground">{daApi.detail}</p> : null}
+      {daApi ? <DetalheTecnico detalhe={daApi.detail} /> : null}
 
       {!daApi ? (
         // Erro que não é do servidor (rede fora, exceção de código): não há
         // `detail` para mostrar, e inventar um seria pior que a frase da tela.
-        <p className="text-sm text-muted-foreground">
-          {erro instanceof Error ? erro.message : 'Erro inesperado.'}
-        </p>
+        <p className="t-meta">{erro instanceof Error ? erro.message : 'Erro inesperado.'}</p>
       ) : null}
 
       {campos.length > 0 ? (
-        <ul className="mt-1 flex flex-col gap-0.5 text-sm">
+        <ul className="mt-1 flex flex-col gap-0.5">
           {campos.map((campo) => {
             const naTela = mapaDeCampos?.[campo.path]
             return (
@@ -147,11 +166,11 @@ export function ErroDoServidor({
                   // Sem tradução o `path` sai em MONO: assim ele se lê como
                   // nome técnico, e não como a etiqueta de um campo da tela que
                   // o operador procuraria em vão.
-                  <span className={naTela ? '' : 'font-mono text-[0.75rem]'}>
+                  <span className={naTela ? 't-ui' : 't-dado-meta'}>
                     {naTela?.rotulo ?? campo.path}
                   </span>
                 )}
-                <span className="text-muted-foreground">{campo.message}</span>
+                <span className="t-meta">{campo.message}</span>
               </li>
             )
           })}

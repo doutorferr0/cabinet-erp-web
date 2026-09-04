@@ -87,6 +87,12 @@ const sessaoValida: FetchStub = (input) => {
   if (caminho === '/auth/me') return Promise.resolve(respostaSessao())
   if (caminho === '/auth/tenants') return Promise.resolve(respostaVinculos())
   if (caminho === '/api/catalog-lookups') return Promise.resolve(respostaLookups())
+  // As VIEWS SALVAS (D13) entram no stub padrão pela mesma razão das listas de
+  // apoio: o grupo FAVORITOS mora na barra lateral e consulta em TODA rota
+  // autenticada. Sem isto, cada teste de tela receberia "fetch sem stub" por uma
+  // consulta que a tela dele nem conhece. Vazio é o padrão certo — usuário novo
+  // não tem view salva; teste que queira favoritos passa o próprio stub.
+  if (caminho === '/api/me/views') return Promise.resolve(respostaViews())
   return Promise.reject(new Error(`fetch sem stub no teste: ${url}`))
 }
 
@@ -102,6 +108,13 @@ export function respostaLookups(): Response {
     nomes.map((name, i) => ({ id: `lk-${kind}-${i + 1}`, kind, name, active: true })),
   )
   return new Response(JSON.stringify({ rows, total: rows.length }), {
+    headers: { 'content-type': 'application/json' },
+  })
+}
+
+/** Nenhuma view salva — o estado de quem nunca clicou em "Salvar consulta". */
+export function respostaViews(views: readonly unknown[] = []): Response {
+  return new Response(JSON.stringify(views), {
     headers: { 'content-type': 'application/json' },
   })
 }

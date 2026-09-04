@@ -49,6 +49,7 @@ import { handlersDeRelatorios } from './relatorios'
 import { handlersDeServicos } from './servicos'
 import { type ParceiroDaOrg, novoId, partnerDto, store } from './store'
 import { contextoDeSuporte, handlersDeSuporte, trilhaDeSuporte } from './suporte'
+import { handlersDeViews } from './views'
 
 /**
  * Handlers do modo mock — o "backend" do `VITE_API_MODE=mock`.
@@ -1042,6 +1043,12 @@ export const handlers = [
   // cima porque depende do `listar`/`lerConsulta` deste arquivo; as regras da
   // escrita moram no arquivo próprio — ver o cabeçalho de `lookups.ts`.
   ...handlersDeLookups,
+
+  // As VIEWS SALVAS do usuário (D13). Arquivo próprio, e ele é o único mock que
+  // grava em `localStorage`: a view existe para durar mais que a sessão, e
+  // perdê-la no F5 ensinaria que o recurso não funciona. O porquê inteiro está
+  // no cabeçalho de `views.ts`.
+  ...handlersDeViews,
 
   // ---------------- health ----------------
   // `version`/`commit` dizem QUAL BINÁRIO respondeu, e no mock a resposta

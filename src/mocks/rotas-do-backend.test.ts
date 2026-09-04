@@ -588,9 +588,18 @@ describe('passthrough por rota', () => {
       'get /api/stock/summary',
       'get /api/crm/opportunities-summary',
       'get /api/nav/counters',
+      // As views salvas (#481, D13) nascem AQUI pelo mesmo motivo dos cinco
+      // agregados: caminho publicado neste repo, cópia do contrato do api ainda
+      // sem ele. `sem-contrato` por CONSTRUÇÃO. É a família com o handler de
+      // mock mais teimoso do repo — grava em `localStorage`, porque view salva
+      // que some no F5 ensina que o recurso não funciona.
+      'get /api/me/views',
+      'post /api/me/views',
+      'put /api/me/views/{id}',
+      'delete /api/me/views/{id}',
     ])
-    // Cabeçalho com o próximo passo + uma linha por rota = 1 + 11.
-    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(12)
+    // Cabeçalho com o próximo passo + uma linha por rota = 1 + 15.
+    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(16)
   })
 
   it('toda rota mockada declara NATUREZA, e o console imprime o passo dela', () => {

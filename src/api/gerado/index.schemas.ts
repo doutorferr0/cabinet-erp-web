@@ -8510,6 +8510,87 @@ export interface NavCountersDto {
 }
 
 /**
+ * Proposto. Matiz do quadradinho da view — **nome da rampa, nunca hex**. O tema escuro reescreve os degraus de cada matiz, então uma cor gravada em hexadecimal nasceria certa no claro e errada no escuro, e ninguém a corrigiria porque ela já estaria no banco. `neutro` é a view que não escolheu cor.
+ */
+export type SavedViewColor = typeof SavedViewColor[keyof typeof SavedViewColor];
+
+
+export const SavedViewColor = {
+  neutro: 'neutro',
+  lime: 'lime',
+  indigo: 'indigo',
+  mint: 'mint',
+  sky: 'sky',
+  amber: 'amber',
+  rose: 'rose',
+  violet: 'violet',
+  teal: 'teal',
+} as const;
+
+/**
+ * Proposto. Uma consulta salva pelo usuário: o que ele filtra toda segunda-feira, com nome, cor e lugar na barra lateral. **Guarda o que a CONSULTA é, não o que a tela mostrou** — `page` e `q` ficam de fora de propósito: a página é onde ele parou de rolar e o `q` é pergunta pontual, e restaurar os dois abriria o favorito na página 4 de uma busca que ninguém lembra ter feito.
+ */
+export interface SavedViewDto {
+  id: string;
+  /** Rota da tela a que a view pertence (`/compras/ordens`). É a IDENTIDADE da listagem para quem lê de fora — a sidebar precisa saber para onde o favorito leva, e uma chave interna de cache não é endereço que se possa navegar. */
+  route: string;
+  /** Nome que o operador deu — é o rótulo da aba e do item de Favoritos. */
+  name: string;
+  color: SavedViewColor;
+  /** As condições do filtro estruturado, na MESMA forma que viaja na query da listagem. Guardar o texto já url-encoded pouparia uma conversão e custaria a conferência: campo fora da whitelist só apareceria como 400 no dia em que alguém abrisse a view. */
+  filters: ListFilter[];
+  joinOperator: ListFilterJoin;
+  /**
+     * Campo da ordenação, na whitelist do recurso. `null` = a view não guardou ordem.
+     * @nullable
+     */
+  sortBy?: string | null;
+  /** Ordem descendente. */
+  sortDesc?: boolean;
+  /** Campo que agrupa as linhas. Vazio = a view não guardou agrupamento. */
+  groupBy?: string;
+  /** Colunas visíveis, na ordem. Vazio = as da tela — que é diferente de "nenhuma coluna", e é o que mantém válida a view salva antes de a tela ganhar coluna nova. */
+  columns?: string[];
+  /** Id da visão desenhada (`lista` é a tabela; `quadro`, `calendario`… são as alternativas que a tela declara). Vazio = a view não guardou visão. */
+  mode?: string;
+  /** Fixada no grupo FAVORITOS da barra lateral. É a estrela, e é por usuário como todo o resto do registro. */
+  favorite: boolean;
+  /** Ordem dentro da tela (e dentro de Favoritos). Empate resolve por `name`, para a lista não trocar de ordem entre dois carregamentos. */
+  position?: number;
+}
+
+/**
+ * Proposto. Corpo de criação e de substituição da view. Sem `id` e sem dono: o id é do servidor e o dono é a sessão. **PUT substitui o registro inteiro** — campo omitido volta ao padrão, como no resto do contrato.
+ */
+export interface SavedViewWriteRequest {
+  /** Rota da tela a que a view pertence (`/compras/ordens`). É a IDENTIDADE da listagem para quem lê de fora — a sidebar precisa saber para onde o favorito leva, e uma chave interna de cache não é endereço que se possa navegar. */
+  route: string;
+  /** Nome que o operador deu — é o rótulo da aba e do item de Favoritos. */
+  name: string;
+  color?: SavedViewColor;
+  /** As condições do filtro estruturado, na MESMA forma que viaja na query da listagem. Guardar o texto já url-encoded pouparia uma conversão e custaria a conferência: campo fora da whitelist só apareceria como 400 no dia em que alguém abrisse a view. */
+  filters?: ListFilter[];
+  joinOperator?: ListFilterJoin;
+  /**
+     * Campo da ordenação, na whitelist do recurso. `null` = a view não guardou ordem.
+     * @nullable
+     */
+  sortBy?: string | null;
+  /** Ordem descendente. */
+  sortDesc?: boolean;
+  /** Campo que agrupa as linhas. Vazio = a view não guardou agrupamento. */
+  groupBy?: string;
+  /** Colunas visíveis, na ordem. Vazio = as da tela — que é diferente de "nenhuma coluna", e é o que mantém válida a view salva antes de a tela ganhar coluna nova. */
+  columns?: string[];
+  /** Id da visão desenhada (`lista` é a tabela; `quadro`, `calendario`… são as alternativas que a tela declara). Vazio = a view não guardou visão. */
+  mode?: string;
+  /** Fixada no grupo FAVORITOS da barra lateral. É a estrela, e é por usuário como todo o resto do registro. */
+  favorite?: boolean;
+  /** Ordem dentro da tela (e dentro de Favoritos). Empate resolve por `name`, para a lista não trocar de ordem entre dois carregamentos. */
+  position?: number;
+}
+
+/**
  * Sem sessão: ausente, expirada ou encerrada. **É o único significado deste código nas operações de domínio** — "autenticado mas não pode" é 403, e confundir os dois põe o cliente num laço de relogin que não resolve nada.
  *
  * Resposta reutilizável, e não repetida operação a operação: o cliente trata 401 num lugar só (redirecionar para o login preservando a rota de origem), e a repetição faria 50 cópias da mesma frase divergirem uma a uma.
@@ -9991,5 +10072,12 @@ q?: string;
  * Cópias por produto. Padrão 1; acima de 100 é 400, porque um zero a mais aqui é o rolo inteiro.
  */
 copies?: number;
+};
+
+export type ListMyViewsParams = {
+/**
+ * Recorta pelas views de UMA tela. Ausente = todas, que é o que a barra lateral pede: ela mostra os favoritos de tudo, e uma requisição por tela aberta seria uma consulta por item do menu.
+ */
+route?: string;
 };
 

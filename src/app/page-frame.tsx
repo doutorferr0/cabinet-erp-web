@@ -21,7 +21,11 @@ export function PageFrame({ children }: { children: React.ReactNode }) {
     // aparece uma vez por navegação. Quem garante o "uma vez" é a `key` que o
     // shell passa — sem ela, qualquer re-render remontaria a animação.
     <Entrada
-      className="flex min-h-0 flex-1 flex-col rounded-panel border-2 border-border bg-card p-4 shadow-macia"
+      // 2.0: a folha de página SAIU. No mockup o conteúdo pousa direto na bancada
+      // tonal do módulo e quem tem caixa é o painel da listagem, o card da
+      // ficha, o KPI — nunca a página inteira (§Hierarquia: máx. 2 níveis de
+      // card; a folha era um terceiro em volta de tudo).
+      className="flex min-h-0 flex-1 flex-col gap-6"
       data-slot="page-frame"
     >
       {/* A SAÍDA saiu daqui na 2.0 (D5): ela é a tecla de 32px colada ao

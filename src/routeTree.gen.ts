@@ -18,6 +18,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DefinirSenhaRouteImport } from './routes/definir-senha'
 import { Route as EsqueciSenhaRouteImport } from './routes/esqueci-senha'
 import { Route as EstoqueRouteImport } from './routes/estoque'
+import { Route as InboxRouteImport } from './routes/inbox'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as PlannerRouteImport } from './routes/planner'
 import { Route as TarefasRouteImport } from './routes/tarefas'
@@ -106,6 +107,11 @@ const EsqueciSenhaRoute = EsqueciSenhaRouteImport.update({
 const EstoqueRoute = EstoqueRouteImport.update({
   id: '/estoque',
   path: '/estoque',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InboxRoute = InboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -351,6 +357,7 @@ export interface FileRoutesByFullPath {
   '/definir-senha': typeof DefinirSenhaRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/estoque': typeof EstoqueRouteWithChildren
+  '/inbox': typeof InboxRoute
   '/login': typeof LoginRoute
   '/planner': typeof PlannerRoute
   '/tarefas': typeof TarefasRoute
@@ -403,6 +410,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/definir-senha': typeof DefinirSenhaRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
+  '/inbox': typeof InboxRoute
   '/login': typeof LoginRoute
   '/planner': typeof PlannerRoute
   '/tarefas': typeof TarefasRoute
@@ -458,6 +466,7 @@ export interface FileRoutesById {
   '/definir-senha': typeof DefinirSenhaRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/estoque': typeof EstoqueRouteWithChildren
+  '/inbox': typeof InboxRoute
   '/login': typeof LoginRoute
   '/planner': typeof PlannerRoute
   '/tarefas': typeof TarefasRoute
@@ -515,6 +524,7 @@ export interface FileRouteTypes {
     | '/definir-senha'
     | '/esqueci-senha'
     | '/estoque'
+    | '/inbox'
     | '/login'
     | '/planner'
     | '/tarefas'
@@ -567,6 +577,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/definir-senha'
     | '/esqueci-senha'
+    | '/inbox'
     | '/login'
     | '/planner'
     | '/tarefas'
@@ -621,6 +632,7 @@ export interface FileRouteTypes {
     | '/definir-senha'
     | '/esqueci-senha'
     | '/estoque'
+    | '/inbox'
     | '/login'
     | '/planner'
     | '/tarefas'
@@ -677,6 +689,7 @@ export interface RootRouteChildren {
   DefinirSenhaRoute: typeof DefinirSenhaRoute
   EsqueciSenhaRoute: typeof EsqueciSenhaRoute
   EstoqueRoute: typeof EstoqueRouteWithChildren
+  InboxRoute: typeof InboxRoute
   LoginRoute: typeof LoginRoute
   PlannerRoute: typeof PlannerRoute
   TarefasRoute: typeof TarefasRoute
@@ -751,6 +764,13 @@ declare module '@tanstack/react-router' {
       path: '/estoque'
       fullPath: '/estoque'
       preLoaderRoute: typeof EstoqueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inbox': {
+      id: '/inbox'
+      path: '/inbox'
+      fullPath: '/inbox'
+      preLoaderRoute: typeof InboxRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -1192,6 +1212,7 @@ const rootRouteChildren: RootRouteChildren = {
   DefinirSenhaRoute: DefinirSenhaRoute,
   EsqueciSenhaRoute: EsqueciSenhaRoute,
   EstoqueRoute: EstoqueRouteWithChildren,
+  InboxRoute: InboxRoute,
   LoginRoute: LoginRoute,
   PlannerRoute: PlannerRoute,
   TarefasRoute: TarefasRoute,

@@ -129,11 +129,10 @@ function DialogTitle({ className, ...props }: Omit<React.ComponentProps<typeof H
     <Heading
       slot="title"
       data-slot="dialog-title"
-      // Sem caixa alta e em 700: ver a nota do `SheetTitle`.
-      // Sora explícito, e não herdado: desde que a regra do `index.css` passou a
-      // valer só para `h1` (2026-08-13), um `Heading` sem família cai no Inter
-      // do body — e a regra é "de H2 para baixo, Sora". Herança que sumiu, e
-      // sumiu calada: o título continuava renderizando, só que na voz errada.
+      // Sem caixa alta, e com a família DECLARADA: ver a nota do `SheetTitle`.
+      // Um `Heading` sem família cai no Inter do body, calado — o título
+      // continua renderizando, só que na voz errada. D15/D16 trocam por
+      // `.t-secao`.
       className={cn('font-display text-base leading-none font-bold', className)}
       {...props}
     />

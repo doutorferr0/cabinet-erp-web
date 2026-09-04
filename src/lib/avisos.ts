@@ -29,11 +29,23 @@
  * operador precisa ler e agir. Aqui só entra o que já terminou bem.
  */
 
+/**
+ * O TOM do aviso — o que ele pinta na faixa e se ele sai sozinho.
+ *
+ * `ok` é o padrão porque é o que a fila carrega hoje (gravou, desativou,
+ * vinculou). Os outros três existem para a faixa da 2.0 (D5) ter fonte de
+ * verdade: pintar uma confirmação em âmbar porque a faixa é âmbar seria cor
+ * decorativa sobre dado, que é o que a rodada está tirando do sistema.
+ */
+export type TomDoAviso = 'ok' | 'info' | 'warn' | 'bad'
+
 export interface Aviso {
   id: string
   texto: string
   /** Detalhe opcional — o nome do registro, o número do documento. */
   detalhe?: string
+  /** Ausente = `ok`. Ver `TomDoAviso`. */
+  tom?: TomDoAviso
 }
 
 type Assinante = (avisos: readonly Aviso[]) => void
@@ -50,10 +62,10 @@ function publicar() {
  * Anuncia que algo terminou bem. Devolve o `id`, que serve para dispensar antes
  * do tempo (a região de avisos usa isso).
  */
-export function avisar(texto: string, detalhe?: string): string {
+export function avisar(texto: string, detalhe?: string, tom?: TomDoAviso): string {
   sequencia += 1
   const id = `aviso-${sequencia}`
-  avisos = [...avisos, { id, texto, ...(detalhe ? { detalhe } : {}) }]
+  avisos = [...avisos, { id, texto, ...(detalhe ? { detalhe } : {}), ...(tom ? { tom } : {}) }]
   publicar()
   return id
 }

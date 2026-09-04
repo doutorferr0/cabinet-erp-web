@@ -1,117 +1,136 @@
 ---
 name: Cabinet
-description: Sistema visual de um ERP denso, desktop, em PT-BR — documento comercial com estrutura neo-brutalista de superfícies cinzas delimitadas por traço preto, elevação em degraus e acento saturado.
+description: Sistema visual de um ERP denso, desktop, em PT-BR — documento comercial sobre papel quente, escala de neutros única, acento chartreuse de preenchimento, sombra dura de tinta e hierarquia tipográfica de 11 degraus.
+# ATENÇÃO — este bloco é a ficha 2.0 e o CORPO da página ainda é 1.7.
+# `docs/design/medir-contraste.py --frontmatter` compara cada linha abaixo com o
+# token real; divergiu, uma das duas está mentindo. Ver a nota logo após o
+# front-matter.
 colors:
-  bench: "hsl(47 31% 94%)"
-  sheet: "hsl(0 0% 100%)"
-  sheet-sunken: "hsl(0 0% 97%)"
-  neutral: "hsl(0 0% 96%)"
-  ink: "hsl(0 0% 7%)"
-  ink-muted: "hsl(0 0% 30%)"
-  ink-strong: "hsl(0 0% 7%)"
-  rule-hair: "hsl(0 0% 72%)"
-  surface-disabled: "hsl(0 0% 92%)"
-  rule-disabled: "hsl(210 8% 40%)"
-  main: "hsl(0 0% 7%)"
-  main-hover: "hsl(0 0% 10%)"
-  main-foreground: "hsl(0 0% 100%)"
-  accent: "hsl(262 97% 76%)"
-  info: "hsl(225 71% 75%)"
-  money: "hsl(155 81% 26%)"
-  danger: "hsl(357 84% 42%)"
-  warn: "hsl(47 100% 50%)"
-  ring: "hsl(47 100% 50%)"
-  empresa: "hsl(234 91% 60%)"
-  fill-money: "hsl(88 51% 71%)"
-  fill-focus: "hsl(44 87% 64%)"
-  fill-error: "hsl(355 76% 64%)"
-  zone-money: "hsl(154 96% 91%)"
-  zone-id: "hsl(263 94% 93%)"
-  zone-info: "hsl(223 69% 95%)"
-  zone-warn: "hsl(48 100% 95%)"
-  zone-danger: "hsl(6 76% 95%)"
-  shadow-1: "hsl(40 10% 60%)"
-  shadow-2: "hsl(40 11% 47%)"
-  shadow-3: "hsl(40 13% 36%)"
-  shadow-4: "hsl(40 14% 27%)"
-  shadow-5: "hsl(40 16% 19%)"
+  bench: "#ece9e1"
+  sheet: "#fffefa"
+  sheet-sunken: "#f6f4ee"
+  hairline: "#dcd7cb"
+  rule: "#c9c3b5"
+  ink-disabled: "#a9a395"
+  ink-muted: "#6d675b"
+  ink-secondary: "#4a463d"
+  ink: "#16140f"
+  main: "#e4f222"
+  main-hover: "#e9f27a"
+  main-foreground: "#16140f"
+  main-text: "#4f5c00"
+  ring: "#ffd23f"
+  ok: "#0e7a4b"
+  info: "#1c5fbf"
+  warn: "#9a5b00"
+  bad: "#b3261e"
+  money: "#0e7a4b"
 typography:
-  nome:
-    fontFamily: "Newsreader, ui-serif, Georgia, serif"
-    fontSize: "1.15em"
-    fontWeight: 400
   display:
-    fontFamily: "Newsreader, ui-serif, Georgia, serif"
-    fontSize: "1.85rem"
-    fontWeight: 700
-    letterSpacing: "-0.005em"
-  headline:
-    fontFamily: "Sora, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "1.35rem"
-    fontWeight: 700
-    letterSpacing: "-0.012em"
-  produto:
-    fontFamily: "Sora, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "0.875rem"
+    fontFamily: "Gambarino, Georgia, serif"
+    fontSize: "30px"
+    lineHeight: 1.05
     fontWeight: 400
-  value:
-    fontFamily: "PT Mono, ui-monospace, monospace"
-    fontSize: "1.5rem"
+  pagina:
+    fontFamily: "Gambarino, Georgia, serif"
+    fontSize: "28px"
+    lineHeight: 1.1
     fontWeight: 400
-    fontFeature: "tabular-nums"
-  body:
-    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "0.875rem"
+  registro:
+    fontFamily: "Gambarino, Georgia, serif"
+    fontSize: "24px"
+    lineHeight: 1.1
     fontWeight: 400
-  label:
-    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "0.875rem"
-    fontWeight: 500
-  control:
-    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "0.875rem"
+  secao:
+    fontFamily: "Gambarino, Georgia, serif"
+    fontSize: "20px"
+    lineHeight: 1.2
+    fontWeight: 400
+  bloco:
+    fontFamily: "Inter, system-ui, sans-serif"
+    fontSize: "13.5px"
+    lineHeight: 1.3
     fontWeight: 600
-  numeric:
-    fontFamily: "PT Mono, ui-monospace, monospace"
-    fontSize: "0.875rem"
+  corpo:
+    fontFamily: "Inter, system-ui, sans-serif"
+    fontSize: "13.5px"
+    lineHeight: 1.45
+    fontWeight: 400
+  ui:
+    fontFamily: "Inter, system-ui, sans-serif"
+    fontSize: "13px"
+    lineHeight: 1.3
+    fontWeight: 500
+  meta:
+    fontFamily: "Inter, system-ui, sans-serif"
+    fontSize: "12px"
+    lineHeight: 1.35
+    fontWeight: 400
+  rotulo:
+    fontFamily: "Inter, system-ui, sans-serif"
+    fontSize: "10.5px"
+    fontWeight: 600
+    letterSpacing: "0.12em"
+    textTransform: "uppercase"
+  dado:
+    fontFamily: "JetBrains Mono, ui-monospace, monospace"
+    fontSize: "12.5px"
+    fontWeight: 500
+    fontFeature: "tabular-nums"
+  dado-meta:
+    fontFamily: "JetBrains Mono, ui-monospace, monospace"
+    fontSize: "11px"
     fontWeight: 400
     fontFeature: "tabular-nums"
-  tag:
-    fontFamily: "PT Mono, ui-monospace, monospace"
-    fontSize: "10px"
-    letterSpacing: "0.12em"
-    textTransform: "uppercase"
-  meta:
-    fontFamily: "PT Mono, ui-monospace, monospace"
-    fontSize: "11px"
-    letterSpacing: "0.12em"
-    textTransform: "uppercase"
-  section:
-    fontFamily: "PT Mono, ui-monospace, monospace"
-    fontSize: "10.5px"
-    letterSpacing: "0.16em"
-    textTransform: "uppercase"
 rounded:
-  item: "0px"
-  data: "2px"
-  control: "4px"
-  card: "6px"
+  item: "4px"
+  data: "4px"
+  chip: "4px"
+  control: "6px"
+  card: "8px"
   panel: "10px"
+  pill: "999px"
 spacing:
-  xs: "4px"
-  sm: "8px"
-  md: "12px"
-  lg: "18px"
-  cell: "52px"
+  s-1: "4px"
+  s-2: "8px"
+  s-3: "12px"
+  s-4: "16px"
+  s-5: "24px"
+  s-6: "32px"
 effects:
-  el-1: "2px 2px 0 0 hsl(214 10% 61%)"
-  el-2: "3px 3px 0 0 hsl(215 11% 47%)"
-  el-3: "4px 4px 0 0 hsl(216 13% 36%)"
-  el-4: "6px 6px 0 0 hsl(216 14% 27%)"
-  el-5: "8px 8px 0 0 hsl(217 16% 19%)"
-  border-strong: "2px solid hsl(0 0% 0%)"
-  border-heavy: "3px solid hsl(0 0% 0%)"
+  key-1: "0 2px 0 0 #16140f"
+  key-2: "0 3px 0 0 #16140f"
+  hard-soft: "3px 3px 0 0 #c9c3b5"
+  hard-1: "2px 2px 0 0 #16140f"
+  hard-2: "4px 4px 0 0 #16140f"
+  hard-3: "6px 6px 0 0 #16140f"
 ---
+
+> **2.0 EM EXECUÇÃO (#469–#498). O front-matter acima já é 2.0; o corpo desta página é 1.7 até
+> D30.** A fundação vive em `src/styles/tokens-2.0.css` (escala `--n-*`, 8 rampas, semântica,
+> tints, `--hard-*`/`--key-*`, `--s-*`, os onze `--t-*` e o tema escuro) e o `src/index.css`
+> virou PONTE: todo nome 1.x aponta para um token 2.0, e nenhum guarda cor própria
+> (`identidade-visual.test.ts` cobra). As fontes da 1.5 saíram do `package.json` — são três
+> famílias agora, uma por papel: título, interface e dado.
+>
+> **Consequência que ninguém pode ler errado: as tabelas de contraste do corpo desta página
+> foram medidas contra tokens que não existem mais.** Citar um número delas hoje é citar medição
+> inválida, exatamente como aconteceu na virada de 2026-08-13. A medição VÁLIDA da 2.0 sai de
+> `python3 docs/design/medir-contraste.py` — reescrito em D1 para resolver hex, `var()` e
+> `color-mix`, e para medir cada par sobre a superfície em que ele realmente pousa. `--conferir`
+> sai com código 1 se algum par exigido reprovar em qualquer um dos dois temas. Quem regenera as
+> tabelas do corpo é D30.
+>
+> **O que a medição já mudou na paleta da auditoria** (§3 dela propunha os valores; o número
+> mandou): `--n-500` desceu de `#7e786b` para `#6d675b`, porque `--t-meta` e `--t-rotulo` davam
+> 4,35:1 e 3,62:1 — e a régua §Hierarquia nomeia esse par como onde o 1.x reprovava; os fundos de
+> badge deixaram de ser alpha e passaram a pousar sobre a folha, porque com alpha os cinco
+> reprovavam sobre a bancada; e a semântica no escuro sobe DOIS degraus da rampa (600 → 200), não
+> um, porque no 400 o badge de info dava 4,01:1.
+>
+> A régua de tipografia e separação da rodada é a **§Hierarquia** da issue-mãe #469, e ela está
+> demonstrada nos dois temas em `docs/design/hierarquia.html`. O overlay de grade de 8px liga com
+> `?grid` na URL, em dev.
 
 # Design System: Cabinet — Polaris por baixo, Cabinet por cima (2026-08-18)
 
@@ -604,9 +623,10 @@ Folha.
 
 As tabelas acima medem superfície e voz. Falta o terceiro grupo, e é onde está a única reprovação
 de TEXTO desta página: os lugares em que a cheia /01 deixa de ser traço e vira **fundo com letra em
-cima**. Hoje são dois, e o par é o mesmo — `data-active:bg-modulo-cheia` no item de menu
-(`sidebar.tsx`) e a gaveta de notificações, que herda o `text-sidebar-foreground`/`text-foreground`
-do tema.
+cima**. Eram dois, e o par era o mesmo — `data-active:bg-modulo-cheia` no item de menu
+(`sidebar.tsx`) e a gaveta de notificações, que herdava o `text-sidebar-foreground`/`text-foreground`
+do tema. **Hoje é um:** a gaveta foi apagada em D7 (§Casca global), e a caixa de entrada que a
+substituiu não usa a /01 como fundo de texto — o monograma dela é a /02, onde a tinta passa folgado.
 
 <!-- tabela:estados-fundo -->
 | Módulo | claro: tinta × /01 | escuro: tinta × /01 |
@@ -1131,7 +1151,17 @@ célula desenharia uma moldura por coluna.
 Célula de dinheiro em verde sobre zona de valor (e sem zona quando a linha está selecionada).
 `rowNumbers` e cabeçalho agrupado: mecanismos inalterados.
 
-### CadastroForm / BandaDeIdentidade (assinatura)
+### CadastroForm / PageHeader (assinatura)
+
+> **2.0 (D5, #473) — a `BandaDeIdentidade` foi APAGADA.** A caixa lilás com borda de 2px em volta do
+> nome da tela gastava borda + fundo + gradiente numa fronteira que espaço resolve — três das quatro
+> ferramentas de separação de uma vez (§Hierarquia). O nome da tela passou a ter **uma voz só**, o
+> `<h1>` do `PageHeader`, e `src/routes/toda-rota-tem-cabecalho.test.ts` reprova rota que não chegue
+> nele e `<h1>` escrito fora dele. O cabeçalho ganhou `variante` (`display` 30 · `pagina` 28 ·
+> `registro` 24, os degraus `--t-*`), `subtitulo` (o que a tela TEM agora, não o que ela é), `acoes`
+> fracas em ghost e a **tecla `Voltar` de 32px colada ao título** — que saiu do `PageFrame` e voltou
+> para cá, sem opt-in: quem decide se há tecla é `rotaMaeDe`, não a tela.
+
 Painel (raio 10px, `el-3`) com **faixa de acento** de 8px à esquerda e zona de identidade no fundo.
 Título em Display; contexto em Meta. Rodapé fixo com régua superior de 3px. Modo consulta via
 `<fieldset disabled>`: inalterado.
@@ -1283,7 +1313,7 @@ e em parte dos browsers isso engole o `:active`.
 
 Nunca escrever a receita à mão no componente.
 
-## Casca global — appbar, gaveta e regra de quebra
+## Casca global — appbar, caixa de entrada e regra de quebra
 
 Cromo que aparece em **toda rota**, vive no `AppShell` (`src/app/shell.tsx`) e nunca na página —
 igual `data-modulo` do `<main>`. Origem: mockup `mockup-dashboard-cores.html`, sessão Cowork
@@ -1291,12 +1321,52 @@ igual `data-modulo` do `<main>`. Origem: mockup `mockup-dashboard-cores.html`, s
 
 ### Appbar
 
+> **2.0 (D5, #473) — o que vale hoje.** A appbar é `src/app/appbar/`, tem **56px**, e faz duas
+> coisas: **migalha à esquerda** (derivada da rota pela taxonomia de `navigation.ts`, nunca escrita
+> pela tela) e **quatro ações globais à direita** — Ajuda · Notificações · Configurações · Tema —,
+> fixas em toda rota e na mesma ordem. Nada mais: marca, fileira de seções, busca e seletor de
+> empresa desceram para a barra lateral (`src/app/cinto-provisorio.tsx`, que D4/D6 apagam inteiro).
+> A **segunda faixa de 52px** que repetia o lugar dentro do conteúdo, com o botão de colapso da
+> barra, foi removida — duas respostas para "onde estou", em duas tipografias. O contador do sino
+> virou **ponto** (`--bad`); o número continua no nome acessível, porque quem ouve não vê o ponto.
+> Ação de TELA não sobe para cá: ela mora no `PageHeader`. O parágrafo abaixo descreve a appbar 1.7.
+
 Faixa própria (`src/app/appbar.tsx`), acima do cabeçalho de página, presente em toda rota. À
 esquerda, a **entrada da paleta de comandos** (240px, `Pesquisar…` + a etiqueta `Ctrl+K`); cluster
 à direita: engrenagem (**desabilitada** — não existe tela de configurações; um botão que não leva a
 lugar nenhum é pior que apagado, a mesma razão que desabilita `Alterar`/`Consul.` sem `get` no
-contrato) · sino com badge de não-lidas (abre a gaveta) · divisor · usuário (avatar + nome + papel +
-chevron, menu com `Sair`).
+contrato) · sino com badge de não-lidas · divisor · usuário (avatar + nome + papel + chevron, menu
+com `Sair`).
+
+**O sino é LINK, e a gaveta não existe mais (Reface 2.0, D7 · #475).** Ele abria uma coluna irmã do
+`<main>` que EMPURRAVA o conteúdo (`src/app/gaveta-notificacoes.tsx`, apagado); hoje é
+`<Link to="/inbox">`. A troca não é de desenho, é de natureza: notificação era AVISO — um cartão com
+título e parágrafo, que respondia "aconteceu algo?" e parava aí — e virou LISTA DE TRABALHO, uma
+linha por item com **quem · o quê · qual registro · quando**, ação de resolver na própria linha e
+views (`Não lidas` / `Menções` / `Tudo`) publicadas no endereço (`/inbox?view=…`).
+
+O que a gaveta não tinha e o endereço dá de graça: sobrevive ao F5, cola para outra pessoa, volta
+pelo botão do navegador, entra no menu (`Hoje › Caixa de entrada`) e é achável pela paleta. Um
+painel que abre por clique não tem nenhuma dessas.
+
+**`Sheet` continua no repo e foi REESTILIZADO, não apagado** — são coisas distintas: a gaveta era
+escrita à mão, sem Dialog e sem véu; o `Sheet` é o painel modal do sistema, tem consumidor hoje
+(sidebar estreita, seletor de empresa) e encomendado em D24. Ele ganhou a sombra dura de tinta do
+degrau `--hard-3`, espelhada por `data-side` — painel encostado em `right-0` com sombra para a
+direita projeta para fora da janela e não existe.
+
+### Região de avisos (`src/components/cabinet/regiao-de-avisos.tsx`)
+
+**2.0 (D5, #473).** Deixou de ser cartão flutuante no canto inferior direito (borda preta de 2px +
+sombra dura, três ferramentas de separação para uma frase de cinco palavras) e virou **faixa logo
+abaixo da appbar**, no shell: tint do tom (`--ok-bg`/`--info-bg`/`--warn-bg`/`--bad-bg`), sem borda
+e sem sombra, texto forte à esquerda e a tecla de dispensar à direita. Ela **empurra** o conteúdo em
+vez de cobri-lo.
+
+O **tom** é dado (`Aviso.tom`, `lib/avisos.ts`), não decoração: `ok` é o padrão e é o único que sai
+pelo relógio; `warn` e `bad` ficam até alguém dispensar — é o que o próprio `lib/avisos` diz do que
+não pode sumir em cinco segundos, o que o operador precisa LER e AGIR. `aria-live` vira `assertive`
+quando há `bad` na fila, e `polite` no resto.
 
 #### Paleta de comandos (`src/app/paleta-de-comandos.tsx`)
 

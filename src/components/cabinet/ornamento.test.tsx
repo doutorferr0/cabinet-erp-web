@@ -56,7 +56,7 @@ describe('Ornamento', () => {
     for (const tamanho of [16, 24, 128]) {
       const { container } = render(<Ornamento shape="clientes" tom="modulo" tamanho={tamanho} />)
       const path = primeiroPath(container)
-      expect(path).toHaveAttribute('stroke', 'hsl(var(--foreground))')
+      expect(path).toHaveAttribute('stroke', 'var(--foreground)')
       expect(Number(path.getAttribute('stroke-width'))).toBeGreaterThan(0)
     }
   })
@@ -108,7 +108,7 @@ describe('Ornamento', () => {
   // que a fase 3 pagou. Traço e peso saem do token que VIRA com o tema.
   it('traço e peso saem de TOKEN, nunca de literal', () => {
     const { container } = render(<Ornamento shape="produtos" tom="modulo" tamanho={128} />)
-    expect(pecaDe(container).style.filter).toContain('hsl(var(--foreground))')
+    expect(pecaDe(container).style.filter).toContain('var(--foreground)')
     expect(primeiroPath(container).getAttribute('stroke')).not.toMatch(/#|black|rgb/)
   })
 

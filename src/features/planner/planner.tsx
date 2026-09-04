@@ -1,5 +1,6 @@
 import type { PlanItemDtoKind, ProjectPlanDto } from '@/api/gerado'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
+import { PageHeader } from '@/components/cabinet/page-header'
 import { Barra as BarraDeProgresso, Painel } from '@/components/cabinet/painel'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -163,12 +164,7 @@ export function PlannerTela() {
 
   return (
     <div className="flex flex-col gap-8">
-      <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2 border-rule-strong border-b pb-3">
-        <div>
-          <h1 className="font-nome text-3xl font-bold">Planner</h1>
-          <p className="text-sm text-muted-foreground">As fases do projeto na linha do tempo.</p>
-        </div>
-
+      <PageHeader titulo="Planner" subtitulo="As fases do projeto na linha do tempo.">
         <div className="flex flex-wrap items-center gap-2">
           <label className="flex items-center gap-2 font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em]">
             Projeto
@@ -212,7 +208,7 @@ export function PlannerTela() {
             </Button>
           </div>
         </div>
-      </header>
+      </PageHeader>
 
       {projetos.isError ? (
         <FalhaDoPainel
@@ -343,8 +339,8 @@ function Grandeza({ rotulo, valor }: { rotulo: string; valor: number }) {
       <span className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
         {rotulo}
       </span>
-      {/* A voz de QUANTO (PT Mono), e SEM negrito: o `@fontsource` publica só o
-          peso 400 do PT Mono, e `font-bold` sem arquivo de 700 viraria negrito
+      {/* A voz de QUANTO (mono), e SEM negrito: o `@fontsource` publica só os
+          pesos 400 e 500, e `font-bold` sem arquivo de 700 viraria negrito
           sintético — o browser engorda o traço por conta. Quem dá presença ao
           número aqui é a largura da mono e a tabularidade, não o peso
           (decisão do user, 2026-08-13). */}

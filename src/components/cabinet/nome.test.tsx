@@ -4,7 +4,7 @@ import { Nome, Produto } from './nome'
 
 describe('Nome', () => {
   it('põe o nome próprio na voz de quem, um degrau acima do vizinho', () => {
-    // O degrau existe porque a altura-x do Newsreader é menor: no mesmo
+    // O degrau existe porque a altura-x da família de título é menor: no mesmo
     // tamanho, o nome do cliente lê como texto secundário e a hierarquia da
     // linha inverte. Em `em` para acompanhar o vizinho, seja célula ou título.
     const { container } = renderWithQuery(<Nome>Construtora Almeida Ltda</Nome>)

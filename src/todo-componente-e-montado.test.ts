@@ -74,6 +74,16 @@ const DIVIDAS: Record<string, string> = {
   // acesso a dado de terceiro.
   'data/suporte-api.ts':
     'órfã desde o item 6 da fundação (PR #369); religa no console de suporte, que é trilho próprio — o mock e as guardas já respondem sem ela',
+  // Nasceu órfão na D3 (#471) e o motivo é a forma da rodada, não esquecimento:
+  // as 30 issues do Reface 2.0 correm EM PARALELO a partir de `design/2.0`, com
+  // zonas de arquivo disjuntas. O consumidor que a DoD da #471 nomeia — a
+  // página de controles — é entrega da D2 (#470), que está em curso noutra
+  // branch; montá-lo aqui seria escrever no arquivo de outro agente, que é
+  // exatamente o que a §Regra de ouro proíbe. `<Badge>` e `<Money>` saíram
+  // desta mesma PR já ligados (a coluna `Ativo` e a de valor das listagens);
+  // este é o único dos três cujo lugar cai fora da zona da issue.
+  'components/cabinet/monograma.tsx':
+    'órfão desde a #471 (D3); a página de controles da D2 o monta — é o consumidor que a DoD da #471 declara',
 }
 
 function arquivosDe(dir: string): string[] {

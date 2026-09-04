@@ -11,59 +11,62 @@ import type { CalendarEventExternal, CalendarType } from './schedule-x'
  * dono (entrega=estoque, orçamento=vendas, reunião=compras) e `payment` usa o
  * verde de dinheiro, que tem dono por regra (DESIGN.md §Acentos).
  *
- * **Por que dois tipos de valor aqui.** O Schedule-X grava estas cores como
- * custom properties na RAIZ (`document.documentElement.style.setProperty`), e é
- * isso que decide o que pode ser token e o que precisa ser cópia:
+ * **A CÓPIA DE COR MORREU AQUI (2.0, #469), e o motivo dela morreu junto.** O
+ * Schedule-X grava estas cores como custom properties na RAIZ
+ * (`document.documentElement.style.setProperty`), e enquanto a cor de módulo só
+ * existisse dentro de `[data-modulo]` a raiz devolvia o par PADRÃO para os três
+ * — então entrega, orçamento e reunião viriam da mesma cor. A saída era copiar
+ * seis valores literais daqui, com o seletor de origem anotado ao lado, e mantê-los
+ * em dia à mão.
  *
- * - `--money`, `--zone-money` e `--foreground` são globais → entram como
- *   `hsl(var(…))` e viram sozinhos com o tema. Uma fonte só.
- * - `--modulo-01`/`--modulo-02` são ESCOPADOS por `[data-modulo]`. Na raiz eles
- *   valem o par PADRÃO (roxo), então `var()` pintaria entrega, orçamento e
- *   reunião todos da mesma cor. Os três vêm copiados de `src/index.css`, com o
- *   seletor de origem ao lado — e o `dark` respeita a regra de lá: **só a /02
- *   muda no escuro**, a cheia /01 já é clara e continua servindo de tinta.
+ * Na 2.0 cada módulo tem um token GLOBAL (`--mod-estoque`, `--mod-vendas`,
+ * `--mod-compras`) e o fundo é o tint da mesma família. Os dois são globais,
+ * então `var()` na raiz resolve certo e o escuro cai sozinho — o token de módulo
+ * desce do degrau 600 para o 400 em `tokens-2.0.css`, e o tint pousa sobre a
+ * folha do tema. `lightColors` e `darkColors` passam a ser o MESMO par: não há
+ * mais duas tabelas para divergir.
  *
  * A cor é reforço, nunca a informação sozinha (WCAG 1.4.1): a linha traz o
  * texto do compromisso e a legenda nomeia o tipo.
  */
 
 /** Tinta sobre o fundo do evento — token global, vira com o tema. */
-const TINTA = 'hsl(var(--foreground))'
+const TINTA = 'var(--foreground)'
 
 export const CALENDARIOS: Record<AgendaEventDtoKind, CalendarType> = {
-  // [data-modulo="estoque"] · .dark → --modulo-02: 205 35% 20%
+  // entrega ← estoque · o par (cor do módulo, tint da família) é o mesmo nos dois temas
   delivery: {
     colorName: 'delivery',
     label: 'entrega',
-    lightColors: { main: 'hsl(213 94% 68%)', container: 'hsl(214 95% 93%)', onContainer: TINTA },
-    darkColors: { main: 'hsl(213 94% 68%)', container: 'hsl(205 35% 20%)', onContainer: TINTA },
+    lightColors: { main: 'var(--mod-estoque)', container: 'var(--tint-mint)', onContainer: TINTA },
+    darkColors: { main: 'var(--mod-estoque)', container: 'var(--tint-mint)', onContainer: TINTA },
   },
-  // [data-modulo="vendas"] · .dark → --modulo-02: 251 35% 20%
+  // orçamento ← vendas
   quote: {
     colorName: 'quote',
     label: 'orçamento',
-    lightColors: { main: 'hsl(255 92% 76%)', container: 'hsl(251 91% 95%)', onContainer: TINTA },
-    darkColors: { main: 'hsl(255 92% 76%)', container: 'hsl(251 35% 20%)', onContainer: TINTA },
+    lightColors: { main: 'var(--mod-vendas)', container: 'var(--tint-sky)', onContainer: TINTA },
+    darkColors: { main: 'var(--mod-vendas)', container: 'var(--tint-sky)', onContainer: TINTA },
   },
-  // [data-modulo="compras"] · .dark → --modulo-02: 287 35% 20%
+  // reunião ← compras
   meeting: {
     colorName: 'meeting',
     label: 'reunião',
-    lightColors: { main: 'hsl(329 86% 70%)', container: 'hsl(326 78% 95%)', onContainer: TINTA },
-    darkColors: { main: 'hsl(329 86% 70%)', container: 'hsl(287 35% 20%)', onContainer: TINTA },
+    lightColors: { main: 'var(--mod-compras)', container: 'var(--tint-lilac)', onContainer: TINTA },
+    darkColors: { main: 'var(--mod-compras)', container: 'var(--tint-lilac)', onContainer: TINTA },
   },
-  // Dinheiro tem token global nos dois temas — nada a copiar.
+  // Dinheiro tem dono por regra (DESIGN.md §Acentos) e token global nos dois temas.
   payment: {
     colorName: 'payment',
     label: 'pagamento',
     lightColors: {
-      main: 'hsl(var(--money))',
-      container: 'hsl(var(--zone-money))',
+      main: 'var(--money)',
+      container: 'var(--zone-money)',
       onContainer: TINTA,
     },
     darkColors: {
-      main: 'hsl(var(--money))',
-      container: 'hsl(var(--zone-money))',
+      main: 'var(--money)',
+      container: 'var(--zone-money)',
       onContainer: TINTA,
     },
   },

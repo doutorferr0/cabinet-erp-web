@@ -419,7 +419,7 @@ export function Ornamento({ shape, tom, tamanho, className }: OrnamentoProps) {
             // então vira junto no tema escuro. E é o único preto permitido a um
             // ornamento — vale AQUI dentro, nunca em superfície: a escada quente
             // da 1.5 continua sendo a elevação de card e painel.
-            { filter: `drop-shadow(${peso}px ${peso}px 0 hsl(var(--foreground)))` }
+            { filter: `drop-shadow(${peso}px ${peso}px 0 var(--foreground))` }
           : undefined
       }
     >
@@ -443,7 +443,7 @@ export function Ornamento({ shape, tom, tamanho, className }: OrnamentoProps) {
           d={d}
           fillRule="evenodd"
           fill="none"
-          stroke="hsl(var(--foreground))"
+          stroke="var(--foreground)"
           strokeWidth={tracoPara(tamanho)}
           strokeLinejoin="round"
           // O traço em px de TELA, não em unidade de viewBox. Ver `tracoPara`.

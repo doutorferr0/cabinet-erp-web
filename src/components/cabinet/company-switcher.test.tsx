@@ -1,7 +1,6 @@
 import { CompanySwitcher } from '@/components/cabinet/company-switcher'
-import { SidebarProvider } from '@/components/ui/sidebar'
 import { type ServidorFalso, instalarServidor } from '@/test/servidor'
-import { renderRoute, renderWithQuery, respostaSessao, respostaVinculos } from '@/test/utils'
+import { renderWithQuery } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -21,44 +20,31 @@ const VIA_HF = { tenantId: 'bbbb-2222', name: 'VIA HF', role: 'operator-sales', 
 let servidor: ServidorFalso
 let vinculos = [VERTZ, VIA_HF]
 let ativa: string | null = VIA_HF.tenantId
-let deslogado = false
 
-/** Servidor COM ESTADO: a troca muda o que `/auth/me` responde depois; o logout derruba a sessão. */
+/** Servidor COM ESTADO: a troca muda o que `/auth/me` responde depois. */
 function subirServidor() {
   servidor = instalarServidor({
     '/auth/tenants': () => vinculos,
-    '/auth/me': () => {
-      if (deslogado) return new Response('', { status: 401 })
-      return {
-        organizationId: 'org-1',
-        employeeId: 'emp-1',
-        activeTenantId: ativa,
-        expiresAt: '2026-08-01T00:00:00Z',
-      }
-    },
+    '/auth/me': () => ({
+      organizationId: 'org-1',
+      employeeId: 'emp-1',
+      activeTenantId: ativa,
+      expiresAt: '2026-08-01T00:00:00Z',
+    }),
     '/auth/active-tenant': ({ corpo }) => {
       ativa = (corpo as { tenantId: string }).tenantId
-      return new Response(null, { status: 204 })
-    },
-    '/auth/logout': () => {
-      deslogado = true
       return new Response(null, { status: 204 })
     },
   })
 }
 
 function montar() {
-  return renderWithQuery(
-    <SidebarProvider>
-      <CompanySwitcher />
-    </SidebarProvider>,
-  )
+  return renderWithQuery(<CompanySwitcher />)
 }
 
 beforeEach(() => {
   vinculos = [VERTZ, VIA_HF]
   ativa = VIA_HF.tenantId
-  deslogado = false
   subirServidor()
 })
 
@@ -80,8 +66,35 @@ describe('CompanySwitcher', () => {
 
     // O conjunto é fechado pelo CHECK de `employee_company.role` no schema do
     // backend; o rótulo é UI, o identificador continua sendo o do contrato.
+    expect(await screen.findByText(/Operador de Vendas/)).toBeInTheDocument()
+    expect(screen.queryByText(/operator-sales/)).not.toBeInTheDocument()
+  })
+
+  /**
+   * A legenda diz o papel E quantas empresas existem — é o que o mockup pede
+   * ("Administrador · 3 empresas") e o que faz o bloco valer um clique: sem a
+   * contagem, o operador não sabe que há para onde trocar.
+   */
+  it('a legenda anuncia quantas empresas existem quando há mais de uma', async () => {
+    montar()
+
+    expect(await screen.findByText('Operador de Vendas · 2 empresas')).toBeInTheDocument()
+  })
+
+  it('e NÃO anuncia contagem quando só existe uma — escolha que não existe', async () => {
+    vinculos = [VIA_HF]
+    subirServidor()
+    montar()
+
     expect(await screen.findByText('Operador de Vendas')).toBeInTheDocument()
-    expect(screen.queryByText('operator-sales')).not.toBeInTheDocument()
+    expect(screen.queryByText(/1 empresa/)).not.toBeInTheDocument()
+  })
+
+  /** O monograma é a marca da empresa ativa — duas iniciais, nunca o nome. */
+  it('a tecla traz o monograma das duas primeiras iniciais', async () => {
+    montar()
+
+    expect(await screen.findByText('VH')).toBeInTheDocument()
   })
 
   it('troca de empresa com PUT em /auth/active-tenant', async () => {
@@ -103,7 +116,6 @@ describe('CompanySwitcher', () => {
 
     await user.click(await screen.findByRole('button', { name: /via hf/i }))
     await user.click(await screen.findByRole('button', { name: /vertz iluminação/i }))
-    // A lista PROPÕE; quem troca é o alerta.
     await user.click(await screen.findByRole('button', { name: /^trocar empresa$/i }))
 
     // Dado é escopado por empresa: sem reconsulta, a tela mostraria a anterior.
@@ -111,9 +123,12 @@ describe('CompanySwitcher', () => {
     await waitFor(() => expect(servidor.em('/auth/me').length).toBeGreaterThan(1))
   })
 
-  // Escolher na gaveta deixou de ser trocar. Este teste é o que impede alguém
-  // de "simplificar" o fluxo religando o `trocar()` no clique da lista: sem o
-  // alerta, um clique perdido reescreveria o escopo de tudo que está aberto.
+  /**
+   * Escolher na lista deixou de ser trocar quando o alerta entrou, e continua
+   * assim depois de a gaveta virar popover — a peça pousada é o SELETOR, o
+   * peso está no alerta. Este teste é o que impede alguém de "simplificar" o
+   * fluxo religando o `trocar()` no clique da lista.
+   */
   it('cancelar no alerta não troca de empresa', async () => {
     const { user } = montar()
 
@@ -122,8 +137,16 @@ describe('CompanySwitcher', () => {
     await user.click(await screen.findByRole('button', { name: /cancelar/i }))
 
     expect(servidor.em('/auth/active-tenant')).toHaveLength(0)
-    // A gaveta continua aberta: cancelar devolve à lista, não a lugar nenhum.
+    // O popover continua aberto: cancelar devolve à lista, não a lugar nenhum.
     expect(await screen.findByRole('button', { name: /vertz iluminação/i })).toBeInTheDocument()
+  })
+
+  /** A saída para administrar o grupo mora no rodapé da lista. */
+  it('oferece Gerenciar empresas', async () => {
+    const { user } = montar()
+
+    await user.click(await screen.findByRole('button', { name: /via hf/i }))
+    expect(await screen.findByRole('button', { name: /gerenciar empresas/i })).toBeInTheDocument()
   })
 
   it('falha do servidor NÃO se disfarça de empresa ausente', async () => {
@@ -139,47 +162,10 @@ describe('CompanySwitcher', () => {
   it('usuário sem vínculo vê o motivo, não um menu vazio', async () => {
     vinculos = []
     ativa = null
+    subirServidor()
     const { user } = montar()
 
     await user.click(await screen.findByRole('button', { name: /nenhuma empresa ativa/i }))
     expect(await screen.findByText(/nenhuma empresa vinculada/i)).toBeInTheDocument()
-  })
-
-  it('Sair chama POST /auth/logout e invalida tudo — a sessão é reconsultada', async () => {
-    const { user } = montar()
-
-    await user.click(await screen.findByRole('button', { name: /via hf/i }))
-    await user.click(await screen.findByRole('button', { name: /sair/i }))
-
-    await waitFor(() => expect(servidor.em('/auth/logout')).toHaveLength(1))
-    expect(servidor.em('/auth/logout')[0]?.metodo).toBe('POST')
-    // Invalidação total (NÃO clear() — ele não avisa os observers montados e a
-    // guarda ficaria com o resultado velho): o /auth/me TEM que ser reconsultado.
-    await waitFor(() => expect(servidor.em('/auth/me').length).toBeGreaterThan(1))
-  })
-
-  it('Sair na aplicação inteira leva ao /login (a guarda redireciona no 401)', async () => {
-    let fora = false
-    const { user } = renderRoute('/', (input) => {
-      const url = String(input instanceof Request ? input.url : input)
-      const caminho = new URL(url, 'http://localhost').pathname
-      // Verbo vem do Request: o cliente gerado chama `fetch(new Request(...))`.
-      const metodo = input instanceof Request ? input.method : 'GET'
-      if (caminho === '/auth/me') {
-        return Promise.resolve(fora ? new Response('', { status: 401 }) : respostaSessao())
-      }
-      if (caminho === '/auth/tenants') return Promise.resolve(respostaVinculos())
-      if (caminho === '/auth/logout' && metodo === 'POST') {
-        fora = true
-        return Promise.resolve(new Response(null, { status: 204 }))
-      }
-      return Promise.reject(new Error(`fetch sem stub no teste: ${metodo} ${caminho}`))
-    })
-
-    await user.click(await screen.findByRole('button', { name: /vertz iluminação/i }))
-    await user.click(await screen.findByRole('button', { name: /sair/i }))
-
-    // A tela de login é a única com heading Cabinet fora do shell.
-    expect(await screen.findByRole('heading', { name: 'Cabinet' })).toBeInTheDocument()
   })
 })

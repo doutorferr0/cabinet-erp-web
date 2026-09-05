@@ -194,7 +194,10 @@ export function CadastroForm<T extends FieldValues>({
             desenhava duas linhas na mesma fronteira.
             Padding nos dois lados: `sticky bottom-0` sem `pb` encosta o botão na
             moldura. */}
-        <div className="sticky bottom-0 flex justify-end gap-[var(--s-2)] border-t py-[var(--s-3)] [background:var(--n-0)] [border-color:var(--n-200)]">
+        <div
+          data-slot="rodape-do-formulario"
+          className="sticky bottom-0 flex justify-end gap-[var(--s-2)] border-t py-[var(--s-3)] [background:var(--n-0)] [border-color:var(--n-200)]"
+        >
           {readOnly ? (
             <Button type="button" variant="outline" onClick={onCancelar}>
               <X />

@@ -1,5 +1,6 @@
 import { COR_DE_ZONA, DCard, MarcaDeCard } from '@/components/cabinet/painel'
 import type { LucideIcon } from 'lucide-react'
+import type React from 'react'
 
 /**
  * SEÇÃO de documento — a caixa-filha que agrupa um assunto do formulário.
@@ -73,6 +74,10 @@ export function Secao({
   return (
     <DCard
       data-slot="secao"
+      // `--cc` é a cor da zona: a faixa de título do card a lê (tokens-2.0,
+      // "CAIXAS DA FICHA") — a seção deixa de ter cabeçalho cinza igual ao de
+      // qualquer card e passa a dizer de que zona é já no fundo.
+      style={{ '--cc': tinta } as React.CSSProperties}
       titulo={titulo}
       marca={
         Icone ? (

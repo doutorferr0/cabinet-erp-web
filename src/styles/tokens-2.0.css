@@ -1166,3 +1166,50 @@ tr:hover [data-slot="monograma"] {
   > [data-slot="tabs-trigger"] {
   padding-inline: 10px;
 }
+
+/* --- calendário (modo-calendario, agenda e visão de calendário das listagens):
+   a grade era chapada no fundo da página. Vira caixa: borda n-400, relevo,
+   cabeçalho dos dias em faixa, célula com altura e hover. --- */
+[data-slot="modo-calendario"] > div:first-child {
+  padding: var(--s-2) var(--s-3);
+  background: color-mix(in oklab, var(--n-900) 3.5%, var(--n-50));
+  border: 1px solid var(--n-300);
+  border-radius: var(--r-ctrl);
+}
+[data-slot="modo-calendario"] > div.grid {
+  border: 1px solid var(--n-400);
+  border-radius: var(--r-panel);
+  background: var(--n-300);
+  box-shadow: 3px 3px 0 0 var(--n-300), 0 12px 24px -16px
+    color-mix(in oklab, var(--n-900) 45%, transparent);
+}
+[data-slot="modo-calendario"] > div.grid > .t-rotulo {
+  padding: 8px 8px;
+  background: var(--n-100);
+  color: var(--n-700);
+}
+[data-slot="modo-calendario"] [data-slot="dia"] {
+  min-height: 96px;
+  transition: background var(--dur-1, 120ms);
+}
+[data-slot="modo-calendario"] [data-slot="dia"]:hover {
+  background: color-mix(in oklab, var(--lime-400) 8%, var(--n-0));
+}
+
+/* --- configurações: cada tela é uma LINHA do painel (hairline entre irmãs,
+   hover que acende), não um card dentro do card. --- */
+[data-slot="linha-de-config"] {
+  border: 0 !important;
+  border-radius: 0;
+  padding: 10px 14px;
+  transition: background var(--dur-1, 120ms);
+}
+[data-slot="linha-de-config"] + [data-slot="linha-de-config"] {
+  border-top: 1px solid var(--n-200) !important;
+}
+a[data-slot="linha-de-config"]:hover {
+  background: color-mix(in oklab, var(--modulo-02, var(--n-100)) 70%, var(--n-0));
+}
+a[data-slot="linha-de-config"]:hover .t-bloco {
+  color: var(--modulo-01, var(--n-900));
+}

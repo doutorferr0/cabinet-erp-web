@@ -1,5 +1,6 @@
 import { rotaLiberada } from '@/app/navigation'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
+import { FaixaDeKpi, KpiTile } from '@/components/cabinet/kpi-tile'
 import { PageHeader } from '@/components/cabinet/page-header'
 import { PainelBoletim } from '@/components/cabinet/painel-boletim'
 import { Stamp } from '@/components/cabinet/stamp'
@@ -48,43 +49,33 @@ function Valor({ centavos, className }: { centavos: number; className?: string }
 }
 
 /** Stat card — valor grande na cor do módulo, rótulo em Meta. */
-function StatCard({
-  rotulo,
-  valor,
-  apoio,
-}: { rotulo: string; valor: string; apoio?: React.ReactNode }) {
-  return (
-    <div className="flex min-w-0 flex-col gap-1 rounded-card border-2 bg-card px-3 py-2.5 shadow-el1">
-      <span className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
-        {rotulo}
-      </span>
-      <span className="text-xl font-semibold tabular-nums">{valor}</span>
-      {apoio ? <span className="text-sm text-muted-foreground">{apoio}</span> : null}
-    </div>
-  )
-}
-
-/** 4 stat cards em fileira. */
 function Apuracao({ dados }: { dados: Boletim }) {
+  // A MESMA peça do dashboard (`KpiTile`), e não um card branco próprio: o
+  // boletim era a única tela com KPI sem tinta e sem relevo — quatro caixas
+  // iguais que não diziam qual número era dinheiro e qual era contagem.
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <StatCard
+    <FaixaDeKpi>
+      <KpiTile
         rotulo="Orçamentos do dia"
         valor={String(dados.orcamentosDoDia)}
-        apoio={<Valor centavos={dados.valorOrcadoCentavos} className="text-sm" />}
+        nota={<Valor centavos={dados.valorOrcadoCentavos} />}
+        tint="lilac"
       />
-      <StatCard
+      <KpiTile
         rotulo="Ordens do dia"
         valor={String(dados.ordensDoDia)}
-        apoio={<Valor centavos={dados.valorOrdenadoCentavos} className="text-sm" />}
+        nota={<Valor centavos={dados.valorOrdenadoCentavos} />}
+        tint="sky"
       />
-      <StatCard
+      <KpiTile
         rotulo="Ordens sem envio"
         valor={String(dados.ordensSemEnvio)}
-        apoio="Data Envio em branco"
+        nota="Data Envio em branco"
+        tint="sand"
+        alerta={dados.ordensSemEnvio > 0}
       />
-      <StatCard rotulo="Documentos no dia" valor={String(dados.movimento.length)} />
-    </div>
+      <KpiTile rotulo="Documentos no dia" valor={String(dados.movimento.length)} tint="mint" />
+    </FaixaDeKpi>
   )
 }
 
@@ -94,13 +85,17 @@ function Movimento({ linhas }: { linhas: LinhaMovimento[] }) {
 
   return (
     <div className="overflow-x-auto">
-      <Table>
+      {/* `table-fixed`: a 1440px o card tem ~530px e a largura de min-content
+          das quatro colunas passava disso — a coluna do VALOR saía do card
+          (só a tinta dela aparecia). Com layout fixo o nome trunca e o valor
+          fica sempre à vista. */}
+      <Table className="table-fixed">
         <TableHeader>
           <TableRow className="border-dotted border-rule-hair">
-            <TableHead>Espécie</TableHead>
-            <TableHead>Número</TableHead>
+            <TableHead className="w-[28%]">Espécie</TableHead>
+            <TableHead className="w-[16%]">Número</TableHead>
             <TableHead>Cliente / Fornecedor</TableHead>
-            <TableHead className="text-right">Valor</TableHead>
+            <TableHead className="w-[24%] text-right">Valor</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -125,7 +120,9 @@ function Movimento({ linhas }: { linhas: LinhaMovimento[] }) {
                   <TableCell className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em]">
                     {linha.numero}
                   </TableCell>
-                  <TableCell className="truncate">{linha.contraparte}</TableCell>
+                  <TableCell className="truncate" title={linha.contraparte}>
+                    {linha.contraparte}
+                  </TableCell>
                   <TableCell className="bg-zone-money text-right">
                     <Valor centavos={linha.valorCentavos} />
                   </TableCell>

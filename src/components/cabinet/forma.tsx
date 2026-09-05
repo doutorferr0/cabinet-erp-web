@@ -69,7 +69,15 @@ export function Forma({ tipo, tamanho = 64, tint, niveis = 2, respira, className
           d={d}
           strokeWidth={fio[i] ?? fio.at(-1)}
           vectorEffect="non-scaling-stroke"
-          fill={tint ? `color-mix(in oklab, var(${tint}) ${op[i]}%, transparent)` : 'none'}
+          // A CASA é a marca, e a marca é contorno (regra do user, 2026-09-03:
+          // "pode ser mais grossa ou mais fina a linha, mas é esta forma" —
+          // nunca preenchida). As sete formas de módulo aceitam tint; a casa
+          // ignora, mesmo que alguém passe.
+          fill={
+            tint && tipo !== 'casa'
+              ? `color-mix(in oklab, var(${tint}) ${op[i]}%, transparent)`
+              : 'none'
+          }
           data-respira={respira && i === camadas.length - 1 ? '' : undefined}
         />
       ))}

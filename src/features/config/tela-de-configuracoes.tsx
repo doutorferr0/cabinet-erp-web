@@ -36,6 +36,7 @@ function LinhaDaTela({ item }: { item: NavItem }) {
       // da barra lateral, porque é a mesma informação: a tela vai existir.
       <div
         aria-disabled="true"
+        data-slot="linha-de-config"
         className="flex cursor-not-allowed flex-col gap-[var(--s-1)] border-2 border-transparent bg-muted p-2.5"
       >
         <span className="flex items-center gap-[var(--s-2)]">
@@ -54,12 +55,18 @@ function LinhaDaTela({ item }: { item: NavItem }) {
   // Item EXTERNO é `<a href>`: o alvo é arquivo estático servido ao lado da
   // SPA, e `<Link to>` o mandaria ao roteador — 404 com o arquivo ali do lado.
   return item.externo ? (
-    <a href={item.url} target="_blank" rel="noreferrer" className={classe}>
+    <a
+      href={item.url}
+      target="_blank"
+      rel="noreferrer"
+      data-slot="linha-de-config"
+      className={classe}
+    >
       {corpo}
       <span className="sr-only">(abre em nova aba)</span>
     </a>
   ) : (
-    <Link to={item.url} className={classe}>
+    <Link to={item.url} data-slot="linha-de-config" className={classe}>
       {corpo}
     </Link>
   )

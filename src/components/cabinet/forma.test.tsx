@@ -45,10 +45,14 @@ describe('Forma', () => {
     const { container } = render(<Forma tipo="casa" tamanho={360} niveis={3} tint="--mod-hoje" />)
     const camadas = camadasDe(container)
     expect(camadas).toHaveLength(3)
-    // O núcleo é chapado: é ele que carrega a marca, não o contorno.
-    expect(camadas[2]).toHaveAttribute(
+    // A casa é a MARCA e a marca é contorno (user, 2026-09-03): mesmo com tint
+    // pedido, nenhum nível ganha preenchimento. As formas de módulo continuam
+    // aceitando tint — é o que o teste seguinte confere.
+    for (const camada of camadas) expect(camada).toHaveAttribute('fill', 'none')
+    const modulo = render(<Forma tipo="funil" tint="--mod-hoje" />)
+    expect(camadasDe(modulo.container)[1]).toHaveAttribute(
       'fill',
-      'color-mix(in oklab, var(--mod-hoje) 100%, transparent)',
+      'color-mix(in oklab, var(--mod-hoje) 55%, transparent)',
     )
     // Pedir três a quem tem dois devolve dois — melhor que inventar um nível.
     const outro = render(<Forma tipo="funil" niveis={3} />)

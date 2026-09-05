@@ -1058,18 +1058,23 @@ tr:hover [data-slot="monograma"] {
 /* --- abas de formulário (Dados Principais · Outros Dados …): o conteúdo da aba
    era campo solto no fundo da página. Vira PASTA: tira de abas com fundo do
    módulo, aba ativa em folha que se funde ao painel, painel com borda n-400 e
-   relevo. Só as abas horizontais; a listagem tem as próprias (abas-de-consulta). --- */
-[data-slot="tabs"][data-orientation="horizontal"] {
+   relevo. Só dentro de FORMULÁRIO/FICHA: a caixa de entrada e outras telas usam a mesma
+   peça como filtro solto, ao lado de botões — lá a pasta sem corpo colado ficava
+   órfã (medido em captura). --- */
+:is(form, [data-slot="ficha-de-cadastro"]) [data-slot="tabs"][data-orientation="horizontal"] {
   gap: 0;
 }
-[data-slot="tabs"][data-orientation="horizontal"] > [data-slot="tabs-list"] {
+:is(form, [data-slot="ficha-de-cadastro"])
+  [data-slot="tabs"][data-orientation="horizontal"]
+  > [data-slot="tabs-list"] {
   gap: 2px;
   padding: var(--s-2) var(--s-2) 0;
   background: color-mix(in oklab, var(--modulo-02, var(--n-100)) 60%, var(--n-50));
   border: 1px solid var(--n-400);
   border-radius: var(--r-panel) var(--r-panel) 0 0;
 }
-[data-slot="tabs"][data-orientation="horizontal"]
+:is(form, [data-slot="ficha-de-cadastro"])
+  [data-slot="tabs"][data-orientation="horizontal"]
   > [data-slot="tabs-list"]
   > [data-slot="tabs-trigger"] {
   margin-bottom: -1px;
@@ -1079,13 +1084,15 @@ tr:hover [data-slot="monograma"] {
   border-radius: var(--r-ctrl) var(--r-ctrl) 0 0;
   transition: background var(--dur-1, 120ms), color var(--dur-1, 120ms);
 }
-[data-slot="tabs"][data-orientation="horizontal"]
+:is(form, [data-slot="ficha-de-cadastro"])
+  [data-slot="tabs"][data-orientation="horizontal"]
   > [data-slot="tabs-list"]
   > [data-slot="tabs-trigger"]:hover {
   background: color-mix(in oklab, var(--n-900) 6%, transparent);
   color: var(--n-900) !important;
 }
-[data-slot="tabs"][data-orientation="horizontal"]
+:is(form, [data-slot="ficha-de-cadastro"])
+  [data-slot="tabs"][data-orientation="horizontal"]
   > [data-slot="tabs-list"]
   > [data-slot="tabs-trigger"][aria-selected="true"] {
   background: var(--n-0);
@@ -1094,7 +1101,9 @@ tr:hover [data-slot="monograma"] {
   font-weight: 600;
   box-shadow: 0 1px 0 0 var(--n-0), inset 0 2px 0 0 var(--lime-400);
 }
-[data-slot="tabs"][data-orientation="horizontal"] > [data-slot="tabs-content"] {
+:is(form, [data-slot="ficha-de-cadastro"])
+  [data-slot="tabs"][data-orientation="horizontal"]
+  > [data-slot="tabs-content"] {
   padding: var(--s-4);
   background: var(--n-0);
   border: 1px solid var(--n-400);
@@ -1161,8 +1170,56 @@ tr:hover [data-slot="monograma"] {
 }
 
 /* --- abas de formulário: compactas para caber numa linha --- */
-[data-slot="tabs"][data-orientation="horizontal"]
+:is(form, [data-slot="ficha-de-cadastro"])
+  [data-slot="tabs"][data-orientation="horizontal"]
   > [data-slot="tabs-list"]
   > [data-slot="tabs-trigger"] {
   padding-inline: 10px;
+}
+
+/* --- calendário (modo-calendario, agenda e visão de calendário das listagens):
+   a grade era chapada no fundo da página. Vira caixa: borda n-400, relevo,
+   cabeçalho dos dias em faixa, célula com altura e hover. --- */
+[data-slot="modo-calendario"] > div:first-child {
+  padding: var(--s-2) var(--s-3);
+  background: color-mix(in oklab, var(--n-900) 3.5%, var(--n-50));
+  border: 1px solid var(--n-300);
+  border-radius: var(--r-ctrl);
+}
+[data-slot="modo-calendario"] > div.grid {
+  border: 1px solid var(--n-400);
+  border-radius: var(--r-panel);
+  background: var(--n-300);
+  box-shadow: 3px 3px 0 0 var(--n-300), 0 12px 24px -16px
+    color-mix(in oklab, var(--n-900) 45%, transparent);
+}
+[data-slot="modo-calendario"] > div.grid > .t-rotulo {
+  padding: 8px 8px;
+  background: var(--n-100);
+  color: var(--n-700);
+}
+[data-slot="modo-calendario"] [data-slot="dia"] {
+  min-height: 96px;
+  transition: background var(--dur-1, 120ms);
+}
+[data-slot="modo-calendario"] [data-slot="dia"]:hover {
+  background: color-mix(in oklab, var(--lime-400) 8%, var(--n-0));
+}
+
+/* --- configurações: cada tela é uma LINHA do painel (hairline entre irmãs,
+   hover que acende), não um card dentro do card. --- */
+[data-slot="linha-de-config"] {
+  border: 0 !important;
+  border-radius: 0;
+  padding: 10px 14px;
+  transition: background var(--dur-1, 120ms);
+}
+[data-slot="linha-de-config"] + [data-slot="linha-de-config"] {
+  border-top: 1px solid var(--n-200) !important;
+}
+a[data-slot="linha-de-config"]:hover {
+  background: color-mix(in oklab, var(--modulo-02, var(--n-100)) 70%, var(--n-0));
+}
+a[data-slot="linha-de-config"]:hover .t-bloco {
+  color: var(--modulo-01, var(--n-900));
 }

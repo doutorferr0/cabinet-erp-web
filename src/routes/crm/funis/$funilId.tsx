@@ -2,6 +2,7 @@ import {
   ErroDeCarregamento,
   EsqueletoDeCarregamento,
 } from '@/components/cabinet/estado-de-consulta'
+import { RegistroNaoEncontrado } from '@/components/cabinet/vazio-com-saida'
 import { data } from '@/data'
 import { FunilForm } from '@/features/crm/funil-form'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
@@ -50,7 +51,7 @@ function FunilEditPage() {
   const registro = isNovo ? data.funis.empty() : query.data
 
   if (!registro) {
-    return <p className="text-muted-foreground">Funil não encontrado.</p>
+    return <RegistroNaoEncontrado titulo="Funil não encontrado." voltar="/crm/funis" />
   }
 
   return (

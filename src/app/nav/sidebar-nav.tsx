@@ -158,7 +158,9 @@ function ItemDaBarra({
         </span>
       ) : null}
       {!colapsada && contador !== undefined ? (
-        <span className="t-dado-meta shrink-0">{contador}</span>
+        <span data-contador className="t-dado-meta shrink-0">
+          {contador}
+        </span>
       ) : null}
     </>
   )
@@ -260,6 +262,7 @@ function GrupoDaBarra({
 
   return (
     <div
+      data-grupo={grupo.id}
       className="flex flex-col"
       style={{
         gap: 'var(--s-1)',

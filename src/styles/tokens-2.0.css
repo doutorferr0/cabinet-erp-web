@@ -911,6 +911,10 @@ tr:hover [data-slot="monograma"] {
 [data-slot="form-block"] {
   overflow: clip;
   border-color: var(--n-400);
+  /* fieldset nasce com min-inline-size:min-content — uma grade larga dentro
+     dele empurrava o bloco por cima da coluna vizinha (medido na ficha de
+     Produto, 1440px: a tabela de fornecedores invadia a coluna da imagem). */
+  min-inline-size: 0;
 }
 [data-slot="form-block"]:has(> [data-slot="form-block-cabecalho"]) {
   padding-top: 0;
@@ -1112,4 +1116,53 @@ tr:hover [data-slot="monograma"] {
 [data-slot="aviso-de-cobertura"] {
   border-left: 3px solid var(--warn);
   border-radius: 0 var(--r-ctrl) var(--r-ctrl) 0;
+}
+
+/* --- appbar: faixa distinta do conteúdo (fundo + hairline + sombra de 1px) --- */
+[data-slot="appbar"] {
+  background: color-mix(in oklab, var(--n-900) 3.5%, var(--n-50));
+  border-bottom: 1px solid var(--n-300);
+  box-shadow: 0 1px 0 0 color-mix(in oklab, var(--n-0) 60%, transparent), 0 4px 12px -10px
+    color-mix(in oklab, var(--n-900) 35%, transparent);
+}
+[data-slot="appbar-trilha"] li:last-child > * {
+  color: var(--n-900) !important;
+  font-weight: 600;
+}
+[data-slot="appbar"] button:hover {
+  background: color-mix(in oklab, var(--n-900) 7%, transparent);
+}
+
+/* --- grade dentro de bloco de formulário: rola na horizontal em vez de ser cortada --- */
+[data-slot="form-block"] > [data-slot="form-block-cabecalho"] + div:has(table) {
+  overflow-x: auto;
+  padding: 2px;
+  margin: calc(var(--s-4) - 2px) -2px -2px;
+}
+
+/* --- rodapé fixo do formulário: faixa que se destaca do painel que passa por baixo --- */
+[data-slot="rodape-do-formulario"] {
+  margin: 0 calc(-1 * var(--s-2));
+  padding-inline: var(--s-2);
+  background: color-mix(in oklab, var(--n-900) 3%, var(--n-50)) !important;
+  border-top: 1px solid var(--n-300) !important;
+  box-shadow: 0 -8px 16px -12px color-mix(in oklab, var(--n-900) 45%, transparent);
+  z-index: 5;
+}
+
+/* --- recentes: o item que coincide com a rota não repete a caixa lime do menu --- */
+.cabinet-nav [aria-label="Recentes"] [data-item][data-ativo="true"] {
+  background: color-mix(in oklab, var(--n-900) 5%, transparent);
+  border-color: transparent;
+  box-shadow: none;
+}
+.cabinet-nav [aria-label="Recentes"] [data-item][data-ativo="true"]::before {
+  display: none;
+}
+
+/* --- abas de formulário: compactas para caber numa linha --- */
+[data-slot="tabs"][data-orientation="horizontal"]
+  > [data-slot="tabs-list"]
+  > [data-slot="tabs-trigger"] {
+  padding-inline: 10px;
 }

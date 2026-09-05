@@ -3,6 +3,7 @@ import {
   ErroDeCarregamento,
   EsqueletoDeCarregamento,
 } from '@/components/cabinet/estado-de-consulta'
+import { RegistroNaoEncontrado } from '@/components/cabinet/vazio-com-saida'
 import { data } from '@/data'
 import { useRotulosDeApoio } from '@/data/lookups-api'
 import { FichaDeRegistro } from '@/features/cadastro/ficha-de-registro'
@@ -51,7 +52,12 @@ function ColaboradorEditPage() {
   }
 
   if (!registro) {
-    return <p className="text-muted-foreground">Colaborador não encontrado.</p>
+    return (
+      <RegistroNaoEncontrado
+        titulo="Colaborador não encontrado."
+        voltar="/cadastros/colaboradores"
+      />
+    )
   }
 
   // `Consul.` mostra a FICHA, não o formulário desabilitado (issue #103): ler é

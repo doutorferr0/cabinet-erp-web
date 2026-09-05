@@ -61,18 +61,25 @@ export function PaginaDeAuth({
 
         {/* Sangra pela direita de propósito: forma cortada pela borda lê como
             textura da bancada, forma inteira e centrada leria como ilustração. */}
+        {/* SEM preenchimento (regra da marca, user 2026-09-03: a casa é contorno,
+            "pode ser mais grossa ou mais fina a linha, mas é esta forma" — nunca
+            fill). O tint por opacidade que a D35 pôs aqui pintava a marca
+            inteira de chartreuse e verde. O acento desta tela é o grifo do
+            claim, e só ele. */}
         <Forma
           tipo="casa"
           niveis={3}
           tamanho={360}
-          tint="--mod-hoje"
-          className="pointer-events-none absolute top-20 -right-16 text-[color:var(--n-900)] opacity-90"
+          className="pointer-events-none absolute top-20 -right-16 text-[color:var(--n-900)] opacity-80"
         />
 
         {/* `mt-auto` no GRUPO: claim e rodapé fecham a coluna juntos, e a
             distância entre eles é gap — irmão não carrega margem própria. */}
         <div className="relative mt-auto flex flex-col gap-6">
-          <h2 className="t-display max-w-[26ch]">
+          {/* 1.2 e não o 1.05 do degrau: o grifo pinta a ÁREA DE CONTEÚDO do
+              inline (~1.2em), que com entrelinha 1.05 invade a linha de cima e
+              come o descendente do "p" de "pedido" (medido em captura). */}
+          <h2 className="t-display max-w-[26ch]" style={{ lineHeight: 1.2 }}>
             Do pedido à entrega,{' '}
             {/* O grifo é FUNDO com tinta por cima, e não texto colorido: em
                 chartreuse o texto reprova contraste. O mockup risca só a faixa

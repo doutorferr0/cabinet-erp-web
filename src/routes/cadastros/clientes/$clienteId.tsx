@@ -2,6 +2,7 @@ import {
   ErroDeCarregamento,
   EsqueletoDeCarregamento,
 } from '@/components/cabinet/estado-de-consulta'
+import { RegistroNaoEncontrado } from '@/components/cabinet/vazio-com-saida'
 import { useRotulosDeApoio } from '@/data/lookups-api'
 import { FichaDeRegistro } from '@/features/cadastro/ficha-de-registro'
 import { camposDoContrato, cliente as esquema } from '@/features/cadastro/modulos'
@@ -51,7 +52,7 @@ function ClienteEditPage() {
   }
 
   if (!registro) {
-    return <p className="text-muted-foreground">Cliente não encontrado.</p>
+    return <RegistroNaoEncontrado titulo="Cliente não encontrado." voltar="/cadastros/clientes" />
   }
 
   // O vínculo pai/filho vale para a tela inteira e não pertence a aba nenhuma:

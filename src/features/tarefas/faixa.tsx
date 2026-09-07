@@ -33,7 +33,10 @@ import { type ApuracaoDoQuadro, apurarQuadro, hojeISO } from './apuracao'
 export function FaixaDoQuadro({
   tarefas,
   hoje = hojeISO(),
-}: { tarefas: readonly TaskDto[]; hoje?: string }) {
+}: {
+  tarefas: readonly TaskDto[]
+  hoje?: string
+}) {
   const apuracao = apurarQuadro(tarefas, hoje)
   const carga = cargaPorPessoa([...tarefas])
 

@@ -1,8 +1,8 @@
+import { screen } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { AbasSemCaptura } from '@/components/cabinet/abas-sem-captura'
 import { Tabs } from '@/components/ui/tabs'
 import { renderWithQuery } from '@/test/utils'
-import { screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 describe('AbasSemCaptura', () => {
   it('renderiza a aba capturada e as abas ainda sem transcrição', async () => {

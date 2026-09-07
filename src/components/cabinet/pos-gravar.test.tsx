@@ -1,8 +1,8 @@
+import { screen, waitFor } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import { posGravar } from '@/components/cabinet/pos-gravar'
 import { parceiro, servidorDeParceiros } from '@/test/parceiros'
 import { renderRoute } from '@/test/utils'
-import { screen, waitFor } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
 
 /**
  * O DESTINO PÓS-GRAVAR É DETERMINÍSTICO (issue #405).

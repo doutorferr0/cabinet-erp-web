@@ -1,18 +1,18 @@
+import { useQueryClient } from '@tanstack/react-query'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { CircleCheck, Hash, IdCard, User } from 'lucide-react'
+import { useState } from 'react'
 import type { PartnerDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import type { OpcaoDeAgrupamento } from '@/components/cabinet/data-table'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
 import { useReadOnlyPorPapel } from '@/data/papeis'
 import { useDesativarParceiro } from '@/data/parceiros-api'
 import { cliente as esquemaCliente } from '@/features/cadastro/modulos'
 import { type CampoFiltravel, somenteDigitos } from '@/lib/filtro-de-consulta'
-import { useQueryClient } from '@tanstack/react-query'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import type { ColumnDef } from '@tanstack/react-table'
-import { CircleCheck, Hash, IdCard, User } from 'lucide-react'
-import { useState } from 'react'
 
 export const Route = createFileRoute('/cadastros/clientes/')({
   component: ClientesPage,

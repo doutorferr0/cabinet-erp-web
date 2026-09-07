@@ -1,17 +1,17 @@
-import { VitraDataTable } from '@/components/cabinet/data-table'
-import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
-import type { TableQueryState } from '@/lib/table-query'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
-  RouterProvider,
   createMemoryHistory,
   createRootRoute,
   createRoute,
   createRouter,
+  RouterProvider,
 } from '@tanstack/react-router'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { VitraDataTable } from '@/components/cabinet/data-table'
+import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
+import type { TableQueryState } from '@/lib/table-query'
 
 /**
  * A CONSULTA NO ENDEREÇO, contra um router de VERDADE (#199).

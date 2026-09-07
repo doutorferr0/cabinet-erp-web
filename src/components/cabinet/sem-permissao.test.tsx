@@ -1,9 +1,9 @@
+import { screen } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { ErroDeCarregamento } from '@/components/cabinet/estado-de-consulta'
 import { SemPermissao } from '@/components/cabinet/sem-permissao'
 import { ErroDaApi } from '@/data/api-provider'
 import { renderWithQuery } from '@/test/utils'
-import { screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 /** O 403 do contrato, como a fronteira o entrega às telas. */
 function erro403(detail?: string) {

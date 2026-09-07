@@ -1,7 +1,7 @@
-import { ModoKanban } from '@/components/cabinet/listagem/modo-kanban'
-import { renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import { ModoKanban } from '@/components/cabinet/listagem/modo-kanban'
+import { renderWithQuery } from '@/test/utils'
 
 interface Linha {
   id: string

@@ -1,3 +1,4 @@
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import {
   ErroDeCarregamento,
   EsqueletoDeCarregamento,
@@ -17,7 +18,6 @@ import { usarParceiro } from '@/features/parceiro/usar-parceiro'
 import { PainelDeAtividades } from '@/features/tarefas/painel-atividades'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import type { Cliente } from '@/mocks/clientes'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/cadastros/clientes/$clienteId')({
   component: ClienteEditPage,

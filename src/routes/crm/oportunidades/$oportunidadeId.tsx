@@ -1,3 +1,5 @@
+import { useQuery } from '@tanstack/react-query'
+import { createFileRoute } from '@tanstack/react-router'
 import {
   ErroDeCarregamento,
   EsqueletoDeCarregamento,
@@ -7,8 +9,6 @@ import { OportunidadeForm } from '@/features/crm/oportunidade-form'
 import { StepperDeEtapas } from '@/features/crm/stepper-de-etapas'
 import { PainelDeAtividades } from '@/features/tarefas/painel-atividades'
 import { isConsulta } from '@/lib/modo-consulta'
-import { useQuery } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
 
 /**
  * `funilId`/`etapaId` na busca: o quadro sabe de qual coluna o operador clicou

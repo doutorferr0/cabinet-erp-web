@@ -1,11 +1,11 @@
+import { Link } from '@tanstack/react-router'
+import { ExternalLink } from 'lucide-react'
 import type { NavGroup, NavItem } from '@/app/navigation'
 import { secoesVisiveis } from '@/app/navigation'
 import { PageHeader } from '@/components/cabinet/page-header'
 import { Painel } from '@/components/cabinet/painel'
 import { Stamp } from '@/components/cabinet/stamp'
 import { useRecursosDaEmpresa } from '@/data/recursos-da-empresa'
-import { Link } from '@tanstack/react-router'
-import { ExternalLink } from 'lucide-react'
 
 /**
  * Uma linha do painel: o nome da tela em cima, o que ela FAZ embaixo.

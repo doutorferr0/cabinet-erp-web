@@ -1,10 +1,10 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
+import { screen } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { data } from '@/data'
 import { stubDeColaboradores } from '@/test/colaboradores'
 import { renderRoute } from '@/test/utils'
-import { screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 /**
  * A GUARDA DO "DADOS DE EXEMPLO" — nenhuma tela serve fixture calada.

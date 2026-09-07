@@ -1,3 +1,4 @@
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import {
   ErroDeCarregamento,
   EsqueletoDeCarregamento,
@@ -17,7 +18,6 @@ import { ProfissionalForm } from '@/features/profissional/profissional-form'
 import { PainelDeAtividades } from '@/features/tarefas/painel-atividades'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import type { Profissional } from '@/mocks/profissionais'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/cadastros/profissionais/$profissionalId')({
   component: ProfissionalEditPage,

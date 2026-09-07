@@ -1,11 +1,11 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ActivityDto } from '@/api/gerado'
 import { PainelDeAtividades } from '@/features/tarefas/painel-atividades'
 import { diaLocalISO } from '@/lib/datas'
 import { parceiro, stubDeParceiros } from '@/test/parceiros'
 import { instalarServidor, json } from '@/test/servidor'
 import { renderRoute, renderWithQuery } from '@/test/utils'
-import { screen, waitFor, within } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * O painel contra servidor falso, pelo cliente gerado.

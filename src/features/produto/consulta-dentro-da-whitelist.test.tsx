@@ -1,7 +1,7 @@
-import { ORDENAVEIS } from '@/data/produtos-api'
-import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { ORDENAVEIS } from '@/data/produtos-api'
+import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 
 /**
  * GUARDA: a tela não pode oferecer consulta que o servidor recusa.

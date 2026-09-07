@@ -1,5 +1,5 @@
-import { contraste, paleta, razao, resolver, sobre } from '@/test/cor-do-css'
 import { describe, expect, it } from 'vitest'
+import { contraste, paleta, razao, resolver, sobre } from '@/test/cor-do-css'
 import { MODULOS_COR } from './modulo-cores'
 
 /**

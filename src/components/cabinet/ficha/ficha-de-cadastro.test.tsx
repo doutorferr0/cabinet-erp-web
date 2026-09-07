@@ -1,9 +1,9 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { colaborador as esquemaColaborador } from '@/features/cadastro/modulos'
 import { ID_DO_COLABORADOR, stubDeColaboradores } from '@/test/colaboradores'
 import { parceiro, servidorDeParceiros } from '@/test/parceiros'
 import { renderRoute } from '@/test/utils'
-import { screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 /**
  * A FICHA LIGADA NA ROTA (issue #103) — pelas rotas de verdade, não pelo

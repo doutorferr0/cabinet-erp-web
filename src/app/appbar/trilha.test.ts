@@ -1,6 +1,6 @@
+import { describe, expect, it } from 'vitest'
 import { secaoDaRota, trilhaDaRota } from '@/app/appbar/trilha'
 import { secoesVisiveis } from '@/app/navigation'
-import { describe, expect, it } from 'vitest'
 
 /** A empresa que opera tudo — a trilha é da TAXONOMIA, não do recurso. */
 const secoes = secoesVisiveis(() => true)

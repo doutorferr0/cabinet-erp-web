@@ -1,3 +1,4 @@
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { AvisoDadosDeExemplo } from '@/components/cabinet/aviso-dados-de-exemplo'
 import {
   ErroDeCarregamento,
@@ -14,7 +15,6 @@ import { resumoDoColaborador } from '@/features/colaborador/ficha-resumo'
 import { usarColaborador } from '@/features/colaborador/usar-colaborador'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import type { Colaborador } from '@/mocks/colaboradores'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/cadastros/colaboradores/$colaboradorId')({
   component: ColaboradorEditPage,

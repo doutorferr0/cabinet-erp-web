@@ -1,8 +1,8 @@
-import { instalarServidor } from '@/test/servidor'
-import { type FetchStub, renderRoute } from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { instalarServidor } from '@/test/servidor'
+import { type FetchStub, renderRoute } from '@/test/utils'
 
 /**
  * O RODAPÉ da sidebar mostra a empresa ATIVA da sessão, que vem do backend.

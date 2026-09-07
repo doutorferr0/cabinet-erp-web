@@ -1,3 +1,4 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
   AgendaEventDto,
   DashboardSummaryDto,
@@ -16,8 +17,7 @@ import {
   patchTask,
   patchTodo,
 } from '@/api/gerado'
-import { type RespostaDaApi, dadosOuErro, repetirSeValeAPena } from '@/data/api-provider'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { dadosOuErro, type RespostaDaApi, repetirSeValeAPena } from '@/data/api-provider'
 
 /**
  * FRONTEIRA DO DASHBOARD — resumo, agenda, quadro de tarefas e lista A fazer.
@@ -167,20 +167,6 @@ export function agruparPorColuna(tarefas: TaskDto[]): Record<TaskDtoStatus, Task
     vazio[tarefa.status]?.push(tarefa)
   }
   return vazio
-}
-
-/**
- * Variação percentual do mês contra o anterior, arredondada ao inteiro.
- *
- * `null` quando o mês anterior foi ZERO: não existe "cresceu 100%" sobre base
- * zero, e qualquer número ali seria invenção — a tela mostra o valor sem
- * comparação.
- */
-export function variacaoDoMes(resumo: DashboardSummaryDto): number | null {
-  if (resumo.previousMonthSalesCents === 0) return null
-  const razao =
-    (resumo.monthSalesCents - resumo.previousMonthSalesCents) / resumo.previousMonthSalesCents
-  return Math.round(razao * 100)
 }
 
 /**

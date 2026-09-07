@@ -1,17 +1,17 @@
+import { createFileRoute } from '@tanstack/react-router'
+import { Plus } from 'lucide-react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import type { CrmLostReasonDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { motivosDePerda, useAlterarMotivoDePerda, useCriarMotivoDePerda } from '@/data/crm-api'
 import { useReadOnlyPorPapel } from '@/data/papeis'
 import { CelulaEditavel } from '@/features/crm/celula-editavel'
-import { createFileRoute } from '@tanstack/react-router'
-import type { ColumnDef } from '@tanstack/react-table'
-import { Plus } from 'lucide-react'
-import { useCallback, useMemo, useRef, useState } from 'react'
 
 export const Route = createFileRoute('/crm/motivos')({
   component: MotivosPage,

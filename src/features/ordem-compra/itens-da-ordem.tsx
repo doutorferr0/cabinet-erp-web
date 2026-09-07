@@ -1,3 +1,6 @@
+import { List } from 'lucide-react'
+import { useState } from 'react'
+import { useWatch } from 'react-hook-form'
 import {
   AcaoDoRodape,
   type FonteDeItens,
@@ -13,9 +16,6 @@ import {
 } from '@/data/compras-api'
 import { tabelas } from '@/data/tabelas'
 import { formatDateBR, formatMoneyBRL, formatPercent, parseQuantidade } from '@/lib/formatters'
-import { List } from 'lucide-react'
-import { useState } from 'react'
-import { useWatch } from 'react-hook-form'
 import { type LinhaNoFormulario, linhaParaFormulario } from './ordem-compra-form'
 
 /**

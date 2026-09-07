@@ -1,6 +1,6 @@
+import { describe, expect, it } from 'vitest'
 import { ErroDaApi } from '@/data/api-provider'
 import {
-  TIPOS_DE_PROBLEMA,
   detalheDoErro,
   ehErroDePapelInsuficiente,
   ehErroDeSemVinculoComEmpresa,
@@ -8,10 +8,10 @@ import {
   ehSemPermissao,
   mensagemDaRecusa,
   mensagemDoErro,
+  TIPOS_DE_PROBLEMA,
   tipoDoErro,
   typeDoErro,
 } from '@/lib/erros'
-import { describe, expect, it } from 'vitest'
 
 function erroApi(status: number, corpo: Record<string, unknown>) {
   return new ErroDaApi(corpo.detail as string, status, corpo.detail as string, corpo)

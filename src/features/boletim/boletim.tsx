@@ -1,3 +1,5 @@
+import { useQuery } from '@tanstack/react-query'
+import { Link } from '@tanstack/react-router'
 import { rotaLiberada } from '@/app/navigation'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
 import { FaixaDeKpi, KpiTile } from '@/components/cabinet/kpi-tile'
@@ -15,16 +17,14 @@ import {
 } from '@/components/ui/table'
 import {
   type Boletim,
+  fetchBoletim,
   type LinhaCadastro,
   type LinhaMovimento,
   type LinhaOrdemSemEnvio,
-  fetchBoletim,
 } from '@/data/boletim'
 import { useRecursosDaEmpresa } from '@/data/recursos-da-empresa'
 import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
-import { useQuery } from '@tanstack/react-query'
-import { Link } from '@tanstack/react-router'
 
 /**
  * BOLETIM — tela de entrada (`/`). REFACE 2026-08-09: skin "moldura colorida

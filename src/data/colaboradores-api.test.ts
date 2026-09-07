@@ -1,3 +1,4 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ErroDaApi } from '@/data/api-provider'
 import {
   atualizarColaborador,
@@ -12,7 +13,6 @@ import { ehErroDePapelInsuficiente } from '@/lib/erros'
 import { colaboradorVazio } from '@/mocks/colaboradores'
 import { instalarServidor, json, problema } from '@/test/servidor'
 import { tableState } from '@/test/utils'
-import { afterEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * Contrato da fronteira de colaboradores — o ÚLTIMO cadastro a sair do mock.

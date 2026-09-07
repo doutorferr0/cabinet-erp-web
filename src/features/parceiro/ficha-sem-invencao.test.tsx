@@ -1,7 +1,7 @@
-import { parceiro } from '@/test/parceiros'
-import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { parceiro } from '@/test/parceiros'
+import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 
 /**
  * O QUE O BACKEND DE VERDADE REVELOU (2026-08-18, par local ligado).

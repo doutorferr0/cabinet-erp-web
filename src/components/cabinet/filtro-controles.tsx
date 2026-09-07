@@ -1,17 +1,17 @@
+import { ChevronsUpDown } from 'lucide-react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Command, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverTrigger } from '@/components/ui/popover'
 import {
   type CampoFiltravel,
+  dispensaValor,
   type FiltroDaTabela,
   type OperadorDeFiltro,
-  dispensaValor,
   operadoresDaVariante,
 } from '@/lib/filtro-de-consulta'
 import { cn } from '@/lib/utils'
-import { ChevronsUpDown } from 'lucide-react'
-import { useState } from 'react'
 
 /**
  * Peças de UMA linha de filtro: campo, operador e valor.

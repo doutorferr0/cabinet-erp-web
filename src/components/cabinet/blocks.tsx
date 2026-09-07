@@ -1,12 +1,14 @@
+import { Search } from 'lucide-react'
+import { Fragment } from 'react'
+import { useFormContext } from 'react-hook-form'
 import { CampoComBusca } from '@/components/cabinet/campo-com-busca'
 import { TextField } from '@/components/cabinet/form-controls'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { fetchCep, maskCep } from '@/mocks/ceps'
-import { Search } from 'lucide-react'
-import { Fragment } from 'react'
-import { useFormContext } from 'react-hook-form'
+import { buscarCep as buscarCepNoServidor } from '@/data/cep-api'
+import { avisar } from '@/lib/avisos'
+import { formatarCep } from '@/lib/cep'
 
 /**
  * Blocos compartilhados da transcrição (§9 convenções globais).
@@ -51,14 +53,21 @@ export function EnderecoBlock({
 
   async function buscarCep() {
     const cep = (watch(`${prefix}.cep`) as string | null) ?? ''
-    const result = await fetchCep(cep)
-    if (!result) return
-    setValue(`${prefix}.cep`, result.cep, { shouldDirty: true })
-    setValue(`${prefix}.logradouro`, result.logradouro, { shouldDirty: true })
-    setValue(`${prefix}.bairro`, result.bairro, { shouldDirty: true })
-    setValue(`${prefix}.cidadeCodigo`, result.cidadeCodigo, { shouldDirty: true })
-    setValue(`${prefix}.cidadeNome`, result.cidadeNome, { shouldDirty: true })
-    setValue(`${prefix}.uf`, result.uf, { shouldDirty: true })
+    try {
+      const result = await buscarCepNoServidor(cep)
+      if (!result) {
+        avisar('CEP não encontrado na base disponível.', undefined, 'warn')
+        return
+      }
+      setValue(`${prefix}.cep`, formatarCep(result.zipCode ?? ''), { shouldDirty: true })
+      setValue(`${prefix}.logradouro`, result.street ?? '', { shouldDirty: true })
+      setValue(`${prefix}.bairro`, result.district ?? '', { shouldDirty: true })
+      setValue(`${prefix}.cidadeCodigo`, null, { shouldDirty: true })
+      setValue(`${prefix}.cidadeNome`, result.city ?? '', { shouldDirty: true })
+      setValue(`${prefix}.uf`, result.state, { shouldDirty: true })
+    } catch {
+      avisar('Não foi possível consultar o CEP agora.', undefined, 'warn')
+    }
   }
 
   return (
@@ -75,7 +84,7 @@ export function EnderecoBlock({
             {...register(`${prefix}.cep`)}
             value={watch(`${prefix}.cep`) ?? ''}
             onChange={(e) =>
-              setValue(`${prefix}.cep`, maskCep(e.target.value), { shouldDirty: true })
+              setValue(`${prefix}.cep`, formatarCep(e.target.value), { shouldDirty: true })
             }
           />
           <Button

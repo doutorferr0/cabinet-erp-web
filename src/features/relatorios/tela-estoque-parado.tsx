@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { StockAgingRowDto } from '@/api/gerado'
 import { useDepositos } from '@/data/estoque-api'
 import { useLookupOptions } from '@/data/lookups-api'
@@ -8,9 +9,9 @@ import {
 } from '@/data/relatorios-api'
 import {
   type AgrupamentoDeRelatorio,
-  type TomDeRelatorio,
   numeroDaQuantidade,
   somar,
+  type TomDeRelatorio,
 } from '@/features/relatorios/agrupamento'
 import {
   type ColunaDeRelatorio,
@@ -23,7 +24,6 @@ import {
   TETO_DE_PAGINA,
 } from '@/features/relatorios/moldura-de-relatorio'
 import { formatDateBR, formatInstanteBR, formatMoneyBRL, formatQuantidade } from '@/lib/formatters'
-import { useState } from 'react'
 
 /**
  * ESTOQUE PARADO — `GET /api/reports/stock-aging`.

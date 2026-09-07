@@ -1,3 +1,4 @@
+import { type ReactNode, useState } from 'react'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import { ConfirmarDesativacao } from '@/components/cabinet/confirmar-desativacao'
 import { Button } from '@/components/ui/button'
@@ -11,7 +12,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
-import { type ReactNode, useState } from 'react'
 
 /**
  * TABELA EDITÁVEL — o cadastro pequeno que não merece uma ficha.

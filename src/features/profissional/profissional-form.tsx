@@ -1,3 +1,7 @@
+import { useNavigate } from '@tanstack/react-router'
+import { useState } from 'react'
+import { useFormContext } from 'react-hook-form'
+import { z } from 'zod'
 import { EnderecoBlock } from '@/components/cabinet/blocks'
 import { BuscaDeCidade } from '@/components/cabinet/busca-de-cidade'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
@@ -9,6 +13,7 @@ import {
 } from '@/components/cabinet/campos-do-modulo'
 import { FormBlock } from '@/components/cabinet/form-block'
 import { TextField } from '@/components/cabinet/form-controls'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
 import { Input } from '@/components/ui/input'
 import { data } from '@/data'
@@ -16,11 +21,6 @@ import { camposDe, profissional as esquema, propsDoIcone } from '@/features/cada
 import { ContatosDoParceiro } from '@/features/parceiro/contatos-do-parceiro'
 import type { Banco } from '@/mocks/bancos'
 import type { Profissional } from '@/mocks/profissionais'
-import { useNavigate } from '@tanstack/react-router'
-import type { ColumnDef } from '@tanstack/react-table'
-import { useState } from 'react'
-import { useFormContext } from 'react-hook-form'
-import { z } from 'zod'
 
 const enderecoSchema = z.object({
   cep: z.string(),
@@ -80,7 +80,10 @@ type PrefixoCidade = 'endereco' | 'enderecoBanco'
 function BuscaCidade({
   prefix,
   onOpenChange,
-}: { prefix: PrefixoCidade | null; onOpenChange: (p: PrefixoCidade | null) => void }) {
+}: {
+  prefix: PrefixoCidade | null
+  onOpenChange: (p: PrefixoCidade | null) => void
+}) {
   const { setValue } = useFormContext<Profissional>()
   return (
     <BuscaDeCidade

@@ -1,5 +1,5 @@
-import { renderWithQuery } from '@/test/utils'
 import { describe, expect, it } from 'vitest'
+import { renderWithQuery } from '@/test/utils'
 import { Selo } from './selo'
 
 // 2.0 (D3, #505): Selo passou a ser um Badge — sem papel por baixo nem elevação por tamanho;

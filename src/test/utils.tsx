@@ -1,18 +1,18 @@
-import { configurarApi } from '@/api/cliente'
-import { Providers } from '@/app/providers'
-import { opcoesDoRouter } from '@/app/router'
-import { VOCABULARIO_DE_APOIO } from '@/mocks/lookups'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
   type AnyRouter,
-  RouterProvider,
   createMemoryHistory,
   createRouter,
+  RouterProvider,
 } from '@tanstack/react-router'
 import { type RenderResult, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactElement } from 'react'
 import { vi } from 'vitest'
+import { configurarApi } from '@/api/cliente'
+import { Providers } from '@/app/providers'
+import { opcoesDoRouter } from '@/app/router'
+import { VOCABULARIO_DE_APOIO } from '@/mocks/lookups'
 
 /**
  * Utilidades de teste compartilhadas.

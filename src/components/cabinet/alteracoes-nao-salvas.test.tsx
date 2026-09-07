@@ -1,9 +1,9 @@
+import { screen, waitFor } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import { useAutosave } from '@/components/cabinet/alteracoes-nao-salvas'
 import { IndicadorDeGravacao } from '@/components/cabinet/documento'
 import { ID_DO_COLABORADOR, stubDeColaboradores } from '@/test/colaboradores'
 import { renderRoute, renderWithQuery } from '@/test/utils'
-import { screen, waitFor } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
 
 /**
  * Teste de ROTA e não de componente isolado, e isso é parte do que ele afirma:

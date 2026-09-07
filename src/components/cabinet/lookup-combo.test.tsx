@@ -1,11 +1,11 @@
-import { configurarApi } from '@/api/cliente'
-import { LookupCombo } from '@/components/cabinet/lookup-combo'
-import { instalarServidor, json, problema } from '@/test/servidor'
-import { renderWithQuery } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { configurarApi } from '@/api/cliente'
+import { LookupCombo } from '@/components/cabinet/lookup-combo'
+import { instalarServidor, json, problema } from '@/test/servidor'
+import { renderWithQuery } from '@/test/utils'
 
 /**
  * As opções vêm do backend (ADR-011, endpoint `/api/catalog-lookups`).

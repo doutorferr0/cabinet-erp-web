@@ -1,8 +1,8 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { atalhosDoModulo } from '@/components/cabinet/hub-de-modulo'
 import { instalarServidor } from '@/test/servidor'
 import { type FetchStub, renderRoute } from '@/test/utils'
-import { screen, waitFor, within } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * O HUB é a rota-índice de quatro módulos — e o que ele mostra é a taxonomia,

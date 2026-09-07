@@ -1,3 +1,6 @@
+import { useBlocker } from '@tanstack/react-router'
+import { Check, Undo2 } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Ornamento } from '@/components/cabinet/ornamento'
 import {
   AlertDialog,
@@ -10,9 +13,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
-import { useBlocker } from '@tanstack/react-router'
-import { Check, Undo2 } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
 
 export interface AlteracoesNaoSalvasProps {
   /** Gravação em curso: o `Gravar` da barra desabilita junto com o do rodapé. */

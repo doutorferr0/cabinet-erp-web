@@ -1,3 +1,4 @@
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { ParDoCartao } from '@/components/cabinet/cartao-lateral'
 import {
   ErroDeCarregamento,
@@ -19,7 +20,6 @@ import { usarParceiro } from '@/features/parceiro/usar-parceiro'
 import { PainelDeAtividades } from '@/features/tarefas/painel-atividades'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import type { Fornecedor } from '@/mocks/fornecedores'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/cadastros/fornecedores/$fornecedorId')({
   component: FornecedorEditPage,

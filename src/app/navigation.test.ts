@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest'
 import { moduloDaRota } from '@/app/modulo'
 import {
   destinoDaSecao,
@@ -9,7 +10,6 @@ import {
   secoesVisiveis,
 } from '@/app/navigation'
 import { RECURSOS, type RecursoDaEmpresa } from '@/data/recursos-da-empresa'
-import { describe, expect, it } from 'vitest'
 
 /** `tem` de uma empresa que opera exatamente os recursos listados. */
 function empresaCom(...recursos: RecursoDaEmpresa[]) {

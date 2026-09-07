@@ -1,13 +1,13 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import type userEvent from '@testing-library/user-event'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { VitraDataTable } from '@/components/cabinet/data-table'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { ErroDaApi } from '@/data/api-provider'
 import { createMockListProvider, normalize } from '@/data/provider'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import { type Produto, produtos } from '@/mocks/produtos'
 import { renderWithQuery } from '@/test/utils'
-import type { ColumnDef } from '@tanstack/react-table'
-import { screen, waitFor, within } from '@testing-library/react'
-import type userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it } from 'vitest'
 
 /**
  * Provider LOCAL sobre o mock de produtos.

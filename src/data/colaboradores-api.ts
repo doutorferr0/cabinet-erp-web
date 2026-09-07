@@ -1,10 +1,10 @@
 import type { EmployeeDetailDto, EmployeeDto, EmployeeWriteRequest } from '@/api/gerado'
 import { createEmployee, getEmployee, updateEmployee } from '@/api/gerado'
 import {
-  type RespostaDaApi,
   createApiListProvider,
   dadosOuErro,
   itemOuNulo,
+  type RespostaDaApi,
 } from '@/data/api-provider'
 import type { DocumentoProvider, ListProvider } from '@/data/provider'
 import { type Colaborador, colaboradorVazio } from '@/mocks/colaboradores'

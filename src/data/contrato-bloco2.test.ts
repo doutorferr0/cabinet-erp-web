@@ -1,9 +1,9 @@
+import { describe, expect, it } from 'vitest'
 import {
   FILTRAVEIS as FILTRAVEIS_DO_PARCEIRO,
   ORDENAVEIS as ORDENAVEIS_DO_PARCEIRO,
 } from '@/data/parceiros-api'
 import { FILTRAVEIS, ORDENAVEIS } from '@/mocks/api/obras'
-import { describe, expect, it } from 'vitest'
 import contrato from '../../contracts/openapi-v1.json'
 
 /**

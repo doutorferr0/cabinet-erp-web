@@ -1,3 +1,7 @@
+import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine'
+import { draggable, dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
+import { LayoutGrid, MoreHorizontal } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import type { VisaoDaListagem } from '@/components/cabinet/data-table'
 import { Button } from '@/components/ui/button'
 import {
@@ -8,10 +12,6 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
-import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine'
-import { draggable, dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
-import { LayoutGrid, MoreHorizontal } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
 
 /**
  * MODO KANBAN — a listagem desenhada como quadro, sem ser tela própria.

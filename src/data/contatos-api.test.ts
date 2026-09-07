@@ -1,3 +1,4 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { PartnerContactDto } from '@/api/gerado'
 import {
   type ContatoDaGrade,
@@ -8,7 +9,6 @@ import {
   sincronizarContatos,
 } from '@/data/contatos-api'
 import { instalarServidor, json, problema } from '@/test/servidor'
-import { afterEach, describe, expect, it, vi } from 'vitest'
 import contrato from '../../contracts/openapi-v1.json'
 
 /**

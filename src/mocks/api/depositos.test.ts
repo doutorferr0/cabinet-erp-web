@@ -1,3 +1,5 @@
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { configurarApi } from '@/api/cliente'
 import {
   authLogin,
@@ -10,10 +12,8 @@ import {
   listStockLocations,
   updateStockLocation,
 } from '@/api/gerado'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { handlers } from './handlers'
-import { TENANT_FILIAL, TENANT_MATRIZ, resetStore, store } from './store'
+import { resetStore, store, TENANT_FILIAL, TENANT_MATRIZ } from './store'
 
 /**
  * O MOCK DOS DEPÓSITOS — a dimensão que faltava no estoque (contrato #291).

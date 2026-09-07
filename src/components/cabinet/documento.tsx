@@ -1,13 +1,13 @@
+import { type ReactNode, useEffect, useState } from 'react'
+import { useWatch } from 'react-hook-form'
 import type { EstadoDoAutosave } from '@/components/cabinet/alteracoes-nao-salvas'
 import { Badge, type TomDeBadge } from '@/components/cabinet/badge'
 import type { FormGridTotalRow } from '@/components/cabinet/form-grid'
 import { type AcaoDeCabecalho, PageHeader } from '@/components/cabinet/page-header'
 import { TotalBox } from '@/components/cabinet/total-box'
 import { Button } from '@/components/ui/button'
-import { PERCENT_ESCALA, formatMoneyBRL } from '@/lib/formatters'
+import { formatMoneyBRL, PERCENT_ESCALA } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
-import { type ReactNode, useEffect, useState } from 'react'
-import { useWatch } from 'react-hook-form'
 
 /**
  * Documento = cabeçalho do registro + principal/lateral (mockup 2.0, aba

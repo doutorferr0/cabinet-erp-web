@@ -1,6 +1,6 @@
-import { Andamento, type EventoDeAndamento } from '@/components/cabinet/andamento'
 import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { Andamento, type EventoDeAndamento } from '@/components/cabinet/andamento'
 
 /**
  * ANDAMENTO (Reface 2.0, D18) — o que a peça promete é dizer ONDE o documento

@@ -1,6 +1,6 @@
 import { paraEscrita } from '@/data/quotes-api'
-import { linhaPassaNosFiltros } from '@/lib/filtro-de-consulta'
 import type { FiltroDaTabela, Juncao } from '@/lib/filtro-de-consulta'
+import { linhaPassaNosFiltros } from '@/lib/filtro-de-consulta'
 import { POLITICA_PADRAO } from '@/mocks/api/pagamento'
 import { orcamentos } from '@/mocks/orcamentos'
 import { json, problema } from '@/test/servidor'

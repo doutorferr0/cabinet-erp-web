@@ -1,7 +1,7 @@
-import { Campo } from '@/components/cabinet/campo'
-import { Button } from '@/components/ui/button'
 import { Search } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { Campo } from '@/components/cabinet/campo'
+import { Button } from '@/components/ui/button'
 
 export interface CampoComBuscaProps {
   label?: string

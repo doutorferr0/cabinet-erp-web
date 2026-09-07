@@ -1,4 +1,4 @@
-import { type NavSecao, destinoDaSecao, itemDaRota } from '@/app/navigation'
+import { destinoDaSecao, itemDaRota, type NavSecao } from '@/app/navigation'
 
 /**
  * Um degrau da trilha. Sem `url` = é o lugar onde o operador está (o último),

@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest'
 import { ORDENAVEIS_ATIVIDADE } from '@/data/atividades-api'
 import {
   ORDENAVEIS_FAIXA,
@@ -79,7 +80,6 @@ import {
   ORDENAVEIS_CONCESSAO as ORDENAVEIS_CONCESSAO_MOCK,
   ORDENAVEIS_TRILHA as ORDENAVEIS_TRILHA_MOCK,
 } from '@/mocks/api/suporte'
-import { describe, expect, it } from 'vitest'
 import contrato from '../../contracts/openapi-v1.json'
 
 /**

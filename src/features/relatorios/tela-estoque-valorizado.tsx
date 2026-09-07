@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { StockValuationRowDto } from '@/api/gerado'
 import { useDepositos } from '@/data/estoque-api'
 import { useLookupOptions } from '@/data/lookups-api'
@@ -22,7 +23,6 @@ import {
   TETO_DE_PAGINA,
 } from '@/features/relatorios/moldura-de-relatorio'
 import { formatInstanteBR, formatMoneyBRL, formatQuantidade } from '@/lib/formatters'
-import { useState } from 'react'
 
 /**
  * ESTOQUE VALORIZADO — `GET /api/reports/stock-valuation`.

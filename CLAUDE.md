@@ -65,10 +65,37 @@ especificação de **entrada** que o backend precisa implementar, não cópia qu
 ## Stack (decidida — NÃO trocar sem confirmação do user)
 - **Vite + React 19 + TypeScript strict** · SPA
 - **Tailwind v4 + shadcn/ui** (copy-paste, sem runtime dep de UI kit)
-- **TanStack Query v5** (estado servidor) · **TanStack Table v8** · **TanStack Router** (adotado; rotas em `src/routes/`, árvore gerada em `src/routeTree.gen.ts`)
+- **TanStack Query v5** (estado servidor) · **TanStack Table v9** · **TanStack Router** (adotado; rotas em `src/routes/`, árvore gerada em `src/routeTree.gen.ts`)
 - **Orval** (codegen do contrato: tipos + hooks TanStack + Zod + handlers MSW) · cliente em `src/api/cliente.ts` (`fetch`, `credentials: 'include'` — a sessão é cookie opaco)
 - **react-hook-form + Zod 4**
-- **pnpm** com `minimumReleaseAge: 10080` (7d) no workspace — OBRIGATÓRIO, pós supply-chain. **Biome** (lint+format) · **vitest** + Testing Library
+- **pnpm** com `minimumReleaseAge: 10080` (7d) no workspace — OBRIGATÓRIO, pós supply-chain. **Biome 2** (lint+format) · **vitest 4** + Testing Library
+- **Node 24, e a versão tem UMA autoridade: o `.nvmrc`.** `engines.node` no `package.json` a
+  repete e os dois jobs do CI a leem por `node-version-file` — ninguém escreve o número à mão num
+  workflow. Isto foi fixado em 2026-09-07 e o motivo é medido: enquanto o CI rodava 22 num job e
+  24 no outro, sem nada declarando a versão, a suíte tinha uma janela estreita que ninguém sabia
+  que existia — em **Node 24 reprovava 1.247 testes** (o `AbortSignal` do jsdom não é o que o
+  `undici` aceita, e o `new Request(..., { signal })` do transporte lançava em todos), em 18
+  reprovava os 7 do Planner, e só o 22 passava. Quem clonasse o repo em 24 via a suíte inteira
+  vermelha. **Quem fechou a janela foi o vitest 4** (medido: com vitest 3 o defeito persiste
+  mesmo no jsdom 30; com vitest 4 some mesmo no jsdom 26). Ver `docs/relatorio-varredura-2026-09-07.md` §17.
+- **`@tanstack/react-table` está na v9** desde 07/09 (decisão do user), e a migração cabe numa
+  regra: **as features moram em `src/components/cabinet/listagem/tabela.ts`, e é de lá que as
+  telas importam `ColumnDef`.** A v9 trocou `ColumnDef<TData>` por `ColumnDef<TFeatures, TData,
+  TValue>`; aquele módulo amarra as features uma vez e reexporta o tipo com o MESMO nome, então
+  a tela continua escrevendo `ColumnDef<Cliente>` e só o caminho do import mudou — foi o que
+  manteve os 213 erros de tipo iniciais em 37 trocas de import e um arquivo de lógica.
+  **Não usar `useLegacyTable`**: o próprio guia do pacote o marca como ponte temporária, e o
+  repo não passou por ela. Feature nova (paginação, seleção, agrupamento no cliente) entra
+  naquele `tableFeatures()`, nunca numa tela: registrar de menos faz o método SUMIR da
+  instância, e o erro aparece na chamada, não no tipo. Hoje são três — visibilidade e ordem de
+  coluna, mais `rowSortingFeature` **sem** o `sortedRowModel`, porque quem ordena e pagina é o
+  servidor (era o antigo `manualSorting`/`manualPagination`). O `meta` da coluna (`numeric`,
+  `tipo`, `editavel`) deixou de ser `declare module` e virou slot `columnMeta` do mesmo objeto.
+- **`biome.json` NÃO aceita comentário `//`.** Um comentário ali faz o Biome falhar o parse, e o
+  `pnpm check` então roda **sem configuração**, reformatando o repositório inteiro com os padrões
+  de fábrica — 848 arquivos, e não se desfaz rodando o check de novo (o formatador preserva
+  quebras de objeto já feitas). Justificativa de config vem para cá; se precisar de comentário no
+  arquivo, renomeie para `biome.jsonc`.
 - **Vetos:** Redux · axios · styled-components · MUI/Antd/UI-kits de runtime · form-generator declarativo · SheetJS (`xlsx` npm) · float p/ dinheiro
 - Referência visual/estrutural: shadcn/ui docs · Kiranism next-shadcn-dashboard-starter (SÓ como referência de DataTable/layout — é Next, aqui é Vite: adaptar, não copiar rotas/SSR)
 

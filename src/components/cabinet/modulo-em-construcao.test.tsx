@@ -1,3 +1,5 @@
+import { screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import { ErroDoServidor } from '@/components/cabinet/erro-do-servidor'
 import { ErroDeCarregamento } from '@/components/cabinet/estado-de-consulta'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
@@ -10,8 +12,6 @@ import {
   respostaSessao,
   respostaVinculos,
 } from '@/test/utils'
-import { screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
 
 /**
  * MÓDULO EM CONSTRUÇÃO — o que o operador vê quando o servidor responde 501.

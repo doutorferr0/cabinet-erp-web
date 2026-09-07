@@ -1,13 +1,13 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
 import { TextField } from '@/components/cabinet/form-controls'
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
 import { useLogin } from '@/data/sessao'
 import { PaginaDeAuth } from '@/features/login/pagina-de-auth'
 import { destinoDepoisDoLogin } from '@/lib/rota-de-origem'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Link, useNavigate, useSearch } from '@tanstack/react-router'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
 
 const loginSchema = z.object({
   email: z.email('E-mail inválido.').min(1, 'Informe o e-mail.'),

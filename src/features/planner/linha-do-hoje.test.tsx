@@ -1,6 +1,6 @@
-import { renderWithQuery } from '@/test/utils'
 import { useRef } from 'react'
 import { describe, expect, it } from 'vitest'
+import { renderWithQuery } from '@/test/utils'
 import { LinhaDoHoje } from './linha-do-hoje'
 
 /**

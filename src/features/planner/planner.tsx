@@ -1,3 +1,4 @@
+import { Gantt } from '@svar-ui/react-gantt'
 import type { PlanItemDtoKind, ProjectPlanDto } from '@/api/gerado'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
 import { Barra as BarraDeProgresso, Painel } from '@/components/cabinet/painel'
@@ -12,7 +13,6 @@ import {
   useProjetos,
   useReagendarItem,
 } from '@/data/planner-api'
-import { Gantt } from '@svar-ui/react-gantt'
 // O tema do gantt vem COM o gantt, e não do `src/main.tsx` (#227): folha de
 // lib importada na entrada é paga em toda página por causa de uma tela. O
 // especificador é `style.css` e não `all.css` — este último traz grid, editor,
@@ -24,10 +24,10 @@ import './gantt-2.0.css'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import {
   type EventoDeTarefa,
-  TIPOS,
   janelaDoPlano,
   progressoDoProjeto,
   reagendamentoDoEvento,
+  TIPOS,
   tarefasDoPlano,
   totalDeItens,
 } from './dados-do-gantt'
@@ -122,11 +122,19 @@ const ESCALAS = [
  * cor do módulo — a barra não inventa cor, herda a que o design system já
  * publicou. O `aria-label` repete tipo e nome porque a barra do SVAR é uma
  * `div`: sem ele o leitor de tela anuncia só o texto solto.
+ *
+ * **`role="img"` é o que faz esse `aria-label` existir de verdade.** Num `span`
+ * cru a espec IGNORA o atributo, então a intenção descrita acima nunca chegava
+ * a leitor nenhum — a barra continuava anunciando o texto solto que o rótulo
+ * queria substituir. `img` é o role de uma representação gráfica cujo nome é
+ * textual, que é o que a barra do gantt é, e ele troca o conteúdo interno pelo
+ * rótulo na leitura. Acusado pelo `useAriaPropsSupportedByRole` do Biome 2.
  */
 function BarraDoItem({ data }: { data: { text?: string; tipo?: PlanItemDtoKind } }) {
   const tipo = data.tipo ? TIPOS[data.tipo] : null
   return (
     <span
+      role="img"
       data-slot="barra-do-plano"
       {...(tipo ? { 'data-modulo': tipo.modulo } : {})}
       className="flex h-full items-center overflow-hidden bg-modulo px-[var(--s-2)] text-left"

@@ -1,4 +1,3 @@
-import { RECURSOS, type RecursoDaEmpresa } from '@/data/recursos-da-empresa'
 import {
   ArrowLeftRight,
   BookUser,
@@ -22,6 +21,7 @@ import {
   Truck,
   Users,
 } from 'lucide-react'
+import { RECURSOS, type RecursoDaEmpresa } from '@/data/recursos-da-empresa'
 
 /**
  * A NAVEGAÇÃO — uma lista só, em grupos de ORDEM FIXA por módulo.

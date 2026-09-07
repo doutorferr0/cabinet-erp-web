@@ -1,3 +1,5 @@
+import { Check, ChevronsUpDown, Plus } from 'lucide-react'
+import { useId, useState } from 'react'
 import { Campo } from '@/components/cabinet/campo'
 import { Monograma } from '@/components/cabinet/monograma'
 import { Button } from '@/components/ui/button'
@@ -15,8 +17,6 @@ import {
 import { useReadOnlyPorPapel } from '@/data/papeis'
 import { useEspecificadorOptions } from '@/data/parceiros-api'
 import { cn } from '@/lib/utils'
-import { Check, ChevronsUpDown, Plus } from 'lucide-react'
-import { useId, useState } from 'react'
 
 /**
  * A MOLDURA do combo — botão, popover, lista e o aviso de lista cortada.

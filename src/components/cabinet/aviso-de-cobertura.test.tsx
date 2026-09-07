@@ -1,6 +1,6 @@
-import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
 
 describe('AvisoDeCobertura', () => {
   it('mostra o texto da tela dentro da caixa de pendência', () => {

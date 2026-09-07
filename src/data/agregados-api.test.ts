@@ -1,9 +1,9 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { NavCountersDto, PurchaseOrdersSummaryDto } from '@/api/gerado'
 import { getNavCounters, getPurchaseOrdersSummary } from '@/api/gerado'
 import { CHAVES, variacao } from '@/data/agregados-api'
-import { ErroDaApi, dadosOuErro } from '@/data/api-provider'
+import { dadosOuErro, ErroDaApi } from '@/data/api-provider'
 import { instalarServidor, json, problema } from '@/test/servidor'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * A fronteira dos agregados de KPI contra SERVIDOR FALSO, nunca contra mock do

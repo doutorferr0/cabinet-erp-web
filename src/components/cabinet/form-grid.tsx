@@ -1,3 +1,5 @@
+import { Minus, Plus } from 'lucide-react'
+import { Controller, useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import { VOZ_DE_NOME } from '@/components/cabinet/nome'
 import { TotalBox } from '@/components/cabinet/total-box'
 import { Button } from '@/components/ui/button'
@@ -13,8 +15,6 @@ import {
 } from '@/components/ui/table'
 import { formatMoneyBRL, formatPercent } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
-import { Minus, Plus } from 'lucide-react'
-import { Controller, useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 
 /**
  * Tipo da célula. `money` guarda centavos (int) e digita em reais;

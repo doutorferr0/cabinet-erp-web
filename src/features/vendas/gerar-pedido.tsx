@@ -1,3 +1,4 @@
+import { Link, useNavigate } from '@tanstack/react-router'
 import type { QuoteDto } from '@/api/gerado'
 import { ProblemType } from '@/api/gerado'
 import { FormaDoModulo } from '@/components/cabinet/forma'
@@ -14,7 +15,6 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useConverterEmPedido } from '@/data/quotes-api'
 import { type FrasesDeRecusa, mensagemDaRecusa, typeDoErro } from '@/lib/erros'
-import { Link, useNavigate } from '@tanstack/react-router'
 
 /**
  * GERAR O PEDIDO a partir do orçamento — o gesto pelo qual quase todo pedido

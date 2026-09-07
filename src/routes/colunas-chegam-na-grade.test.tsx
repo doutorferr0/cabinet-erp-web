@@ -1,8 +1,8 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { stubDeColaboradores } from '@/test/colaboradores'
 import { stubDeParceiros } from '@/test/parceiros'
 import { renderRoute } from '@/test/utils'
-import { screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 /**
  * GUARDA: o seletor `Colunas` MEXE na grade.

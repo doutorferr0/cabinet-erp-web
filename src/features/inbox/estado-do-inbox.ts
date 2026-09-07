@@ -1,5 +1,5 @@
-import { INBOX_MOCK, type ItemDoInbox } from '@/mocks/inbox'
 import { useSyncExternalStore } from 'react'
+import { INBOX_MOCK, type ItemDoInbox } from '@/mocks/inbox'
 
 /**
  * ESTADO DA CAIXA DE ENTRADA — store de módulo, e não `useState` no shell.

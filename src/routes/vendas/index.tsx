@@ -1,5 +1,5 @@
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { HubDeModulo } from '@/components/cabinet/hub-de-modulo'
-import { Link, createFileRoute } from '@tanstack/react-router'
 
 /**
  * `?de=cadastros` — a única marca de proveniência que esta rota aceita.

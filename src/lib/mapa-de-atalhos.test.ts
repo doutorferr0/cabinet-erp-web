@@ -1,7 +1,7 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { MAPA_DE_ATALHOS, type NomeDeAtalho, SHORTCUTS } from '@/lib/shortcuts'
 import { describe, expect, it } from 'vitest'
+import { MAPA_DE_ATALHOS, type NomeDeAtalho, SHORTCUTS } from '@/lib/shortcuts'
 
 /**
  * INVARIANTE: tecla no registry é tecla NO MAPA, e o mapa é medido, não escrito.

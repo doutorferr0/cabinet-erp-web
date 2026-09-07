@@ -1,11 +1,11 @@
+import { Link } from '@tanstack/react-router'
+import { useEffect, useId, useState } from 'react'
 import type { CrmStageDto } from '@/api/gerado'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { useMotivosDePerda, useMoverOportunidade } from '@/data/crm-api'
-import { Link } from '@tanstack/react-router'
-import { useEffect, useId, useState } from 'react'
 
 /**
  * O que o diálogo precisa saber do negócio: quem é, e de onde ele sai.

@@ -1,8 +1,8 @@
-import { CampoComBusca } from '@/components/cabinet/campo-com-busca'
-import { renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { CampoComBusca } from '@/components/cabinet/campo-com-busca'
+import { renderWithQuery } from '@/test/utils'
 
 describe('CampoComBusca', () => {
   it('associa o rótulo ao campo e dispara a busca pelo botão', async () => {

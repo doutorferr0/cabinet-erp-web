@@ -1,3 +1,7 @@
+import { useNavigate } from '@tanstack/react-router'
+import { useState } from 'react'
+import { useFormContext } from 'react-hook-form'
+import { z } from 'zod'
 import { BuscaDeCidade } from '@/components/cabinet/busca-de-cidade'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { CampoComBusca } from '@/components/cabinet/campo-com-busca'
@@ -12,10 +16,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { camposDe, colaborador as esquema, propsDoIcone } from '@/features/cadastro/modulos'
 import type { Colaborador } from '@/mocks/colaboradores'
-import { useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
-import { useFormContext } from 'react-hook-form'
-import { z } from 'zod'
 
 // TODO(contract): Zod do codegen substituirá este schema na integração.
 export const colaboradorSchema = z.object({
@@ -104,7 +104,10 @@ function FotoFrame() {
 function BuscaNaturalidade({
   open,
   onOpenChange,
-}: { open: boolean; onOpenChange: (o: boolean) => void }) {
+}: {
+  open: boolean
+  onOpenChange: (o: boolean) => void
+}) {
   const { setValue } = useFormContext<Colaborador>()
   return (
     <BuscaDeCidade
@@ -164,7 +167,11 @@ function BlocosDoCadastro({
   onBuscaNaturalidade,
   readOnly,
   moduloEmFoco,
-}: { onBuscaNaturalidade: () => void; readOnly: boolean; moduloEmFoco: string | undefined }) {
+}: {
+  onBuscaNaturalidade: () => void
+  readOnly: boolean
+  moduloEmFoco: string | undefined
+}) {
   return (
     <div className="flex flex-col gap-3">
       {esquema.modulos.map((modulo) => (

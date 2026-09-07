@@ -1,3 +1,5 @@
+import { screen, within } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type {
   QuoteVsStockReportDto,
   StockAgingReportDto,
@@ -6,8 +8,6 @@ import type {
 } from '@/api/gerado'
 import { instalarServidor, json } from '@/test/servidor'
 import { renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
-import { screen, within } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * AS TRÊS TELAS DE RELATÓRIO DE ESTOQUE (web#352), contra servidor falso.

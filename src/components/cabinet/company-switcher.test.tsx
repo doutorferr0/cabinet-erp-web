@@ -1,8 +1,8 @@
-import { CompanySwitcher } from '@/components/cabinet/company-switcher'
-import { type ServidorFalso, instalarServidor } from '@/test/servidor'
-import { renderWithQuery } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { CompanySwitcher } from '@/components/cabinet/company-switcher'
+import { instalarServidor, type ServidorFalso } from '@/test/servidor'
+import { renderWithQuery } from '@/test/utils'
 
 /**
  * A empresa ativa vem do backend (`/auth/tenants` + `/auth/me`) e a troca vai

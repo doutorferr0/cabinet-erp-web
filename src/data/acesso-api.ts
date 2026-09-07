@@ -1,33 +1,33 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { RoleWriteRequest } from '@/api/gerado'
 import {
+  createEmployee,
+  createRole,
   type EmployeeDetailDto,
   type EmployeeDto,
   type EmployeeLinkRequest,
   type EmployeeTenantLinkDto,
   type EmployeeWriteRequest,
-  type InvitationDto,
-  type ListEmployeesParams,
-  type PagedResultOfEmployeeDto,
-  type PagedResultOfRoleDto,
-  type PermissionCatalogDto,
-  type RoleDetailDto,
-  type TemporaryPasswordDto,
-  createEmployee,
-  createRole,
   getRole,
+  type InvitationDto,
   inviteEmployee,
+  type ListEmployeesParams,
   linkEmployee,
   listEmployeeLinks,
   listEmployees,
   listPermissions,
   listRoles,
+  type PagedResultOfEmployeeDto,
+  type PagedResultOfRoleDto,
+  type PermissionCatalogDto,
+  type RoleDetailDto,
   resetEmployeePassword,
+  type TemporaryPasswordDto,
   updateEmployeeLink,
   updateRole,
 } from '@/api/gerado'
-import type { RoleWriteRequest } from '@/api/gerado'
-import { type RespostaDaApi, dadosOuErro, queryDaTabela } from '@/data/api-provider'
+import { dadosOuErro, queryDaTabela, type RespostaDaApi } from '@/data/api-provider'
 import type { PagedResult, TableQueryState } from '@/lib/table-query'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 /**
  * ACESSO — papéis, permissões e usuários. A fronteira da tela `/config/usuarios`.
@@ -192,7 +192,11 @@ export function useCriarUsuario() {
       nome,
       email,
       roleId,
-    }: { nome: string; email: string; roleId: string }) => {
+    }: {
+      nome: string
+      email: string
+      roleId: string
+    }) => {
       const pessoa: EmployeeWriteRequest = {
         name: nome,
         document: null,

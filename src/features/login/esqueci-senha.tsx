@@ -1,12 +1,12 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Link } from '@tanstack/react-router'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
 import { TextField } from '@/components/cabinet/form-controls'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
 import { usePedirRecuperacao } from '@/data/sessao'
 import { PaginaDeAuth } from '@/features/login/pagina-de-auth'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Link } from '@tanstack/react-router'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
 
 const esqueciSenhaSchema = z.object({
   // `z.email()` e não `z.string().email()`: no Zod 4 o segundo é o legado, e a

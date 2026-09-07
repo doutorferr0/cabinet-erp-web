@@ -1,5 +1,8 @@
-import { ProblemType } from '@/api/gerado'
+import { CheckCircle2, History, Info, PackageCheck, UserCog } from 'lucide-react'
+import { useId, useState } from 'react'
 import type { PartnerDto } from '@/api/gerado'
+import { ProblemType } from '@/api/gerado'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { Nome } from '@/components/cabinet/nome'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
 import {
@@ -27,10 +30,7 @@ import {
   useTransferirProfissional,
 } from '@/data/pedidos-venda-api'
 import { type FrasesDeRecusa, mensagemDaRecusa } from '@/lib/erros'
-import { formatDateBR } from '@/lib/formatters'
-import type { ColumnDef } from '@tanstack/react-table'
-import { CheckCircle2, History, Info, PackageCheck, UserCog } from 'lucide-react'
-import { useId, useState } from 'react'
+import { formatDateBR, formatInstanteBR } from '@/lib/formatters'
 
 /**
  * AS AÇÕES DO CICLO DO PEDIDO — o que acontece com o documento DEPOIS de ele
@@ -258,7 +258,11 @@ function TransferenciaDeProfissional({
   pedido,
   aberto,
   onFechar,
-}: { pedido: PedidoDeVenda; aberto: boolean; onFechar: () => void }) {
+}: {
+  pedido: PedidoDeVenda
+  aberto: boolean
+  onFechar: () => void
+}) {
   const idNota = useId()
   const [escolhido, setEscolhido] = useState<{ id: string; nome: string } | null>(null)
   const [nota, setNota] = useState('')
@@ -357,7 +361,11 @@ function HistoricoDaIndicacao({
   pedido,
   aberto,
   onFechar,
-}: { pedido: PedidoDeVenda; aberto: boolean; onFechar: () => void }) {
+}: {
+  pedido: PedidoDeVenda
+  aberto: boolean
+  onFechar: () => void
+}) {
   const historico = useHistoricoDeProfissional(pedido.id, aberto)
   const linhas = historico.data?.rows ?? []
 
@@ -384,8 +392,8 @@ function HistoricoDaIndicacao({
             <li key={linha.id} className="border-border border-b pb-2 last:border-0">
               <p className="font-medium text-sm">{linha.professionalName ?? '—'}</p>
               <p className="text-muted-foreground text-xs">
-                De {formatDateBR(linha.startedAt)}
-                {linha.endedAt ? ` até ${formatDateBR(linha.endedAt)}` : ' até hoje'}
+                De {formatInstanteBR(linha.startedAt)}
+                {linha.endedAt ? ` até ${formatInstanteBR(linha.endedAt)}` : ' até hoje'}
               </p>
               {linha.note ? <p className="mt-1 text-sm">{linha.note}</p> : null}
             </li>

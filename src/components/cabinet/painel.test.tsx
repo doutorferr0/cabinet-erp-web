@@ -1,7 +1,7 @@
-import { COR_DE_ZONA, DCard, MarcaDeCard, Painel } from '@/components/cabinet/painel'
-import { renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { COR_DE_ZONA, DCard, MarcaDeCard, Painel } from '@/components/cabinet/painel'
+import { renderWithQuery } from '@/test/utils'
 
 /**
  * O que estes testes travam é a RÉGUA, não a aparência.

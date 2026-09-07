@@ -1,3 +1,6 @@
+import { useQuery } from '@tanstack/react-query'
+import { Search, X } from 'lucide-react'
+import { type RefObject, useId, useState } from 'react'
 import type { ProductDto } from '@/api/gerado'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -5,9 +8,6 @@ import { data } from '@/data'
 import { MINIMO_DE_LETRAS, useTermoAdiado } from '@/data/busca-de-registro'
 import { cn } from '@/lib/utils'
 import type { ProdutoVariante } from '@/mocks/produtos'
-import { useQuery } from '@tanstack/react-query'
-import { Search, X } from 'lucide-react'
-import { type RefObject, useId, useState } from 'react'
 
 /**
  * ESCOLHER A PEÇA — produto por busca INLINE, e a variante ao lado.

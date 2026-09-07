@@ -1,3 +1,5 @@
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { configurarApi } from '@/api/cliente'
 import { authLogin, authSetActiveTenant } from '@/api/gerado'
 import {
@@ -9,10 +11,8 @@ import {
 } from '@/data/parceiros-api'
 import { papelCliente } from '@/features/parceiro/papeis/cliente'
 import { papelProfissional } from '@/features/parceiro/papeis/profissional'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { handlers } from './handlers'
-import { TENANT_MATRIZ, novoId, resetStore, store } from './store'
+import { novoId, resetStore, store, TENANT_MATRIZ } from './store'
 
 /**
  * O MOCK RESPONDE O CADASTRO INTEIRO — e o preço de não responder era o Gravar.

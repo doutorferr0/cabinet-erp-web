@@ -1,3 +1,6 @@
+import { Home, Package } from 'lucide-react'
+import { useEffect } from 'react'
+import { useWatch } from 'react-hook-form'
 import { totalItemCentavos } from '@/components/cabinet/documento'
 import {
   AcaoDoRodape,
@@ -9,10 +12,7 @@ import {
 import { useLookupOptions } from '@/data/lookups-api'
 import { tabelas } from '@/data/tabelas'
 import { formatMoneyBRL } from '@/lib/formatters'
-import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
-import { Home, Package } from 'lucide-react'
-import { useEffect } from 'react'
-import { useWatch } from 'react-hook-form'
+import { bindShortcut, SHORTCUTS, shortcutLabel } from '@/lib/shortcuts'
 import { useTotaisDoOrcamento } from './bloco-pagamento'
 
 /**
@@ -53,11 +53,7 @@ export const ITEM_VAZIO: LinhaDaGrade = {
  * é o ponto da edição inline. `Produto` é a primária porque é o caminho de
  * toda linha; `Ambiente` só acrescenta o agrupador junto.
  */
-function InsercoesDoOrcamento({
-  adicionar,
-}: {
-  adicionar: (linhas: LinhaDaGrade[]) => void
-}) {
+function InsercoesDoOrcamento({ adicionar }: { adicionar: (linhas: LinhaDaGrade[]) => void }) {
   const itens = (useWatch({ name: 'itens' }) ?? []) as unknown[]
 
   function inserirProduto() {

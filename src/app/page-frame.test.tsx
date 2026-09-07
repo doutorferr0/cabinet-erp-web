@@ -1,6 +1,6 @@
-import { renderRoute } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { renderRoute } from '@/test/utils'
 
 /** A folha que o shell monta em volta do `<Outlet/>`. */
 function folha(): HTMLElement {

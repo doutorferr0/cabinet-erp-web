@@ -1,7 +1,7 @@
-import { TabelaEditavel } from '@/components/cabinet/tabela-editavel'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { TabelaEditavel } from '@/components/cabinet/tabela-editavel'
 
 interface Item {
   id: string

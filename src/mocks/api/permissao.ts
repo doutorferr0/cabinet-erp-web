@@ -1,5 +1,5 @@
 import { type FamiliaDeCaminho, podeEscrever } from '@/data/papeis'
-import { TIPO, problemaJson } from './problema'
+import { problemaJson, TIPO } from './problema'
 import { store } from './store'
 
 /**

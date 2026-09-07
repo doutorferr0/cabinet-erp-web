@@ -1,8 +1,8 @@
-import { COR_DE_ZONA } from '@/components/cabinet/painel'
-import { Secao } from '@/components/cabinet/secao'
 import { render, screen } from '@testing-library/react'
 import { FileText } from 'lucide-react'
 import { describe, expect, it } from 'vitest'
+import { COR_DE_ZONA } from '@/components/cabinet/painel'
+import { Secao } from '@/components/cabinet/secao'
 
 /**
  * A seção é a caixa-filha do documento e, na Reface 2.0, é o MESMO `DCard` do

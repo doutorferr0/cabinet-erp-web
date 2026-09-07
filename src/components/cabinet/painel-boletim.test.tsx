@@ -1,6 +1,6 @@
-import { COR_DE_ZONA } from '@/components/cabinet/painel'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { COR_DE_ZONA } from '@/components/cabinet/painel'
 import { PainelBoletim } from './painel-boletim'
 
 /**

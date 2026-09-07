@@ -1,6 +1,6 @@
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { useState } from 'react'
 
 /**
  * A SENHA PROVISÓRIA — exibida UMA vez, aqui, e em nenhum outro lugar.

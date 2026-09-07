@@ -1,5 +1,5 @@
-import { HubDeModulo } from '@/components/cabinet/hub-de-modulo'
 import { createFileRoute } from '@tanstack/react-router'
+import { HubDeModulo } from '@/components/cabinet/hub-de-modulo'
 
 /**
  * A rota-índice do CRM NÃO EXISTIA — e a falta era invisível.

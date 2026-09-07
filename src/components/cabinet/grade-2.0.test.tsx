@@ -1,11 +1,11 @@
-import { VitraDataTable } from '@/components/cabinet/data-table'
-import { createMockListProvider, normalize } from '@/data/provider'
-import { type Produto, produtos } from '@/mocks/produtos'
-import { renderWithQuery } from '@/test/utils'
-import type { ColumnDef } from '@tanstack/react-table'
 import { screen, waitFor, within } from '@testing-library/react'
 import { Printer } from 'lucide-react'
 import { describe, expect, it, vi } from 'vitest'
+import { VitraDataTable } from '@/components/cabinet/data-table'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
+import { createMockListProvider, normalize } from '@/data/provider'
+import { type Produto, produtos } from '@/mocks/produtos'
+import { renderWithQuery } from '@/test/utils'
 
 /**
  * A GRADE da 2.0 (#476 · D8) — o que muda de fato no desenho da listagem.

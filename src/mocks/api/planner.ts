@@ -1,5 +1,5 @@
+import { HttpResponse, http } from 'msw'
 import type { PlanItemDto, PlanItemRescheduleRequest, PlanPhaseDto } from '@/api/gerado'
-import { http, HttpResponse } from 'msw'
 import { verificarEscrita } from './permissao'
 import { camposInvalidos, naoEncontrado, semEmpresaAtiva, semSessao } from './problema'
 import { store } from './store'

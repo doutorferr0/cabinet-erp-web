@@ -1,6 +1,6 @@
-import { EsqueletoDeCarregamento } from '@/components/cabinet/estado-de-consulta'
 import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { EsqueletoDeCarregamento } from '@/components/cabinet/estado-de-consulta'
 
 /**
  * O ESQUELETO DA FOLHA (#201) — nove telas de detalhe carregam por aqui.

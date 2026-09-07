@@ -1,3 +1,4 @@
+import { useNavigate } from '@tanstack/react-router'
 import type { QuoteDto } from '@/api/gerado'
 import { ProblemType } from '@/api/gerado'
 import { FormaDoModulo } from '@/components/cabinet/forma'
@@ -14,7 +15,6 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useRevisarOrcamento } from '@/data/quotes-api'
 import { type FrasesDeRecusa, mensagemDaRecusa, typeDoErro } from '@/lib/erros'
-import { useNavigate } from '@tanstack/react-router'
 
 /**
  * REVISAR o orçamento — o gesto que faltava para o caso mais banal da mesa.

@@ -1,7 +1,7 @@
-import type { ModuloCor } from '@/components/cabinet/modulo-cores'
-import { cn } from '@/lib/utils'
 import { ChevronDown, type LucideIcon } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
+import type { ModuloCor } from '@/components/cabinet/modulo-cores'
+import { cn } from '@/lib/utils'
 
 /**
  * FormBlock — o bloco de dados da ficha no desenho 2.0 (D16, issue #484).

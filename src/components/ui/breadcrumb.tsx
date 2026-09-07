@@ -1,4 +1,3 @@
-import { cn } from '@/lib/utils'
 import { MoreHorizontalIcon } from 'lucide-react'
 import type * as React from 'react'
 import {
@@ -6,10 +5,11 @@ import {
   type BreadcrumbProps,
   Breadcrumbs as BreadcrumbsPrimitive,
   type BreadcrumbsProps,
+  composeRenderProps,
   Link as LinkPrimitive,
   type LinkProps,
-  composeRenderProps,
 } from 'react-aria-components'
+import { cn } from '@/lib/utils'
 
 /**
  * MIGALHA — onde o operador está, e como voltar.
@@ -152,9 +152,9 @@ function BreadcrumbEllipsis({ className, ...props }: React.ComponentProps<'span'
 
 export {
   Breadcrumb,
-  BreadcrumbList,
+  BreadcrumbEllipsis,
   BreadcrumbItem,
   BreadcrumbLink,
+  BreadcrumbList,
   BreadcrumbPage,
-  BreadcrumbEllipsis,
 }

@@ -1,7 +1,7 @@
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { useEffect } from 'react'
 import { ErroDeCarregamento } from '@/components/cabinet/estado-de-consulta'
 import { useFunis } from '@/data/crm-api'
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useEffect } from 'react'
 
 export const Route = createFileRoute('/crm/funil/')({
   component: EscolheFunil,

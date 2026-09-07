@@ -1,8 +1,8 @@
-import { ID_DO_COLABORADOR, fichaDeColaborador, stubDeColaboradores } from '@/test/colaboradores'
-import { type Rota, instalarServidor, json } from '@/test/servidor'
-import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { fichaDeColaborador, ID_DO_COLABORADOR, stubDeColaboradores } from '@/test/colaboradores'
+import { instalarServidor, json, type Rota } from '@/test/servidor'
+import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 
 afterEach(() => {
   vi.unstubAllGlobals()

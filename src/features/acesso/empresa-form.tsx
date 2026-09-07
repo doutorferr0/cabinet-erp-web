@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import type { TenantWriteRequest } from '@/api/gerado'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { Button } from '@/components/ui/button'
@@ -7,7 +8,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAlterarEmpresa, useCriarEmpresa, useEmpresa } from '@/data/empresas-do-grupo-api'
 import { RECURSOS, type RecursoDaEmpresa } from '@/data/recursos-da-empresa'
-import { useEffect, useState } from 'react'
 
 /**
  * A EMPRESA DO GRUPO — a IDENTIDADE dela, não o timbre.

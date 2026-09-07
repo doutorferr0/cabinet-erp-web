@@ -1,4 +1,3 @@
-import { cn } from '@/lib/utils'
 import type * as React from 'react'
 import {
   DialogTrigger,
@@ -7,6 +6,7 @@ import {
   Popover as PopoverPrimitive,
   type PopoverProps as PopoverPrimitiveProps,
 } from 'react-aria-components'
+import { cn } from '@/lib/utils'
 
 function PopoverTrigger({ children, ...props }: DialogTriggerProps) {
   return (

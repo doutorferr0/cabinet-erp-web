@@ -1,13 +1,13 @@
-import { AlteracoesNaoSalvas } from '@/components/cabinet/alteracoes-nao-salvas'
-import { PageHeader } from '@/components/cabinet/page-header'
-import { Button } from '@/components/ui/button'
-import { Form } from '@/components/ui/form'
-import { type FamiliaDeCaminho, useReadOnlyPorPapel } from '@/data/papeis'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Check, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { type DefaultValues, type FieldValues, type Resolver, useForm } from 'react-hook-form'
 import type { z } from 'zod'
+import { AlteracoesNaoSalvas } from '@/components/cabinet/alteracoes-nao-salvas'
+import { PageHeader } from '@/components/cabinet/page-header'
+import { Button } from '@/components/ui/button'
+import { Form } from '@/components/ui/form'
+import { type FamiliaDeCaminho, useReadOnlyPorPapel } from '@/data/papeis'
 
 export interface CadastroFormProps<T extends FieldValues> {
   /** TODO(contract): o Zod do codegen substituirá estes schemas na integração. */

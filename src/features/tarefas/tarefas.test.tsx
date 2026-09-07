@@ -1,7 +1,7 @@
-import type { TaskDto } from '@/api/gerado'
-import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { TaskDto } from '@/api/gerado'
+import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 
 function tarefa(over: Partial<TaskDto> = {}): TaskDto {
   return {

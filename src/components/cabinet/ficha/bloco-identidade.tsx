@@ -1,7 +1,7 @@
+import type { ReactNode } from 'react'
 import { FormBlock, type TintDeBloco } from '@/components/cabinet/form-block'
 import { Monograma } from '@/components/cabinet/monograma'
 import { cn } from '@/lib/utils'
-import type { ReactNode } from 'react'
 
 /**
  * Identidade — o card lateral que diz DE QUEM é o registro (D16, issue #484;

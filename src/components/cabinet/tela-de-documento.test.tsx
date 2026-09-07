@@ -1,8 +1,8 @@
+import { screen, within } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { TelaDeDocumento } from '@/components/cabinet/tela-de-documento'
 import type { DocumentoProvider } from '@/data/provider'
 import { renderWithQuery } from '@/test/utils'
-import { screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 /**
  * Os três documentos que usam `TelaDeDocumento` (Orçamento, Ordem de Compra,

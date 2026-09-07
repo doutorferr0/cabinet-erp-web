@@ -1,22 +1,22 @@
 import { readFileSync } from 'node:fs'
-import { type Server, createServer } from 'node:http'
+import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { setupServer } from 'msw/node'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { handlers } from './api/handlers'
 import { resetStore, semearSessaoAutenticada } from './api/store'
 import {
-  CONGELAMENTO_DO_NODE,
-  EPOCA_DO_SERVIDOR,
-  PROXIMO_PASSO,
-  ROTAS_DO_BACKEND,
-  ROTAS_NO_MOCK,
   avisoDaEpoca,
   avisoDeSemContrato,
+  CONGELAMENTO_DO_NODE,
   declararPassagem,
+  EPOCA_DO_SERVIDOR,
   familia,
   handlersDePassagem,
   montarRelatorio,
+  PROXIMO_PASSO,
+  ROTAS_DO_BACKEND,
+  ROTAS_NO_MOCK,
   relatorioDaPassagem,
 } from './rotas-do-backend'
 
@@ -597,9 +597,12 @@ describe('passthrough por rota', () => {
       'post /api/me/views',
       'put /api/me/views/{id}',
       'delete /api/me/views/{id}',
+      // Consulta postal publicada nesta frente: o mock a serve até a integração
+      // nacional existir no Spring, portanto também é sem-contrato por construção.
+      'get /api/postal-codes/{postalCode}',
     ])
-    // Cabeçalho com o próximo passo + uma linha por rota = 1 + 15.
-    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(16)
+    // Cabeçalho com o próximo passo + uma linha por rota = 1 + 16.
+    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(17)
   })
 
   it('toda rota mockada declara NATUREZA, e o console imprime o passo dela', () => {

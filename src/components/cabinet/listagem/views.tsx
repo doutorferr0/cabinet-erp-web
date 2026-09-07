@@ -1,3 +1,4 @@
+import { Star } from 'lucide-react'
 import type { SavedViewDto, SavedViewWriteRequest } from '@/api/gerado'
 import { CHAVE_VIEWS, corpoDaView, useEscritaDeView, useViews, viewsDaRota } from '@/data/views-api'
 import {
@@ -8,7 +9,6 @@ import {
 } from '@/lib/filtro-de-consulta'
 import type { TableSort } from '@/lib/table-query'
 import { cn } from '@/lib/utils'
-import { Star } from 'lucide-react'
 
 /**
  * VIEWS SALVAS na listagem — a PERSISTÊNCIA (D13).
@@ -28,15 +28,14 @@ import { Star } from 'lucide-react'
  * lembra ter feito. É a mesma regra que os favoritos locais já seguiam, agora
  * escrita no contrato (`SavedViewDto`) em vez de num tipo só nosso.
  *
- * ## O mecanismo LOCAL anterior ainda existe, e some em D5
+ * ## A contingência LOCAL só cobre falha da fronteira
  *
  * `src/lib/favoritos-de-consulta.ts` guarda a mesma ideia em `localStorage`, por
- * tela, e é quem a `data-table` consome hoje. Ele nasceu quando não havia
- * contrato para preferência de usuário; agora há. **Os dois coexistem por uma
- * fronteira de issue, não por desenho:** trocar o consumidor é mexer em
- * `data-table.tsx`, que é zona de D5. Enquanto durar, um favorito salvo pela
- * listagem não aparece na barra lateral — o que aparece lá é o que passou por
- * ESTE caminho. Registrado na #481.
+ * tela. Ele nasceu quando não havia contrato para preferência de usuário; agora
+ * a `data-table` usa esta fronteira como fonte normal e só recorre ao legado
+ * quando a consulta de views falha ou quando não há uma rota canônica (dialog e
+ * teste isolado). Assim uma view salva pela listagem aparece na barra lateral
+ * após a invalidação da chave única.
  *
  * ## Vazio é "não guardou", não "volte ao padrão"
  *
@@ -137,7 +136,7 @@ export interface ViewsDaTela {
  * (`CHAVE_VIEWS`) é o que dá o "sem reload".
  */
 export function useViewsDaTela(rota: string): ViewsDaTela {
-  const consulta = useViews()
+  const consulta = useViews(rota !== '')
   const escrita = useEscritaDeView()
   const views = viewsDaRota(consulta.data ?? [], rota)
 

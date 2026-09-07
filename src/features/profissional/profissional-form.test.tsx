@@ -1,7 +1,7 @@
-import { parceiro, servidorDeParceiros, stubDeParceiros } from '@/test/parceiros'
-import { renderRoute } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { parceiro, servidorDeParceiros, stubDeParceiros } from '@/test/parceiros'
+import { renderRoute } from '@/test/utils'
 
 describe('tela Profissional Externo', () => {
   it('listagem mostra os profissionais do servidor, pedindo só o papel da tela', async () => {

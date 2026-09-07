@@ -1,8 +1,8 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger, tabsListVariants } from '@/components/ui/tabs'
-import { renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
+import { Tabs, TabsContent, TabsList, TabsTrigger, tabsListVariants } from '@/components/ui/tabs'
+import { renderWithQuery } from '@/test/utils'
 
 /**
  * A aba da 2.0 é uma LINHA INFERIOR (Polaris), e a mudança tem consequência

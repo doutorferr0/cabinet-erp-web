@@ -1,11 +1,11 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import { VitraDataTable } from '@/components/cabinet/data-table'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { createMockListProvider, normalize } from '@/data/provider'
 import type { PagedResult } from '@/lib/table-query'
 import { type Produto, produtos } from '@/mocks/produtos'
 import { renderWithQuery } from '@/test/utils'
-import type { ColumnDef } from '@tanstack/react-table'
-import { screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
 
 /**
  * O VAZIO PRECISA TER SAÍDA (#201) — e a saída depende de QUAL vazio é.

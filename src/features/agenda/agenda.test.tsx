@@ -1,9 +1,9 @@
-import { diaLocalISO } from '@/lib/datas'
-import { problema } from '@/test/servidor'
-import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import { HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
+import { diaLocalISO } from '@/lib/datas'
+import { problema } from '@/test/servidor'
+import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 
 /** O compromisso cai no mês CORRENTE — a grade abre em hoje. */
 const DIA = `${diaLocalISO().slice(0, 8)}20`

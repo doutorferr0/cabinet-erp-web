@@ -1,6 +1,6 @@
+import { Children, createContext, useContext, useEffect, useRef, useState } from 'react'
 import { formatMoneyBRL } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
-import { Children, createContext, useContext, useEffect, useRef, useState } from 'react'
 
 /**
  * FAIXA DE KPI (Reface 2.0, D11 · #479 · rodada 5 em D34 · #529) — resumo antes

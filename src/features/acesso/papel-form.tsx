@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -10,7 +11,6 @@ import {
   useCriarPapel,
   usePapel,
 } from '@/data/acesso-api'
-import { useEffect, useState } from 'react'
 
 /**
  * O PAPEL MONTADO POR CAIXAS — o desenho decidido no api#84.

@@ -1,14 +1,14 @@
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import type { EmployeeDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import type { OpcaoDeAgrupamento } from '@/components/cabinet/data-table'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
 import { useReadOnlyPorPapel } from '@/data/papeis'
 import { colaborador as esquemaColaborador } from '@/features/cadastro/modulos'
 import { CoberturaDoColaborador } from '@/features/colaborador/cobertura-do-colaborador'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import type { ColumnDef } from '@tanstack/react-table'
 
 export const Route = createFileRoute('/cadastros/colaboradores/')({
   component: ColaboradoresPage,

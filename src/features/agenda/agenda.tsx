@@ -1,11 +1,11 @@
+import { useState } from 'react'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
 import { ModoCalendario } from '@/components/cabinet/listagem/modo-calendario'
 import { ModoKanban } from '@/components/cabinet/listagem/modo-kanban'
 import { PageHeader } from '@/components/cabinet/page-header'
 import { useAgenda } from '@/data/dashboard-api'
-import { type Mes, horaLocal, limitesDoMes, mesDe } from '@/lib/datas'
+import { horaLocal, limitesDoMes, type Mes, mesDe } from '@/lib/datas'
 import { cn } from '@/lib/utils'
-import { useState } from 'react'
 import { COLUNAS_POR_TIPO, ROTULOS_DO_TIPO, TOM_DO_TIPO } from './eventos'
 
 /** Os dois desenhos que a agenda oferece — os mesmos modos da listagem. */

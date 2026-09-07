@@ -1,3 +1,5 @@
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { configurarApi } from '@/api/cliente'
 import {
   authLogin,
@@ -11,12 +13,10 @@ import {
   updatePartnerContact,
   updateWork,
 } from '@/api/gerado'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { resetContatos } from './contatos'
 import { handlers } from './handlers'
 import { resetObras } from './obras'
-import { TENANT_FILIAL, TENANT_MATRIZ, resetStore } from './store'
+import { resetStore, TENANT_FILIAL, TENANT_MATRIZ } from './store'
 
 /**
  * O MOCK DO BLOCO 2 — obra e contatos (#255, contrato na `main` pela #259).

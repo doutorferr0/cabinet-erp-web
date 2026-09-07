@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { type Cor, blocos, contraste, paleta, resolver } from '@/test/cor-do-css'
 import { describe, expect, it } from 'vitest'
+import { blocos, type Cor, contraste, paleta, resolver } from '@/test/cor-do-css'
 
 /**
  * GUARDA DA RODADA 5 (#527) — OKLCH com fallback, bancada tonal, movimento.

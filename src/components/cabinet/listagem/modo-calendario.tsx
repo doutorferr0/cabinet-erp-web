@@ -1,17 +1,17 @@
+import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import type { VisaoDaListagem } from '@/components/cabinet/data-table'
 import type { TomDoCartao } from '@/components/cabinet/listagem/modo-kanban'
 import {
   DIAS_DA_SEMANA,
-  type Mes,
   diaLocalISO,
   gradeDoMes,
+  type Mes,
   mesDe,
   mesDeslocado,
   nomeDoMes,
 } from '@/lib/datas'
 import { cn } from '@/lib/utils'
-import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
-import { useMemo, useState } from 'react'
 
 /**
  * MODO CALENDÁRIO — a listagem desenhada no mês (ou na semana), sem ser tela

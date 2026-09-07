@@ -138,7 +138,10 @@ export function moduloEndereco(
 export function moduloContatos({
   prefixo = '',
   comunicadores = true,
-}: { prefixo?: string; comunicadores?: boolean } = {}): ModuloCadastro {
+}: {
+  prefixo?: string
+  comunicadores?: boolean
+} = {}): ModuloCadastro {
   // `comunicadores: false` NÃO tira os campos do módulo — deixa os dois pares
   // sem `campo`. Cliente não guarda comunicador hoje, e o mockup mostra que
   // deveria: apagar da espec faria a lacuna sumir; declarada, ela é contável

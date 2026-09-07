@@ -525,7 +525,7 @@
   font-weight: 600;
   font-size: 10.5px;
   line-height: 1.2;
-  letter-spacing: .12em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--n-500);
 }
@@ -535,7 +535,7 @@
   font-size: 12.5px;
   line-height: 1.3;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -.01em;
+  letter-spacing: -0.01em;
   color: var(--n-900);
 }
 .t-dado-meta {
@@ -700,7 +700,6 @@ main.bg-paper-grid > * {
    Suprimir aqui é mais honesto que trocar por `prefers-reduced-motion`: quem
    pede menos transparência está pedindo exatamente isto — a textura por cima
    do fundo —, e movimento não tem nada com o assunto. */
-/* biome-ignore lint/correctness/noUnknownMediaFeatureName: Media Queries 5, ainda ausente da lista do biome */
 @media (prefers-reduced-transparency: reduce) {
   main.bg-paper-grid::before {
     display: none;
@@ -770,48 +769,53 @@ main.bg-paper-grid > * {
    - reduced-motion: tudo continua, sem transição.
    ===================================================================== */
 :where(
-    [data-slot="kpi-tile"],
-    [data-slot="dcard"],
-    [data-slot="painel"],
-    [data-slot="cartao-lateral"],
-    [data-slot="form-block"],
-    [data-slot="tarefa"],
-    [data-slot="carga-por-responsavel"]
-  ) {
-  transition: transform var(--dur-1, 120ms) var(--ease, ease), box-shadow var(--dur-1, 120ms)
-    var(--ease, ease), border-color var(--dur-1, 120ms) var(--ease, ease);
+  [data-slot="kpi-tile"],
+  [data-slot="dcard"],
+  [data-slot="painel"],
+  [data-slot="cartao-lateral"],
+  [data-slot="form-block"],
+  [data-slot="tarefa"],
+  [data-slot="carga-por-responsavel"]
+) {
+  transition:
+    transform var(--dur-1, 120ms) var(--ease, ease),
+    box-shadow var(--dur-1, 120ms) var(--ease, ease),
+    border-color var(--dur-1, 120ms) var(--ease, ease);
 }
 /* `!important`: o DCard (dcard/painel) declara borda e sombra por style inline —
    sem isso a camada não chegava nele (medido 2026-09-04).
    cards quietos: relevo de repouso mais fundo (n-300 3px + ambiente) e hover que levanta */
 :where(
-    [data-slot="dcard"],
-    [data-slot="painel"],
-    [data-slot="cartao-lateral"],
-    [data-slot="form-block"],
-    [data-slot="carga-por-responsavel"]
-  ) {
+  [data-slot="dcard"],
+  [data-slot="painel"],
+  [data-slot="cartao-lateral"],
+  [data-slot="form-block"],
+  [data-slot="carga-por-responsavel"]
+) {
   border-color: var(--n-400) !important;
-  box-shadow: 3px 3px 0 0 var(--n-300), 0 12px 24px -16px
-    color-mix(in oklab, var(--n-900) 45%, transparent) !important;
+  box-shadow:
+    3px 3px 0 0 var(--n-300),
+    0 12px 24px -16px color-mix(in oklab, var(--n-900) 45%, transparent) !important;
 }
 :where(
-    [data-slot="dcard"],
-    [data-slot="painel"],
-    [data-slot="cartao-lateral"],
-    [data-slot="form-block"],
-    [data-slot="carga-por-responsavel"]
-  ):hover {
+  [data-slot="dcard"],
+  [data-slot="painel"],
+  [data-slot="cartao-lateral"],
+  [data-slot="form-block"],
+  [data-slot="carga-por-responsavel"]
+):hover {
   transform: translate(-1px, -1px);
   border-color: var(--n-900) !important;
-  box-shadow: 4px 4px 0 0 var(--n-300), 0 16px 28px -16px
-    color-mix(in oklab, var(--n-900) 55%, transparent) !important;
+  box-shadow:
+    4px 4px 0 0 var(--n-300),
+    0 16px 28px -16px color-mix(in oklab, var(--n-900) 55%, transparent) !important;
 }
 /* KPI: já tem hard-1 + ambiente; o hover sobe um degrau */
 [data-slot="kpi-tile"]:hover {
   transform: translate(-1px, -1px);
-  box-shadow: 3px 3px 0 0 var(--n-900), 0 18px 32px -14px
-    color-mix(in oklab, var(--kc, var(--n-900)) 55%, transparent);
+  box-shadow:
+    3px 3px 0 0 var(--n-900),
+    0 18px 32px -14px color-mix(in oklab, var(--kc, var(--n-900)) 55%, transparent);
 }
 /* tarefa do quadro: tecla de papel */
 [data-slot="tarefa"] {
@@ -820,8 +824,9 @@ main.bg-paper-grid > * {
 [data-slot="tarefa"]:hover {
   transform: translate(-1px, -1px);
   border-color: var(--n-900);
-  box-shadow: var(--hard-1), 0 12px 24px -12px
-    color-mix(in oklab, var(--cc, var(--n-900)) 40%, transparent);
+  box-shadow:
+    var(--hard-1),
+    0 12px 24px -12px color-mix(in oklab, var(--cc, var(--n-900)) 40%, transparent);
 }
 [data-slot="tarefa"]:active {
   transform: scale(0.985);
@@ -842,8 +847,11 @@ main.bg-paper-grid > * {
 /* item de navegação: desliza 2px e acende; ativo não se move */
 [data-slot="sidebar-nav"] a,
 [data-slot="sidebar-nav"] button {
-  transition: background var(--dur-1, 120ms), color var(--dur-1, 120ms), transform
-    var(--dur-1, 120ms) var(--ease, ease), box-shadow var(--dur-1, 120ms);
+  transition:
+    background var(--dur-1, 120ms),
+    color var(--dur-1, 120ms),
+    transform var(--dur-1, 120ms) var(--ease, ease),
+    box-shadow var(--dur-1, 120ms);
 }
 [data-slot="sidebar-nav"] a:not([aria-current]):hover {
   transform: translateX(2px);
@@ -856,7 +864,9 @@ main.bg-paper-grid > * {
 [data-slot="celula-entidade"] > :first-child,
 [data-slot="monograma"] {
   box-shadow: 0 1px 0 0 var(--n-300);
-  transition: transform var(--dur-1, 120ms) var(--ease, ease), box-shadow var(--dur-1, 120ms);
+  transition:
+    transform var(--dur-1, 120ms) var(--ease, ease),
+    box-shadow var(--dur-1, 120ms);
 }
 tr:hover [data-slot="celula-entidade"] > :first-child,
 tr:hover [data-slot="monograma"] {
@@ -869,7 +879,9 @@ tr:hover [data-slot="monograma"] {
 
 /* abas de visão e chips de filtro: fundo que acende, sem pular */
 [role="tab"] {
-  transition: background var(--dur-1, 120ms), color var(--dur-1, 120ms);
+  transition:
+    background var(--dur-1, 120ms),
+    color var(--dur-1, 120ms);
 }
 [role="tab"]:hover {
   background: color-mix(in oklab, var(--n-900) 6%, transparent);
@@ -998,16 +1010,20 @@ tr:hover [data-slot="monograma"] {
 }
 [data-slot="secao"] {
   border-color: var(--n-400) !important;
-  box-shadow: 3px 3px 0 0 var(--n-300), 0 12px 24px -16px
-    color-mix(in oklab, var(--n-900) 45%, transparent) !important;
-  transition: transform var(--dur-1, 120ms) var(--ease, ease), box-shadow var(--dur-1, 120ms)
-    var(--ease, ease), border-color var(--dur-1, 120ms) var(--ease, ease);
+  box-shadow:
+    3px 3px 0 0 var(--n-300),
+    0 12px 24px -16px color-mix(in oklab, var(--n-900) 45%, transparent) !important;
+  transition:
+    transform var(--dur-1, 120ms) var(--ease, ease),
+    box-shadow var(--dur-1, 120ms) var(--ease, ease),
+    border-color var(--dur-1, 120ms) var(--ease, ease);
 }
 [data-slot="secao"]:hover {
   transform: translate(-1px, -1px);
   border-color: var(--n-900) !important;
-  box-shadow: 4px 4px 0 0 var(--n-300), 0 16px 28px -16px
-    color-mix(in oklab, var(--n-900) 55%, transparent) !important;
+  box-shadow:
+    4px 4px 0 0 var(--n-300),
+    0 16px 28px -16px color-mix(in oklab, var(--n-900) 55%, transparent) !important;
 }
 [data-slot="secao"] > [data-slot="dcard-cabecalho"] .t-dado-meta {
   padding: 1px 5px;
@@ -1082,7 +1098,9 @@ tr:hover [data-slot="monograma"] {
   border: 1px solid transparent;
   border-bottom: 0;
   border-radius: var(--r-ctrl) var(--r-ctrl) 0 0;
-  transition: background var(--dur-1, 120ms), color var(--dur-1, 120ms);
+  transition:
+    background var(--dur-1, 120ms),
+    color var(--dur-1, 120ms);
 }
 :is(form, [data-slot="ficha-de-cadastro"])
   [data-slot="tabs"][data-orientation="horizontal"]
@@ -1099,7 +1117,9 @@ tr:hover [data-slot="monograma"] {
   border-color: var(--n-400);
   color: var(--n-900) !important;
   font-weight: 600;
-  box-shadow: 0 1px 0 0 var(--n-0), inset 0 2px 0 0 var(--lime-400);
+  box-shadow:
+    0 1px 0 0 var(--n-0),
+    inset 0 2px 0 0 var(--lime-400);
 }
 :is(form, [data-slot="ficha-de-cadastro"])
   [data-slot="tabs"][data-orientation="horizontal"]
@@ -1109,8 +1129,9 @@ tr:hover [data-slot="monograma"] {
   border: 1px solid var(--n-400);
   border-top: 0;
   border-radius: 0 0 var(--r-panel) var(--r-panel);
-  box-shadow: 3px 3px 0 0 var(--n-300), 0 12px 24px -16px
-    color-mix(in oklab, var(--n-900) 45%, transparent);
+  box-shadow:
+    3px 3px 0 0 var(--n-300),
+    0 12px 24px -16px color-mix(in oklab, var(--n-900) 45%, transparent);
 }
 /* dentro da pasta, o bloco de formulário é a segunda caixa (teto: 2) — sem relevo próprio */
 [data-slot="tabs-content"] [data-slot="form-block"] {
@@ -1131,8 +1152,9 @@ tr:hover [data-slot="monograma"] {
 [data-slot="appbar"] {
   background: color-mix(in oklab, var(--n-900) 3.5%, var(--n-50));
   border-bottom: 1px solid var(--n-300);
-  box-shadow: 0 1px 0 0 color-mix(in oklab, var(--n-0) 60%, transparent), 0 4px 12px -10px
-    color-mix(in oklab, var(--n-900) 35%, transparent);
+  box-shadow:
+    0 1px 0 0 color-mix(in oklab, var(--n-0) 60%, transparent),
+    0 4px 12px -10px color-mix(in oklab, var(--n-900) 35%, transparent);
 }
 [data-slot="appbar-trilha"] li:last-child > * {
   color: var(--n-900) !important;
@@ -1190,8 +1212,9 @@ tr:hover [data-slot="monograma"] {
   border: 1px solid var(--n-400);
   border-radius: var(--r-panel);
   background: var(--n-300);
-  box-shadow: 3px 3px 0 0 var(--n-300), 0 12px 24px -16px
-    color-mix(in oklab, var(--n-900) 45%, transparent);
+  box-shadow:
+    3px 3px 0 0 var(--n-300),
+    0 12px 24px -16px color-mix(in oklab, var(--n-900) 45%, transparent);
 }
 [data-slot="modo-calendario"] > div.grid > .t-rotulo {
   padding: 8px 8px;

@@ -1,6 +1,6 @@
+import { describe, expect, it } from 'vitest'
 import { parseQuantidade, totalItemCentavos } from '@/components/cabinet/documento'
 import { PERCENT_ESCALA } from '@/lib/formatters'
-import { describe, expect, it } from 'vitest'
 
 /**
  * Núcleo de cálculo dos documentos (§9 padrão 6). O total NUNCA é campo do

@@ -1,9 +1,9 @@
-import { PilulasDeFiltro } from '@/components/cabinet/filtros/pilulas-de-filtro'
-import type { CampoFiltravel, FiltroDaTabela, Juncao } from '@/lib/filtro-de-consulta'
-import { renderWithQuery } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { useState } from 'react'
 import { describe, expect, it } from 'vitest'
+import { PilulasDeFiltro } from '@/components/cabinet/filtros/pilulas-de-filtro'
+import type { CampoFiltravel, FiltroDaTabela, Juncao } from '@/lib/filtro-de-consulta'
+import { renderWithQuery } from '@/test/utils'
 
 /**
  * O que se trava aqui é o GESTO da pílula (#199), não o desenho: escolher o

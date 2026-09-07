@@ -1,3 +1,6 @@
+import { useNavigate, useRouterState } from '@tanstack/react-router'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useFilter } from 'react-aria-components'
 import {
   type Comando,
   comandosDaPaleta,
@@ -23,10 +26,7 @@ import {
   useTermoAdiado,
 } from '@/data/busca-de-registro'
 import { useRecursosDaEmpresa } from '@/data/recursos-da-empresa'
-import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
-import { useNavigate, useRouterState } from '@tanstack/react-router'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useFilter } from 'react-aria-components'
+import { bindShortcut, SHORTCUTS, shortcutLabel } from '@/lib/shortcuts'
 
 export interface PaletaDeComandosProps {
   aberta: boolean

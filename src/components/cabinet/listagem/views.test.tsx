@@ -1,15 +1,19 @@
+import { screen, waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { SavedViewDto } from '@/api/gerado'
+import { VitraDataTable } from '@/components/cabinet/data-table'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import {
   type ConsultaDaView,
   consultaDaView,
   corpoDaConsulta,
   useViewsDaTela,
 } from '@/components/cabinet/listagem/views'
+import { createMockListProvider } from '@/data/provider'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
+import { type Produto, produtos } from '@/mocks/produtos'
 import { instalarServidor, json } from '@/test/servidor'
 import { renderWithQuery } from '@/test/utils'
-import { screen, waitFor } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * A PERSISTÊNCIA das views na listagem — as quatro escritas do DoD e a
@@ -38,8 +42,26 @@ const VIEW: SavedViewDto = {
 }
 
 const CAMPOS: CampoFiltravel[] = [{ id: 'status', rotulo: 'Situação', variante: 'select' }]
+const COLUNAS: ColumnDef<Produto>[] = [{ accessorKey: 'nossaDescricao', header: 'Descrição' }]
+const produtosMock = createMockListProvider<Produto>({ rows: produtos, matches: () => true })
 
 describe('view ↔ estado da tabela', () => {
+  it('a DataTable monta a aba da view persistida na rota', async () => {
+    instalarServidor({ '/api/me/views': () => json([VIEW]) })
+
+    renderWithQuery(
+      <VitraDataTable
+        columns={COLUNAS}
+        queryKey={['produtos-test-views']}
+        fetcher={(state) => produtosMock.list(state, 0)}
+        filtros={CAMPOS}
+        rotaDaView={VIEW.route}
+      />,
+    )
+
+    expect(await screen.findByRole('tab', { name: 'Atrasadas' })).toBeInTheDocument()
+  })
+
   it('a consulta volta com a variante que a TELA declara — ela não viaja no fio', () => {
     expect(consultaDaView(VIEW, CAMPOS).filtros[0]).toMatchObject({
       id: 'status',

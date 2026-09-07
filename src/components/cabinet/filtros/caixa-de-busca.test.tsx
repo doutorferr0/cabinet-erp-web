@@ -1,8 +1,8 @@
+import { screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import { CaixaDeBusca } from '@/components/cabinet/filtros/caixa-de-busca'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import { renderWithQuery } from '@/test/utils'
-import { screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
 
 /**
  * O realce é o único retorno que a caixa dá sobre ter entendido o prefixo. Sem

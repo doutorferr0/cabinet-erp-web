@@ -1,3 +1,7 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { useForm } from 'react-hook-form'
+import { describe, expect, it, vi } from 'vitest'
 import {
   type ColunaDaGrade,
   type FonteDeItens,
@@ -7,10 +11,6 @@ import {
 } from '@/components/cabinet/grade-de-itens'
 import { Form } from '@/components/ui/form'
 import { renderWithQuery } from '@/test/utils'
-import { screen, waitFor, within } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { useForm } from 'react-hook-form'
-import { describe, expect, it, vi } from 'vitest'
 
 /**
  * GRADE DE ITENS 2.0 (D17, #485) — o que esta suíte cobra:

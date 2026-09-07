@@ -1,3 +1,4 @@
+import { HttpResponse, http } from 'msw'
 import type {
   CrmLostReasonDto,
   CrmLostReasonWriteRequest,
@@ -14,11 +15,10 @@ import type {
 } from '@/api/gerado'
 import { idDeColaborador, colaboradores as pessoas } from '@/mocks/colaboradores'
 import { nomeDeApoio } from '@/mocks/lookups'
-import { http, HttpResponse } from 'msw'
-import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
+import type { CamposFiltraveis } from './filtro-do-servidor'
+import { listar } from './listagem'
 import { verificarEscrita } from './permissao'
 import {
-  TIPO,
   camposInvalidos,
   conflito,
   naoEncontrado,
@@ -86,55 +86,6 @@ export const ORDENAVEIS_OPORTUNIDADE = [
   'expectedCloseDate',
   'stageChangedAt',
 ] as const
-
-function listar<T>(
-  itens: readonly T[],
-  url: URL,
-  ordenaveis: readonly string[],
-  textoDe: (item: T) => (string | null | undefined)[],
-  filtraveis?: CamposFiltraveis,
-) {
-  const q = url.searchParams.get('q')
-  const sortBy = url.searchParams.get('sortBy')
-  const sortDesc = url.searchParams.get('sortDesc') === 'true'
-  const page = Number(url.searchParams.get('page') ?? '1')
-  const pageSize = Number(url.searchParams.get('pageSize') ?? '10')
-
-  if (page < 1 || pageSize < 1 || pageSize > 100) {
-    return problemaJson(
-      400,
-      'Paginação inválida: page é 1-based e pageSize vai até 100.',
-      {},
-      TIPO.paginacaoInvalida,
-    )
-  }
-  if (sortBy && !ordenaveis.includes(sortBy)) {
-    return problemaJson(400, `sortBy inválido: ${sortBy}.`, {}, TIPO.ordenacaoInvalida)
-  }
-
-  let rows = [...itens]
-  if (q) {
-    const alvo = q.toLowerCase()
-    rows = rows.filter((item) => textoDe(item).some((texto) => texto?.toLowerCase().includes(alvo)))
-  }
-
-  const filtradas = aplicarFiltros(rows, url, filtraveis)
-  if (typeof filtradas === 'string') return problemaJson(400, filtradas, {}, TIPO.filtroInvalido)
-  rows = filtradas
-
-  if (sortBy) {
-    const chave = sortBy as keyof T
-    rows.sort((a, b) => {
-      const va = String(a[chave] ?? '')
-      const vb = String(b[chave] ?? '')
-      return sortDesc ? vb.localeCompare(va) : va.localeCompare(vb)
-    })
-  }
-
-  const total = rows.length
-  const inicio = (page - 1) * pageSize
-  return HttpResponse.json({ rows: rows.slice(inicio, inicio + pageSize), total })
-}
 
 /**
  * A oportunidade GUARDADA — só ids, como a linha do banco. Os campos `*Name` do

@@ -1,3 +1,5 @@
+import { useNavigate, useRouterState } from '@tanstack/react-router'
+import { useState } from 'react'
 import { Appbar } from '@/app/appbar'
 import { moduloDaRota } from '@/app/modulo'
 import { SidebarNav } from '@/app/nav/sidebar-nav'
@@ -5,8 +7,6 @@ import { PageFrame } from '@/app/page-frame'
 import { PaletaDeComandos } from '@/app/paleta-de-comandos'
 import { RequireRecurso } from '@/app/require-recurso'
 import { useNaoLidasDoInbox } from '@/features/inbox/estado-do-inbox'
-import { useNavigate, useRouterState } from '@tanstack/react-router'
-import { useState } from 'react'
 
 /**
  * A CASCA — barra à esquerda, appbar no topo, folha no meio.

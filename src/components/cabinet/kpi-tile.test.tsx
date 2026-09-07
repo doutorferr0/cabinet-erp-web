@@ -1,3 +1,5 @@
+import { render, screen, waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   DURACAO_DA_CONTAGEM,
   FaixaDeKpi,
@@ -8,8 +10,6 @@ import {
   PESO_DO_HEROI,
 } from '@/components/cabinet/kpi-tile'
 import { TotalBox } from '@/components/cabinet/total-box'
-import { render, screen, waitFor } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * A suíte roda com `matchMedia` devolvendo `matches: false` para tudo
@@ -191,7 +191,14 @@ describe('KpiTile', () => {
       expect(saida.style.fontSize).toBe(medida)
       // Tracking fechado nos três (§6): a 40px o padrão da mono abre os grupos
       // de milhar até parecerem números separados.
-      expect(saida.style.letterSpacing).toBe('-.03em')
+      //
+      // `-0.03em` com o zero, e o componente declara `-.03em` sem ele: o CSSOM
+      // NORMALIZA o valor ao serializá-lo de volta, e é a forma normalizada que
+      // todo navegador devolve. O jsdom só passou a fazê-lo na 30 — até então a
+      // asserção lia a string crua e casava por acidente com o que o componente
+      // escreveu. O produto não mudou; a asserção é que estava medindo o texto
+      // do fonte em vez do valor computado.
+      expect(saida.style.letterSpacing).toBe('-0.03em')
       expect(saida.style.fontVariantNumeric).toBe('tabular-nums')
       unmount()
     }

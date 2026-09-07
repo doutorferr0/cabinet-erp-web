@@ -1,15 +1,17 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { renderHook, waitFor } from '@testing-library/react'
+import { createElement, type ReactNode } from 'react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PurchaseOrderDto, PurchaseRequestDto } from '@/api/gerado'
 import {
   CHAVES_COMPRAS,
-  type OrdemDeCompra,
-  type PedidoDeCompra,
-  URL_ORDENS_COMPRA,
-  URL_PEDIDOS_COMPRA,
   faltaParaOMinimo,
   fornecedoresComLinhaAberta,
   linhasAbertasParaOrdem,
+  type OrdemDeCompra,
   ordemDeCompraVazia,
   ordensDeCompraApi,
+  type PedidoDeCompra,
   paraEscritaDaOrdem,
   paraEscritaDoPedido,
   paraOrdemDeCompra,
@@ -17,6 +19,8 @@ import {
   pedidoDeCompraVazio,
   pedidosDeCompraApi,
   subtotalDaOrdem,
+  URL_ORDENS_COMPRA,
+  URL_PEDIDOS_COMPRA,
   useCancelarOrdemDeCompra,
   useCancelarPedidoDeCompra,
   useEnviarOrdemDeCompra,
@@ -29,10 +33,6 @@ import {
 } from '@/data/compras-api'
 import { instalarServidor, json, problema } from '@/test/servidor'
 import { tableState } from '@/test/utils'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { renderHook, waitFor } from '@testing-library/react'
-import { type ReactNode, createElement } from 'react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * FRONTEIRA DE COMPRAS contra servidor falso — as 14 operações da família.
@@ -542,7 +542,7 @@ describe('o VERBO e o CAMINHO de cada gesto', () => {
 
     const chamada = servidor.em(`${URL_PEDIDOS_COMPRA}/pc-0001`).at(-1)
     expect(chamada?.metodo).toBe('PUT')
-    expect((chamada?.corpo as { items: unknown[] }).items).toHaveLength(2)
+    expect((chamada?.corpo as { items: unknown[] } | undefined)?.items).toHaveLength(2)
     expect(servidor.em(URL_PEDIDOS_COMPRA)).toHaveLength(0)
   })
 

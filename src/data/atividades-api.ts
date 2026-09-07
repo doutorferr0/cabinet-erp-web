@@ -1,3 +1,4 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
   ActivityDto,
   ActivityDtoEntityType,
@@ -7,13 +8,12 @@ import type {
 } from '@/api/gerado'
 import { completeActivity, createActivity, listActivities, updateActivity } from '@/api/gerado'
 import {
+  dadosOuErro,
   PAGE_SIZE_MAX,
   type RespostaDaApi,
-  dadosOuErro,
   repetirSeValeAPena,
 } from '@/data/api-provider'
 import { diaLocalISO } from '@/lib/datas'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 /**
  * FRONTEIRA DAS ATIVIDADES — o que está agendado sobre um registro qualquer.

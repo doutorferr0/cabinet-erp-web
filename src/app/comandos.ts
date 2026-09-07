@@ -1,14 +1,14 @@
+import { Keyboard, type LucideIcon } from 'lucide-react'
 import type { Modulo } from '@/app/modulo'
 import {
+  itemDaRota,
   type NavGroup,
   type NavItem,
   type NavSecao,
-  itemDaRota,
   secoesVisiveis,
 } from '@/app/navigation'
 import type { RecursoDaEmpresa } from '@/data/recursos-da-empresa'
 import { SHORTCUTS, shortcutLabel } from '@/lib/shortcuts'
-import { Keyboard, type LucideIcon } from 'lucide-react'
 
 /**
  * COMANDOS DA PALETA — montados da navegação, não de uma tabela paralela.

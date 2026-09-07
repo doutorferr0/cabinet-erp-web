@@ -1,6 +1,6 @@
-import { Ornamento, OrnamentoDoModulo } from '@/components/cabinet/ornamento'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { Ornamento, OrnamentoDoModulo } from '@/components/cabinet/ornamento'
 
 function pecaDe(container: HTMLElement) {
   return container.querySelector('[data-slot="ornamento"]') as SVGSVGElement

@@ -1,3 +1,5 @@
+import { Filter, Trash2 } from 'lucide-react'
+import { useId, useRef, useState } from 'react'
 import {
   ControleDeValor,
   SelectBrut,
@@ -11,12 +13,10 @@ import {
   type FiltroDaTabela,
   JUNCOES,
   type Juncao,
-  ROTULO_DA_JUNCAO,
   novoFiltroId,
   operadorPadrao,
+  ROTULO_DA_JUNCAO,
 } from '@/lib/filtro-de-consulta'
-import { Filter, Trash2 } from 'lucide-react'
-import { useId, useRef, useState } from 'react'
 
 export interface ListaDeFiltrosProps {
   campos: readonly CampoFiltravel[]

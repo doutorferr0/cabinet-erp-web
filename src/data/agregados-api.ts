@@ -1,19 +1,17 @@
+import { useQuery } from '@tanstack/react-query'
 import type {
-  NavCountersDto,
   OpportunitiesSummaryDto,
   PurchaseOrdersSummaryDto,
   QuotesSummaryDto,
   StockSummaryDto,
 } from '@/api/gerado'
 import {
-  getNavCounters,
   getOpportunitiesSummary,
   getPurchaseOrdersSummary,
   getQuotesSummary,
   getStockSummary,
 } from '@/api/gerado'
-import { type RespostaDaApi, dadosOuErro, repetirSeValeAPena } from '@/data/api-provider'
-import { useQuery } from '@tanstack/react-query'
+import { dadosOuErro, type RespostaDaApi, repetirSeValeAPena } from '@/data/api-provider'
 
 /**
  * FRONTEIRA DOS AGREGADOS DE KPI (#479, D11) — os quatro resumos por família
@@ -51,7 +49,6 @@ export const CHAVES = {
   orcamentos: ['agregados', 'orcamentos'] as const,
   estoque: ['agregados', 'estoque'] as const,
   oportunidades: ['agregados', 'oportunidades'] as const,
-  navegacao: ['agregados', 'navegacao'] as const,
 }
 
 export function useResumoDeOrdensDeCompra() {
@@ -94,24 +91,6 @@ export function useResumoDeOportunidades() {
     queryFn: async () => {
       const resposta: RespostaDaApi = await getOpportunitiesSummary()
       return dadosOuErro<OpportunitiesSummaryDto>(resposta, 'Falha ao carregar o resumo.')
-    },
-  })
-}
-
-/**
- * Os contadores da navegação, numa leitura só.
- *
- * UMA consulta e não oito: a sidebar mostra os oito ao mesmo tempo, e oito
- * respostas seriam oito instantes no mesmo quadro — o item some de um contador
- * e aparece noutro sem nunca ter existido nos dois.
- */
-export function useContadoresDaNavegacao() {
-  return useQuery({
-    queryKey: CHAVES.navegacao,
-    retry: repetirSeValeAPena,
-    queryFn: async () => {
-      const resposta: RespostaDaApi = await getNavCounters()
-      return dadosOuErro<NavCountersDto>(resposta, 'Falha ao carregar os contadores.')
     },
   })
 }

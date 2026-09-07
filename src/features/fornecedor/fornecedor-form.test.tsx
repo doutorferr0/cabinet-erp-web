@@ -1,7 +1,7 @@
-import { parceiro, servidorDeParceiros, stubDeParceiros } from '@/test/parceiros'
-import { acaoNaLinha, renderRoute } from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { parceiro, servidorDeParceiros, stubDeParceiros } from '@/test/parceiros'
+import { acaoNaLinha, renderRoute } from '@/test/utils'
 
 describe('tela Fornecedor', () => {
   it('listagem mostra os fornecedores do servidor', async () => {

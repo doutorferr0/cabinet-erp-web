@@ -1,3 +1,5 @@
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { configurarApi } from '@/api/cliente'
 import {
   authLogin,
@@ -11,11 +13,9 @@ import {
   simulateCostProfile,
   updatePriceIndex,
 } from '@/api/gerado'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { handlers } from './handlers'
 import { resetPrecos } from './precos'
-import { TENANT_MATRIZ, resetStore } from './store'
+import { resetStore, TENANT_MATRIZ } from './store'
 
 /**
  * O MOCK DE PREÇO (G9 · #379) — o que ele guarda e o que ele RECUSA.

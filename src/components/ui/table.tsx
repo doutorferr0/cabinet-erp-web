@@ -1,5 +1,5 @@
-import { cn } from '@/lib/utils'
 import * as React from 'react'
+import { cn } from '@/lib/utils'
 
 /**
  * Tabela brut, ainda em HTML puro: a versão RAC (grid navegável do spike)

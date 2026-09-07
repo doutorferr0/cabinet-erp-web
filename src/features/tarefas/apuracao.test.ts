@@ -1,5 +1,5 @@
-import type { TaskDto, TaskDtoStatus } from '@/api/gerado'
 import { describe, expect, it } from 'vitest'
+import type { TaskDto, TaskDtoStatus } from '@/api/gerado'
 import { apurarQuadro, diasDeAtraso, estaAtrasada, hojeISO } from './apuracao'
 
 function tarefa(parcial: Partial<TaskDto> & { id: string }): TaskDto {

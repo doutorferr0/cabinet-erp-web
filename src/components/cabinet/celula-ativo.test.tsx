@@ -1,6 +1,6 @@
-import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 
 describe('CelulaAtivo', () => {
   it('escreve a situação por extenso, não só em cor', () => {

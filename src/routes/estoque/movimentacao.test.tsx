@@ -1,7 +1,7 @@
-import { instalarServidor, json } from '@/test/servidor'
-import { renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { instalarServidor, json } from '@/test/servidor'
+import { renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 
 describe('rota /estoque/movimentacao', () => {
   it('responde e aparece no grupo ESTOQUE da barra, preenchendo o slot reservado (§10)', async () => {

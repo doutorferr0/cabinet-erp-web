@@ -1,7 +1,10 @@
+import { Plus } from 'lucide-react'
+import { useId, useState } from 'react'
 import type { OrderDto, TechnicalReserveDto } from '@/api/gerado'
 import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { VitraDataTable } from '@/components/cabinet/data-table'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { ComboDeEscolha } from '@/components/cabinet/lookup-combo'
 import { PageHeader } from '@/components/cabinet/page-header'
 import { Painel } from '@/components/cabinet/painel'
@@ -22,11 +25,11 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { data } from '@/data'
 import {
-  ROTULO_DA_SITUACAO_DE_RT,
-  ROTULO_DO_TIPO_DE_RT,
-  type RecorteDeReservaTecnica,
   listarReservasTecnicas,
   motivoDaRecusa,
+  type RecorteDeReservaTecnica,
+  ROTULO_DA_SITUACAO_DE_RT,
+  ROTULO_DO_TIPO_DE_RT,
   useCancelarReservaTecnica,
   useLancarReservaTecnica,
 } from '@/data/comissoes-api'
@@ -34,9 +37,6 @@ import { useReadOnlyPorPapel } from '@/data/papeis'
 import { useEspecificadorOptions } from '@/data/parceiros-api'
 import { avisar } from '@/lib/avisos'
 import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
-import type { ColumnDef } from '@tanstack/react-table'
-import { Plus } from 'lucide-react'
-import { useId, useState } from 'react'
 
 /**
  * A RESERVA TÉCNICA — o que o profissional externo recebe pela indicação.
@@ -149,7 +149,10 @@ function rascunhoVazio(): Rascunho {
 function LancarReservaTecnica({
   aberto,
   onOpenChange,
-}: { aberto: boolean; onOpenChange: (aberto: boolean) => void }) {
+}: {
+  aberto: boolean
+  onOpenChange: (aberto: boolean) => void
+}) {
   const [rascunho, setRascunho] = useState<Rascunho>(rascunhoVazio)
   const [buscandoPedido, setBuscandoPedido] = useState(false)
   const [comboAberto, setComboAberto] = useState(false)

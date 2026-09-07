@@ -1,3 +1,5 @@
+import { TriangleAlert } from 'lucide-react'
+import { useEffect, useId, useState } from 'react'
 import { LookupCombo } from '@/components/cabinet/lookup-combo'
 import { Nome } from '@/components/cabinet/nome'
 import {
@@ -14,11 +16,9 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
   type MotivoDoCancelamento,
-  OBSERVACAO_MAX,
   motivoVazio,
+  OBSERVACAO_MAX,
 } from '@/data/cancelamento-de-documento'
-import { TriangleAlert } from 'lucide-react'
-import { useEffect, useId, useState } from 'react'
 
 /**
  * Confirmação do `Cancelar` das listagens de DOCUMENTO.

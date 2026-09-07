@@ -1,3 +1,4 @@
+import { Unplug } from 'lucide-react'
 import { DetalheTecnico } from '@/components/cabinet/detalhe-tecnico'
 import { ModuloEmConstrucao } from '@/components/cabinet/modulo-em-construcao'
 import { Button } from '@/components/ui/button'
@@ -11,7 +12,6 @@ import {
 } from '@/components/ui/empty'
 import { ehModuloEmConstrucao } from '@/data/modulos-em-construcao'
 import { detalheDoErro } from '@/lib/erros'
-import { Unplug } from 'lucide-react'
 
 /**
  * O PAINEL QUE NÃO CARREGOU.

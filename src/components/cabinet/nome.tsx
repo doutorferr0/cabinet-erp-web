@@ -87,7 +87,10 @@ export function Nome({ children, peso = 'normal', className }: NomeProps) {
 export function Produto({
   children,
   className,
-}: { children: React.ReactNode; className?: string }) {
+}: {
+  children: React.ReactNode
+  className?: string
+}) {
   return (
     // O QUÊ (produto, serviço) é DADO em Inter 500, tinta cheia: é a coluna que o
     // operador lê primeiro. Descrição vem em caixa alta do legado — tracking leve

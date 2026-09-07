@@ -1,3 +1,5 @@
+import { render, screen, within } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import {
   Dialog,
   DialogDescription,
@@ -5,8 +7,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { render, screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 /**
  * A FOLHA DO DIÁLOGO NO 2.0 — o que este teste segura são as três decisões que

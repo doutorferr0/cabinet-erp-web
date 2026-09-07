@@ -1,3 +1,7 @@
+import { useNavigate } from '@tanstack/react-router'
+import { Check, ChevronsUpDown, Settings2 } from 'lucide-react'
+import { useState } from 'react'
+import { Button as ButtonAria } from 'react-aria-components'
 import { Ornamento } from '@/components/cabinet/ornamento'
 import {
   AlertDialog,
@@ -12,10 +16,6 @@ import {
 import { Popover, PopoverTrigger } from '@/components/ui/popover'
 import { useEmpresasDaSessao } from '@/data/empresas-api'
 import { papelLabel } from '@/data/papeis'
-import { useNavigate } from '@tanstack/react-router'
-import { Check, ChevronsUpDown, Settings2 } from 'lucide-react'
-import { useState } from 'react'
-import { Button as ButtonAria } from 'react-aria-components'
 
 /** Rota que administra o grupo — a mesma aba Empresas de `/config/usuarios`. */
 const ROTA_DE_EMPRESAS = '/config/usuarios'

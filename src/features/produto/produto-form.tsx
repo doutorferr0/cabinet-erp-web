@@ -1,3 +1,5 @@
+import { useNavigate } from '@tanstack/react-router'
+import { z } from 'zod'
 import type { ProductDto } from '@/api/gerado'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
@@ -8,8 +10,8 @@ import {
   LookupField,
   LookupSelectField,
   SelectField,
-  TextField,
   TextareaField,
+  TextField,
 } from '@/components/cabinet/form-controls'
 import { FormGrid } from '@/components/cabinet/form-grid'
 import { posGravar } from '@/components/cabinet/pos-gravar'
@@ -20,8 +22,6 @@ import { tabelas } from '@/data/tabelas'
 import { PrecoEMargem } from '@/features/produto/preco-e-margem'
 import { parseQuantidade } from '@/lib/formatters'
 import type { Produto } from '@/mocks/produtos'
-import { useNavigate } from '@tanstack/react-router'
-import { z } from 'zod'
 
 const dimensoesSchema = z.object({
   altura: z.string(),

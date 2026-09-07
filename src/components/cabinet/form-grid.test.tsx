@@ -1,9 +1,9 @@
-import { FormGrid, FormRow } from '@/components/cabinet/form-grid'
-import { Form } from '@/components/ui/form'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useForm } from 'react-hook-form'
 import { describe, expect, it } from 'vitest'
+import { FormGrid, FormRow } from '@/components/cabinet/form-grid'
+import { Form } from '@/components/ui/form'
 
 /**
  * Faixa de seção (DESIGN.md §FormGrid): linha cuja chave `sectionKey` tem

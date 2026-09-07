@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router'
 import type { DeliveryDto, OrderItemFulfillmentDto } from '@/api/gerado'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
 import { Painel } from '@/components/cabinet/painel'
@@ -18,7 +19,6 @@ import {
   useSituacaoDoPedido,
 } from '@/data/entrega-api'
 import { formatDateBR, formatInstanteBR, formatQuantidade } from '@/lib/formatters'
-import { Link } from '@tanstack/react-router'
 
 /**
  * A SITUAÇÃO FÍSICA do pedido, dentro do próprio documento de venda.

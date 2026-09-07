@@ -1,7 +1,7 @@
+import { Link } from '@tanstack/react-router'
 import { Forma } from '@/components/cabinet/forma'
 import { buttonVariants } from '@/components/ui/button'
 import { Empty, EmptyContent, EmptyDescription, EmptyMedia } from '@/components/ui/empty'
-import { Link } from '@tanstack/react-router'
 
 /**
  * ROTA INEXISTENTE (404).

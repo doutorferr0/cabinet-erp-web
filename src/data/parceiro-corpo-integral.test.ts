@@ -1,6 +1,6 @@
+import { describe, expect, it } from 'vitest'
 import type { PartnerDto } from '@/api/gerado'
 import { corpoDeEscrita } from '@/data/parceiros-api'
-import { describe, expect, it } from 'vitest'
 
 /**
  * O CORPO DO `PUT` DE PARCEIRO, medido contra o Postgres (2026-08-18).

@@ -1,11 +1,11 @@
+import { describe, expect, it, vi } from 'vitest'
 import {
-  MARCA_DE_IMPRESSAO,
   celulaCsv,
   imprimirRelatorio,
+  MARCA_DE_IMPRESSAO,
   montarCsv,
   nomeDoArquivo,
 } from '@/features/relatorios/exportar'
-import { describe, expect, it, vi } from 'vitest'
 
 /**
  * AS REGRAS DO ARQUIVO — o que o CSV promete e o que a impressão faz.

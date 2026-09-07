@@ -1,6 +1,6 @@
-import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 
 /**
  * ROUND-TRIP: abrir e gravar sem editar não pode mudar o registro.

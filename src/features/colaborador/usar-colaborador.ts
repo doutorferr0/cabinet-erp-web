@@ -1,3 +1,5 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from '@tanstack/react-router'
 import type { EmployeeDetailDto } from '@/api/gerado'
 import {
   atualizarColaborador,
@@ -9,8 +11,6 @@ import {
 } from '@/data/colaboradores-api'
 import { avisar } from '@/lib/avisos'
 import { type Colaborador, colaboradorVazio } from '@/mocks/colaboradores'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from '@tanstack/react-router'
 
 const ROTA_DA_LISTAGEM = '/cadastros/colaboradores' as const
 

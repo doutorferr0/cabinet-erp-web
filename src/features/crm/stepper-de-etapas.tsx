@@ -1,10 +1,10 @@
+import { Check, TrendingDown } from 'lucide-react'
+import { useState } from 'react'
 import type { CrmStageDto } from '@/api/gerado'
 import { Button } from '@/components/ui/button'
 import { type Oportunidade, useEstagios, useMoverOportunidade } from '@/data/crm-api'
 import { mensagemDoErro } from '@/lib/erros'
 import { cn } from '@/lib/utils'
-import { Check, TrendingDown } from 'lucide-react'
-import { useState } from 'react'
 import { PerderOportunidadeDialog } from './perder-oportunidade-dialog'
 
 /**

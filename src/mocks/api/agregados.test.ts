@@ -1,3 +1,5 @@
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { configurarApi } from '@/api/cliente'
 import type {
   NavCountersDto,
@@ -20,13 +22,11 @@ import {
   postGoodsReceipt,
 } from '@/api/gerado'
 import { apiFetch } from '@/api/http'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { mesesFechados } from './agregados'
 import { estadoDeCompras } from './compras'
 import { handlers } from './handlers'
 import { resetQuotes } from './quotes'
-import { TENANT_MATRIZ, resetStore, store } from './store'
+import { resetStore, store, TENANT_MATRIZ } from './store'
 
 /**
  * OS CINCO AGREGADOS DE KPI no modo mock (#479, D11).

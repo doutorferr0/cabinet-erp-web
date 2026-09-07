@@ -1,7 +1,7 @@
-import { cn } from '@/lib/utils'
 import { Slot } from '@radix-ui/react-slot'
 import * as React from 'react'
 import { Popover as PopoverPrimitive } from 'react-aria-components'
+import { cn } from '@/lib/utils'
 
 /**
  * HOVER CARD — o cartão que aparece ao pousar o mouse numa peça e mostra mais
@@ -180,4 +180,4 @@ function HoverCardContent({
   )
 }
 
-export { HoverCard, HoverCardTrigger, HoverCardContent }
+export { HoverCard, HoverCardContent, HoverCardTrigger }

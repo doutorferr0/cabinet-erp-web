@@ -1,10 +1,10 @@
+import { screen, within } from '@testing-library/react'
+import { beforeEach, describe, expect, it } from 'vitest'
 import type { CrmOpportunityDto, CrmStageDto } from '@/api/gerado'
 import { URL_FUNIS, URL_MOTIVOS_DE_PERDA, URL_OPORTUNIDADES } from '@/data/crm-api'
 import { apodrecimentoDoCartao, diasParado } from '@/features/crm/apodrecimento'
 import { json } from '@/test/servidor'
 import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
-import { screen, within } from '@testing-library/react'
-import { beforeEach, describe, expect, it } from 'vitest'
 
 /**
  * APODRECIMENTO (#87): régua pura primeiro, tela contra servidor falso depois.

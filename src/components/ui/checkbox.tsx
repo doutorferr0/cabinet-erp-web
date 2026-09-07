@@ -1,10 +1,10 @@
-import { cn } from '@/lib/utils'
 import { CheckIcon, MinusIcon } from 'lucide-react'
 import {
   Checkbox as CheckboxPrimitive,
   type CheckboxProps,
   composeRenderProps,
 } from 'react-aria-components'
+import { cn } from '@/lib/utils'
 
 /**
  * Checkbox 2.0 (#470): 15px, canto `--r-data` (4px), traço 1.5px de controle.

@@ -1,11 +1,11 @@
+import { Pencil } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { BlocoIdentidade } from '@/components/cabinet/ficha/bloco-identidade'
 import { FichaDeModulos } from '@/components/cabinet/ficha/ficha-de-modulos'
 import { IndiceDeModulos } from '@/components/cabinet/ficha/indice-de-modulos'
 import { textoDoCampo } from '@/components/cabinet/ficha/valores'
 import { PageHeader } from '@/components/cabinet/page-header'
 import type { EntidadeCadastro } from '@/features/cadastro/modulos'
-import { Pencil } from 'lucide-react'
-import type { ReactNode } from 'react'
 
 /**
  * A TELA DE CONSULTA — a ficha ligada na rota de detalhe (issue #103).

@@ -1,12 +1,12 @@
+import { Search } from 'lucide-react'
+import { useRef, useState } from 'react'
 import {
-  type PedacoDaBusca,
   interpretarBusca,
+  type PedacoDaBusca,
   prefixosDaBusca,
 } from '@/components/cabinet/filtros/busca-com-prefixo'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import { cn } from '@/lib/utils'
-import { Search } from 'lucide-react'
-import { useRef, useState } from 'react'
 
 /**
  * A CAIXA DE BUSCA DA BARRA 2.0 — texto livre e filtro na mesma linha.

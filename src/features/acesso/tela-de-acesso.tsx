@@ -1,9 +1,12 @@
+import { Plus } from 'lucide-react'
+import { useState } from 'react'
 import type { EmployeeDto } from '@/api/gerado'
 import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import { VitraDataTable } from '@/components/cabinet/data-table'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { Nome } from '@/components/cabinet/nome'
 import { PageHeader } from '@/components/cabinet/page-header'
 import { Stamp } from '@/components/cabinet/stamp'
@@ -35,10 +38,7 @@ import { SenhaProvisoriaDialog } from '@/features/acesso/senha-provisoria'
 import { TimbreFormDialog } from '@/features/acesso/timbre-form'
 import { VinculosDoUsuarioDialog } from '@/features/acesso/vinculos-do-usuario'
 import { avisar } from '@/lib/avisos'
-import { formatDateBR } from '@/lib/formatters'
-import type { ColumnDef } from '@tanstack/react-table'
-import { Plus } from 'lucide-react'
-import { useState } from 'react'
+import { formatInstanteBR } from '@/lib/formatters'
 
 /**
  * As colunas da listagem de usuários — a entidade, a situação e a PRÓXIMA AÇÃO.
@@ -94,6 +94,10 @@ function colunasDeUsuario({
         // abriria o diálogo por cima dele. Na captura a barreira desceria antes
         // do botão e mataria o próprio clique — foi o que o teste do `Gerar
         // senha` mediu, com zero escritas.
+        // Este `div` não é interativo — é uma BARREIRA. Os dois handlers só param
+        // a subida do evento para a linha; não há ação, e dar-lhe `role`/`tabIndex`
+        // criaria uma parada de foco que não faz nada. Quem age são os botões.
+        // biome-ignore lint/a11y/noStaticElementInteractions: ver acima
         <div
           className="flex gap-[var(--s-2)]"
           onClick={(e) => e.stopPropagation()}
@@ -194,7 +198,7 @@ export function TelaDeAcesso() {
       onSuccess: ({ sentTo, expiresAt }) =>
         avisar(
           `Convite enviado a ${nome}`,
-          `Para ${sentTo} — o link vale até ${formatDateBR(expiresAt)}.`,
+          `Para ${sentTo} — o link vale até ${formatInstanteBR(expiresAt)}.`,
         ),
     })
   }

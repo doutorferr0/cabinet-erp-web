@@ -1,3 +1,5 @@
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { configurarApi } from '@/api/cliente'
 import {
   authLogin,
@@ -7,12 +9,10 @@ import {
   listActivities,
   updateActivity,
 } from '@/api/gerado'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { resetAtividades } from './atividades'
 import { resetCrm } from './crm'
 import { handlers } from './handlers'
-import { TENANT_MATRIZ, resetStore, store } from './store'
+import { resetStore, store, TENANT_MATRIZ } from './store'
 
 /**
  * Trava as SEMÂNTICAS da atividade no modo mock, não o dado do seed.

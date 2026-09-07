@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { QuoteVsStockRowDto } from '@/api/gerado'
 import { useDepositos } from '@/data/estoque-api'
 import {
@@ -22,7 +23,6 @@ import {
 } from '@/features/relatorios/moldura-de-relatorio'
 import { limitesDoMes, mesDe } from '@/lib/datas'
 import { formatQuantidade } from '@/lib/formatters'
-import { useState } from 'react'
 
 /**
  * ORÇADO × ESTOQUE — `GET /api/reports/quote-vs-stock`.

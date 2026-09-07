@@ -1,3 +1,4 @@
+import { HttpResponse, http } from 'msw'
 import type {
   NavCountersDto,
   OpportunitiesSummaryDto,
@@ -6,7 +7,6 @@ import type {
   StockSummaryDto,
 } from '@/api/gerado'
 import { diaLocalISO, mesDe, mesDeslocado } from '@/lib/datas'
-import { http, HttpResponse } from 'msw'
 import { ordensParaAgregado, recebimentosPendentes } from './compras'
 import { crm } from './crm'
 import { pedidosAbertos } from './pedidos'

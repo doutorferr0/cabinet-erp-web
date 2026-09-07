@@ -1,11 +1,11 @@
+import type { ReactNode } from 'react'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import type { TipoDeColuna } from '@/components/cabinet/listagem/celulas-tipadas'
+import type { ColumnDef, LinhaDaTabela } from '@/components/cabinet/listagem/tabela'
 import type { ModuloCor } from '@/components/cabinet/modulo-cores'
 import { Money } from '@/components/cabinet/money'
 import type { CampoCadastro, EntidadeCadastro } from '@/features/cadastro/modulos'
 import { formatDateBR } from '@/lib/formatters'
-import type { ColumnDef } from '@tanstack/react-table'
-import type { ReactNode } from 'react'
 import { idDoFiltro, moduloDoFiltro } from './modulos-da-consulta'
 
 /**
@@ -49,7 +49,9 @@ export function idDaColuna(entidade: EntidadeCadastro, campo: CampoCadastro): st
  * que diz o que não se pode desmarcar. `accessorKey` é o nome que viaja; `id`
  * cobre a coluna que não acessa campo (a de seleção, por exemplo).
  */
-export function idsDeclarados<T>(columns: readonly ColumnDef<T>[]): readonly string[] {
+export function idsDeclarados<T extends LinhaDaTabela>(
+  columns: readonly ColumnDef<T>[],
+): readonly string[] {
   return columns.flatMap((coluna) => {
     const id = coluna.id ?? ('accessorKey' in coluna ? String(coluna.accessorKey) : undefined)
     return id ? [id] : []
@@ -143,7 +145,7 @@ function tipoDoCampo(campo: CampoCadastro): TipoDeColuna | undefined {
  * sequência em que o operador marcou as caixas, e a consulta salva reabriria a
  * tela com as colunas embaralhadas.
  */
-export function colunasDaGrade<T>(
+export function colunasDaGrade<T extends LinhaDaTabela>(
   entidade: EntidadeCadastro,
   extras: readonly string[],
   declaradas: readonly string[] = [],

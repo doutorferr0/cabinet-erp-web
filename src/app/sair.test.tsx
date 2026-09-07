@@ -1,6 +1,6 @@
-import { renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 
 /**
  * SAIR — o gesto que derruba a sessão, e a guarda que o completa.

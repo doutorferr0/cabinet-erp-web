@@ -1,10 +1,10 @@
+import { describe, expect, it } from 'vitest'
 import {
   campoDoPrefixo,
   interpretarBusca,
   prefixosDaBusca,
 } from '@/components/cabinet/filtros/busca-com-prefixo'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
-import { describe, expect, it } from 'vitest'
 
 /**
  * O prefixo é o caminho curto do filtro. Errado, ele é pior que ausente: quem

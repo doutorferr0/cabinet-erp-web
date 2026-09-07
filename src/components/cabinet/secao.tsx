@@ -1,6 +1,6 @@
-import { COR_DE_ZONA, DCard, MarcaDeCard } from '@/components/cabinet/painel'
 import type { LucideIcon } from 'lucide-react'
 import type React from 'react'
+import { COR_DE_ZONA, DCard, MarcaDeCard } from '@/components/cabinet/painel'
 
 /**
  * SEÇÃO de documento — a caixa-filha que agrupa um assunto do formulário.

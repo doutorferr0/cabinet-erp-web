@@ -1,3 +1,5 @@
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Truck } from 'lucide-react'
 import { TelaDeDocumento } from '@/components/cabinet/tela-de-documento'
 import { data } from '@/data'
 import { LateralDoPedidoDeVenda } from '@/features/vendas/ficha-lateral'
@@ -6,8 +8,6 @@ import { PedidoDeVendaForm } from '@/features/vendas/pedido-venda-form'
 import { SituacaoDoPedido } from '@/features/vendas/situacao-do-pedido'
 import { formatDateBR } from '@/lib/formatters'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Truck } from 'lucide-react'
 
 export const Route = createFileRoute('/vendas/pedidos/$pedidoId')({
   component: PedidoDeVendaEditPage,

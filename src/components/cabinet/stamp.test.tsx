@@ -1,6 +1,6 @@
-import { Stamp, type StampTom } from '@/components/cabinet/stamp'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { Stamp, type StampTom } from '@/components/cabinet/stamp'
 
 /**
  * STAMP — o alias do `<Badge>` (#471, D3).

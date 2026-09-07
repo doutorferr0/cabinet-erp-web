@@ -1,6 +1,6 @@
-import { Money } from '@/components/cabinet/money'
 import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { Money } from '@/components/cabinet/money'
 
 /**
  * MONEY — o valor com o símbolo em peso menor (#471, D3).

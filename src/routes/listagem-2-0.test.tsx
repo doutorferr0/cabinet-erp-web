@@ -1,8 +1,8 @@
+import { screen } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { ordemAtrasada } from '@/routes/compras/ordens/index'
 import { parceiro, stubDeParceiros } from '@/test/parceiros'
 import { renderRoute } from '@/test/utils'
-import { screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 /**
  * D14 — a Listagem 2.0 CHEGANDO nas rotas.

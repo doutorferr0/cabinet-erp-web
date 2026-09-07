@@ -1,13 +1,13 @@
+import { screen, within } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { StockBalanceDto, StockLocationDto, StockMovementDto } from '@/api/gerado'
 import {
-  type ModoDeLancamento,
   deltaDoLancamento,
+  type ModoDeLancamento,
   quantidadeDoTexto,
 } from '@/features/estoque/lancar-movimento'
 import { type ChamadaFalsa, instalarServidor, json, problema } from '@/test/servidor'
 import { renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
-import { screen, within } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * AS TRÊS ESCRITAS de estoque — entrada, saída e ajuste — contra servidor falso.

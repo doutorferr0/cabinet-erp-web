@@ -1,6 +1,6 @@
-import { DO_MODULO, Forma, FormaDoModulo, type TipoDeForma } from '@/components/cabinet/forma'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { DO_MODULO, Forma, FormaDoModulo, type TipoDeForma } from '@/components/cabinet/forma'
 
 const TIPOS: TipoDeForma[] = ['casa', 'caixa', 'quadrado', 'seta', 'funil', 'circulo', 'barras']
 

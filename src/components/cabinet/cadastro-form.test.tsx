@@ -1,3 +1,6 @@
+import { screen, waitFor } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
+import { z } from 'zod'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,9 +14,6 @@ import {
   respostaSessao,
   respostaVinculos,
 } from '@/test/utils'
-import { screen, waitFor } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
-import { z } from 'zod'
 
 /**
  * Modo `Consul.` — transcrição §9 padrão 8. A tela é a mesma do `Alterar`;

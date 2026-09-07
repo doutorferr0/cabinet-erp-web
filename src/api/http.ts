@@ -207,6 +207,13 @@ function respostaQueExpirou(url: string): RespostaBruta {
   }
 }
 
+/** Erro que o `fetch` usa quando a requisição não chegou a ter resposta. */
+function ehFalhaDeRedeOuCancelamento(erro: unknown): boolean {
+  if (erro instanceof DOMException && erro.name === 'AbortError') return true
+  if (!(erro instanceof TypeError)) return false
+  return /(?:failed to fetch|fetch failed|network(?:error)?|load failed)/i.test(erro.message)
+}
+
 interface RespostaBruta {
   data: unknown
   status: number
@@ -253,8 +260,11 @@ export const apiFetch = async <T>(url: string, options: RequestInit): Promise<T>
       headers: response.headers,
       url,
     } as T
-  } catch {
+  } catch (erro) {
     if (relogio.expirou()) return respostaQueExpirou(url) as T
-    return { data: undefined, status: 0, headers: new Headers(), url } as T
+    if (ehFalhaDeRedeOuCancelamento(erro)) {
+      return { data: undefined, status: 0, headers: new Headers(), url } as T
+    }
+    throw erro
   }
 }

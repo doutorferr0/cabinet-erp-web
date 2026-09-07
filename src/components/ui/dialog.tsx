@@ -1,5 +1,3 @@
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
 import { XIcon } from 'lucide-react'
 import type * as React from 'react'
 import {
@@ -12,6 +10,8 @@ import {
   type ModalOverlayProps as ModalOverlayPrimitiveProps,
   Modal as ModalPrimitive,
 } from 'react-aria-components'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 function DialogTrigger({ ...props }: DialogTriggerPrimitiveProps) {
   return <DialogTriggerPrimitive data-slot="dialog-trigger" {...props} />
@@ -163,14 +163,14 @@ function DialogDescription({ className, ...props }: Omit<React.ComponentProps<'d
 }
 
 export {
-  type DialogPrimitiveProps,
-  type DialogTriggerPrimitiveProps,
   Dialog,
   DialogClose,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogOverlay,
+  type DialogPrimitiveProps,
   DialogTitle,
   DialogTrigger,
+  type DialogTriggerPrimitiveProps,
 }

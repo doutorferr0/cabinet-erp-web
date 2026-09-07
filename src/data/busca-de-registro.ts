@@ -1,11 +1,11 @@
+import { useQueries } from '@tanstack/react-query'
+import { FileText, type LucideIcon, Package, Receipt, Users } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import type { OrderDto, PartnerDto, ProductDto, QuoteDto } from '@/api/gerado'
 import { data } from '@/data/index'
 import { LISTA_DE_PARCEIROS } from '@/data/parceiros-api'
 import { RECURSOS, type RecursoDaEmpresa, useRecursosDaEmpresa } from '@/data/recursos-da-empresa'
 import type { TableQueryState } from '@/lib/table-query'
-import { useQueries } from '@tanstack/react-query'
-import { FileText, type LucideIcon, Package, Receipt, Users } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
 
 /**
  * BUSCA DE REGISTRO — o `q` que já existe em cada listagem, perguntado de uma vez.
@@ -322,38 +322,34 @@ export function useBuscaDeRegistro(termo: string): BuscaDeRegistro {
     })),
   })
 
-  return useMemo(() => {
-    const grupos: GrupoDeResultados[] = []
-    const falharam: string[] = []
+  const grupos: GrupoDeResultados[] = []
+  const falharam: string[] = []
 
-    ALVOS.forEach((alvo, i) => {
-      const consultaDoAlvo = consultas[i]
-      if (!consultaDoAlvo) return
-      if (consultaDoAlvo.isError) {
-        falharam.push(alvo.titulo)
-        return
-      }
-      const dados = consultaDoAlvo.data
-      if (!dados || dados.itens.length === 0) return
-      grupos.push({
-        chave: alvo.chave,
-        titulo: alvo.titulo,
-        itens: dados.itens,
-        total: dados.total,
-        cortado: dados.total > dados.itens.length,
-      })
-    })
-
-    return {
-      termo: limpo,
-      // Esperar os vínculos É estar procurando: dizer "nada encontrado" nesse
-      // instante afirmaria o resultado de uma busca que nem começou.
-      buscando: !curto && (!conhecido || consultas.some((c) => c.isFetching)),
-      grupos,
-      falharam,
-      curto,
+  ALVOS.forEach((alvo, i) => {
+    const consultaDoAlvo = consultas[i]
+    if (!consultaDoAlvo) return
+    if (consultaDoAlvo.isError) {
+      falharam.push(alvo.titulo)
+      return
     }
-    // `consultas` é array novo a cada render (useQueries); o que muda de
-    // verdade é o estado de cada uma, e é por ele que este memo tem de passar.
-  }, [consultas, curto, limpo, conhecido])
+    const dados = consultaDoAlvo.data
+    if (!dados || dados.itens.length === 0) return
+    grupos.push({
+      chave: alvo.chave,
+      titulo: alvo.titulo,
+      itens: dados.itens,
+      total: dados.total,
+      cortado: dados.total > dados.itens.length,
+    })
+  })
+
+  return {
+    termo: limpo,
+    // Esperar os vínculos É estar procurando: dizer "nada encontrado" nesse
+    // instante afirmaria o resultado de uma busca que nem começou.
+    buscando: !curto && (!conhecido || consultas.some((c) => c.isFetching)),
+    grupos,
+    falharam,
+    curto,
+  }
 }

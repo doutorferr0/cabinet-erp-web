@@ -1,5 +1,4 @@
-import { cn } from '@/lib/utils'
-import { type VariantProps, cva } from 'class-variance-authority'
+import { cva, type VariantProps } from 'class-variance-authority'
 import type * as React from 'react'
 import {
   TabList as TabListPrimitive,
@@ -7,6 +6,7 @@ import {
   Tab as TabPrimitive,
   Tabs as TabsPrimitive,
 } from 'react-aria-components'
+import { cn } from '@/lib/utils'
 
 /** Compat shadcn→RAC: `defaultValue`/`value` viram `defaultSelectedKey`/`selectedKey`. */
 function Tabs({
@@ -160,4 +160,4 @@ function TabsContent({
   )
 }
 
-export { Tabs, TabsList, TabsTrigger, TabsContent, TabsCount, tabsListVariants }
+export { Tabs, TabsContent, TabsCount, TabsList, TabsTrigger, tabsListVariants }

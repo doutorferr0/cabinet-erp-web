@@ -1,3 +1,6 @@
+import { Link, useRouter } from '@tanstack/react-router'
+import { ArrowLeft, FileQuestion, SearchX, Unplug } from 'lucide-react'
+import type React from 'react'
 import { DetalheTecnico } from '@/components/cabinet/detalhe-tecnico'
 import { FormaDoModulo } from '@/components/cabinet/forma'
 import { ModuloEmConstrucao } from '@/components/cabinet/modulo-em-construcao'
@@ -12,9 +15,6 @@ import {
 } from '@/components/ui/empty'
 import { ehModuloEmConstrucao } from '@/data/modulos-em-construcao'
 import { detalheDoErro } from '@/lib/erros'
-import { Link, useRouter } from '@tanstack/react-router'
-import { ArrowLeft, FileQuestion, SearchX, Unplug } from 'lucide-react'
-import type React from 'react'
 
 /**
  * O QUE A LISTAGEM MOSTRA NO LUGAR DAS LINHAS — vazio e falha.

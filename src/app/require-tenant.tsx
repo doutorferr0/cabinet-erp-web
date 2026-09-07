@@ -1,10 +1,10 @@
+import { useQueryClient } from '@tanstack/react-query'
+import { Building2 } from 'lucide-react'
 import { PageHeader } from '@/components/cabinet/page-header'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useEmpresasDaSessao } from '@/data/empresas-api'
 import { useSessao } from '@/data/sessao'
-import { useQueryClient } from '@tanstack/react-query'
-import { Building2 } from 'lucide-react'
 
 /**
  * Guarda de contexto: tela do sistema NÃO renderiza sem empresa ativa.

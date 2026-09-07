@@ -1,3 +1,5 @@
+import { useQuery } from '@tanstack/react-query'
+import { createContext, type ReactNode, useContext } from 'react'
 import {
   type FilaDeAutosave,
   GuardaDeAutosave,
@@ -13,8 +15,6 @@ import {
 import type { AcaoDeCabecalho } from '@/components/cabinet/page-header'
 import { RegistroNaoEncontrado } from '@/components/cabinet/vazio-com-saida'
 import type { DocumentoProvider } from '@/data/provider'
-import { useQuery } from '@tanstack/react-query'
-import { type ReactNode, createContext, useContext } from 'react'
 
 /**
  * O que o cabeçalho mostra sobre ESTE registro, neste estado.

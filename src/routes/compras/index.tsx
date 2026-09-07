@@ -1,5 +1,5 @@
-import { HubDeModulo } from '@/components/cabinet/hub-de-modulo'
 import { createFileRoute } from '@tanstack/react-router'
+import { HubDeModulo } from '@/components/cabinet/hub-de-modulo'
 
 export const Route = createFileRoute('/compras/')({
   component: ComprasHome,

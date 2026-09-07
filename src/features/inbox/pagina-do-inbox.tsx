@@ -1,11 +1,11 @@
+import { getRouteApi } from '@tanstack/react-router'
+import { CheckCheck } from 'lucide-react'
 import { PageHeader } from '@/components/cabinet/page-header'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { getRouteApi } from '@tanstack/react-router'
-import { CheckCheck } from 'lucide-react'
 import { alternarLido, marcarTudoComoLido, useItensDoInbox } from './estado-do-inbox'
 import { LinhaDoInbox } from './item-do-inbox'
-import { VIEWS, type ViewDoInbox, itensDaView, viewPorId } from './views'
+import { itensDaView, VIEWS, type ViewDoInbox, viewPorId } from './views'
 
 const rota = getRouteApi('/inbox')
 

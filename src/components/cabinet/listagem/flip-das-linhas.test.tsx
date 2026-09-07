@@ -1,7 +1,7 @@
-import { useFlipDasLinhas } from '@/components/cabinet/listagem/flip-das-linhas'
 import { render } from '@testing-library/react'
 import { useRef } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { useFlipDasLinhas } from '@/components/cabinet/listagem/flip-das-linhas'
 
 /**
  * O FLIP não tem captura que o prove — animação de 200ms não sai em PNG — e no

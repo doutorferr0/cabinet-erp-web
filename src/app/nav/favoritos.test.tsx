@@ -3,9 +3,10 @@
 // (contrato Proposto) montados no shell ANTIGO. No merge ficou a barra da D4;
 // `GrupoFavoritos`/`EstrelaDaTela` daqui ainda não estão ligados nela. Ligar
 // (e apagar o localStorage da D4) é item da D37 (#532). Até lá, skip.
-import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
+
 import { screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 
 /**
  * O grupo FAVORITOS da barra lateral (D13).

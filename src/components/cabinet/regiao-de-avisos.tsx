@@ -1,8 +1,8 @@
+import { X } from 'lucide-react'
+import { useEffect, useSyncExternalStore } from 'react'
 import { Button } from '@/components/ui/button'
 import { type Aviso, assinarAvisos, avisosAtuais, dispensarAviso } from '@/lib/avisos'
 import { cn } from '@/lib/utils'
-import { X } from 'lucide-react'
-import { useEffect, useSyncExternalStore } from 'react'
 
 /** Quanto tempo uma CONFIRMAÇÃO fica na faixa antes de sair sozinha. */
 const DURACAO_MS = 6000

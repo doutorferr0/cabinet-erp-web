@@ -1,6 +1,6 @@
+import { useRouter, useRouterState } from '@tanstack/react-router'
 import { type Modulo, moduloDaRota } from '@/app/modulo'
 import { cn } from '@/lib/utils'
-import { useRouter, useRouterState } from '@tanstack/react-router'
 
 /**
  * FORMA — o sistema gráfico da marca (Reface 2.0, D35 · pesquisa §1). A marca é duas casas

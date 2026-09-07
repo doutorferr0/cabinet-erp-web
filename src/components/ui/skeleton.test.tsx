@@ -1,6 +1,6 @@
-import { Skeleton } from '@/components/ui/skeleton'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { Skeleton } from '@/components/ui/skeleton'
 
 /**
  * O ESQUELETO É FORMA, NÃO INFORMAÇÃO — e as duas asserções aqui são as duas

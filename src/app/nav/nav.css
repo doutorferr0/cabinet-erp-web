@@ -256,8 +256,11 @@
   color: var(--cor-do-modulo, var(--ink));
 }
 .cabinet-nav [data-item] {
-  transition: background var(--dur-1, 120ms), color var(--dur-1, 120ms), transform
-    var(--dur-1, 120ms) var(--ease, ease), box-shadow var(--dur-1, 120ms);
+  transition:
+    background var(--dur-1, 120ms),
+    color var(--dur-1, 120ms),
+    transform var(--dur-1, 120ms) var(--ease, ease),
+    box-shadow var(--dur-1, 120ms);
 }
 .cabinet-nav [data-item][data-ativo="true"] {
   font-weight: 600;

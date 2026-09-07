@@ -1,8 +1,8 @@
-import { instalarServidor, json } from '@/test/servidor'
-import { renderRoute } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { instalarServidor, json } from '@/test/servidor'
+import { renderRoute } from '@/test/utils'
 
 /**
  * A BUSCA DE REGISTRO vista da paleta — a tela, não a fronteira.

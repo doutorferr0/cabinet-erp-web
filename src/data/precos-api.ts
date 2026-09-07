@@ -1,3 +1,4 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
   CostSimulationDto,
   CostSimulationRequest,
@@ -13,12 +14,11 @@ import {
   simulateCostProfile,
 } from '@/api/gerado'
 import {
+  dadosOuErro,
   PAGE_SIZE_MAX,
   type RespostaDaApi,
-  dadosOuErro,
   repetirSeValeAPena,
 } from '@/data/api-provider'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 /**
  * FRONTEIRA DE PREÇO — a tabela do fornecedor, o índice de venda e a simulação

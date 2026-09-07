@@ -1,13 +1,13 @@
+import { useMutation } from '@tanstack/react-query'
+import { screen, waitFor } from '@testing-library/react'
+import { useState } from 'react'
+import { describe, expect, it, vi } from 'vitest'
 import { apiFetch } from '@/api/http'
 import { ErroDaApi } from '@/data/api-provider'
 import { envioInterrompido } from '@/data/sessao-expirada'
 import { ReentrarNaSessao } from '@/features/login/reentrar'
 import { instalarServidor, json } from '@/test/servidor'
 import { renderWithQuery } from '@/test/utils'
-import { useMutation } from '@tanstack/react-query'
-import { screen, waitFor } from '@testing-library/react'
-import { useState } from 'react'
-import { describe, expect, it, vi } from 'vitest'
 
 /**
  * Sessão que vence NO MEIO do envio (#124, ponto 3).

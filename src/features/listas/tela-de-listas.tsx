@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { CatalogLookupDto } from '@/api/gerado'
 import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
@@ -10,7 +11,6 @@ import {
   useItensDaLista,
 } from '@/data/listas-de-apoio-api'
 import { LOOKUP_KINDS, type LookupKind, lookupLabel } from '@/data/lookups-api'
-import { useState } from 'react'
 
 /**
  * AS LISTAS DE APOIO — a tela de gestão que o endpoint genérico não tinha.

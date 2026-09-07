@@ -1,16 +1,15 @@
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { CalendarDays, CircleDot, Hash, List } from 'lucide-react'
 import type { PurchaseRequestDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import type { OpcaoDeAgrupamento } from '@/components/cabinet/data-table'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import type { StampTom } from '@/components/cabinet/stamp'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
-
 import { useReadOnlyPorPapel } from '@/data/papeis'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import { formatDateBR } from '@/lib/formatters'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import type { ColumnDef } from '@tanstack/react-table'
-import { CalendarDays, CircleDot, Hash, List } from 'lucide-react'
 
 export const Route = createFileRoute('/compras/pedidos/')({
   component: PedidosCompraPage,

@@ -1,3 +1,8 @@
+import { useNavigate } from '@tanstack/react-router'
+import { Calculator, CreditCard, Hash, List, Percent, Truck, User } from 'lucide-react'
+import { useState } from 'react'
+import { useFormContext, useWatch } from 'react-hook-form'
+import { z } from 'zod'
 import type { OrderDetailDto, PartnerDto } from '@/api/gerado'
 import { AbasSemCaptura } from '@/components/cabinet/abas-sem-captura'
 import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
@@ -5,6 +10,7 @@ import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { DocumentoBloco } from '@/components/cabinet/documento'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { DateField, RadioField, SelectField, TextField } from '@/components/cabinet/form-controls'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { Nome } from '@/components/cabinet/nome'
 import { posGravar } from '@/components/cabinet/pos-gravar'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
@@ -19,12 +25,6 @@ import { BlocoPagamento } from '@/features/orcamento/bloco-pagamento'
 import { ItensDoOrcamento } from '@/features/orcamento/itens-do-orcamento'
 import { AcoesDoCiclo } from '@/features/vendas/acoes-do-ciclo'
 import { formatDateBR, formatMoneyBRL, formatPercent } from '@/lib/formatters'
-import { useNavigate } from '@tanstack/react-router'
-import type { ColumnDef } from '@tanstack/react-table'
-import { Calculator, CreditCard, Hash, List, Percent, Truck, User } from 'lucide-react'
-import { useState } from 'react'
-import { useFormContext, useWatch } from 'react-hook-form'
-import { z } from 'zod'
 
 /**
  * O FORMULÁRIO DO PEDIDO DE VENDA — `/api/orders`.
@@ -518,7 +518,10 @@ const ABAS_SEM_CAPTURA = [
 export function PedidoDeVendaForm({
   pedido,
   readOnly = false,
-}: { pedido: PedidoDeVenda; readOnly?: boolean }) {
+}: {
+  pedido: PedidoDeVenda
+  readOnly?: boolean
+}) {
   const navigate = useNavigate()
   const gravar = useGravarPedidoDeVenda()
 

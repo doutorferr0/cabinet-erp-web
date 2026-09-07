@@ -1,8 +1,8 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { servidorDeOrcamentos } from '@/test/orcamentos'
 import { parceiro, stubDeParceiros } from '@/test/parceiros'
 import { renderRoute } from '@/test/utils'
-import { screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 describe('tela Orçamento', () => {
   it('listagem mostra orçamentos e usa Cancelar no lugar de Excluir', async () => {

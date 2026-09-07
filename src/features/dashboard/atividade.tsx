@@ -1,10 +1,10 @@
+import { Link } from '@tanstack/react-router'
 import type { ActivityDto } from '@/api/gerado'
 import { Monograma } from '@/components/cabinet/monograma'
 import { CabecalhoDeCard, MarcaDeCard } from '@/components/cabinet/painel'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAtividadesRecentes } from '@/data/atividades-api'
 import { horaLocal } from '@/lib/datas'
-import { Link } from '@tanstack/react-router'
 
 /**
  * O FEED DE ATIVIDADE — a segunda metade do card largo do Dashboard.

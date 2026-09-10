@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projeto de Iluminação — Cliente Exemplo · Vertz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/metropolis@5.0.13/index.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/metropolis@5.0.13/400-italic.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/metropolis@5.0.13/600.css">
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Cutive+Mono&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F1EA;            /* --color-bg do site */
+    --surface:#E3DDD6;       /* --color-surface / gray-300 */
+    --card:#FFFFFF;
+    --ink:#2B2B2B;           /* --color-dark */
+    --ink-soft:#6B6F73;      /* --color-gray-600 */
+    --hair:rgba(26,26,26,.14);/* hairline editorial */
+    --dark:#18181A;          /* --color-header-bg */
+    --primary:#FFC107;       /* --color-primary */
+    --primary-hover:#F9E076;
+    --body:'Metropolis',system-ui,sans-serif;
+    --display:'Courier Prime',ui-monospace,monospace;
+    --mono:'Cutive Mono',ui-monospace,monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:400;line-height:1.55;padding-bottom:64px}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 32px}
+
+  /* ---------- header: pill escuro (site-header__pill) ---------- */
+  .topbar{position:sticky;top:14px;z-index:50;pointer-events:none}
+  .topbar-in{pointer-events:all;display:flex;align-items:center;gap:14px;padding:10px 18px;background:rgba(12,12,12,.85);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.08);border-radius:999px;box-shadow:0 6px 24px rgba(0,0,0,.18);max-width:900px;margin:0 auto}
+  .brand{font-family:var(--display);font-size:15px;font-weight:700;letter-spacing:.18em;color:rgba(255,255,255,.95)}
+  .brand span{color:var(--primary)}
+  .topnav{display:flex;gap:2px;flex-wrap:wrap;margin-left:auto}
+  .topnav a{font-family:var(--body);font-size:11px;letter-spacing:.06em;text-transform:uppercase;text-decoration:none;color:rgba(255,255,255,.72);padding:6px 10px;border-radius:999px;transition:.15s}
+  .topnav a:hover{color:#fff;background:rgba(255,255,255,.08)}
+  .toggle{display:flex;align-items:center;gap:7px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.72);cursor:pointer;user-select:none;white-space:nowrap}
+  .toggle input{accent-color:var(--primary)}
+
+  /* ---------- capa: pagehead editorial (manchete entre hairlines) ---------- */
+  .cover{padding:96px 0 0;text-align:left}
+  .kicker{font-family:var(--display);font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:18px}
+  .kicker b{color:var(--primary)}
+  .cover h1{font-family:var(--body);font-weight:400;text-transform:uppercase;font-size:clamp(2.4rem,7vw,6.4rem);line-height:.95;letter-spacing:-.03em;border-top:1px solid var(--hair);border-bottom:1px solid var(--hair);padding:1rem 0 1.3rem}
+  .cover h1 em{font-family:var(--display);font-style:italic;font-weight:400;letter-spacing:-.01em}
+  .cover .cliente{font-family:var(--mono);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-soft);margin-top:16px;font-style:normal}
+  /* title block (padrão label/valor E:/T:/A: do editorial + prancha) */
+  .meta{display:flex;margin:34px 0 0;border-top:1px solid var(--hair)}
+  .meta div{flex:1;padding:16px 18px 16px 0;border-right:1px solid var(--hair)}
+  .meta div:last-child{border-right:0;text-align:right;padding-right:0}
+  .meta dt{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:5px}
+  .meta dd{font-size:14px}
+  .meta dd.num{font-family:var(--mono);font-size:17px}
+
+  /* ---------- rótulo de seção: ed-rule + ed-num ---------- */
+  .indice{padding:56px 0 46px}
+  .sec-label{display:block;border-top:1px solid var(--hair);padding-top:14px;margin-bottom:26px}
+  .sec-label::before{content:attr(data-num);display:block;font-family:var(--mono);font-size:15px;color:var(--ink-soft);margin-bottom:8px}
+  .sec-label h2{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft)}
+  .indice-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--hair);border:1px solid var(--hair)}
+  .indice a{display:block;text-decoration:none;color:var(--ink);background:var(--bg);padding:18px 16px;transition:.15s}
+  .indice a:hover{background:var(--card)}
+  .indice .n{font-family:var(--mono);font-size:19px;color:var(--ink-soft)}
+  .indice .nm{font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin-top:6px}
+  .indice .ct{font-family:var(--mono);font-size:11px;color:var(--ink-soft);margin-top:4px}
+
+  /* ---------- ambiente: prancha ---------- */
+  .ambiente{padding:58px 0;border-top:1px solid var(--hair);position:relative}
+  .amb-marca{position:absolute;top:44px;right:0;font-family:var(--mono);font-size:120px;line-height:1;color:var(--ink);opacity:.08;pointer-events:none;user-select:none;z-index:0}
+  .lateral{position:absolute;left:-28px;top:64px;writing-mode:vertical-rl;transform:rotate(180deg);font-family:var(--display);font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-soft);opacity:.7}
+  @media (max-width:900px){.lateral{display:none}}
+  .amb-head,.cards,.luz-row,.amb-sub{position:relative;z-index:1}
+  .amb-head{display:flex;align-items:baseline;gap:18px;margin-bottom:6px}
+  .amb-num{font-family:var(--mono);font-size:15px;color:var(--ink-soft)}
+  .amb-head h2{font-family:var(--body);font-weight:400;text-transform:uppercase;font-size:clamp(26px,3.6vw,40px);letter-spacing:-.02em}
+  .amb-head .soma{margin-left:auto;text-align:right}
+  .amb-head .soma .lbl{font-size:9px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
+  .amb-head .soma .val{font-family:var(--mono);font-size:20px}
+  .amb-sub{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:14px}
+  .amb-sub b{color:var(--ink);font-weight:600}
+
+  /* legenda de luz (linha de prancha) */
+  .luz-row{display:flex;flex-wrap:wrap;gap:0 26px;margin-bottom:30px;border-top:1px solid var(--hair);border-bottom:1px solid var(--hair);padding:9px 0}
+  .luz-chip{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;text-transform:uppercase;color:var(--ink-soft);padding:2px 0;border:0;background:none}
+  .luz-chip svg{width:15px;height:15px;stroke:var(--ink);flex:none}
+  .luz-chip b{color:var(--ink);font-weight:400}
+
+  /* cards: colagem com âncora */
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));grid-auto-flow:dense;gap:14px}
+  .card.heroi{grid-column:span 2;grid-row:span 2}
+  .card.heroi .thumb{aspect-ratio:auto;flex:1;min-height:220px}
+  .card.heroi .nome{font-size:15px}
+  .card.heroi .preco{font-size:18px}
+  @media (max-width:520px){.card.heroi{grid-row:span 1}.card.heroi .thumb{min-height:160px}}
+  .card{background:var(--card);border:1px solid var(--surface);display:flex;flex-direction:column;transition:.15s}
+  .card:hover{border-color:var(--ink);box-shadow:0 10px 26px rgba(0,0,0,.08)}
+  .thumb{aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--surface);background:radial-gradient(105% 105% at 50% 112%, rgba(255,193,7,.22) 0%, rgba(255,193,7,.05) 45%, rgba(244,241,234,0) 78%), #F8F6F1;position:relative}
+  .thumb svg{width:56%;height:56%;stroke:var(--ink);opacity:.8}
+  .thumb .ph{position:absolute;bottom:8px;right:10px;font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);opacity:.6}
+  .card-b{padding:13px 14px 15px;display:flex;flex-direction:column;gap:6px;flex:1}
+  .cod{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--ink-soft);text-transform:uppercase}
+  .nome{font-size:12.5px;line-height:1.4;flex:1}
+  .qtd-row{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--hair);padding-top:8px;margin-top:4px}
+  .qtd{font-family:var(--mono);font-size:11px;color:var(--ink-soft)}
+  .preco{font-family:var(--mono);font-size:14.5px}
+  body.sem-valor .preco, body.sem-valor .soma, body.sem-valor .money{display:none}
+
+  /* ---------- lista: legenda de prancha ---------- */
+  .lista{padding:58px 0;border-top:1px solid var(--hair)}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  thead th{font-family:var(--display);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);text-align:left;padding:10px 12px;border-top:1px solid var(--ink);border-bottom:1px solid var(--hair)}
+  tbody td{padding:10px 12px;border-bottom:1px solid var(--hair);vertical-align:top}
+  tbody tr.amb-row td{font-family:var(--mono);font-size:13px;letter-spacing:.04em;text-transform:uppercase}
+  td.r,th.r{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--mono)}
+  .totais{margin-top:26px;margin-left:auto;max-width:340px}
+  .totais div{display:flex;justify-content:space-between;padding:9px 4px;border-bottom:1px solid var(--hair);font-size:13px}
+  .totais .tt{border-bottom:0;border-top:1px solid var(--ink);margin-top:4px;padding-top:14px}
+  .totais .tt span:first-child{font-size:10px;font-weight:600;letter-spacing:.2em;text-transform:uppercase}
+  .totais .tt span:last-child{font-family:var(--mono);font-size:24px}
+
+  footer{border-top:1px solid var(--hair);padding:44px 0 70px;font-size:11.5px;color:var(--ink-soft)}
+  footer .f-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px}
+  footer h3{font-family:var(--display);font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--ink);margin-bottom:12px}
+  footer p{margin-bottom:6px}
+
+  /* ---------- exportar ---------- */
+  .exp{position:relative}
+  .exp-bt{background:none;border:1px solid rgba(255,255,255,.35);width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.15s;border-radius:999px}
+  .exp-bt:hover{border-color:var(--primary)}
+  .exp-bt svg{width:14px;height:14px;stroke:rgba(255,255,255,.85)}
+  .exp-menu{display:none;position:absolute;right:0;top:calc(100% + 10px);background:var(--card);border:1px solid var(--surface);min-width:220px;box-shadow:0 14px 36px rgba(0,0,0,.16);z-index:70}
+  .exp-menu.aberto{display:block}
+  .exp-menu button{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--hair);padding:11px 14px;font-family:var(--body);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);cursor:pointer}
+  .exp-menu button:last-child{border-bottom:0}
+  .exp-menu button:hover{background:var(--bg)}
+  .exp-menu button small{display:block;margin-top:2px;font-size:9.5px;letter-spacing:.02em;text-transform:none;color:var(--ink-soft)}
+
+  /* ---------- barra de aceite ---------- */
+  .actionbar{position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--dark);color:rgba(255,255,255,.85)}
+  .actionbar-in{max-width:1120px;margin:0 auto;padding:12px 32px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  .actionbar .info{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.65}
+  .actionbar .aceitar{margin-left:auto;background:var(--primary);color:#18181A;border:0;border-radius:999px;padding:10px 24px;font-family:var(--body);font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;cursor:pointer}
+  .actionbar .aceitar:hover{background:var(--primary-hover)}
+  body.aceita .actionbar{background:#2E3B28}
+  body.aceita .actionbar .aceitar{display:none}
+
+  /* ---------- paginação (print nativo + Paged.js) ---------- */
+  @page{
+    size:A4;
+    margin:16mm 13mm 18mm;
+    @bottom-left{content:"VERTZ ILUMINAÇÃO ✦ PROPOSTA Nº 0022958";font-family:'Courier Prime',monospace;font-size:8px;letter-spacing:.12em;color:#6B6F73}
+    @bottom-right{content:counter(page) " / " counter(pages);font-family:'Cutive Mono',monospace;font-size:10px;color:#2B2B2B}
+  }
+  .cover{break-after:page}
+  .ambiente,.lista{break-before:page}
+  .card,.amb-head,.luz-row{break-inside:avoid}
+  .modo-print .topbar,.modo-print .actionbar{display:none}
+  .modo-print body,.modo-print{background:#fff}
+  @media print{
+    .actionbar,.topbar{display:none}
+    body{background:#fff;padding-bottom:0}
+  }
+  @media (max-width:640px){
+    .meta{flex-direction:column}
+    .meta div{border-right:0;border-bottom:1px solid var(--hair);text-align:left!important;padding-right:0}
+    .amb-head{flex-wrap:wrap}
+    .amb-head .soma{margin-left:0}
+  }
+</style>
+</head>
+<body>
+
+<!-- ícones placeholder por tipo de peça (até a foto real do catálogo existir) -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <g id="i-spot" fill="none" stroke-width="3" stroke-linecap="round">
+      <circle cx="50" cy="42" r="26"/><circle cx="50" cy="42" r="13"/>
+      <line x1="50" y1="72" x2="50" y2="86"/><line x1="34" y1="68" x2="27" y2="80"/><line x1="66" y1="68" x2="73" y2="80"/>
+    </g>
+    <g id="i-perfil" fill="none" stroke-width="3" stroke-linecap="round">
+      <rect x="14" y="40" width="72" height="16" rx="3"/>
+      <line x1="22" y1="63" x2="30" y2="70"/><line x1="40" y1="63" x2="48" y2="70"/><line x1="58" y1="63" x2="66" y2="70"/><line x1="74" y1="63" x2="82" y2="70"/>
+    </g>
+    <g id="i-fita" fill="none" stroke-width="3" stroke-linecap="round">
+      <path d="M14 60 C 30 30, 50 78, 66 44 S 86 40, 88 38"/>
+      <circle cx="26" cy="46" r="2.4" fill="currentColor"/><circle cx="44" cy="58" r="2.4"/><circle cx="62" cy="48" r="2.4"/><circle cx="78" cy="41" r="2.4"/>
+    </g>
+    <g id="i-fonte" fill="none" stroke-width="3" stroke-linecap="round">
+      <rect x="20" y="34" width="60" height="32" rx="4"/>
+      <line x1="30" y1="44" x2="46" y2="44"/><line x1="30" y1="54" x2="40" y2="54"/>
+      <path d="M64 40 l-7 11 h9 l-7 11"/>
+    </g>
+    <g id="i-lamp" fill="none" stroke-width="3" stroke-linecap="round">
+      <circle cx="50" cy="40" r="18"/>
+      <path d="M43 58 v8 h14 v-8"/><line x1="45" y1="72" x2="55" y2="72"/><line x1="47" y1="78" x2="53" y2="78"/>
+    </g>
+    <g id="i-arandela" fill="none" stroke-width="3" stroke-linecap="round">
+      <line x1="30" y1="18" x2="30" y2="82"/>
+      <path d="M30 40 h22 a14 14 0 0 1 0 28 h-22"/>
+      <path d="M58 46 q10 8 0 16" opacity=".5"/>
+    </g>
+  </defs>
+</svg>
+
+<div class="topbar"><div class="wrap topbar-in">
+  <div class="brand">VERTZ<span>.</span></div>
+  <nav class="topnav">
+    <a href="#a1">Estar</a><a href="#a3">Cozinha</a><a href="#a4">Á. Serviço</a>
+    <a href="#a5">Lavabo</a><a href="#a6">Suíte 01</a><a href="#a7">Banho Suíte</a><a href="#lista">Lista</a>
+  </nav>
+  <label class="toggle"><input type="checkbox" id="tgValor" checked> valores</label>
+  <div class="exp">
+    <button class="exp-bt" id="btExp" title="Exportar">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 19h16"/></svg>
+    </button>
+    <div class="exp-menu" id="expMenu">
+      <button id="btPdf">PDF paginado<small>documento A4 com capa e páginas por ambiente</small></button>
+      <button id="btPptx">Apresentação<small>PPTX editável, um slide por ambiente</small></button>
+      <button id="btImprimir">Imprimir<small>diálogo de impressão do navegador</small></button>
+    </div>
+  </div>
+</div></div>
+
+<!-- ============ CAPA ============ -->
+<header class="cover wrap">
+  <div class="kicker">VERTZ ILUMINAÇÃO <b>✦</b> PROJETO DE LUZ <b>✦</b> PROPOSTA Nº 0022958</div>
+  <h1>Residência <em>Cliente Exemplo</em></h1>
+  <div class="cliente">seis ambientes ✦ luz quente 2700K ✦ campinas sp</div>
+  <dl class="meta">
+    <div><dt>Consultor</dt><dd>Weslley R. dos Santos</dd></div>
+    <div><dt>Emissão</dt><dd>19/07/2026</dd></div>
+    <div><dt>Validade</dt><dd>31/07/2026</dd></div>
+    <div class="money"><dt>Investimento</dt><dd class="num">R$ 12.844,50</dd></div>
+  </dl>
+</header>
+
+<!-- ============ ÍNDICE ============ -->
+<section class="indice wrap">
+  <div class="sec-label" data-num="Nº 01"><h2>Ambientes do projeto</h2></div>
+  <div class="indice-grid">
+    <a href="#a1"><div class="n">01</div><div class="nm">Estar</div><div class="ct">5 peças</div></a>
+    <a href="#a3"><div class="n">03</div><div class="nm">Cozinha</div><div class="ct">5 peças</div></a>
+    <a href="#a4"><div class="n">04</div><div class="nm">Área de Serviço</div><div class="ct">3 peças</div></a>
+    <a href="#a5"><div class="n">05</div><div class="nm">Lavabo</div><div class="ct">2 peças</div></a>
+    <a href="#a6"><div class="n">06</div><div class="nm">Suíte 01</div><div class="ct">8 peças</div></a>
+    <a href="#a7"><div class="n">07</div><div class="nm">Banho Suíte</div><div class="ct">6 peças</div></a>
+  </div>
+</section>
+
+<!-- ============ 01 ESTAR ============ -->
+<section class="ambiente wrap" id="a1">
+  <div class="amb-head"><span class="amb-num">01</span><h2>Estar</h2>
+    <div class="soma"><div class="lbl">soma do ambiente</div><div class="val">R$ 1.513,68</div></div></div>
+  <div class="amb-sub">iluminação linear + foco pontual · <b>2700K</b></div>
+  <div class="luz-row">
+    <div class="luz-chip"><svg viewBox="0 0 100 100" fill="none" stroke-width="6"><use href="#i-spot"/></svg><b>Foco</b> G9 4W · 2700K</div>
+    <div class="luz-chip"><svg viewBox="0 0 100 100" fill="none" stroke-width="6"><use href="#i-perfil"/></svg><b>Linear sobrepor</b> 16W/m · 2700K</div>
+    <div class="luz-chip"><svg viewBox="0 0 100 100" fill="none" stroke-width="6"><use href="#i-fonte"/></svg><b>Fonte</b> 100W · 24V</div>
+  </div>
+  <div class="cards">
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-spot"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">1811</span><span class="nome">Reflex módulo de embutir foco extremidade 32×90mm LED G9 Halopin</span>
+      <div class="qtd-row"><span class="qtd">1 pç</span><span class="preco">R$ 460,53</span></div></div></div>
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-lamp"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">STH8141/27</span><span class="nome">Bipino G9 4W 127V 2700K</span>
+      <div class="qtd-row"><span class="qtd">1 pç</span><span class="preco">R$ 50,24</span></div></div></div>
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-perfil"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">AP0201</span><span class="nome">Perfil alumínio sobrepor slim difusor leitoso</span>
+      <div class="qtd-row"><span class="qtd">4,9 m</span><span class="preco">R$ 425,27</span></div></div></div>
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-fita"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">STL24845/27</span><span class="nome">16W/m Fita All Light 24V PRO 8mm IP20 1200lm/m 2700K</span>
+      <div class="qtd-row"><span class="qtd">4,9 m</span><span class="preco">R$ 260,04</span></div></div></div>
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-fonte"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">STL24649</span><span class="nome">100W S.Power ultrafina 24V</span>
+      <div class="qtd-row"><span class="qtd">1 pç</span><span class="preco">R$ 317,60</span></div></div></div>
+  </div>
+</section>
+
+<!-- ============ 03 COZINHA ============ -->
+<section class="ambiente wrap" id="a3">
+  <div class="amb-head"><span class="amb-num">03</span><h2>Cozinha</h2>
+    <div class="soma"><div class="lbl">soma do ambiente</div><div class="val">R$ 3.941,99</div></div></div>
+  <div class="amb-sub">perfis embutidos + fita de alta potência · <b>2700K</b></div>
+  <div class="luz-row">
+    <div class="luz-chip"><svg viewBox="0 0 100 100" fill="none" stroke-width="6"><use href="#i-perfil"/></svg><b>Linear embutir</b> 21W/m · 2700K</div>
+    <div class="luz-chip"><svg viewBox="0 0 100 100" fill="none" stroke-width="6"><use href="#i-perfil"/></svg><b>Linear sobrepor</b> 21W/m · 2700K</div>
+    <div class="luz-chip"><svg viewBox="0 0 100 100" fill="none" stroke-width="6"><use href="#i-fonte"/></svg><b>Fontes</b> 100W + 2×72W · 24V</div>
+  </div>
+  <div class="cards">
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-perfil"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">2311</span><span class="nome">Slot perfil de embutir L = 28mm — metro linear</span>
+      <div class="qtd-row"><span class="qtd">4 m</span><span class="preco">R$ 1.785,00</span></div></div></div>
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-perfil"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">AP0201</span><span class="nome">Perfil alumínio sobrepor slim difusor leitoso</span>
+      <div class="qtd-row"><span class="qtd">6 m</span><span class="preco">R$ 520,74</span></div></div></div>
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-fita"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">STL25948/27</span><span class="nome">21W/m Fita All Light 24V PRO 10mm IP20 2700K</span>
+      <div class="qtd-row"><span class="qtd">11 m</span><span class="preco">R$ 741,73</span></div></div></div>
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-fonte"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">STL24649</span><span class="nome">100W S.Power ultrafina 24V</span>
+      <div class="qtd-row"><span class="qtd">1 pç</span><span class="preco">R$ 317,60</span></div></div></div>
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-fonte"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">STL22685</span><span class="nome">72W Fonte ultrafina 24V EVO 100–240V IP20</span>
+      <div class="qtd-row"><span class="qtd">2 pç</span><span class="preco">R$ 576,92</span></div></div></div>
+  </div>
+</section>
+
+<!-- ============ 04 ÁREA DE SERVIÇO ============ -->
+<section class="ambiente wrap" id="a4">
+  <div class="amb-head"><span class="amb-num">04</span><h2>Área de Serviço</h2>
+    <div class="soma"><div class="lbl">soma do ambiente</div><div class="val">R$ 925,74</div></div></div>
+  <div class="amb-sub">linha funcional embutida · <b>2700K</b></div>
+  <div class="luz-row">
+    <div class="luz-chip"><svg viewBox="0 0 100 100" fill="none" stroke-width="6"><use href="#i-perfil"/></svg><b>Linear embutir</b> 21W/m · 2700K</div>
+    <div class="luz-chip"><svg viewBox="0 0 100 100" fill="none" stroke-width="6"><use href="#i-fonte"/></svg><b>Fonte</b> 36W · 24V</div>
+  </div>
+  <div class="cards">
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-perfil"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">2311</span><span class="nome">Slot perfil de embutir L = 28mm — metro linear</span>
+      <div class="qtd-row"><span class="qtd">1,5 m</span><span class="preco">R$ 669,38</span></div></div></div>
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-fita"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">STL25948/27</span><span class="nome">21W/m Fita All Light 24V PRO 10mm IP20 2700K</span>
+      <div class="qtd-row"><span class="qtd">1,5 m</span><span class="preco">R$ 101,14</span></div></div></div>
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-fonte"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">STL22682</span><span class="nome">36W Fonte ultrafina 24V EVO 100–240V IP20</span>
+      <div class="qtd-row"><span class="qtd">1 pç</span><span class="preco">R$ 155,22</span></div></div></div>
+  </div>
+</section>
+
+<!-- ============ 05 LAVABO ============ -->
+<section class="ambiente wrap" id="a5">
+  <div class="amb-head"><span class="amb-num">05</span><h2>Lavabo</h2>
+    <div class="soma"><div class="lbl">soma do ambiente</div><div class="val">R$ 510,77</div></div></div>
+  <div class="amb-sub">foco pontual único · <b>2700K</b></div>
+  <div class="luz-row">
+    <div class="luz-chip"><svg viewBox="0 0 100 100" fill="none" stroke-width="6"><use href="#i-spot"/></svg><b>Foco</b> G9 4W · 2700K</div>
+  </div>
+  <div class="cards">
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-spot"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">1811</span><span class="nome">Reflex módulo de embutir foco extremidade 32×90mm LED G9 Halopin</span>
+      <div class="qtd-row"><span class="qtd">1 pç</span><span class="preco">R$ 460,53</span></div></div></div>
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-lamp"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">STH8141/27</span><span class="nome">Bipino G9 4W 127V 2700K</span>
+      <div class="qtd-row"><span class="qtd">1 pç</span><span class="preco">R$ 50,24</span></div></div></div>
+  </div>
+</section>
+
+<!-- ============ 06 SUÍTE 01 ============ -->
+<section class="ambiente wrap" id="a6">
+  <div class="amb-head"><span class="amb-num">06</span><h2>Suíte 01</h2>
+    <div class="soma"><div class="lbl">soma do ambiente</div><div class="val">R$ 3.903,84</div></div></div>
+  <div class="amb-sub">linear + arandela + foco · <b>2700K</b></div>
+  <div class="luz-row">
+    <div class="luz-chip"><svg viewBox="0 0 100 100" fill="none" stroke-width="6"><use href="#i-perfil"/></svg><b>Linear embutir + sobrepor</b> 21W/m · 2700K</div>
+    <div class="luz-chip"><svg viewBox="0 0 100 100" fill="none" stroke-width="6"><use href="#i-arandela"/></svg><b>Arandela</b> ILED-S · 2700K</div>
+    <div class="luz-chip"><svg viewBox="0 0 100 100" fill="none" stroke-width="6"><use href="#i-spot"/></svg><b>Foco</b> G9 4W · 2700K</div>
+    <div class="luz-chip"><svg viewBox="0 0 100 100" fill="none" stroke-width="6"><use href="#i-fonte"/></svg><b>Fontes</b> 100W + 36W · 24V</div>
+  </div>
+  <div class="cards">
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-perfil"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">2311</span><span class="nome">Slot perfil de embutir L = 28mm — metro linear</span>
+      <div class="qtd-row"><span class="qtd">3,6 m</span><span class="preco">R$ 1.606,50</span></div></div></div>
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-perfil"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">AP0201</span><span class="nome">Perfil alumínio sobrepor slim difusor leitoso</span>
+      <div class="qtd-row"><span class="qtd">1 m</span><span class="preco">R$ 86,79</span></div></div></div>
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-fita"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">STL25948/27</span><span class="nome">21W/m Fita All Light 24V PRO 10mm IP20 2700K</span>
+      <div class="qtd-row"><span class="qtd">4,6 m</span><span class="preco">R$ 310,18</span></div></div></div>
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-fonte"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">STL24649</span><span class="nome">100W S.Power ultrafina 24V</span>
+      <div class="qtd-row"><span class="qtd">1 pç</span><span class="preco">R$ 317,60</span></div></div></div>
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-fonte"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">STL22682</span><span class="nome">36W Fonte ultrafina 24V EVO 100–240V IP20</span>
+      <div class="qtd-row"><span class="qtd">1 pç</span><span class="preco">R$ 155,22</span></div></div></div>
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-spot"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">1811</span><span class="nome">Reflex módulo de embutir foco extremidade 32×90mm LED G9 Halopin</span>
+      <div class="qtd-row"><span class="qtd">1 pç</span><span class="preco">R$ 460,53</span></div></div></div>
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-arandela"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">2000</span><span class="nome">Open arandela 75×75mm c/ ILED-S 2700 completo c/ LED e driver — metro linear</span>
+      <div class="qtd-row"><span class="qtd">0,6 m</span><span class="preco">R$ 916,78</span></div></div></div>
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-lamp"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">STH8141/27</span><span class="nome">Bipino G9 4W 127V 2700K</span>
+      <div class="qtd-row"><span class="qtd">1 pç</span><span class="preco">R$ 50,24</span></div></div></div>
+  </div>
+</section>
+
+<!-- ============ 07 BANHO SUÍTE ============ -->
+<section class="ambiente wrap" id="a7">
+  <div class="amb-head"><span class="amb-num">07</span><h2>Banho Suíte</h2>
+    <div class="soma"><div class="lbl">soma do ambiente</div><div class="val">R$ 2.048,48</div></div></div>
+  <div class="amb-sub">embutidos + foco de extremidade · <b>2700K</b></div>
+  <div class="luz-row">
+    <div class="luz-chip"><svg viewBox="0 0 100 100" fill="none" stroke-width="6"><use href="#i-perfil"/></svg><b>Linear embutir + sobrepor</b> 21W/m · 2700K</div>
+    <div class="luz-chip"><svg viewBox="0 0 100 100" fill="none" stroke-width="6"><use href="#i-spot"/></svg><b>Foco</b> G9 4W · 2700K</div>
+    <div class="luz-chip"><svg viewBox="0 0 100 100" fill="none" stroke-width="6"><use href="#i-fonte"/></svg><b>Fontes</b> 48W + 36W · 24V</div>
+  </div>
+  <div class="cards">
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-perfil"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">2311</span><span class="nome">Slot perfil de embutir L = 28mm — metro linear</span>
+      <div class="qtd-row"><span class="qtd">2 m</span><span class="preco">R$ 892,50</span></div></div></div>
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-spot"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">1811</span><span class="nome">Reflex módulo de embutir foco extremidade 32×90mm LED G9 Halopin</span>
+      <div class="qtd-row"><span class="qtd">1 pç</span><span class="preco">R$ 460,53</span></div></div></div>
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-perfil"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">AP0201</span><span class="nome">Perfil alumínio sobrepor slim difusor leitoso</span>
+      <div class="qtd-row"><span class="qtd">1,35 m</span><span class="preco">R$ 117,17</span></div></div></div>
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-fita"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">STL25948/27</span><span class="nome">21W/m Fita All Light 24V PRO 10mm IP20 2700K</span>
+      <div class="qtd-row"><span class="qtd">3,35 m</span><span class="preco">R$ 225,89</span></div></div></div>
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-fonte"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">STL22683</span><span class="nome">48W Fonte ultrafina 24V EVO 100–240V IP20</span>
+      <div class="qtd-row"><span class="qtd">1 pç</span><span class="preco">R$ 197,17</span></div></div></div>
+    <div class="card"><div class="thumb"><svg viewBox="0 0 100 100"><use href="#i-fonte"/></svg><span class="ph">imagem ilustrativa</span></div>
+      <div class="card-b"><span class="cod">STL22682</span><span class="nome">36W Fonte ultrafina 24V EVO 100–240V IP20</span>
+      <div class="qtd-row"><span class="qtd">1 pç</span><span class="preco">R$ 155,22</span></div></div></div>
+  </div>
+</section>
+
+<!-- ============ SHOPPING LIST ============ -->
+<section class="lista wrap money" id="lista">
+  <div class="sec-label" data-num="Nº 02"><h2>Lista de compras — resumo</h2></div>
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr><th>Cód.</th><th>Descrição</th><th class="r">Qtd.</th><th class="r">Vl. Unit.</th><th class="r">Vl. Item</th></tr></thead>
+    <tbody>
+      <tr class="amb-row"><td colspan="4">01 · Estar</td><td class="r">R$ 1.513,68</td></tr>
+      <tr class="amb-row"><td colspan="4">03 · Cozinha</td><td class="r">R$ 3.941,99</td></tr>
+      <tr class="amb-row"><td colspan="4">04 · Área de Serviço</td><td class="r">R$ 925,74</td></tr>
+      <tr class="amb-row"><td colspan="4">05 · Lavabo</td><td class="r">R$ 510,77</td></tr>
+      <tr class="amb-row"><td colspan="4">06 · Suíte 01</td><td class="r">R$ 3.903,84</td></tr>
+      <tr class="amb-row"><td colspan="4">07 · Banho Suíte</td><td class="r">R$ 2.048,48</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="totais">
+    <div><span>Subtotal</span><span>R$ 12.844,50</span></div>
+    <div><span>Serviços</span><span>R$ 0,00</span></div>
+    <div><span>Desconto</span><span>−R$ 0,01</span></div>
+    <div class="tt"><span>Total</span><span>R$ 12.844,50</span></div>
+  </div>
+</section>
+
+
+<!-- ============ NOTAS DE PROJETO ============ -->
+<section class="wrap" style="padding:56px 0;border-top:1px solid var(--hair)">
+  <div class="sec-label" data-num="Nº 03"><h2>Notas de projeto</h2></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1px;border:1px solid var(--hair);background:var(--hair)">
+    <div style="padding:24px 20px;background:var(--bg)">
+      <svg viewBox="0 0 100 100" fill="none" stroke-width="4" style="width:22px;height:22px;stroke:var(--ink);margin-bottom:10px"><use href="#i-lamp"/></svg>
+      <p style="font-size:11px;letter-spacing:.06em;line-height:1.7;color:var(--ink-soft)">Temperatura única de <b style="color:var(--ink)">2700K</b> em todo o projeto — luz quente e contínua entre os ambientes.</p>
+    </div>
+    <div style="padding:24px 20px;background:var(--bg)">
+      <svg viewBox="0 0 100 100" fill="none" stroke-width="4" style="width:22px;height:22px;stroke:var(--ink);margin-bottom:10px"><use href="#i-perfil"/></svg>
+      <p style="font-size:11px;letter-spacing:.06em;line-height:1.7;color:var(--ink-soft)">Camadas combinadas: <b style="color:var(--ink)">linear</b> para o geral, <b style="color:var(--ink)">foco</b> para destaque, <b style="color:var(--ink)">arandela</b> para acento.</p>
+    </div>
+    <div style="padding:24px 20px;background:var(--bg)">
+      <svg viewBox="0 0 100 100" fill="none" stroke-width="4" style="width:22px;height:22px;stroke:var(--ink);margin-bottom:10px"><use href="#i-fita"/></svg>
+      <p style="font-size:11px;letter-spacing:.06em;line-height:1.7;color:var(--ink-soft)">Fitas LED <b style="color:var(--ink)">24V PRO</b> embutidas em perfil com difusor — sem ponto aparente.</p>
+    </div>
+    <div style="padding:24px 20px;background:var(--bg)">
+      <svg viewBox="0 0 100 100" fill="none" stroke-width="4" style="width:22px;height:22px;stroke:var(--ink);margin-bottom:10px"><use href="#i-fonte"/></svg>
+      <p style="font-size:11px;letter-spacing:.06em;line-height:1.7;color:var(--ink-soft)">Fontes ultrafinas dimensionadas por ambiente, previstas no orçamento.</p>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap f-grid">
+  <div>
+    <h3>Vertz Iluminação</h3>
+    <p>Rua Antonio Lapa, 328 D — Cambuí · Campinas/SP</p>
+    <p>(19) 3251-0501 · vertz@vertziluminacao.com.br</p>
+    <p>CNPJ 07.002.210/0001-68</p>
+  </div>
+  <div>
+    <h3>Condições</h3>
+    <p>Pagamento à vista · 1× de R$ 12.844,50 (3 dias).</p>
+    <p>Proposta válida até 31/07/2026. Instalação e frete em orçamento específico.</p>
+    <p>Imagens ilustrativas — fotos do catálogo entram na versão final.</p>
+  </div>
+</div></footer>
+
+<div class="actionbar"><div class="actionbar-in">
+  <span class="info" id="abInfo">Link seguro · expira 31/07/2026 · visualização registrada</span>
+  <button class="aceitar" id="btAceitar">Aprovar proposta</button>
+</div></div>
+
+<script>
+  document.getElementById('tgValor').addEventListener('change', e =>
+    document.body.classList.toggle('sem-valor', !e.target.checked));
+
+  /* ---- composição: âncora (peça de maior valor) + numeral editorial por ambiente ---- */
+  document.querySelectorAll('.ambiente').forEach(sec => {
+    const marca = document.createElement('span');
+    marca.className = 'amb-marca';
+    marca.textContent = sec.querySelector('.amb-num').textContent + '.06';
+    sec.appendChild(marca);
+    const lat = document.createElement('span');
+    lat.className = 'lateral';
+    lat.textContent = 'Ambiente — ' + sec.querySelector('.amb-head h2').textContent;
+    sec.appendChild(lat);
+
+    let heroi = null, maior = -1;
+    sec.querySelectorAll('.card').forEach(c => {
+      const v = parseFloat(c.querySelector('.preco').textContent.replace(/[^\d,]/g, '').replace(',', '.')) || 0;
+      if (v > maior) { maior = v; heroi = c; }
+    });
+    if (heroi) heroi.classList.add('heroi');
+  });
+
+  /* ---- menu exportar ---- */
+  const expMenu = document.getElementById('expMenu');
+  document.getElementById('btExp').addEventListener('click', e => { e.stopPropagation(); expMenu.classList.toggle('aberto'); });
+  document.addEventListener('click', () => expMenu.classList.remove('aberto'));
+
+  function carregarScript(src) {
+    return new Promise((ok, erro) => {
+      const s = document.createElement('script');
+      s.src = src; s.onload = ok; s.onerror = () => erro(new Error('Falha ao carregar ' + src + ' — precisa de internet.'));
+      document.head.appendChild(s);
+    });
+  }
+
+  document.getElementById('btImprimir').addEventListener('click', () => window.print());
+
+  document.getElementById('btPdf').addEventListener('click', async () => {
+    if (!confirm('Abrir prévia paginada A4 (Paged.js)? A página vira modo documento — recarregue para voltar ao modo interativo.')) return;
+    document.documentElement.classList.add('modo-print');
+    window.PagedConfig = { auto: true };
+    try { await carregarScript('https://unpkg.com/pagedjs/dist/paged.polyfill.js'); }
+    catch (e) { alert(e.message); document.documentElement.classList.remove('modo-print'); }
+  });
+
+  const CORES = { papel: 'F4F1EA', carta: 'FFFFFF', tinta: '2B2B2B', suave: '6B6F73', brass: 'C99700', linha: 'E3DDD6' };
+
+  document.getElementById('btPptx').addEventListener('click', async () => {
+    try { if (typeof PptxGenJS === 'undefined') await carregarScript('https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js'); }
+    catch (e) { alert(e.message); return; }
+    const p = new PptxGenJS();
+    p.defineLayout({ name: 'WIDE', width: 13.33, height: 7.5 }); p.layout = 'WIDE';
+
+    const capa = p.addSlide(); capa.background = { color: CORES.papel };
+    capa.addText('PROJETO DE ILUMINAÇÃO · PROPOSTA Nº 0022958', { x: 0.6, y: 0.9, w: 12, fontSize: 12, charSpacing: 4, color: CORES.brass, align: 'center' });
+    capa.addText('Residência Cliente Exemplo', { x: 0.6, y: 2.5, w: 12, fontSize: 46, bold: true, fontFace: 'Metropolis', color: CORES.tinta, align: 'center' });
+    capa.addText('seis ambientes · luz quente 2700K', { x: 0.6, y: 3.9, w: 12, fontSize: 18, italic: true, fontFace: 'Courier Prime', color: CORES.suave, align: 'center' });
+    capa.addText('Consultor Weslley R. dos Santos  ·  Emissão 19/07/2026  ·  Validade 31/07/2026', { x: 0.6, y: 6.4, w: 12, fontSize: 10, color: CORES.suave, align: 'center' });
+
+    const comValor = document.getElementById('tgValor').checked;
+    document.querySelectorAll('.ambiente').forEach(sec => {
+      const num = sec.querySelector('.amb-num').textContent;
+      const nome = sec.querySelector('.amb-head h2').textContent;
+      const soma = sec.querySelector('.soma .val').textContent;
+      const chips = [...sec.querySelectorAll('.luz-chip')].map(c => c.textContent.trim()).join('   ·   ');
+
+      const cab = [[
+        { text: 'Cód.', options: { bold: true } }, { text: 'Descrição', options: { bold: true } },
+        { text: 'Qtd.', options: { bold: true, align: 'right' } }]
+        .concat(comValor ? [{ text: 'Valor', options: { bold: true, align: 'right' } }] : [])];
+      const linhas = [...sec.querySelectorAll('.card')].map(c => [
+        { text: c.querySelector('.cod').textContent, options: { color: CORES.brass } },
+        c.querySelector('.nome').textContent,
+        { text: c.querySelector('.qtd').textContent, options: { align: 'right' } }]
+        .concat(comValor ? [{ text: c.querySelector('.preco').textContent, options: { align: 'right' } }] : []));
+
+      /* ambiente com muitos itens quebra em mais de um slide, cada um com cabeçalho próprio */
+      const LIMITE = 8;
+      const partes = [];
+      for (let i = 0; i < linhas.length; i += LIMITE) partes.push(linhas.slice(i, i + LIMITE));
+
+      partes.forEach((parte, idx) => {
+        const cont = partes.length > 1 ? '  ·  ' + (idx + 1) + '/' + partes.length : '';
+        const sl = p.addSlide(); sl.background = { color: CORES.papel };
+        sl.addText([{ text: num + '  ', options: { color: CORES.brass } }, { text: nome },
+          { text: cont, options: { fontSize: 16, color: CORES.suave } }],
+          { x: 0.6, y: 0.45, w: 9, fontSize: 30, fontFace: 'Courier Prime', color: CORES.tinta });
+        if (comValor && idx === partes.length - 1)
+          sl.addText('Soma do ambiente  ' + soma, { x: 9.4, y: 0.6, w: 3.3, fontSize: 13, align: 'right', fontFace: 'Courier Prime', color: CORES.tinta });
+        if (idx === 0)
+          sl.addText(chips, { x: 0.6, y: 1.25, w: 12.1, fontSize: 9, charSpacing: 1, color: CORES.suave });
+        sl.addTable(cab.concat(parte), {
+          x: 0.6, y: idx === 0 ? 1.75 : 1.3, w: 12.1, fontSize: 10.5, color: CORES.tinta, fill: { color: CORES.carta },
+          border: { type: 'solid', pt: 0.5, color: CORES.linha },
+          colW: comValor ? [1.8, 7.3, 1.3, 1.7] : [2, 8.6, 1.5], rowH: 0.32
+        });
+      });
+    });
+
+    if (comValor) {
+      const fim = p.addSlide(); fim.background = { color: CORES.papel };
+      fim.addText('Investimento total', { x: 0.6, y: 2.6, w: 12, fontSize: 16, charSpacing: 3, color: CORES.suave, align: 'center' });
+      fim.addText('R$ 12.844,50', { x: 0.6, y: 3.2, w: 12, fontSize: 44, fontFace: 'Courier Prime', color: CORES.tinta, align: 'center' });
+      fim.addText('À vista · 1× em 3 dias · proposta válida até 31/07/2026', { x: 0.6, y: 4.5, w: 12, fontSize: 11, color: CORES.suave, align: 'center' });
+    }
+    p.writeFile({ fileName: 'moodboard-orcamento-22958.pptx' });
+  });
+
+  document.getElementById('btAceitar').addEventListener('click', () => {
+    if (!confirm('Aprovar esta proposta? O consultor será notificado.')) return;
+    document.body.classList.add('aceita');
+    document.getElementById('abInfo').textContent =
+      'Proposta aprovada em ' + new Date().toLocaleDateString('pt-BR') + ' — o consultor foi notificado (mock)';
+  });
+</script>
+</body>
+</html>

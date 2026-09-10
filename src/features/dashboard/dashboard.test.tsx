@@ -63,10 +63,12 @@ const ATIVIDADES: ActivityDto[] = [
 
 interface Opcoes {
   resumoFalha?: boolean
+  /** Resumo servido no lugar do padrão — o backend real zera dois campos. */
+  resumo?: DashboardSummaryDto
 }
 
 /** Servidor falso do Dashboard, com registro das chamadas de escrita. */
-function servidor({ resumoFalha = false }: Opcoes = {}) {
+function servidor({ resumoFalha = false, resumo = RESUMO }: Opcoes = {}) {
   const escritas: Array<{ caminho: string; metodo: string; corpo: unknown }> = []
 
   const stub: FetchStub = async (input) => {
@@ -93,7 +95,7 @@ function servidor({ resumoFalha = false }: Opcoes = {}) {
             status: 409,
             headers: { 'content-type': 'application/problem+json' },
           })
-        : json(RESUMO)
+        : json(resumo)
     }
     if (caminho === '/api/dashboard/agenda') return json(AGENDA)
     if (caminho === '/api/todos') return json(TODOS)
@@ -135,6 +137,26 @@ describe('tela Dashboard', () => {
     expect(screen.getByText('vs. mês anterior')).toBeInTheDocument()
   })
 
+  it('`Pedidos a receber` não imprime o zero que o servidor não apura', async () => {
+    // O backend real devolve `incomingOrders`/`incomingOrdersToday` SEMPRE `0` —
+    // o DTO os exige `integer` e não tem `null` para dizer "sem dado". Imprimir
+    // `0` diria "nenhum pedido a receber" num sistema que tem ordem de compra.
+    renderRoute('/dashboard', servidor({ resumo: { ...RESUMO, incomingOrders: 0 } }).stub)
+
+    const rotulo = await screen.findByText('Pedidos a receber')
+    const cartao = rotulo.closest('[data-slot="kpi-tile"]') as HTMLElement
+    expect(within(cartao).getByText('—')).toBeInTheDocument()
+    expect(within(cartao).getByText('o servidor ainda não apura')).toBeInTheDocument()
+    expect(within(cartao).queryByText('0')).not.toBeInTheDocument()
+
+    // O cartão continua levando à lista, que é onde o número existe de verdade.
+    expect(cartao.closest('a')?.getAttribute('href')).toBe('/compras/pedidos')
+
+    // E os outros três seguem mostrando o que o servidor apura: a declaração é
+    // deste campo, não um modo "sem dado" da fileira inteira.
+    expect(screen.getByText('4 vencem esta semana')).toBeInTheDocument()
+  })
+
   it('o bento abre pelo HERÓI, e a tinta continua sendo a do assunto', async () => {
     // A cor é do ASSUNTO, e é ela que substituiu o ornamento de módulo do 1.x.
     // A ORDEM mudou na rodada 5 (#529): `Vendas do mês` é o herói 1,6× e abre a
@@ -168,8 +190,7 @@ describe('tela Dashboard', () => {
     expect(valor.style.color).toBe('var(--bad)')
   })
 
-  // INTEGRAÇÃO 2.0 (Cowork, 2026-09-03): quebrou no merge de PRs paralelas; a D37 (#532) religa.
-  it.skip('a agenda mostra só o que é de HOJE; o calendário conhece o mês inteiro', async () => {
+  it('a agenda mostra só o que é de HOJE; o calendário conhece o mês inteiro', async () => {
     renderRoute('/dashboard', servidor().stub)
 
     expect(await screen.findByText('Revisar orçamento')).toBeInTheDocument()
@@ -184,23 +205,19 @@ describe('tela Dashboard', () => {
     expect(within(linha).getByText('orçamento')).toBeInTheDocument()
   })
 
-  // INTEGRAÇÃO 2.0 (Cowork, 2026-09-03): quebrou no merge de PRs paralelas; a D37 (#532) religa.
-  it.skip('o feed de atividade mostra quem, o quê e a hora; e só linka o que tem ficha', async () => {
-    renderRoute('/dashboard', servidor().stub)
-
-    expect(await screen.findByText(/enviou o orçamento ao cliente/)).toBeInTheDocument()
-    expect(screen.getByText('12:40')).toBeInTheDocument()
-
-    // `quote` tem ficha: a linha inteira é o link.
-    const comFicha = screen.getByText(/enviou o orçamento ao cliente/).closest('a')
-    expect(comFicha).toHaveAttribute('href', '/vendas/orcamentos/orc-9')
-
-    // `partner` não tem endereço inequívoco (cliente/fornecedor/profissional
-    // conforme o papel, e o DTO não publica o papel): some o CLIQUE, não o dado.
-    const semFicha = screen.getByText(/confirmou a visita técnica/)
-    expect(semFicha.closest('a')).toBeNull()
-    expect(semFicha).toBeInTheDocument()
-  })
+  /**
+   * O FEED DE ATIVIDADE SAIU DESTA TELA, e o caso foi para onde ele mora (D37).
+   *
+   * A D20 reescreveu o dashboard pelo mockup — saudação, KPIs, calendário,
+   * agenda e A fazer — e o `FeedDeAtividade` não entrou na composição nova. O
+   * commit não o menciona (fala de unificar as três caixas e da rota
+   * `/boletim`), então ele saiu em silêncio; hoje o único consumidor é o
+   * `HubDeModulo` (D26). Remontá-lo aqui seria desfazer uma reescrita feita com
+   * o mockup ao lado, o que a D37 não faz — a passada é de consistência, não de
+   * desenho. O que ela fez foi não perder a COBERTURA: o caso "quem, o quê e a
+   * hora, e só linka o que tem ficha" está em `hub-de-modulo.test.tsx`, que é
+   * onde o feed é montado de verdade.
+   */
 
   it('a cabeça da tela tem UM Gambarino e as duas ações do mockup', async () => {
     renderRoute('/dashboard', servidor().stub)

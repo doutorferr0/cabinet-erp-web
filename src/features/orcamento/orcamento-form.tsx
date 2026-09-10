@@ -1,15 +1,5 @@
 import { Link, useNavigate } from '@tanstack/react-router'
-import {
-  Calculator,
-  CreditCard,
-  FileText,
-  Hash,
-  List,
-  Lock,
-  Package,
-  Percent,
-  User,
-} from 'lucide-react'
+import { Calculator, CreditCard, Hash, List, Lock, Package, Percent, User } from 'lucide-react'
 import { useState } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { z } from 'zod'
@@ -38,6 +28,7 @@ import { tabelas } from '@/data/tabelas'
 import { AbaServicos } from '@/features/orcamento/aba-servicos'
 import { BlocoPagamento } from '@/features/orcamento/bloco-pagamento'
 import { ItensDoOrcamento } from '@/features/orcamento/itens-do-orcamento'
+import { MenuDeExportacao } from '@/features/orcamento/menu-de-exportacao'
 import { formatPercent } from '@/lib/formatters'
 import { SHORTCUTS, shortcutLabel } from '@/lib/shortcuts'
 import type { Orcamento } from '@/mocks/orcamentos'
@@ -421,6 +412,10 @@ function TotaisOrcamento() {
 }
 
 function AbaPrincipal() {
+  // O menu de exportação lê o documento no CLIQUE, não no render — ver
+  // `MenuDeExportacao`. `getValues` é estável entre renders no RHF.
+  const { getValues } = useFormContext<Orcamento>()
+
   return (
     <div data-zonas className="flex flex-col gap-4">
       {/* Card agrupador (mockup `.card`): o CABEÇALHO do documento — para quem,
@@ -475,14 +470,10 @@ function AbaPrincipal() {
       </Secao>
 
       <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => console.info('[mock] Imprimir Orçamento')}
-        >
-          <FileText className="size-4" /> Orçamento
-        </Button>
+        <MenuDeExportacao
+          obterDocumento={getValues}
+          onImprimir={() => console.info('[mock] Imprimir Orçamento')}
+        />
         <Button
           type="button"
           variant="outline"

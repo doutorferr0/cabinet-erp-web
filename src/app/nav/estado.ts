@@ -27,7 +27,6 @@ import { useCallback, useEffect, useState } from 'react'
 
 const CHAVE_GRUPOS = 'cabinet.nav.grupos'
 const CHAVE_COLAPSO = 'cabinet.nav.colapsada'
-const CHAVE_FAVORITOS = 'cabinet.nav.favoritos'
 const CHAVE_RECENTES = 'cabinet.nav.recentes'
 
 /** Quantos registros a barra lembra. Três é o que o mockup desenha. */
@@ -69,10 +68,6 @@ function gravarGaveta(chave: string, usuario: string, valor: unknown): void {
     // Cota estourada ou armazenamento bloqueado: o estado segue em memória.
     // Falhar a gravação não pode fechar o que o operador acabou de abrir.
   }
-}
-
-function somenteTextos(valor: unknown): string[] {
-  return Array.isArray(valor) ? valor.filter((v): v is string => typeof v === 'string') : []
 }
 
 /**
@@ -137,34 +132,24 @@ export function useBarraColapsada(usuario: string) {
 }
 
 /**
- * Os FAVORITOS — as urls que o operador marcou com ★.
+ * Os FAVORITOS SAÍRAM DAQUI (D37).
  *
- * Aqui é só o gesto e a memória local. A D13 liga isto ao endpoint
- * `saved_views`/favoritos do contrato, e o dia em que ela chegar esta função
- * vira a camada de leitura otimista dele — a assinatura não muda.
+ * A D4 os guardava neste arquivo, em `localStorage`, e a própria doc previa a
+ * troca: *"a D13 liga isto ao endpoint `saved_views`/favoritos do contrato"*. A
+ * D13 chegou e o merge da rodada descartou o shell em que ela montava, então as
+ * duas implementações conviveram — a barra gravando no navegador e
+ * `app/nav/favoritos.tsx` órfão, falando com o contrato.
+ *
+ * Quem ficou foi o contrato: favorito é preferência de CONTA, e no balcão onde
+ * a mesma máquina atende dois operadores o `localStorage` é do NAVEGADOR — a
+ * gaveta por id resolvia o vazamento entre eles, mas não o inverso, que é o
+ * operador perder os favoritos ao trocar de máquina. `useFavoritosDaTela` mora
+ * em `app/nav/favoritos.tsx`, ao lado do grupo que os desenha.
+ *
+ * O RESTO do estado pessoal continua aqui, e não por inércia: colapso, grupos
+ * abertos e recentes não têm caminho no contrato, e inventar um para eles seria
+ * escrever contrato para guardar preferência de janela.
  */
-export function useFavoritos(usuario: string) {
-  const [favoritos, setFavoritos] = useState<string[]>(() =>
-    somenteTextos(lerGaveta<unknown>(CHAVE_FAVORITOS, usuario, [])),
-  )
-
-  useEffect(() => {
-    setFavoritos(somenteTextos(lerGaveta<unknown>(CHAVE_FAVORITOS, usuario, [])))
-  }, [usuario])
-
-  const alternar = useCallback(
-    (url: string) => {
-      setFavoritos((atual) => {
-        const proximo = atual.includes(url) ? atual.filter((u) => u !== url) : [...atual, url]
-        gravarGaveta(CHAVE_FAVORITOS, usuario, proximo)
-        return proximo
-      })
-    },
-    [usuario],
-  )
-
-  return { favoritos, alternar }
-}
 
 function recentesValidos(valor: unknown): RegistroRecente[] {
   if (!Array.isArray(valor)) return []

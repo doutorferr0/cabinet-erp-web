@@ -74,15 +74,20 @@ const DIVIDAS: Record<string, string> = {
   // acesso a dado de terceiro.
   'data/suporte-api.ts':
     'órfã desde o item 6 da fundação (PR #369); religa no console de suporte, que é trilho próprio — o mock e as guardas já respondem sem ela',
-
   // INTEGRAÇÃO 2.0 (Cowork, 2026-09-03) — órfãos nascidos do merge de 30 PRs
-  // paralelas; quem religa ou apaga é a D37 (#532), passada de consistência.
+  // paralelas. A D37 (#532) pagou duas das três:
+  //
+  // - `regiao-de-avisos.tsx` — LIGADA no `shell.tsx`. Não era só um órfão: era a
+  //   confirmação de escrita da #208 sumida do app inteiro (gravar tinha parado
+  //   de dizer que gravou). A D5 a moveu do `providers` para o shell de
+  //   propósito, D4 e D7 continuavam no `providers`, e o merge das três ficou
+  //   com o lado sem a faixa.
+  // - `selo.tsx` — APAGADO, com o teste. Zero importadores: as únicas menções
+  //   restantes eram esta linha e comentários históricos.
+  //
+  // A terceira fica, e a decisão está tomada — o que falta é mecânico:
   'components/cabinet/ficha/ficha-de-cadastro.tsx':
-    'D16 escreveu a ficha genérica; D19 montou as 9 fichas sobre ficha-de-registro — D37 decide qual fica',
-  'components/cabinet/regiao-de-avisos.tsx':
-    'D5 desenhou a faixa de avisos; o shell da D4 não a monta — D37 liga no shell',
-  'components/cabinet/selo.tsx':
-    'D3 manteve Selo como alias do Badge; os consumidores migraram para Badge — D37 apaga',
+    'D16 escreveu a ficha genérica e D19 montou as 9 fichas sobre `features/cadastro/ficha-de-registro.tsx`, que 4 rotas de cadastro importam de verdade. DECIDIDO na D37: fica a de D19, esta sai. Não saiu junto porque `indice-de-modulos.test.tsx` a usa como HOSPEDEIRO para montar o índice — apagar sem migrar aquele teste trocaria um órfão por um vermelho. O passo é: mudar o hospedeiro daquele teste para `ficha-de-registro` e apagar este arquivo.',
 }
 
 function arquivosDe(dir: string): string[] {

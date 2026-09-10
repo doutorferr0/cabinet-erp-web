@@ -225,10 +225,10 @@ describe('grade 2.0: densidade', () => {
 })
 
 describe('grade 2.0: lote e ações de linha', () => {
-  const acoesDeSelecao = [{ id: 'excluir', label: 'Cancelar ordens' }]
+  const acoesDeLote = [{ id: 'excluir', label: 'Cancelar ordens' }]
 
   it('a barra de lote conta as selecionadas e some com `esc`', async () => {
-    const { user } = montar({ acoesDeSelecao })
+    const { user } = montar({ acoesDeLote })
     await primeiraLinha()
 
     const caixas = screen.getAllByRole('checkbox')
@@ -247,7 +247,7 @@ describe('grade 2.0: lote e ações de linha', () => {
   })
 
   it('marcar tudo pelo cabeçalho marca A PÁGINA, e desmarcar volta atrás', async () => {
-    const { user } = montar({ acoesDeSelecao })
+    const { user } = montar({ acoesDeLote })
     await primeiraLinha()
 
     const todas = screen.getByRole('checkbox', { name: 'Marcar todas as linhas desta página' })

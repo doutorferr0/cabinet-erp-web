@@ -74,7 +74,6 @@ const DIVIDAS: Record<string, string> = {
   // acesso a dado de terceiro.
   'data/suporte-api.ts':
     'órfã desde o item 6 da fundação (PR #369); religa no console de suporte, que é trilho próprio — o mock e as guardas já respondem sem ela',
-
   // INTEGRAÇÃO 2.0 (Cowork, 2026-09-03) — órfãos nascidos do merge de 30 PRs
   // paralelas; quem religa ou apaga é a D37 (#532), passada de consistência.
   'components/cabinet/ficha/ficha-de-cadastro.tsx':

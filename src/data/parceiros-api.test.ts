@@ -1,21 +1,21 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { data } from '@/data'
 import { ErroDaApi } from '@/data/api-provider'
 import {
-  ORDENAVEIS,
-  URL_PARCEIROS,
   atualizarParceiro,
   corpoDeDesativacao,
   corpoDeEscrita,
   corpoDeInclusao,
   idDoParceiroExistente,
   incluirParceiro,
+  ORDENAVEIS,
   parceiros,
+  URL_PARCEIROS,
   vincularParceiro,
 } from '@/data/parceiros-api'
 import { parceiro } from '@/test/parceiros'
 import { instalarServidor, json, problema } from '@/test/servidor'
 import { tableState } from '@/test/utils'
-import { afterEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * Contrato da fronteira de parceiros — uma tabela, três papéis.
@@ -292,7 +292,7 @@ describe('escrita', () => {
   // `PartnerDto`, e aceitar corpo vazio seria aceitar resposta não descrita.
   it('corpo vazio no 200 é falha, não sucesso', async () => {
     instalarServidor({
-      [`${URL_PARCEIROS}/${parceiro().id}`]: () => new Response('', { status: 204 }),
+      [`${URL_PARCEIROS}/${parceiro().id}`]: () => new Response(null, { status: 204 }),
     })
 
     await expect(

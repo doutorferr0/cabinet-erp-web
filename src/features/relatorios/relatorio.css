@@ -1,0 +1,91 @@
+/*
+  O DESENHO 2.0 dos relatórios — o que a régua §Hierarquia (#469) pede e o
+  utilitário do Tailwind não dá.
+
+  ## Por que existe um CSS aqui, e o que ele NÃO faz
+
+  A régua proíbe `font-size` literal em componente: todo degrau de tipo vem das
+  classes `.t-*` de `tokens-2.0.css`, e nenhuma tela redefine tamanho. Este
+  arquivo não inventa degrau nenhum — ele COMPÕE os que existem em dois pontos
+  onde a régua nomeia o papel mas não há classe pronta:
+
+  1. **O valor do KPI.** A régua diz "rótulo de KPI = `--t-rotulo`, n-700" e
+     manda mono para dado, mas os onze degraus não têm um número grande: o maior
+     mono é `--t-dado`, 12.5px. O mockup (`.kpi .v`) desenha 20px. Enquanto o
+     degrau não existir, o tamanho entra por `var(--t-kpi-valor, 20px)` — a
+     forma que a issue-mãe manda usar para token que falta —, e o fallback é o
+     número do mockup. No dia em que D1 publicar `--t-kpi-valor`, esta regra
+     passa a obedecê-lo sem ninguém tocar aqui. Falta registrada na #469.
+
+  2. **O tint por posição da faixa.** O mockup tinge os quatro tiles por
+     SIGNIFICADO (lilás · céu · areia · menta) e isso é seletor de posição, que
+     não cabe em prop de componente sem cada tela repetir a paleta.
+
+  ## Cor no KPI é região, não semáforo
+
+  O tint do tile diz "esta é a faixa de números do recorte" — separação por
+  natureza, a ferramenta nº 3 da régua. O que diz "este número está ruim" é a
+  COR DO NÚMERO (`data-tom`), nunca o fundo: quatro caixas coloridas com uma
+  vermelha no meio leem-se como semáforo, e aí o operador procura a cor em vez
+  de ler o valor.
+*/
+
+/* A faixa: `auto-fit` e não `@media` — a regra da rodada proíbe ponto de corte. */
+.faixa-de-kpis {
+  display: grid;
+  gap: var(--s-3);
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+}
+
+.kpi {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  padding: 14px var(--s-4);
+  border: 1.5px solid var(--n-900);
+  border-radius: var(--r-card);
+  /* A única sombra dura de tinta da tela junto com a do painel (§Hierarquia). */
+  box-shadow: var(--hard-1);
+  background: var(--folha);
+}
+
+/* Tint por posição — significado, não enfeite. Quinto tile em diante repete. */
+.faixa-de-kpis > .kpi:nth-child(4n + 1) {
+  background: var(--tint-lilac);
+}
+.faixa-de-kpis > .kpi:nth-child(4n + 2) {
+  background: var(--tint-sky);
+}
+.faixa-de-kpis > .kpi:nth-child(4n + 3) {
+  background: var(--tint-sand);
+}
+.faixa-de-kpis > .kpi:nth-child(4n + 4) {
+  background: var(--tint-mint);
+}
+
+/* O rótulo é `--t-rotulo` e em KPI sobe um degrau de cor (n-700, não n-500). */
+.kpi-rotulo {
+  color: var(--n-700);
+}
+
+/*
+  O valor herda a face e o tabular de `.t-dado` (é dado, e mono é dado) e só
+  troca o tamanho pelo degrau que ainda não existe.
+*/
+.kpi-valor {
+  font-size: var(--t-kpi-valor, 20px);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.kpi-valor[data-tom="bad"] {
+  color: var(--bad);
+}
+.kpi-valor[data-tom="warn"] {
+  color: var(--warn);
+}
+.kpi-valor[data-tom="ok"] {
+  color: var(--money);
+}

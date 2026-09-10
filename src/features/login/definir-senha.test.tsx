@@ -1,6 +1,6 @@
-import { type FetchStub, renderRoute } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { type FetchStub, renderRoute } from '@/test/utils'
 
 /**
  * DEFINIR SENHA pelo link, e PEDIR o link — pelo router de verdade.
@@ -219,7 +219,7 @@ describe('EsqueciSenha', () => {
     const { stub } = servidorDoLink()
     const { router, user } = renderRoute('/login', stub)
 
-    await user.click(await screen.findByRole('link', { name: 'Esqueci minha senha' }))
+    await user.click(await screen.findByRole('link', { name: 'Esqueci a senha' }))
     await waitFor(() => expect(router.state.location.pathname).toBe('/esqueci-senha'))
   })
 })

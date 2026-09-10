@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils'
  * erro — e a memória prevê exatamente este caso ("se usar vermelho para alta,
  * registrar a exceção"). Vale porque prioridade alta é o que TRAVA a fila do
  * dia, que é a mesma família de significado; o que a exceção não autoriza é
- * ornamento vermelho ao lado, nem vermelho em qualquer outro lugar do
+ * desenho vermelho ao lado, nem vermelho em qualquer outro lugar do
  * Dashboard.
  *
  * O rótulo é escrito, nunca só a cor: três chips que só diferem de tom seriam

@@ -58,6 +58,49 @@
         }
       }
     },
+    "/api/postal-codes/{postalCode}": {
+      "get": {
+        "tags": ["apoio"],
+        "operationId": "LookupPostalCode",
+        "description": "Proposto. Consulta o endereço público de um CEP e devolve o mesmo formato que os cadastros guardam. Número e complemento não pertencem ao CEP e voltam nulos; o operador os informa. O front não consulta serviço externo diretamente: este caminho deixa cache, disponibilidade e política de fornecedor sob controle do servidor.",
+        "parameters": [
+          {
+            "name": "postalCode",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "pattern": "^[0-9]{8}$" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PartnerAddress" }
+              }
+            }
+          },
+          "400": {
+            "description": "CEP inválido.",
+            "content": {
+              "application/problem+json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "404": {
+            "description": "CEP não encontrado.",
+            "content": {
+              "application/problem+json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/catalog-lookups": {
       "get": {
         "tags": ["catalogo"],
@@ -2238,6 +2281,91 @@
           },
           "404": {
             "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{projectId}/plan/items/{itemId}": {
+      "patch": {
+        "tags": ["planner"],
+        "operationId": "ReschedulePlanItem",
+        "description": "Proposto. Reagenda UM item do plano — é o que o arraste da barra no gantt grava. `PATCH` e não `PUT` de propósito: a barra carrega data, e só. Um `PUT` a partir dela apagaria `label`, `kind` e `progressPercent`, que o operador não tocou e a barra nem exibe. As duas datas vêm JUNTAS e obrigatórias porque o gesto move as duas: arrastar desloca o intervalo inteiro, e mandar só a ponta que mudou faria o servidor adivinhar a outra. `endsOn` continua INCLUSIVO, como no `PlanItemDto` — a convenção exclusiva do motor do gantt não atravessa a fronteira. **A FASE acompanha:** item reagendado para fora do intervalo da fase que o contém estica essa fase até contê-lo, e a resposta seguinte de `GetProjectPlan` já traz a fase esticada. Recusar o gesto travaria o replanejamento no lugar onde ele mais acontece; deixar a fase curta desenharia uma barra-resumo menor que os próprios filhos.",
+        "parameters": [
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanItemRescheduleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanItemDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -5065,6 +5193,255 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RoleDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants": {
+      "get": {
+        "tags": ["acesso"],
+        "operationId": "ListTenants",
+        "description": "Proposto. As EMPRESAS do grupo — a organização inteira, não só aquelas em que quem pede tem vínculo.\n\nÉ o par de `GET /auth/tenants` visto do outro lado: lá a lista é \"onde EU entro\" e serve o seletor de empresa ativa; aqui é \"quais empresas existem\" e serve quem administra o grupo. Confundir as duas faria a empresa recém-criada — em que ninguém ainda tem vínculo — desaparecer da tela que a criou.\n\nO recorte é a ORGANIZAÇÃO, como em `/api/roles` e `/api/employees`. Não há 409 por empresa ativa: administrar o grupo é anterior a estar dentro de uma das empresas dele, e exigir empresa ativa aqui trancaria para fora exatamente quem precisa criar a primeira.\n\n`sortBy` aceita `code`, `name` e `active`. `q` busca por `code` e `name`.",
+        "parameters": [
+          {
+            "name": "q",
+            "description": "Busca por código ou nome fantasia da empresa.",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "description": "Whitelist: `code`, `name`, `active`. Campo fora dela é 400.",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDesc",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfTenantDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      },
+      "post": {
+        "tags": ["acesso"],
+        "operationId": "CreateTenant",
+        "description": "Proposto. Cria uma empresa na organização de quem pede. `organizationId` NÃO entra no corpo: ele sai da sessão, e uma empresa que declarasse a própria organização seria o caminho para plantar linha no grupo de outro.\n\n`code` repetido é 409 `about:blank` — a tela não tem saída própria a oferecer, quem criou corrige o código ali mesmo. **O código é único no sistema, não só na organização**, porque é ele que aparece no documento e em conversa (\"a 01 faturou\") e dois significados para o mesmo número é o que uma chave humana não pode ter.\n\n**A empresa nasce SEM TIMBRE, e sem CNPJ.** Quem grava os dois é `PUT /api/company-letterhead`, depois de a empresa nova estar ATIVA — ver a nota de `TenantWriteRequest`.\n\nA empresa nasce **sem vínculo nenhum**, inclusive o de quem a criou. É deliberado e é o que separa criar de entrar: quem administra o grupo nem sempre opera dentro dele, e vincular sozinho faria toda empresa nova aparecer no seletor de quem só queria cadastrá-la. O vínculo entra por `/api/employees/{id}/link`, com a empresa nova ATIVA.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TenantWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantDetailDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tenants/{id}": {
+      "get": {
+        "tags": ["acesso"],
+        "operationId": "GetTenant",
+        "description": "Proposto. A empresa com os RECURSOS contratados — o corpo que abre o formulário de alteração.\n\n**O TIMBRE não está aqui**, e a ausência é a decisão: quem o publica é `GET /api/company-letterhead`, singleton da empresa ATIVA. Razão social, Inscrição Estadual, endereço, fone e e-mail moram nas mesmas colunas de `tenants`, e publicá-las nos dois lugares deixaria duas rotas gravando o mesmo cabeçalho — com a diferença de que esta aceita um `id` do cliente, que é exatamente o que aquela recusa: `tenants` é tabela GLOBAL, sem política de RLS nenhuma, então quem recorta é a borda ao escolher o id.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantDetailDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["acesso"],
+        "operationId": "UpdateTenant",
+        "description": "Proposto. Substitui a empresa INTEIRA — campo omitido vira `null`, como em todo PUT deste contrato. `features` que vier é o conjunto FINAL: tirar um recurso precisa ter efeito, e corpo que só soma nunca desliga nada.\n\n**O timbre não se altera por aqui** — ver `GetTenant`. Esta operação mexe na IDENTIDADE da empresa (código, nome fantasia, o que ela opera, se está ativa); o cabeçalho do impresso é `PUT /api/company-letterhead`.\n\n**Mexer em `features` muda o que a empresa VÊ.** Elas comandam a navegação (`VinculoDeEmpresa.features`), então desligar `suppliers` some com a tela de Fornecedores para todo mundo daquela empresa no próximo carregamento. Não é destrutivo — nenhum dado é apagado e religar traz tudo de volta —, mas é a única alteração desta tela cujo efeito aparece na barra lateral de outra pessoa.\n\n**Não há `DELETE`.** Vale o padrão de cadastro: desativação lógica por `active: false`. Empresa apagada deixaria orçamento, pedido e estoque apontando para o nada, e o recorte por empresa é a garantia de isolamento inteira deste sistema — a linha que o define não pode sumir. Empresa inativa sai do seletor de empresa ativa e continua legível em tudo o que já gravou.\n\n`code` repetido é 409.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TenantWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantDetailDto"
                 }
               }
             }
@@ -13180,6 +13557,55 @@
         }
       }
     },
+    "/api/employees/{id}/links": {
+      "get": {
+        "tags": ["acesso"],
+        "operationId": "ListEmployeeLinks",
+        "description": "Proposto. Os vínculos desta pessoa em TODAS as empresas do grupo — o que `POST`/`PUT /api/employees/{id}/link` escrevem uma empresa por vez.\n\nÉ a mesma consulta de `GET /auth/tenants`, apontada para outra pessoa: quem administra o grupo precisa ver \"em quais empresas o João entra, e como\" sem trocar de empresa ativa cinco vezes para descobrir.\n\n**Ler é do grupo, escrever continua sendo da empresa.** Este caminho atravessa as empresas porque o recorte dele é a ORGANIZAÇÃO, como em `/api/roles` e `/api/employees`. A ESCRITA não atravessa, e é decisão, não esquecimento: o vínculo é a linha que diz o que a pessoa pode fazer NAQUELA empresa, e gravá-lo de fora dela seria decidir o poder de uma empresa a partir da autorização obtida noutra. Quem quer mudar o vínculo da empresa B ativa a empresa B (`PUT /auth/active-tenant`) e usa `/link` — a tela oferece o gesto na própria linha.\n\nDevolve `[]` para pessoa sem vínculo nenhum, que é o estado de quem foi criado e ainda não entrou em empresa alguma. `404` é reservado para a PESSOA que não existe: lista vazia e pessoa inexistente são coisas diferentes e a tela reage diferente às duas.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EmployeeTenantLinkDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/employees/{id}/reset-password": {
       "post": {
         "tags": ["cadastros"],
@@ -13877,6 +14303,345 @@
           },
           "409": {
             "description": "Conflict — sem empresa ativa na sessão (`urn:cabinet:erro:sem-empresa-ativa`). Documento impresso é papel timbrado de UMA empresa: sem ela não há cabeçalho, e um PDF sem timbre é pior que erro nenhum.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/purchases/orders-summary": {
+      "get": {
+        "tags": ["compras"],
+        "operationId": "GetPurchaseOrdersSummary",
+        "description": "Proposto. Os números da faixa de KPI acima da listagem de ordens de compra, da EMPRESA ATIVA da sessão. Números derivados do movimento — o servidor apura, o front só formata.\n\nCaminho sob `/api/purchases/`, e não `/api/purchase-orders/summary`, pelo precedente que já está no contrato (`arrival-forecast`, `stock-replenishment`): agregado ganha prefixo próprio em vez de virar irmão de `/{id}`, onde `summary` e um uuid disputam a mesma posição do roteador. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PurchaseOrdersSummaryDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/sales/quotes-summary": {
+      "get": {
+        "tags": ["vendas"],
+        "operationId": "GetQuotesSummary",
+        "description": "Proposto. Os números da faixa de KPI acima da listagem de orçamentos, da EMPRESA ATIVA da sessão. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuotesSummaryDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/stock/summary": {
+      "get": {
+        "tags": ["estoque"],
+        "operationId": "GetStockSummary",
+        "description": "Proposto. Os números da faixa de KPI acima das listagens de estoque (valorizado, parado, movimentação), da EMPRESA ATIVA da sessão. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StockSummaryDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/crm/opportunities-summary": {
+      "get": {
+        "tags": ["crm"],
+        "operationId": "GetOpportunitiesSummary",
+        "description": "Proposto. Os números da faixa de KPI acima do funil de oportunidades, da EMPRESA ATIVA da sessão. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunitiesSummaryDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/nav/counters": {
+      "get": {
+        "tags": ["nav"],
+        "operationId": "GetNavCounters",
+        "description": "Proposto. Os contadores da navegação, do usuário e da EMPRESA ATIVA da sessão, numa leitura só. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NavCountersDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      }
+    },
+    "/api/me/views": {
+      "get": {
+        "tags": ["preferencias"],
+        "operationId": "ListMyViews",
+        "description": "Proposto. Views salvas do USUÁRIO da sessão — nenhuma outra. O grupo FAVORITOS da barra lateral se alimenta daqui, e por isso a leitura é a lista inteira e não uma página: são unidades por tela, e paginar preferência pessoal daria uma barra lateral que continua na página 2.",
+        "parameters": [
+          {
+            "name": "route",
+            "in": "query",
+            "description": "Recorta pelas views de UMA tela. Ausente = todas, que é o que a barra lateral pede: ela mostra os favoritos de tudo, e uma requisição por tela aberta seria uma consulta por item do menu.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SavedViewDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          }
+        }
+      },
+      "post": {
+        "tags": ["preferencias"],
+        "operationId": "CreateMyView",
+        "description": "Proposto. Salva a consulta que está na tela com um nome. **Quem cria decide a estrela**: \"Salvar consulta\" na listagem manda `favorite: false` (fixar é um segundo gesto, e salvar já fixado encheria a barra lateral de uma vez), e o ★ do item de nav manda `true`, porque ali o gesto É fixar. O servidor não força nenhum dos dois — forçar `false` obrigaria a estrela a fazer POST e PUT por um clique só, com uma janela entre os dois em que a view existe sem aparecer. O que é do servidor é a `position`: a view entra no fim da fila da tela dela.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedViewWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedViewDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request — nome vazio, `route` que não é caminho da aplicação, ou campo de `filters`/`sortBy` fora da whitelist do recurso daquela rota. Aceitar campo desconhecido gravaria uma view que só falha ao ser aberta.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "409": {
+            "description": "Conflict — sessão sem empresa ativa (`sem-empresa-ativa`). A view é do usuário e não da empresa, mas quem recusa é a borda de `/api/`, antes do handler: declarar só onde o dado é da empresa deixaria justamente esta escrita devolvendo um código que o contrato não prevê.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/views/{id}": {
+      "put": {
+        "tags": ["preferencias"],
+        "operationId": "UpdateMyView",
+        "description": "Proposto. Substitui a view INTEIRA — é por aqui que ela é renomeada, muda de cor, ganha ou perde a estrela. **Uma operação só para os quatro gestos**: um `PATCH` de `favorite` pareceria mais barato e criaria uma segunda porta de escrita sobre o mesmo registro, com regra de validação própria para manter em dia.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedViewWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedViewDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — a view não existe OU é de outro usuário, e as duas respondem igual de propósito: um 403 distinto contaria que ela existe.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sessão sem empresa ativa (`sem-empresa-ativa`). A view é do usuário e não da empresa, mas quem recusa é a borda de `/api/`, antes do handler: declarar só onde o dado é da empresa deixaria justamente esta escrita devolvendo um código que o contrato não prevê.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["preferencias"],
+        "operationId": "DeleteMyView",
+        "description": "Proposto. Apaga a view. **É o único DELETE do contrato, e a exceção tem motivo:** a regra do produto é desativar em vez de excluir porque cadastro tem histórico e é referenciado por documento. View salva não é referenciada por nada e é do próprio usuário — desativada, ela viraria lixo permanente na barra lateral de quem pediu para tirá-la de lá.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "$ref": "#/components/responses/NaoAutenticado"
+          },
+          "403": {
+            "$ref": "#/components/responses/SemPermissao"
+          },
+          "404": {
+            "description": "Not Found — a view não existe OU é de outro usuário, e as duas respondem igual de propósito.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict — sessão sem empresa ativa (`sem-empresa-ativa`). A view é do usuário e não da empresa, mas quem recusa é a borda de `/api/`, antes do handler: declarar só onde o dado é da empresa deixaria justamente esta escrita devolvendo um código que o contrato não prevê.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -15947,6 +16712,22 @@
           }
         }
       },
+      "PlanItemRescheduleRequest": {
+        "description": "Proposto. O novo intervalo de um item do plano. Só datas: reagendar não renomeia nem mexe em progresso, e campo que o gesto não produz não entra no corpo que ele manda.",
+        "required": ["startsOn", "endsOn"],
+        "type": "object",
+        "properties": {
+          "startsOn": {
+            "type": "string",
+            "format": "date"
+          },
+          "endsOn": {
+            "description": "Previsão de término, INCLUSIVA — o mesmo dia que `PlanItemDto.endsOn`. Item de um dia só chega aqui com `startsOn` igual a `endsOn`, nunca com o dia seguinte.",
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
       "ProjectPlanDto": {
         "description": "Proposto. O plano inteiro de um projeto.",
         "required": ["projectId", "phases"],
@@ -17267,7 +18048,7 @@
         }
       },
       "EmployeeDetailDto": {
-        "description": "Proposto. A ficha do colaborador — o cadastro que o legado tem em `Funcionario` e que a listagem só arranhava. Os campos vêm de DOIS níveis e o corpo os junta de propósito: nome, documento e contato são da ORGANIZAÇÃO (a mesma pessoa nas duas empresas do grupo), enquanto papel, cargo, setor e as datas de vínculo são da EMPRESA ATIVA — o mesmo colaborador pode ser vendedor numa e gerente na outra (decisão do user, 2026-08-18). Colaborador sem vínculo na empresa ativa devolve os campos do vínculo em `null`, e não 404: ele existe, só não trabalha aqui.",
+        "description": "Proposto. A ficha do colaborador — o cadastro que o legado tem em `Funcionario` e que a listagem só arranhava. Os campos vêm de DOIS níveis e o corpo os junta de propósito: nome, documento, contato e o bloco pessoal (nascimento, estado civil, filiação, naturalidade, nacionalidade, instrução, profissão) são da ORGANIZAÇÃO — a mesma pessoa nas duas empresas do grupo —, enquanto papel, cargo, setor, vínculo, salário e as datas de vínculo são da EMPRESA ATIVA: o mesmo colaborador pode ser vendedor numa e gerente na outra (decisão do user, 2026-08-18). Colaborador sem vínculo na empresa ativa devolve os campos do vínculo em `null`, e não 404: ele existe, só não trabalha aqui.\n\n**SEXO e RAÇA/COR não estão aqui, e a ausência é decisão, não pendência** (decisão do user, 2026-08-28). São dado pessoal sensível na letra do art. 5º II da LGPD, e o produto não tem regra de acesso que os justifique: nenhuma tela decide nada com eles e nenhum relatório os pede. Campo sensível sem finalidade declarada é passivo, não funcionalidade — quem vier a precisar deles abre a discussão de finalidade e base legal primeiro, e o campo nasce depois. Saíram junto da tela e do schema do formulário, no mesmo corte.",
         "required": ["id", "name", "active"],
         "type": "object",
         "properties": {
@@ -17290,6 +18071,81 @@
             "type": ["string", "null"]
           },
           "photoUrl": {
+            "type": ["string", "null"]
+          },
+          "birthDate": {
+            "description": "Proposto. Data de nascimento. Nível ORGANIZAÇÃO: a pessoa nasceu uma vez, não uma vez por empresa.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "maritalStatusId": {
+            "description": "Proposto. Estado civil — `CatalogLookupDto.id`, kind `ESTADO_CIVIL`.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "maritalStatus": {
+            "description": "Proposto. Nome do estado civil, resolvido pelo servidor — o mesmo serviço que `sector` e `jobTitle` prestam.",
+            "type": ["string", "null"]
+          },
+          "spouseName": {
+            "description": "Proposto. Nome do cônjuge.",
+            "type": ["string", "null"]
+          },
+          "spouseBirthDate": {
+            "description": "Proposto. Data de nascimento do cônjuge.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "fatherName": {
+            "description": "Proposto. Filiação — nome do pai.",
+            "type": ["string", "null"]
+          },
+          "motherName": {
+            "description": "Proposto. Filiação — nome da mãe.",
+            "type": ["string", "null"]
+          },
+          "birthCityCode": {
+            "description": "Proposto. Código da cidade de nascimento, como o legado o guarda. **Texto opaco e NÃO chave estrangeira**: o contrato não publica recurso de cidades, então não há `/api/cities/{id}` para este valor apontar. Existe para o dado sobreviver ao ida-e-volta — a tela busca a cidade numa lista local e perderia o código no `PUT` se só o nome viajasse. Vira referência de verdade no dia em que cidades ganharem caminho.",
+            "type": ["string", "null"]
+          },
+          "birthCity": {
+            "description": "Proposto. Naturalidade — nome da cidade de nascimento.",
+            "type": ["string", "null"]
+          },
+          "birthState": {
+            "description": "Proposto. UF de nascimento, duas letras. Separada da UF do endereço e da do órgão expedidor: são três perguntas diferentes sobre a mesma pessoa.",
+            "type": ["string", "null"]
+          },
+          "nationalityId": {
+            "description": "Proposto. Nacionalidade — `CatalogLookupDto.id`, kind `NACIONALIDADE`.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "nationality": {
+            "description": "Proposto. Nome da nacionalidade, resolvido pelo servidor.",
+            "type": ["string", "null"]
+          },
+          "arrivalYear": {
+            "description": "Proposto. Ano de chegada ao país, quatro dígitos — só faz sentido para quem não nasceu aqui. **Texto e não `integer`** porque é o que o legado guarda e porque ano isolado não é data: somar, subtrair ou comparar com `birthDate` são operações que ninguém faz com ele.",
+            "type": ["string", "null"],
+            "pattern": "^[0-9]{4}$"
+          },
+          "educationLevelId": {
+            "description": "Proposto. Grau de instrução — `CatalogLookupDto.id`, kind `GRAU_INSTRUCAO`.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "educationLevel": {
+            "description": "Proposto. Nome do grau de instrução, resolvido pelo servidor.",
+            "type": ["string", "null"]
+          },
+          "occupationId": {
+            "description": "Proposto. Profissão — `CatalogLookupDto.id`, kind `PROFISSAO`. **Não confundir com `jobTitleId`**: profissão é da pessoa e vai com ela para qualquer empresa (kind `PROFISSAO`); cargo é do vínculo e pode ser outro em cada uma (kind `CARGO`).",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "occupation": {
+            "description": "Proposto. Nome da profissão, resolvido pelo servidor.",
             "type": ["string", "null"]
           },
           "active": {
@@ -17333,6 +18189,20 @@
             "type": ["string", "null"],
             "format": "date"
           },
+          "employmentTypeId": {
+            "description": "Proposto. Vínculo (CLT, PJ, estágio…) — `CatalogLookupDto.id`, kind `VINCULO`. Nível EMPRESA ATIVA: a mesma pessoa pode ser CLT numa empresa do grupo e PJ na outra, pela mesma razão que cargo e setor moram aqui.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "employmentType": {
+            "description": "Proposto. Nome do vínculo, resolvido pelo servidor.",
+            "type": ["string", "null"]
+          },
+          "salaryCents": {
+            "description": "Proposto. Salário em centavos (inteiro — nunca float). Nível EMPRESA ATIVA, ao lado de `hiredAt` e `dismissedAt`: quem trabalha em duas empresas do grupo tem uma remuneração em cada, e guardar isto na pessoa faria gravar a ficha numa empresa reescrever em silêncio o salário da outra.\n\n**LEITURA E ESCRITA SÃO `admin`-only, e a leitura é a metade que se esquece.** Para papel sem a permissão o servidor OMITE o campo do corpo em vez de devolvê-lo em `null`: `null` significa \"não há salário registrado\", e usar o mesmo valor para \"você não pode ver\" faria a tela imprimir um branco idêntico nos dois casos. Escrita por papel não-admin é 403 `urn:cabinet:erro:papel-insuficiente`, e não recusa silenciosa.",
+            "type": ["integer", "null"],
+            "format": "int64"
+          },
           "customerFacing": {
             "description": "`Atendimento ao cliente` do legado — é quem aparece no combo de Consultor(a) do orçamento. `null` quando não há vínculo.",
             "type": ["boolean", "null"]
@@ -17344,7 +18214,7 @@
         }
       },
       "EmployeeWriteRequest": {
-        "description": "Proposto. Só o nível ORGANIZAÇÃO. Cargo, setor e papel não entram aqui — moram no vínculo e mudam por `/link`, senão gravar a ficha numa empresa reescreveria em silêncio o cargo que a pessoa tem na outra. **Salário e o resto do bloco de RH ficam fora deste corte**: a pergunta de LGPD sobre dado sensível de funcionário segue sem resposta, e campo sem regra de acesso é pior que campo ausente. `PUT` substitui o registro inteiro: omitir apaga.",
+        "description": "Proposto. Só o nível ORGANIZAÇÃO — a pessoa. Cargo, setor, papel, vínculo e salário não entram aqui: moram no vínculo e mudam por `/link`, senão gravar a ficha numa empresa reescreveria em silêncio o que a pessoa tem na outra.\n\n**O bloco pessoal ENTROU neste corte** (decisão do user, 2026-08-28): nascimento, estado civil, cônjuge, filiação, naturalidade, nacionalidade, ano de chegada, instrução e profissão. O que ficou de fora ficou por LGPD, e não por corte de escopo — **sexo e raça/cor**, dado sensível (art. 5º II) sem finalidade nem regra de acesso declarada no produto. **Salário também não está aqui, e por outra razão**: é do vínculo, e viaja por `EmployeeLinkRequest.salaryCents`, `admin`-only na leitura e na escrita.\n\n`PUT` substitui o registro inteiro: omitir apaga.",
         "required": ["name", "document", "email", "phone", "active"],
         "type": "object",
         "properties": {
@@ -17364,13 +18234,72 @@
           "photoUrl": {
             "type": ["string", "null"]
           },
+          "birthDate": {
+            "description": "Proposto. Data de nascimento. Nível ORGANIZAÇÃO: a pessoa nasceu uma vez, não uma vez por empresa.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "maritalStatusId": {
+            "description": "Proposto. Estado civil — `CatalogLookupDto.id`, kind `ESTADO_CIVIL`.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "spouseName": {
+            "description": "Proposto. Nome do cônjuge.",
+            "type": ["string", "null"]
+          },
+          "spouseBirthDate": {
+            "description": "Proposto. Data de nascimento do cônjuge.",
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "fatherName": {
+            "description": "Proposto. Filiação — nome do pai.",
+            "type": ["string", "null"]
+          },
+          "motherName": {
+            "description": "Proposto. Filiação — nome da mãe.",
+            "type": ["string", "null"]
+          },
+          "birthCityCode": {
+            "description": "Proposto. Código da cidade de nascimento, como o legado o guarda. **Texto opaco e NÃO chave estrangeira**: o contrato não publica recurso de cidades, então não há `/api/cities/{id}` para este valor apontar. Existe para o dado sobreviver ao ida-e-volta — a tela busca a cidade numa lista local e perderia o código no `PUT` se só o nome viajasse. Vira referência de verdade no dia em que cidades ganharem caminho.",
+            "type": ["string", "null"]
+          },
+          "birthCity": {
+            "description": "Proposto. Naturalidade — nome da cidade de nascimento.",
+            "type": ["string", "null"]
+          },
+          "birthState": {
+            "description": "Proposto. UF de nascimento, duas letras. Separada da UF do endereço e da do órgão expedidor: são três perguntas diferentes sobre a mesma pessoa.",
+            "type": ["string", "null"]
+          },
+          "nationalityId": {
+            "description": "Proposto. Nacionalidade — `CatalogLookupDto.id`, kind `NACIONALIDADE`.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "arrivalYear": {
+            "description": "Proposto. Ano de chegada ao país, quatro dígitos — só faz sentido para quem não nasceu aqui. **Texto e não `integer`** porque é o que o legado guarda e porque ano isolado não é data: somar, subtrair ou comparar com `birthDate` são operações que ninguém faz com ele.",
+            "type": ["string", "null"],
+            "pattern": "^[0-9]{4}$"
+          },
+          "educationLevelId": {
+            "description": "Proposto. Grau de instrução — `CatalogLookupDto.id`, kind `GRAU_INSTRUCAO`.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "occupationId": {
+            "description": "Proposto. Profissão — `CatalogLookupDto.id`, kind `PROFISSAO`. **Não confundir com `jobTitleId`**: profissão é da pessoa e vai com ela para qualquer empresa (kind `PROFISSAO`); cargo é do vínculo e pode ser outro em cada uma (kind `CARGO`).",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
           "active": {
             "type": ["null", "boolean"]
           }
         }
       },
       "EmployeeLinkRequest": {
-        "description": "Proposto. O vínculo com a EMPRESA ATIVA — o que é dela e de mais ninguém. `POST` cria o vínculo (repetir é 409), `PUT` substitui o que existe (sem vínculo é 404).\n\n**O papel entra por `roleId`, e só por ele.** Até a fase 3 do api#84 havia um segundo caminho — `role`, o identificador antigo da escala fechada (`owner`, `admin`, `operator-full`, `operator-sales`, `viewer`) —, e ele saiu junto com a escala: os cinco viraram linhas de `org_roles` como qualquer papel que o admin monta, e a coluna que guardava o texto não existe mais no servidor. **`roleId` e não o `slug` porque o nome do papel é editável pelo CRUD** — `PUT /api/roles/{id}` renomeia `Vendedor` para `Consultor` sem mover vínculo nenhum, e uma chave que a tela pode reescrever não serve de referência.",
+        "description": "Proposto. O vínculo com a EMPRESA ATIVA — o que é dela e de mais ninguém. `POST` cria o vínculo (repetir é 409), `PUT` substitui o que existe (sem vínculo é 404).\n\n**Vínculo e salário entraram aqui, e não na ficha da pessoa** (decisão do user, 2026-08-28): são da empresa, como cargo e setor. `salaryCents` é `admin`-only na leitura E na escrita — a descrição do campo diz como o servidor recusa cada uma.\n\n**O papel entra por `roleId`, e só por ele.** Até a fase 3 do api#84 havia um segundo caminho — `role`, o identificador antigo da escala fechada (`owner`, `admin`, `operator-full`, `operator-sales`, `viewer`) —, e ele saiu junto com a escala: os cinco viraram linhas de `org_roles` como qualquer papel que o admin monta, e a coluna que guardava o texto não existe mais no servidor. **`roleId` e não o `slug` porque o nome do papel é editável pelo CRUD** — `PUT /api/roles/{id}` renomeia `Vendedor` para `Consultor` sem mover vínculo nenhum, e uma chave que a tela pode reescrever não serve de referência.",
         "required": ["active"],
         "type": "object",
         "properties": {
@@ -17396,6 +18325,16 @@
           "dismissedAt": {
             "type": ["string", "null"],
             "format": "date"
+          },
+          "employmentTypeId": {
+            "description": "Proposto. Vínculo (CLT, PJ, estágio…) — `CatalogLookupDto.id`, kind `VINCULO`. Nível EMPRESA ATIVA: a mesma pessoa pode ser CLT numa empresa do grupo e PJ na outra, pela mesma razão que cargo e setor moram aqui.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "salaryCents": {
+            "description": "Proposto. Salário em centavos (inteiro — nunca float). Nível EMPRESA ATIVA, ao lado de `hiredAt` e `dismissedAt`: quem trabalha em duas empresas do grupo tem uma remuneração em cada, e guardar isto na pessoa faria gravar a ficha numa empresa reescrever em silêncio o salário da outra.\n\n**LEITURA E ESCRITA SÃO `admin`-only, e a leitura é a metade que se esquece.** Para papel sem a permissão o servidor OMITE o campo do corpo em vez de devolvê-lo em `null`: `null` significa \"não há salário registrado\", e usar o mesmo valor para \"você não pode ver\" faria a tela imprimir um branco idêntico nos dois casos. Escrita por papel não-admin é 403 `urn:cabinet:erro:papel-insuficiente`, e não recusa silenciosa.",
+            "type": ["integer", "null"],
+            "format": "int64"
           },
           "customerFacing": {
             "type": ["null", "boolean"]
@@ -17473,7 +18412,7 @@
             "type": "string"
           },
           "password": {
-            "description": "A senha nova. O piso é de 8 caracteres, o mesmo de `AuthChangePassword`, e **NÃO é declarado como `minLength` de propósito** — nem aqui nem lá.\n\nO validador de schema roda ANTES do handler, então um `minLength` faria a forma vencer a ordem que esta operação promete: senha curta num link já morto responderia \u201csenha fraca\u201d, a pessoa melhoraria a senha, e só então tomaria o erro do link. Medido — foi assim que a primeira versão desta operação se comportou.\n\nA política de senha é do SERVIDOR, e a recusa dela tem URN própria (`urn:cabinet:erro:senha-fraca`). Duas autoridades sobre a mesma regra é o que este contrato evita em toda parte: a mais fraca ganharia por rodar primeiro, e a URN nunca sairia.",
+            "description": "A senha nova. O piso é de 8 caracteres, o mesmo de `AuthChangePassword`, e **NÃO é declarado como `minLength` de propósito** — nem aqui nem lá.\n\nO validador de schema roda ANTES do handler, então um `minLength` faria a forma vencer a ordem que esta operação promete: senha curta num link já morto responderia “senha fraca”, a pessoa melhoraria a senha, e só então tomaria o erro do link. Medido — foi assim que a primeira versão desta operação se comportou.\n\nA política de senha é do SERVIDOR, e a recusa dela tem URN própria (`urn:cabinet:erro:senha-fraca`). Duas autoridades sobre a mesma regra é o que este contrato evita em toda parte: a mais fraca ganharia por rodar primeiro, e a URN nunca sairia.",
             "type": "string"
           }
         }
@@ -18905,6 +19844,141 @@
           "total": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "TenantDto": {
+        "description": "Proposto. A LINHA da listagem de empresas — o que a tabela desenha, sem o timbre.",
+        "required": ["id", "code", "name", "active"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "description": "O código humano da empresa (`01`, `02`), único no sistema. É o que aparece no documento e em conversa; por isso é ele, e não o uuid, que a listagem mostra e ordena.",
+            "type": "string"
+          },
+          "name": {
+            "description": "O nome FANTASIA — `empresa.EMPRESA` do legado. Não é a razão social: quem imprime é `legalName`, e sobrescrever um com o outro apagaria o que distingue os dois.",
+            "type": "string"
+          },
+          "cnpj": {
+            "description": "Sem máscara, 14 posições, alfanumérico (regra da Receita desde 31/07/2026). `null` na empresa que ainda não tem inscrição.\n\n**Só de leitura por aqui**: quem grava o CNPJ é `PUT /api/company-letterhead`, junto com o resto do timbre. Ele aparece na linha porque é como se confere de qual empresa se está falando — ler não é autoridade.",
+            "readOnly": true,
+            "type": ["string", "null"]
+          },
+          "active": {
+            "description": "Desativação lógica: empresa aposentada sai do seletor de empresa ativa e continua legível em tudo o que já gravou. É o que substitui o `DELETE` que este recurso não publica.",
+            "type": "boolean"
+          }
+        }
+      },
+      "TenantDetailDto": {
+        "description": "Proposto. A empresa com os RECURSOS contratados — o corpo que abre o formulário de alteração.\n\n**Sem o TIMBRE**, e a ausência é deliberada: razão social, Inscrição Estadual, endereço, fone e e-mail são de `CompanyLetterheadDto`, singleton da empresa ATIVA. As colunas são as mesmas em `tenants`, e publicá-las nos dois lugares deixaria duas rotas gravando o mesmo cabeçalho — esta com um `id` vindo do cliente, que é justamente o que a outra recusa por `tenants` não ter política de RLS.",
+        "required": ["id", "code", "name", "active", "features"],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "code": {
+            "description": "Código humano, único no sistema.",
+            "type": "string"
+          },
+          "name": {
+            "description": "Nome fantasia — o rótulo que o seletor de empresa e a barra imprimem. NÃO é a razão social: quem imprime no cabeçalho é `CompanyLetterheadDto.legalName`, e sobrescrever um com o outro apagaria o que distingue os dois.",
+            "type": "string"
+          },
+          "cnpj": {
+            "description": "Sem máscara, 14 posições, alfanumérico. **Só de leitura** — quem o grava é `PUT /api/company-letterhead`.",
+            "readOnly": true,
+            "type": ["string", "null"]
+          },
+          "active": {
+            "description": "Desativação lógica.",
+            "type": "boolean"
+          },
+          "features": {
+            "description": "Recursos CONTRATADOS pela empresa — o que ela opera, não o que o usuário pode fazer nela (isso é o papel do vínculo). Mesmo conjunto fechado de `VinculoDeEmpresa.features`, e é ele que comanda a navegação. Sempre presente: empresa sem recurso opcional devolve `[]`, nunca omite o campo.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["suppliers", "professionals", "employees"]
+            }
+          }
+        }
+      },
+      "TenantWriteRequest": {
+        "description": "Proposto. Corpo de criação e de alteração da empresa — a IDENTIDADE dela, não o timbre.\n\n`id` e `organizationId` ficam de fora porque a identidade e o grupo são do servidor: empresa que declarasse a própria organização seria linha plantada no grupo de outro.\n\n**`cnpj`, razão social, Inscrição Estadual, endereço, fone e e-mail também ficam de fora, e é o ponto.** Eles são o timbre, e o timbre tem dono: `PUT /api/company-letterhead`, que grava o da empresa ATIVA e não aceita id do cliente — `tenants` não tem RLS, então um `id` no caminho de escrita de timbre seria o cliente escolhendo de quem grava. A empresa nova nasce sem cabeçalho e o ganha quando alguém a ativa, que é o mesmo caminho pelo qual ela ganha vínculo.",
+        "required": ["code", "name", "active", "features"],
+        "type": "object",
+        "properties": {
+          "code": {
+            "description": "Único no sistema; repetido é 409. Até 20 caracteres.",
+            "type": "string"
+          },
+          "name": {
+            "description": "Nome fantasia. Obrigatório — é por ele que a empresa aparece no seletor.",
+            "type": "string"
+          },
+          "active": {
+            "description": "Desativação lógica; `false` tira a empresa do seletor de empresa ativa.",
+            "type": "boolean"
+          },
+          "features": {
+            "description": "Conjunto FINAL de recursos — substitui o que havia, não acrescenta. Valor fora do conjunto fechado é 400 `urn:cabinet:erro:campos-invalidos`, com `fields[]` em `features`.",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["suppliers", "professionals", "employees"]
+            }
+          }
+        }
+      },
+      "PagedResultOfTenantDto": {
+        "required": ["rows", "total"],
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TenantDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "EmployeeTenantLinkDto": {
+        "description": "Proposto. UM vínculo de uma pessoa com uma empresa do grupo — a linha de `employee_company` vista pela tela de administração.\n\nTraz `tenantName` e `roleName` junto dos ids porque quem lê isto está olhando uma lista de empresas e precisa dos nomes; buscar cada um por id daria um pedido por linha para escrever o que o servidor já tinha em mãos.",
+        "required": ["tenantId", "tenantName", "active"],
+        "type": "object",
+        "properties": {
+          "tenantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tenantName": {
+            "description": "Nome fantasia da empresa, como em `TenantDto.name`.",
+            "type": "string"
+          },
+          "roleId": {
+            "description": "O papel NESTA empresa — `RoleDto.id`. `null` é vínculo herdado de antes de o papel existir, e a tela o mostra como pendente em vez de inventar um.",
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "roleName": {
+            "description": "Nome do papel, para a tela não ter de casar id com a listagem de papéis.",
+            "type": ["string", "null"]
+          },
+          "active": {
+            "description": "Vínculo desativado: a pessoa não entra nesta empresa, e a linha continua visível para dizer que já entrou.",
+            "type": "boolean"
           }
         }
       },
@@ -21021,7 +22095,7 @@
             "format": "int32"
           },
           "quantityOrdered": {
-            "description": "O que a ordem de compra pedia, em SNAPSHOT congelado na gravação.\n\n**Com vínculo, quem preenche é o SERVIDOR**, lendo a linha apontada por `purchaseOrderId` + `purchaseOrderLine` — pela mesma razão de `description`: aceitá-la do cliente faria a divergência ser medida contra um número digitado, e a conferência passaria a dizer o que o operador lembrou, não o que a ordem pede. **Sem vínculo é o que a tela digitou** — a ordem feita por telefone, a carga do legado —, e aí ela é declaração do operador, não fato do sistema.\n\n**`null` é o recebimento AVULSO sem nada com que comparar.** Nulo quer dizer \"não havia o que comparar\", e é diferente de zero, que diria \"pediram nada\".\n\nÉ pelo VÍNCULO — e não por esta quantidade solta — que a chegada baixa a reserva de CHEGADA FUTURA que `GetPurchaseArrivalForecast` e `GetPurchaseStockReplenishment` consomem; e nunca a reserva de VENDA (`PurchaseReplenishmentRowDto.qtyAllocated`), que entrada de compra não desfaz. Ver `POST /{id}/post`.",
+            "description": "O que a linha da ordem AINDA ESPERAVA quando este recebimento foi gravado — a quantidade dela menos o que recebimentos já lançados fecharam.\n\n**Não é a quantidade original da ordem, e a diferença aparece na entrega parcelada**, que é caso normal: pediu 10, vieram 8 hoje e 2 amanhã. A segunda carga confere contra as 2 que faltavam, não contra as 10 — senão toda parcela nasceria divergente e pediria motivo para uma diferença que já tem explicação, o caminhão anterior. Congelado na gravação, como todo snapshot da família.\n\n**Com vínculo, quem preenche é o SERVIDOR**, lendo a linha apontada por `purchaseOrderId` + `purchaseOrderLine` — pela mesma razão de `description`: aceitá-la do cliente faria a divergência ser medida contra um número digitado, e a conferência passaria a dizer o que o operador lembrou, não o que a ordem pede. **Sem vínculo é o que a tela digitou** — a ordem feita por telefone, a carga do legado —, e aí ela é declaração do operador, não fato do sistema.\n\n**`null` é o recebimento AVULSO sem nada com que comparar.** Nulo quer dizer \"não havia o que comparar\", e é diferente de zero, que diria \"pediram nada\".\n\nÉ pelo VÍNCULO — e não por esta quantidade solta — que a chegada baixa a reserva de CHEGADA FUTURA que `GetPurchaseArrivalForecast` e `GetPurchaseStockReplenishment` consomem; e nunca a reserva de VENDA (`PurchaseReplenishmentRowDto.qtyAllocated`), que entrada de compra não desfaz. Ver `POST /{id}/post`.",
             "type": ["number", "null"],
             "format": "double"
           },
@@ -21109,7 +22183,7 @@
             "format": "int32"
           },
           "quantityOrdered": {
-            "description": "O que a ordem pedia, e **só na linha SEM vínculo**: ordem feita por telefone, carga do legado. Com `purchaseOrderId` preenchido o servidor resolve a quantidade da própria ordem e IGNORA o que vier aqui, pela mesma razão de `description`.\n\n`null` no avulso — ver `GoodsReceiptItemDto.quantityOrdered`. Quando presente, é maior que zero: zero diria \"a ordem pedia nada\", que não é linha de ordem nenhuma.",
+            "description": "O que a ordem pedia, e **só na linha SEM vínculo**: ordem feita por telefone, carga do legado. Com `purchaseOrderId` preenchido o servidor resolve o SALDO A CHEGAR da própria linha da ordem e IGNORA o que vier aqui, pela mesma razão de `description` — ver `GoodsReceiptItemDto.quantityOrdered`, que explica por que é o saldo e não o total.\n\n`null` no avulso — ver `GoodsReceiptItemDto.quantityOrdered`. Quando presente, é maior que zero: zero diria \"a ordem pedia nada\", que não é linha de ordem nenhuma.",
             "type": ["number", "null"],
             "format": "double"
           },
@@ -24406,6 +25480,396 @@
             "format": "int32"
           }
         }
+      },
+      "KpiSeriesDto": {
+        "description": "Proposto. A série da sparkline de um KPI: os **doze últimos meses fechados**, do mais antigo para o mais recente, na unidade do número que ela acompanha (centavos quando o KPI é dinheiro, contagem quando é contagem).\n\nÉ um schema só, referenciado pelas quatro famílias, porque a JANELA é propriedade do desenho e não de cada resumo: quatro cópias divergiriam na primeira vez que alguém mudasse uma para dezoito meses, e a faixa passaria a comparar sparklines de escalas diferentes lado a lado.\n\nMenos de doze pontos é resposta legítima — empresa nova não tem doze meses de movimento. A tela desenha o que veio; não completa com zero, que seria inventar queda que não houve.",
+        "type": "array",
+        "maxItems": 12,
+        "items": {
+          "type": "integer",
+          "format": "int64"
+        }
+      },
+      "PurchaseOrdersSummaryDto": {
+        "description": "Proposto. O resumo da faixa de KPI da listagem de ORDENS DE COMPRA. Dinheiro em CENTAVOS, inteiro — a regra do repo vale no contrato. O DTO manda o valor de HOJE e a base de comparação, nunca o percentual pronto: variação apurada no servidor é número que o operador não consegue conferir contra nada na tela, e a derivação de dois campos visíveis ele confere. Mesma regra de `DashboardSummaryDto`.",
+        "required": [
+          "openOrders",
+          "openOrdersValueCents",
+          "lateOrders",
+          "arrivingThisWeek",
+          "monthValueCents",
+          "previousMonthValueCents",
+          "monthlyValueSeries"
+        ],
+        "type": "object",
+        "properties": {
+          "openOrders": {
+            "description": "Ordens ainda não recebidas por inteiro.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "openOrdersValueCents": {
+            "description": "Valor somado das ordens em aberto.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "lateOrders": {
+            "description": "Destas, quantas com previsão de chegada já vencida.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "arrivingThisWeek": {
+            "description": "Destas, quantas com previsão nos próximos 7 dias.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "monthValueCents": {
+            "description": "Emitido no mês corrente.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "previousMonthValueCents": {
+            "description": "Emitido no mês anterior fechado.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "monthlyValueSeries": {
+            "description": "Emitido por mês, em centavos.",
+            "$ref": "#/components/schemas/KpiSeriesDto"
+          }
+        }
+      },
+      "QuotesSummaryDto": {
+        "description": "Proposto. O resumo da faixa de KPI da listagem de ORÇAMENTOS. O DTO manda o valor de HOJE e a base de comparação, nunca o percentual pronto: variação apurada no servidor é número que o operador não consegue conferir contra nada na tela, e a derivação de dois campos visíveis ele confere. Mesma regra de `DashboardSummaryDto`.",
+        "required": [
+          "openQuotes",
+          "openQuotesValueCents",
+          "expiringThisWeek",
+          "wonThisMonth",
+          "monthValueCents",
+          "previousMonthValueCents",
+          "monthlyValueSeries"
+        ],
+        "type": "object",
+        "properties": {
+          "openQuotes": {
+            "description": "Orçamentos em aberto — nem virados em pedido, nem cancelados.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "openQuotesValueCents": {
+            "description": "Valor somado dos orçamentos em aberto.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "expiringThisWeek": {
+            "description": "Destes, quantos com validade nos próximos 7 dias.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "wonThisMonth": {
+            "description": "Quantos viraram pedido de venda no mês corrente.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "monthValueCents": {
+            "description": "Valor dos orçamentos emitidos no mês corrente.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "previousMonthValueCents": {
+            "description": "O mesmo, no mês anterior fechado.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "monthlyValueSeries": {
+            "description": "Emitido por mês, em centavos.",
+            "$ref": "#/components/schemas/KpiSeriesDto"
+          }
+        }
+      },
+      "StockSummaryDto": {
+        "description": "Proposto. O resumo da faixa de KPI das listagens de ESTOQUE. O valor do estoque é fotografia do instante, e por isso a base de comparação é o FECHAMENTO do mês anterior — comparar com \"o mês corrente\" não faria sentido para um saldo. O DTO manda o valor de HOJE e a base de comparação, nunca o percentual pronto: variação apurada no servidor é número que o operador não consegue conferir contra nada na tela, e a derivação de dois campos visíveis ele confere. Mesma regra de `DashboardSummaryDto`.",
+        "required": [
+          "variantCount",
+          "criticalItems",
+          "stockValueCents",
+          "previousMonthStockValueCents",
+          "movementsThisMonth",
+          "monthlyValueSeries",
+          "unpricedVariants"
+        ],
+        "type": "object",
+        "properties": {
+          "variantCount": {
+            "description": "Variantes ativas com saldo.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "criticalItems": {
+            "description": "Destas, quantas com saldo abaixo do mínimo.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "stockValueCents": {
+            "description": "Valor do estoque AGORA, pelo mesmo preço de valoração que `GET /api/reports/stock-valuation` usa — não um segundo critério. Variante sem preço na empresa NÃO entra na soma (não vale zero, vale desconhecido), e é `unpricedVariants` que diz quantas ficaram de fora: sem esse par, um buraco de cadastro apareceria como estoque barato.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "previousMonthStockValueCents": {
+            "description": "O mesmo valor no fechamento do mês anterior, pelo mesmo critério.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "movementsThisMonth": {
+            "description": "Movimentos lançados no mês corrente.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "monthlyValueSeries": {
+            "description": "Valor do estoque no fechamento de cada mês, em centavos.",
+            "$ref": "#/components/schemas/KpiSeriesDto"
+          },
+          "unpricedVariants": {
+            "description": "Variantes ativas com saldo e SEM preço — as que ficaram fora de `stockValueCents`. Zero é a resposta normal; qualquer outra coisa é cadastro para arrumar, e o número existe para o operador saber que a soma acima está incompleta antes de decidir por ela.",
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "OpportunitiesSummaryDto": {
+        "description": "Proposto. O resumo da faixa de KPI do funil de OPORTUNIDADES. `weightedValueCents` é o aberto ponderado pela probabilidade da etapa — apurado no servidor porque a probabilidade é do funil, não da tela, e a tela não tem como somá-la sem baixar o funil inteiro. O DTO manda o valor de HOJE e a base de comparação, nunca o percentual pronto: variação apurada no servidor é número que o operador não consegue conferir contra nada na tela, e a derivação de dois campos visíveis ele confere. Mesma regra de `DashboardSummaryDto`.",
+        "required": [
+          "openOpportunities",
+          "openValueCents",
+          "weightedValueCents",
+          "wonThisMonth",
+          "wonThisMonthCents",
+          "previousMonthWonCents",
+          "monthlyWonSeries"
+        ],
+        "type": "object",
+        "properties": {
+          "openOpportunities": {
+            "description": "Oportunidades em etapa aberta.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "openValueCents": {
+            "description": "Valor somado das oportunidades abertas.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "weightedValueCents": {
+            "description": "O mesmo valor, ponderado pela probabilidade da etapa.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "wonThisMonth": {
+            "description": "Quantas foram ganhas no mês corrente.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "wonThisMonthCents": {
+            "description": "Valor ganho no mês corrente.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "previousMonthWonCents": {
+            "description": "Valor ganho no mês anterior fechado.",
+            "type": "integer",
+            "format": "int64"
+          },
+          "monthlyWonSeries": {
+            "description": "Ganho por mês, em centavos.",
+            "$ref": "#/components/schemas/KpiSeriesDto"
+          }
+        }
+      },
+      "NavCountersDto": {
+        "description": "Proposto. Os contadores que a NAVEGAÇÃO mostra ao lado dos itens — o número que diz \"tem coisa aqui\" antes de a pessoa entrar.\n\n**É UMA chamada, e não uma por módulo, de propósito:** a sidebar mostra os oito ao mesmo tempo, e oito consultas para desenhar uma coluna dariam oito instantes diferentes no mesmo quadro — o item some de um contador e aparece noutro sem nunca ter existido nos dois. Um DTO é uma leitura só, coerente consigo mesma.\n\nContagem, nunca dinheiro: badge de navegação que mostra valor obriga a ler antes de decidir para onde ir, que é o contrário do que ela serve. Sessão sem empresa ativa responde tudo em ZERO, pela mesma regra das listagens (vazio, não erro) — e vazio, para número, é zero.",
+        "required": [
+          "quotesOpen",
+          "ordersOpen",
+          "purchaseOrdersOpen",
+          "goodsReceiptsPending",
+          "opportunitiesOpen",
+          "tasksDue",
+          "todosOpen",
+          "stockCritical"
+        ],
+        "type": "object",
+        "properties": {
+          "quotesOpen": {
+            "description": "Orçamentos em aberto.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "ordersOpen": {
+            "description": "Pedidos de venda ainda não concluídos.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "purchaseOrdersOpen": {
+            "description": "Ordens de compra ainda não recebidas por inteiro.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "goodsReceiptsPending": {
+            "description": "Recebimentos conferidos e ainda não lançados.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "opportunitiesOpen": {
+            "description": "Oportunidades em etapa aberta.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "tasksDue": {
+            "description": "Tarefas do usuário da sessão com prazo hoje ou vencido.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "todosOpen": {
+            "description": "Itens de A fazer não concluídos, do usuário da sessão.",
+            "type": "integer",
+            "format": "int32"
+          },
+          "stockCritical": {
+            "description": "Variantes com saldo abaixo do mínimo.",
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "SavedViewColor": {
+        "type": "string",
+        "description": "Proposto. Matiz do quadradinho da view — **nome da rampa, nunca hex**. O tema escuro reescreve os degraus de cada matiz, então uma cor gravada em hexadecimal nasceria certa no claro e errada no escuro, e ninguém a corrigiria porque ela já estaria no banco. `neutro` é a view que não escolheu cor.",
+        "enum": ["neutro", "lime", "indigo", "mint", "sky", "amber", "rose", "violet", "teal"]
+      },
+      "SavedViewDto": {
+        "required": ["id", "route", "name", "color", "filters", "joinOperator", "favorite"],
+        "type": "object",
+        "description": "Proposto. Uma consulta salva pelo usuário: o que ele filtra toda segunda-feira, com nome, cor e lugar na barra lateral. **Guarda o que a CONSULTA é, não o que a tela mostrou** — `page` e `q` ficam de fora de propósito: a página é onde ele parou de rolar e o `q` é pergunta pontual, e restaurar os dois abriria o favorito na página 4 de uma busca que ninguém lembra ter feito.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "route": {
+            "type": "string",
+            "description": "Rota da tela a que a view pertence (`/compras/ordens`). É a IDENTIDADE da listagem para quem lê de fora — a sidebar precisa saber para onde o favorito leva, e uma chave interna de cache não é endereço que se possa navegar."
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome que o operador deu — é o rótulo da aba e do item de Favoritos."
+          },
+          "color": {
+            "$ref": "#/components/schemas/SavedViewColor"
+          },
+          "filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ListFilter"
+            },
+            "description": "As condições do filtro estruturado, na MESMA forma que viaja na query da listagem. Guardar o texto já url-encoded pouparia uma conversão e custaria a conferência: campo fora da whitelist só apareceria como 400 no dia em que alguém abrisse a view."
+          },
+          "joinOperator": {
+            "$ref": "#/components/schemas/ListFilterJoin"
+          },
+          "sortBy": {
+            "type": ["null", "string"],
+            "description": "Campo da ordenação, na whitelist do recurso. `null` = a view não guardou ordem."
+          },
+          "sortDesc": {
+            "type": "boolean",
+            "description": "Ordem descendente."
+          },
+          "groupBy": {
+            "type": "string",
+            "description": "Campo que agrupa as linhas. Vazio = a view não guardou agrupamento."
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Colunas visíveis, na ordem. Vazio = as da tela — que é diferente de \"nenhuma coluna\", e é o que mantém válida a view salva antes de a tela ganhar coluna nova."
+          },
+          "mode": {
+            "type": "string",
+            "description": "Id da visão desenhada (`lista` é a tabela; `quadro`, `calendario`… são as alternativas que a tela declara). Vazio = a view não guardou visão."
+          },
+          "favorite": {
+            "type": "boolean",
+            "description": "Fixada no grupo FAVORITOS da barra lateral. É a estrela, e é por usuário como todo o resto do registro."
+          },
+          "position": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Ordem dentro da tela (e dentro de Favoritos). Empate resolve por `name`, para a lista não trocar de ordem entre dois carregamentos."
+          }
+        }
+      },
+      "SavedViewWriteRequest": {
+        "required": ["route", "name"],
+        "type": "object",
+        "description": "Proposto. Corpo de criação e de substituição da view. Sem `id` e sem dono: o id é do servidor e o dono é a sessão. **PUT substitui o registro inteiro** — campo omitido volta ao padrão, como no resto do contrato.",
+        "properties": {
+          "route": {
+            "type": "string",
+            "description": "Rota da tela a que a view pertence (`/compras/ordens`). É a IDENTIDADE da listagem para quem lê de fora — a sidebar precisa saber para onde o favorito leva, e uma chave interna de cache não é endereço que se possa navegar."
+          },
+          "name": {
+            "type": "string",
+            "description": "Nome que o operador deu — é o rótulo da aba e do item de Favoritos."
+          },
+          "color": {
+            "$ref": "#/components/schemas/SavedViewColor"
+          },
+          "filters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ListFilter"
+            },
+            "description": "As condições do filtro estruturado, na MESMA forma que viaja na query da listagem. Guardar o texto já url-encoded pouparia uma conversão e custaria a conferência: campo fora da whitelist só apareceria como 400 no dia em que alguém abrisse a view."
+          },
+          "joinOperator": {
+            "$ref": "#/components/schemas/ListFilterJoin"
+          },
+          "sortBy": {
+            "type": ["null", "string"],
+            "description": "Campo da ordenação, na whitelist do recurso. `null` = a view não guardou ordem."
+          },
+          "sortDesc": {
+            "type": "boolean",
+            "description": "Ordem descendente."
+          },
+          "groupBy": {
+            "type": "string",
+            "description": "Campo que agrupa as linhas. Vazio = a view não guardou agrupamento."
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Colunas visíveis, na ordem. Vazio = as da tela — que é diferente de \"nenhuma coluna\", e é o que mantém válida a view salva antes de a tela ganhar coluna nova."
+          },
+          "mode": {
+            "type": "string",
+            "description": "Id da visão desenhada (`lista` é a tabela; `quadro`, `calendario`… são as alternativas que a tela declara). Vazio = a view não guardou visão."
+          },
+          "favorite": {
+            "type": "boolean",
+            "description": "Fixada no grupo FAVORITOS da barra lateral. É a estrela, e é por usuário como todo o resto do registro."
+          },
+          "position": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Ordem dentro da tela (e dentro de Favoritos). Empate resolve por `name`, para a lista não trocar de ordem entre dois carregamentos."
+          }
+        }
       }
     }
   },
@@ -24466,6 +25930,14 @@
     },
     {
       "name": "financeiro"
+    },
+    {
+      "name": "nav",
+      "description": "Proposto. Os contadores que a navegação mostra — a única família cujo consumidor é o CHROME da aplicação, e não uma tela. Tag própria porque o número não pertence a módulo nenhum: ele atravessa os oito."
+    },
+    {
+      "name": "preferencias",
+      "description": "Preferência DO USUÁRIO, não da empresa. O dono sai da sessão e nunca do corpo nem da URL: um `userId` de parâmetro convidaria a ler a view do colega, e a única resposta certa para isso é não haver por onde pedir."
     }
   ]
 }

@@ -1,9 +1,9 @@
-import type { DocumentoDaApresentacao } from '@/features/orcamento/apresentacao-pptx'
-import { MenuDeExportacao } from '@/features/orcamento/menu-de-exportacao'
-import type { OrcamentoItem } from '@/mocks/orcamentos'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { DocumentoDaApresentacao } from '@/features/orcamento/apresentacao-pptx'
+import { MenuDeExportacao } from '@/features/orcamento/menu-de-exportacao'
+import type { OrcamentoItem } from '@/mocks/orcamentos'
 
 /**
  * O `pptxgenjs` é FALSIFICADO, e não o módulo de exportação.

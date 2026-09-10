@@ -143,6 +143,34 @@ export interface EntidadeCadastro {
   /** A whitelist que o contrato publica, quando `fonte` é `http`. É contra ela
    *  que o teste de invariante confere cada `dto` — campo fora dela é 400. */
   whitelist?: readonly string[]
+  /**
+   * A whitelist do parâmetro `filters`, quando ela NÃO é a de `sortBy`.
+   *
+   * Ausente = as duas são a mesma, que é o caso dos três papéis de parceiro.
+   * **`[]` = o recurso não publica `filters` de jeito nenhum**, e isso não é o
+   * mesmo que "ainda não tem campo filtrável": é o servidor recusando o
+   * parâmetro inteiro com 400 `urn:cabinet:erro:filtro-invalido`.
+   *
+   * Nasceu em 2026-08-25 com `/api/employees`, o primeiro recurso servido que
+   * ORDENA e não FILTRA (medido contra a main `2ee954b` do api: `sortBy=name`
+   * responde 200, `filters=[…]` responde "Este recurso não publica o parâmetro
+   * filters"). Sem esta separação, a única forma de a tela parar de oferecer
+   * filtro era mentir na `fonte` — dizer `mock` de uma listagem que fala HTTP —,
+   * e aí o seletor de COLUNAS voltaria a casar pelo caminho do schema Zod e
+   * sairia vazio em toda linha.
+   */
+  whitelistDeFiltro?: readonly string[]
+  /**
+   * O schema do contrato contra o qual cada `dto` é conferido, quando `fonte` é
+   * `http`. Ausente = `PartnerDto`, que era o único até 25/08 — três das quatro
+   * entidades são papéis de parceiro, e o default evita repetir o nome em todas.
+   *
+   * Existe porque a invariante "todo `dto` declarado existe mesmo no contrato"
+   * lê o `openapi-v1.json` de verdade: sem o nome do schema certo, o colaborador
+   * seria conferido contra o DTO do parceiro e `name` reprovaria por não existir
+   * lá — reprovação correta na forma e errada no alvo.
+   */
+  dtoDoContrato?: string
   modulos: readonly ModuloCadastro[]
   /**
    * A faixa de indicadores do topo da ficha (`kpis` do mockup): "Comprado no
@@ -188,6 +216,20 @@ function temLastroDeConsulta(entidade: EntidadeCadastro, campo: CampoCadastro): 
 }
 
 /**
+ * O mesmo cruzamento, para o FILTRO — que pode ter whitelist própria.
+ *
+ * Separado de `temLastroDeConsulta` porque ordenar e filtrar são permissões
+ * diferentes do servidor, e desde `/api/employees` existe recurso que dá uma e
+ * nega a outra. Enquanto eram a mesma função, a tela que ordenava também
+ * oferecia filtro, e o operador recebia um 400 que não fez nada para merecer.
+ */
+function temLastroDeFiltro(entidade: EntidadeCadastro, campo: CampoCadastro): boolean {
+  if (entidade.fonte !== 'http') return campo.campo !== undefined
+  const lista = entidade.whitelistDeFiltro ?? entidade.whitelist
+  return campo.dto !== undefined && (lista?.includes(campo.dto) ?? false)
+}
+
+/**
  * As colunas que a grade PODE montar hoje. Campo sem lastro fica de fora — a
  * coluna existiria, o operador clicaria no cabeçalho para ordenar e o servidor
  * responderia 400. É a mesma recusa em voz alta que o filtro já pratica.
@@ -198,7 +240,7 @@ export function colunasDe(entidade: EntidadeCadastro): readonly CampoCadastro[] 
 
 /** Os filtros que a listagem PODE oferecer hoje. Mesma regra da coluna. */
 export function filtrosDe(entidade: EntidadeCadastro): readonly CampoCadastro[] {
-  return camposDe(entidade).filter((campo) => campo.fil && temLastroDeConsulta(entidade, campo))
+  return camposDe(entidade).filter((campo) => campo.fil && temLastroDeFiltro(entidade, campo))
 }
 
 /**

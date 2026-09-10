@@ -1,17 +1,17 @@
-import { VitraDataTable } from '@/components/cabinet/data-table'
-import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
-import type { TableQueryState } from '@/lib/table-query'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
-  RouterProvider,
   createMemoryHistory,
   createRootRoute,
   createRoute,
   createRouter,
+  RouterProvider,
 } from '@tanstack/react-router'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { VitraDataTable } from '@/components/cabinet/data-table'
+import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
+import type { TableQueryState } from '@/lib/table-query'
 
 /**
  * A CONSULTA NO ENDEREÇO, contra um router de VERDADE (#199).
@@ -120,7 +120,9 @@ describe('a consulta vive no endereço', () => {
     const { user, router } = montarEm(`/lista?filters=${encodeURIComponent(FILTRO_STELLA)}`)
     await screen.findByText('STELLA')
 
-    await user.click(screen.getByRole('button', { name: 'Limpar filtros' }))
+    // Com UM filtro não há `Limpar` — o `×` do chip já é o limpar, e um
+    // segundo controle para o mesmo gesto seria ruído fixo na barra (D9).
+    await user.click(screen.getByRole('button', { name: /^Remover o filtro 1/ }))
 
     await waitFor(() => {
       expect(router.state.location.search).not.toHaveProperty('filters')

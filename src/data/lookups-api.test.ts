@@ -1,17 +1,17 @@
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { configurarApi } from '@/api/cliente'
 import {
-  type CatalogLookupDto,
-  type PagedResultOfCatalogLookupDto,
   authLogin,
   authSetActiveTenant,
+  type CatalogLookupDto,
   createCatalogLookup,
   listCatalogLookups,
+  type PagedResultOfCatalogLookupDto,
 } from '@/api/gerado'
 import { nomeDoLookup } from '@/data/lookups-api'
 import { handlers } from '@/mocks/api/handlers'
-import { TENANT_MATRIZ, resetStore } from '@/mocks/api/store'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { resetStore, TENANT_MATRIZ } from '@/mocks/api/store'
 
 /**
  * A FRONTEIRA DAS LISTAS DE APOIO, depois da migração para `value=id` (#94).

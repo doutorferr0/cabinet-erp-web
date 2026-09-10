@@ -4,16 +4,52 @@ import { idDeApoio } from '@/mocks/lookups'
  * TODO(contract): tipo real virá do codegen do OpenAPI na integração.
  */
 export interface Colaborador {
-  id: number
+  /**
+   * TEXTO, e não número, desde que a tela migrou para `GET /api/employees`
+   * (2026-08-25): o id passou a ser o uuid do servidor. Enquanto era `number`,
+   * o parâmetro de rota vinha string e `Number('ac956183-…')` é **`NaN`** — a
+   * tela pediria o registro `NaN` e diria "não encontrado" para um colaborador
+   * que existe, sem erro nenhum no caminho. É o mesmo defeito que `/api/quotes`
+   * pagou na #134, documentado em `DocumentoProvider.get`.
+   */
+  id: string
   nome: string
+  /**
+   * O E-MAIL DE LOGIN — `EmployeeDetailDto.email`, e a credencial da pessoa.
+   *
+   * Esteve no schema de módulos desde a #101 SEM `campo:`, isto é, desenhado
+   * como pendência ("Ainda não guardamos: E-mail de login") porque o repo não
+   * tinha onde gravá-lo. Passou a ter: `EmployeeWriteRequest` publica `email`,
+   * e o `POST /api/employees` o EXIGE — `employees.email` é NOT NULL e é por
+   * ele que a pessoa entra. Sem este campo o `Incluir` desta tela mandaria
+   * `email: null` e tomaria 400 em toda tentativa.
+   */
+  email: string | null
+  /** `EmployeeDetailDto.phone` — o `Celular` do mockup, agora com onde gravar. */
+  telefone: string | null
   setor: string | null
   atendimentoCliente: boolean
   ativo: boolean
-  sexo: string | null
+  /**
+   * SEXO e RAÇA/COR SAÍRAM DAQUI, e a ausência é decisão (user, 2026-08-28).
+   *
+   * Eram os dois únicos campos de dado pessoal SENSÍVEL na letra do art. 5º II
+   * da LGPD que este cadastro coletava, e o produto não tem finalidade para
+   * eles: nenhuma tela decide nada com sexo ou raça de colaborador, nenhum
+   * relatório os pede, e `EmployeeWriteRequest` nunca teve onde gravá-los.
+   * Campo sensível sem finalidade declarada é passivo, não funcionalidade —
+   * então saíram do tipo, do schema do formulário, do módulo de cadastro e do
+   * contrato no mesmo corte, em vez de ficarem nascendo em branco como o resto
+   * do bloco pessoal ficou até esta issue.
+   *
+   * **`sexo` continua existindo no CLIENTE** (`PartnerDto.gender`, e o mock em
+   * `clientes.ts`): lá é pessoa física de fora, campo do print do legado e já
+   * implementado no contrato. A decisão foi sobre colaborador, que é a relação
+   * de emprego — não sobre o campo em toda parte.
+   */
   dtNascimento: string | null
   grauInstrucao: string | null
   profissao: string | null
-  racaCor: string | null
   estadoCivil: string | null
   nomeConjuge: string
   dtNascConjuge: string | null
@@ -61,7 +97,7 @@ const NOMES = [
 ] as const
 
 /** O id de semente do usuário demo — o último nome da lista, 1-based. */
-export const ID_DO_USUARIO_DEMO = NOMES.length
+export const ID_DO_USUARIO_DEMO = String(NOMES.length)
 
 /**
  * Exportados porque a listagem os oferece como OPÇÕES do filtro por setor e por
@@ -91,21 +127,25 @@ export const SETORES = ['VENDAS', 'ESTOQUE', 'FINANCEIRO', 'ADMINISTRATIVO', 'CO
  * sessão do mock e as atividades semeadas o referenciam. Derivá-lo como os
  * outros obrigaria a mexer nos dois, sem ganhar nada — o id é opaco.
  */
-export function idDeColaborador(id: number): string {
-  return id === ID_DO_USUARIO_DEMO ? 'emp-admin' : `emp-${String(id).padStart(4, '0')}`
+export function idDeColaborador(id: string): string {
+  return id === ID_DO_USUARIO_DEMO ? 'emp-admin' : `emp-${id.padStart(4, '0')}`
 }
 
 export const colaboradores: Colaborador[] = NOMES.map((nome, i) => ({
-  id: i + 1,
+  id: String(i + 1),
   nome,
+  // A semente NÃO inventa e-mail nem celular: `GET /api/employees/{id}` os
+  // devolve `null` para quem veio dela, e um valor aqui faria a tela mostrar
+  // dado que o servidor não tem — o mesmo motivo por que o handler do detalhe
+  // já os manda nulos.
+  email: null,
+  telefone: null,
   setor: idDeApoio('SETOR', SETORES[i % SETORES.length]),
   atendimentoCliente: i % 4 !== 3,
   ativo: i !== 8,
-  sexo: i % 2 === 0 ? 'FEMININO' : 'MASCULINO',
   dtNascimento: `19${80 + (i % 18)}-${String((i % 12) + 1).padStart(2, '0')}-${String((i % 27) + 1).padStart(2, '0')}`,
   grauInstrucao: idDeApoio('GRAU_INSTRUCAO', i % 3 === 0 ? 'SUPERIOR' : 'MÉDIO'),
   profissao: idDeApoio('PROFISSAO', 'VENDEDOR'),
-  racaCor: idDeApoio('RACA_COR', ['BRANCA', 'PARDA', 'PRETA'][i % 3]),
   estadoCivil: idDeApoio('ESTADO_CIVIL', ['SOLTEIRO(A)', 'CASADO(A)', 'UNIÃO ESTÁVEL'][i % 3]),
   nomeConjuge: i % 3 === 1 ? `CÔNJUGE DE ${nome.split(' ')[0]}` : '',
   dtNascConjuge: i % 3 === 1 ? `19${82 + (i % 15)}-06-15` : null,
@@ -127,18 +167,24 @@ export const colaboradores: Colaborador[] = NOMES.map((nome, i) => ({
   empresa: EMPRESAS[i % EMPRESAS.length] ?? null,
 }))
 
-export function colaboradorVazio(id: number): Colaborador {
+/**
+ * O registro em branco. **Sem argumento**: o id do que ainda não existe é do
+ * servidor, e vem no 201 — quem abre o "Incluir" não tem por que inventar um.
+ * Enquanto o recurso era mock, `createMockProvider` passava aqui o negativo de
+ * `proximoIdEmBranco()`; hoje quem chama é `documentoDoColaborador.empty`.
+ */
+export function colaboradorVazio(): Colaborador {
   return {
-    id,
+    id: '',
     nome: '',
+    email: null,
+    telefone: null,
     setor: null,
     atendimentoCliente: true,
     ativo: true,
-    sexo: null,
     dtNascimento: null,
     grauInstrucao: null,
     profissao: null,
-    racaCor: null,
     estadoCivil: null,
     nomeConjuge: '',
     dtNascConjuge: null,

@@ -1,8 +1,8 @@
+import { screen } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { camposDoContrato, cliente, fornecedor } from '@/features/cadastro/modulos'
 import { parceiro, servidorDeParceiros } from '@/test/parceiros'
 import { renderRoute } from '@/test/utils'
-import { screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 /**
  * A RECUSA POR CAMPO, do servidor até o controle (issue #138).

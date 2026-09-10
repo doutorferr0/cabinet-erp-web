@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest'
 import {
   ITENS_POR_SLIDE,
   montarSlides,
@@ -6,7 +7,6 @@ import {
 } from '@/features/orcamento/apresentacao-pptx'
 import type { Orcamento, OrcamentoItem } from '@/mocks/orcamentos'
 import { orcamentoVazio } from '@/mocks/orcamentos'
-import { describe, expect, it } from 'vitest'
 
 function item(parcial: Partial<OrcamentoItem>): OrcamentoItem {
   return {

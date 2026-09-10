@@ -1,3 +1,5 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CommissionTierDto, OrderParticipantDto, TechnicalReserveDto } from '@/api/gerado'
 import { FaixasDeComissao } from '@/features/comissoes/faixas-de-comissao'
 import {
@@ -7,8 +9,6 @@ import {
 import { TelaDeReservaTecnica } from '@/features/comissoes/reserva-tecnica'
 import { instalarServidor, json } from '@/test/servidor'
 import { renderWithQuery, respostaSessao, respostaVinculos } from '@/test/utils'
-import { screen, waitFor, within } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * AS TRÊS TELAS DE COMISSÃO contra servidor falso.

@@ -1,7 +1,8 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
   CrmLostReasonDto,
-  CrmLostReasonWriteRequest,
   CrmLostReasonsReportDto,
+  CrmLostReasonWriteRequest,
   CrmOpportunityDto,
   CrmOpportunityStagePatchRequest,
   CrmOpportunityWriteRequest,
@@ -35,18 +36,17 @@ import {
   updateCrmStage,
 } from '@/api/gerado'
 import {
-  ErroDaApi,
-  PAGE_SIZE_MAX,
-  type RespostaDaApi,
   createApiListProvider,
   dadosOuErro,
   detalheDoProblema,
+  ErroDaApi,
   itemOuNulo,
+  PAGE_SIZE_MAX,
+  type RespostaDaApi,
   repetirSeValeAPena,
   respostaOk,
 } from '@/data/api-provider'
 import type { ListProvider } from '@/data/provider'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 /**
  * FRONTEIRA DO CRM — funis, estágios, oportunidades e motivos de perda.
@@ -340,7 +340,10 @@ export function useMoverOportunidade() {
     mutationFn: async ({
       id,
       destino,
-    }: { id: string; destino: CrmOpportunityStagePatchRequest }) => {
+    }: {
+      id: string
+      destino: CrmOpportunityStagePatchRequest
+    }) => {
       const resposta: RespostaDaApi = await moveCrmOpportunityStage(id, destino)
       return dadosOuErro<CrmOpportunityDto>(resposta, 'Falha ao mover a oportunidade.')
     },

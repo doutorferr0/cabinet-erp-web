@@ -1,5 +1,5 @@
-import { DefinirSenhaTela } from '@/features/login/definir-senha'
 import { createFileRoute, useSearch } from '@tanstack/react-router'
+import { DefinirSenhaTela } from '@/features/login/definir-senha'
 
 export const Route = createFileRoute('/definir-senha')({
   component: Pagina,

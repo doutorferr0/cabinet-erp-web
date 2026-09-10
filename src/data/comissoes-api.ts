@@ -1,3 +1,4 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
   CommissionTierDto,
   CommissionTierWriteRequest,
@@ -24,15 +25,15 @@ import {
   replacePartnerCommissionTiers,
 } from '@/api/gerado'
 import {
+  dadosOuErro,
   ErroDaApi,
   PAGE_SIZE_MAX,
-  type RespostaDaApi,
-  dadosOuErro,
   queryDaTabela,
+  type RespostaDaApi,
   repetirSeValeAPena,
 } from '@/data/api-provider'
+import { CHAVES_PEDIDO_VENDA } from '@/data/pedidos-venda-api'
 import type { PagedResult, TableQueryState } from '@/lib/table-query'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 /**
  * FRONTEIRA DAS COMISSÕES (G8) — participação no documento, faixas do perfil e
@@ -276,7 +277,6 @@ export function faixaVazia(): FaixaDaGrade {
 
 /** Chaves de cache num lugar só — a tela invalida a mesma lista que lê. */
 export const CHAVES_COMISSAO = {
-  participacao: (pedidoId: string) => ['pedido-venda', pedidoId, 'participacao'] as const,
   faixasDeParceiro: (parceiroId: string) => ['parceiro', parceiroId, 'faixas'] as const,
   faixasDeColaborador: (colaboradorId: string) => ['colaborador', colaboradorId, 'faixas'] as const,
   reservasTecnicas: ['reservas-tecnicas'] as const,
@@ -316,7 +316,7 @@ export async function gravarParticipantes(
 /** Leitura da participação. Desligada enquanto não há documento gravado. */
 export function useParticipantes(pedidoId: string | null) {
   return useQuery({
-    queryKey: CHAVES_COMISSAO.participacao(pedidoId ?? ''),
+    queryKey: CHAVES_PEDIDO_VENDA.participacaoDe(pedidoId ?? ''),
     queryFn: () => listarParticipantes(pedidoId as string),
     retry: repetirSeValeAPena,
     enabled: pedidoId !== null && pedidoId !== '',
@@ -329,7 +329,7 @@ export function useGravarParticipantes(pedidoId: string) {
   return useMutation({
     mutationFn: (linhas: readonly LinhaDeParticipacao[]) => gravarParticipantes(pedidoId, linhas),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: CHAVES_COMISSAO.participacao(pedidoId) }),
+      queryClient.invalidateQueries({ queryKey: CHAVES_PEDIDO_VENDA.participacaoDe(pedidoId) }),
   })
 }
 

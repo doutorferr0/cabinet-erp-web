@@ -10,6 +10,9 @@
  * nele. O PDF `template=moodboard` é da fase A, que vive no servidor, e por
  * isso ainda não aparece na lista.
  */
+
+import { FileText, Presentation, Share2 } from 'lucide-react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -21,8 +24,6 @@ import {
   type DocumentoDaApresentacao,
   exportarApresentacao,
 } from '@/features/orcamento/apresentacao-pptx'
-import { FileText, Presentation, Share2 } from 'lucide-react'
-import { useState } from 'react'
 
 export interface MenuDeExportacaoProps {
   /**

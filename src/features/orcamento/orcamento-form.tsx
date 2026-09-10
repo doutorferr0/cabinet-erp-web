@@ -1,7 +1,12 @@
-import type { PartnerDto } from '@/api/gerado'
+import { Link, useNavigate } from '@tanstack/react-router'
+import { Calculator, CreditCard, Hash, List, Lock, Package, Percent, User } from 'lucide-react'
+import { useState } from 'react'
+import { useFormContext, useWatch } from 'react-hook-form'
+import { z } from 'zod'
+import type { PartnerDto, QuoteDetailDto } from '@/api/gerado'
 import { AbasSemCaptura } from '@/components/cabinet/abas-sem-captura'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
-import { DocumentoBloco, fileirasTotais, totalItemCentavos } from '@/components/cabinet/documento'
+import { DocumentoBloco } from '@/components/cabinet/documento'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import {
   DateField,
@@ -10,37 +15,23 @@ import {
   SelectField,
   TextField,
 } from '@/components/cabinet/form-controls'
-import { FormGrid, type FormGridRow } from '@/components/cabinet/form-grid'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { Nome } from '@/components/cabinet/nome'
+import { posGravar } from '@/components/cabinet/pos-gravar'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
 import { Secao } from '@/components/cabinet/secao'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { data } from '@/data'
-import { useLookupOptions } from '@/data/lookups-api'
 import { useGravarOrcamento } from '@/data/quotes-api'
 import { tabelas } from '@/data/tabelas'
-import { BlocoPagamento, useTotaisDoOrcamento } from '@/features/orcamento/bloco-pagamento'
+import { AbaServicos } from '@/features/orcamento/aba-servicos'
+import { BlocoPagamento } from '@/features/orcamento/bloco-pagamento'
+import { ItensDoOrcamento } from '@/features/orcamento/itens-do-orcamento'
 import { MenuDeExportacao } from '@/features/orcamento/menu-de-exportacao'
-import { formatMoneyBRL, formatPercent } from '@/lib/formatters'
-import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
+import { formatPercent } from '@/lib/formatters'
+import { SHORTCUTS, shortcutLabel } from '@/lib/shortcuts'
 import type { Orcamento } from '@/mocks/orcamentos'
-import { Link, useNavigate } from '@tanstack/react-router'
-import type { ColumnDef } from '@tanstack/react-table'
-import {
-  Calculator,
-  CreditCard,
-  Hash,
-  Home,
-  List,
-  Lock,
-  Package,
-  Percent,
-  User,
-} from 'lucide-react'
-import { useEffect, useState } from 'react'
-import { useFormContext, useWatch } from 'react-hook-form'
-import { z } from 'zod'
 
 // TODO(contract): Zod do codegen substituirá este schema na integração.
 export const orcamentoSchema = z.object({
@@ -80,12 +71,12 @@ export const orcamentoSchema = z.object({
   //
   // **MEDIDO: remover estas três linhas hoje não quebra nenhum caso.** A folha
   // exibe a revisão a partir da hidratação (`defaultValues`), e o parse do Zod
-  // só roda no `submit` — depois do qual o `Gravar` navega de volta para a
-  // listagem, então o registro podado nunca chega a ser desenhado. A declaração
-  // fica porque é ela que segura o dia em que a folha PARAR de navegar no
-  // sucesso: aí o registro pós-parse vira o que a tela mostra, e a revisão 2
-  // reapareceria como original, com 200 e sem aviso. Escrever aqui que o
-  // sintoma existe hoje seria afirmar o que a medição nega.
+  // só roda no `submit` — o registro podado vai para o corpo da escrita e não
+  // volta para o estado do formulário. A declaração fica porque é ela que
+  // segura o dia em que o registro pós-parse VIRAR o que a tela mostra: aí a
+  // revisão 2 reapareceria como original, com 200 e sem aviso. Esse dia ficou
+  // mais perto com a #405 — a alteração deixou de navegar e permanece na tela,
+  // e o que sobrevive ao `Gravar` passou a ser desenhado de novo.
   revisao: z.number(),
   revisaoDeId: z.string().nullable(),
   revisaoDeNumero: z.string().nullable(),
@@ -118,6 +109,28 @@ export const orcamentoSchema = z.object({
       maxInstallments: z.number(),
     })
     .optional(),
+  // A ABA SERVIÇOS — declarada como todo o resto que atravessa o formulário, e
+  // aqui a omissão custava dado: o Zod REMOVE o que não declara, e `paraEscrita`
+  // mandaria um `PUT` (integral) sem `serviceItems`, apagando a aba inteira do
+  // documento com 200 e sem aviso. O pedido de venda declarou a coleção antes de
+  // ter grade exatamente por isso; esta folha agora também a edita.
+  servicos: z.array(
+    z.object({
+      item: z.string(),
+      servicoId: z.string().nullable(),
+      descricao: z.string(),
+      quantidade: z.string(),
+      valorUnitarioCentavos: z.number().nullable(),
+      descontoPercentual: z.number().nullable(),
+      // Nulável de propósito: `null` herda o percentual do CADASTRO na
+      // gravação e `0` é "esta linha não paga instalador" — a distinção é do
+      // contrato, e um campo não-nulável a apagaria.
+      percentualEletricista: z.number().nullable(),
+      // Carimbo do servidor: desce, aparece na coluna e não volta no corpo.
+      eletricistaCentavos: z.number().nullable(),
+      ambiente: z.string(),
+    }),
+  ),
   itens: z.array(
     z.object({
       item: z.string(),
@@ -137,26 +150,6 @@ export const orcamentoSchema = z.object({
   ),
 })
 
-const ITEM_VAZIO = {
-  item: '',
-  codigoFornecedor: '',
-  descricaoFornecedor: '',
-  acabamento: '',
-  tamanho: '',
-  quantidade: '',
-  unidade: 'UN',
-  valorUnitarioCentavos: null,
-  descontoPercentual: null,
-  grupoProduto: '',
-  tipoPeca: '',
-  fornecedor: '',
-  ambiente: '',
-}
-
-/**
- * Botões de inserção de item (§8.2). No legado são F5/F6; o CLAUDE.md veta
- * F3-F6 (conflito com browser), então valem Alt+A / Alt+P pelo registry.
- */
 /**
  * A CADEIA DE VERSÕES do orçamento — de qual documento esta folha é revisão.
  *
@@ -188,44 +181,6 @@ function RevisaoDoOrcamento() {
       </Link>
       , que continua na listagem como foi apresentado ao cliente.
     </p>
-  )
-}
-
-function BotoesInsercao({ append }: { append: (row: FormGridRow) => void }) {
-  const itens = (useWatch({ name: 'itens' }) ?? []) as unknown[]
-
-  function inserirProduto() {
-    append({ ...ITEM_VAZIO, item: String(itens.length + 1) })
-  }
-
-  function inserirAmbiente() {
-    // Ambiente agrupa os itens da obra: entra como linha com ambiente definido.
-    append({ ...ITEM_VAZIO, item: String(itens.length + 1), ambiente: tabelas.ambientes[0] })
-  }
-
-  useEffect(() => bindShortcut(SHORTCUTS.produto, inserirProduto))
-  useEffect(() => bindShortcut(SHORTCUTS.ambiente, inserirAmbiente))
-  useEffect(() =>
-    bindShortcut(SHORTCUTS.imagemProduto, () => console.info('[mock] Mostrar imagem do produto')),
-  )
-
-  return (
-    <>
-      <Button type="button" variant="outline" size="sm" onClick={inserirAmbiente}>
-        <Home className="size-4" /> Ambiente <kbd>{shortcutLabel(SHORTCUTS.ambiente)}</kbd>
-      </Button>
-      <Button type="button" variant="outline" size="sm" onClick={inserirProduto}>
-        <Package className="size-4" /> Produto <kbd>{shortcutLabel(SHORTCUTS.produto)}</kbd>
-      </Button>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => console.info('[mock] Pré Produto (item fora do catálogo)')}
-      >
-        Pré Produto
-      </Button>
-    </>
   )
 }
 
@@ -362,7 +317,19 @@ function Cabecalho() {
         queryKey={['busca-cliente-orcamento']}
         fetcher={(state) => data.clientes.list(state, 0)}
         onSelect={(c) => {
+          // O NOME E O ID, sempre os dois. O corpo do contrato leva `customerId`
+          // e a tela mostra `cliente`; gravar só o nome deixava `clienteId` no
+          // valor inicial (`''`), e o servidor recusava com
+          // `body/customerId must match format "uuid"` — 400 em TODA criação de
+          // orçamento pelo caminho do operador.
+          //
+          // Passou despercebido porque o mock aceita `customerId: ''` e devolve
+          // 201: contra a camada em memória a tela funcionava inteira. Só o par
+          // vivo reprova, e até `e2e/fluxo-vivo.spec.ts` existir nada rodava o
+          // par vivo. O comentário do `clienteId` no esquema acima já dizia que
+          // o id tem de atravessar o formulário; faltava alguém escrevê-lo.
           setValue('cliente', c.legalName, { shouldDirty: true })
+          setValue('clienteId', c.id, { shouldDirty: true })
           setBuscaClienteOpen(false)
         }}
       />
@@ -374,7 +341,13 @@ function Cabecalho() {
         queryKey={['busca-profissional-orcamento']}
         fetcher={(state) => data.profissionais.list(state, 0)}
         onSelect={(p) => {
+          // Mesmo par do cliente, e o mesmo motivo. Aqui o campo é opcional no
+          // contrato (`professionalId` aceita `null`), então o sintoma é mais
+          // silencioso que um 400: o documento gravaria com o NOME do
+          // profissional na tela e `professionalId: null` no banco — e na
+          // releitura o campo voltaria vazio, sem erro nenhum no caminho.
           setValue('profissionalExterno', p.legalName, { shouldDirty: true })
+          setValue('profissionalId', p.id, { shouldDirty: true })
           setBuscaProfissionalOpen(false)
         }}
       />
@@ -438,68 +411,6 @@ function TotaisOrcamento() {
   )
 }
 
-/** Grade de itens com os totais nas últimas fileiras (DESIGN.md §DocumentoTotais). */
-function GradeItens() {
-  // A coluna `Tipo de Peça` é um kind do servidor; as demais são tabelas locais
-  // que o contrato não expõe como lista de apoio.
-  // A célula da GRADE continua guardando o NOME, e é a única exceção à
-  // migração para id da issue #94: o `select` da `FormGrid` recebe
-  // `readonly string[]` e é compartilhado com colunas de lista estática. Passar
-  // id ali exigiria a grade inteira aprender pares valor/rótulo — mudança de
-  // componente compartilhado, não desta tela. O item do orçamento é mock e não
-  // viaja para o contrato, então nada se traduz no submit; fica anotado.
-  const { options: opcoesDeTipoDePeca } = useLookupOptions('tipoPeca')
-  const tiposDePeca = opcoesDeTipoDePeca.map((o) => o.nome)
-  // A conta dos totais mora em `useTotaisDoOrcamento` (bloco-pagamento.tsx)
-  // porque DUAS partes da tela dependem dela: o pé desta grade e o combo de
-  // condição de pagamento, que decide quais condições cabem no total. Em duas
-  // cópias, o dia em que o desconto mudar de fórmula deixa o combo oferecendo
-  // parcelamento sobre um total que a grade não mostra mais.
-  const { subtotalCentavos: subtotal, descontoGeralCentavos: descontoGeral } =
-    useTotaisDoOrcamento()
-
-  return (
-    <FormGrid
-      name="itens"
-      hideAdd
-      actions={(append) => <BotoesInsercao append={append} />}
-      columns={[
-        { key: 'item', label: 'Item' },
-        { key: 'codigoFornecedor', label: 'Código Fornecedor' },
-        { key: 'descricaoFornecedor', label: 'Descrição do Fornecedor', voz: 'produto' },
-        { key: 'ambiente', label: 'Ambiente', type: 'select', options: tabelas.ambientes },
-        { key: 'acabamento', label: 'Acabamento', type: 'select', options: tabelas.acabamentos },
-        { key: 'tamanho', label: 'Tamanho' },
-        { key: 'quantidade', label: 'Quant.' },
-        { key: 'unidade', label: 'Und.', type: 'select', options: tabelas.unidades },
-        { key: 'valorUnitarioCentavos', label: 'Valor Unit.', type: 'money' },
-        { key: 'descontoPercentual', label: 'Desc. %', type: 'percent' },
-        {
-          key: 'valorItem',
-          label: 'Valor Item',
-          type: 'computed',
-          compute: (row: FormGridRow) => formatMoneyBRL(totalItemCentavos(row)),
-        },
-        { key: 'grupoProduto', label: 'Grupo Produto' },
-        {
-          key: 'tipoPeca',
-          label: 'Tipo de Peça',
-          type: 'select',
-          options: tiposDePeca,
-        },
-        { key: 'fornecedor', label: 'Fornecedor', voz: 'nome' },
-      ]}
-      newRow={ITEM_VAZIO}
-      totals={{
-        valueColumnKey: 'valorItem',
-        rows: fileirasTotais(subtotal, [
-          { label: 'Desconto', valorCentavos: descontoGeral, sinal: -1 },
-        ]),
-      }}
-    />
-  )
-}
-
 function AbaPrincipal() {
   // O menu de exportação lê o documento no CLIQUE, não no render — ver
   // `MenuDeExportacao`. `getValues` é estável entre renders no RHF.
@@ -524,7 +435,10 @@ function AbaPrincipal() {
 
         {/* r5: nota de rodapé fala na voz editorial (serifa itálica) — degrau
             tipográfico das referências para o que é conselho, não dado. */}
-        <p className="font-[family-name:var(--font-nome)] text-[0.9375rem] text-muted-foreground italic">
+        {/* A nota é AJUDA, e ajuda tem um degrau só: `--t-meta`. Antes vinha
+            em serifa de 15px — voz editorial que a escala 2.0 não tem, e
+            `font-size` literal que a régua da rodada proíbe. */}
+        <p className="t-meta italic">
           Tecle {shortcutLabel(SHORTCUTS.imagemProduto)} para mostrar imagem do produto.
         </p>
       </DocumentoBloco>
@@ -534,7 +448,7 @@ function AbaPrincipal() {
           (`id`/`info`/`warn`/`money`), então quem separa Identificação de Itens
           é o ORDINAL, não um quinto tom inventado para a ocasião. */}
       <Secao numero="04" titulo="Itens" cor="info" icone={List} nota="o que vai no orçamento">
-        <GradeItens />
+        <ItensDoOrcamento rotuloDoTotal="Total do orçamento" />
       </Secao>
 
       <Secao numero="05" titulo="Totais" cor="money" icone={Calculator} nota="o que o cliente paga">
@@ -589,9 +503,16 @@ function AbaPrincipal() {
   )
 }
 
-/** Abas superiores não capturadas — §10. */
+/**
+ * Abas superiores não capturadas — §10.
+ *
+ * `Serviços` SAIU desta lista: ela não era ausência de captura, era ausência de
+ * grade. O contrato publica a seção inteira (`QuoteServiceItemDto` e
+ * `serviceItems` no documento) e o legado a guarda em `VendaServico` — a moldura
+ * "aguardando prints" dizia ao operador que não havia o que mostrar, num
+ * documento cujo total já dependia dela.
+ */
 const ABAS_SEM_CAPTURA = [
-  ['servicos', 'Serviços'],
   ['cliente', 'Cliente'],
   ['pagamento', 'Pagamento'],
   ['outrosDados', 'Outros Dados'],
@@ -600,7 +521,10 @@ const ABAS_SEM_CAPTURA = [
 export function OrcamentoForm({
   orcamento,
   readOnly = false,
-}: { orcamento: Orcamento; readOnly?: boolean }) {
+}: {
+  orcamento: Orcamento
+  readOnly?: boolean
+}) {
   const navigate = useNavigate()
   const gravar = useGravarOrcamento()
 
@@ -610,7 +534,18 @@ export function OrcamentoForm({
     // recusa mostraria o mesmo desfecho de uma gravação que deu certo, que é
     // exatamente o defeito que este trecho tinha (`console.info` + navigate).
     gravar.mutate(values, {
-      onSuccess: () => void navigate({ to: '/vendas/orcamentos' }),
+      // O DESTINO é a regra única da #405 (`components/cabinet/pos-gravar.ts`):
+      // documento novo abre o orçamento que nasceu — com o número que só o
+      // servidor sabe atribuir —, alteração permanece na tela com o toast.
+      onSuccess: posGravar<QuoteDetailDto>({
+        eraNovo: !values.id,
+        abrirDocumento: (orcamentoId) =>
+          void navigate({
+            to: '/vendas/orcamentos/$orcamentoId',
+            params: { orcamentoId },
+            replace: true,
+          }),
+      }),
     })
   }
 
@@ -622,6 +557,7 @@ export function OrcamentoForm({
       onCancelar={() => void navigate({ to: '/vendas/orcamentos' })}
       readOnly={readOnly}
       gravando={gravar.isPending}
+      gravou={gravar.isSuccess}
       familia="quotes"
     >
       {/* A recusa do servidor em destaque, ANTES das abas (#138): o `detail` do
@@ -636,7 +572,15 @@ export function OrcamentoForm({
         mensagem="Não foi possível gravar o orçamento."
       />
       <Tabs defaultValue="principal">
-        <AbasSemCaptura capturada={['principal', 'Principal']} abas={ABAS_SEM_CAPTURA}>
+        {/* `Serviços` entra por `adicionais` — a porta das abas REAIS, a mesma
+            que a participação do pedido usa. Ela fica ao lado de `Principal`,
+            antes das molduras sem captura: o que funciona junto do que
+            funciona. */}
+        <AbasSemCaptura
+          capturada={['principal', 'Principal']}
+          abas={ABAS_SEM_CAPTURA}
+          adicionais={[{ aba: ['servicos', 'Serviços'], conteudo: <AbaServicos /> }]}
+        >
           <AbaPrincipal />
         </AbasSemCaptura>
       </Tabs>

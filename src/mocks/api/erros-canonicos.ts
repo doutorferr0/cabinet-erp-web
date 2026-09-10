@@ -367,19 +367,19 @@ export const ERROS_CANONICOS = {
     status: 409,
     detail: 'Este título já tem pagamento lançado.',
     extensoes: [],
-    origem: 'so-contrato',
+    origem: 'mock',
   },
   'urn:cabinet:erro:parcela-ja-quitada': {
     status: 409,
     detail: 'Esta parcela já está quitada.',
     extensoes: [],
-    origem: 'so-contrato',
+    origem: 'mock',
   },
   'urn:cabinet:erro:valor-acima-do-saldo': {
     status: 409,
     detail: 'A baixa abate mais do que a parcela deve.',
     extensoes: [],
-    origem: 'so-contrato',
+    origem: 'mock',
   },
   'urn:cabinet:erro:quitacao-a-menor': {
     status: 403,

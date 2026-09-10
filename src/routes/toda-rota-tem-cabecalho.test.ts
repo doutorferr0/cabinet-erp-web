@@ -36,6 +36,9 @@ const SEM_CABECALHO: Record<string, string> = {
   'compras.tsx': 'layout de módulo — só `<Outlet/>`',
   'crm.tsx': 'layout de módulo — só `<Outlet/>`',
   'estoque.tsx': 'layout de módulo — só `<Outlet/>`',
+  'financeiro.tsx': 'layout de módulo — só `<Outlet/>`',
+  // `/financeiro` sem filha cai em Contas a Receber: o índice não é tela.
+  'financeiro/index.tsx': 'desvio para Contas a Receber — não é tela',
   'vendas.tsx': 'layout de módulo — só `<Outlet/>`',
   // DESVIO: `/crm/funil` sem id manda para o funil padrão e sai da frente.
   // Cabeçalho aqui piscaria um título que ninguém pediu antes do `replace`.

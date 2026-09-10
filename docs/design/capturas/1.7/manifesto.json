@@ -1,0 +1,744 @@
+{
+  "versao": "1.7",
+  "commit": "e7718bb",
+  "gerado": "2026-09-04T13:47:55.856Z",
+  "viewport": "1440×900",
+  "grid": false,
+  "rotas": [
+    {
+      "rota": "/",
+      "url": "/",
+      "apelido": "raiz",
+      "capturas": {
+        "claro": {
+          "arquivo": "raiz.claro.png",
+          "bytes": 176133
+        },
+        "escuro": {
+          "arquivo": "raiz.escuro.png",
+          "bytes": 191294
+        }
+      }
+    },
+    {
+      "rota": "/agenda",
+      "url": "/agenda",
+      "apelido": "agenda",
+      "capturas": {
+        "claro": {
+          "arquivo": "agenda.claro.png",
+          "bytes": 70743
+        },
+        "escuro": {
+          "arquivo": "agenda.escuro.png",
+          "bytes": 74487
+        }
+      }
+    },
+    {
+      "rota": "/ajuda/atalhos",
+      "url": "/ajuda/atalhos",
+      "apelido": "ajuda-atalhos",
+      "capturas": {
+        "claro": {
+          "arquivo": "ajuda-atalhos.claro.png",
+          "bytes": 129502
+        },
+        "escuro": {
+          "arquivo": "ajuda-atalhos.escuro.png",
+          "bytes": 135207
+        }
+      }
+    },
+    {
+      "rota": "/cadastros",
+      "url": "/cadastros",
+      "apelido": "cadastros",
+      "capturas": {
+        "claro": {
+          "arquivo": "cadastros.claro.png",
+          "bytes": 54984
+        },
+        "escuro": {
+          "arquivo": "cadastros.escuro.png",
+          "bytes": 56865
+        }
+      }
+    },
+    {
+      "rota": "/cadastros/clientes",
+      "url": "/cadastros/clientes",
+      "apelido": "cadastros-clientes",
+      "capturas": {
+        "claro": {
+          "arquivo": "cadastros-clientes.claro.png",
+          "bytes": 78502
+        },
+        "escuro": {
+          "arquivo": "cadastros-clientes.escuro.png",
+          "bytes": 82269
+        }
+      }
+    },
+    {
+      "rota": "/cadastros/clientes/$clienteId",
+      "url": "/cadastros/clientes/parc-0002",
+      "apelido": "cadastros-clientes-clienteId",
+      "capturas": {
+        "claro": {
+          "arquivo": "cadastros-clientes-clienteId.claro.png",
+          "bytes": 146041
+        },
+        "escuro": {
+          "arquivo": "cadastros-clientes-clienteId.escuro.png",
+          "bytes": 154227
+        }
+      }
+    },
+    {
+      "rota": "/cadastros/colaboradores",
+      "url": "/cadastros/colaboradores",
+      "apelido": "cadastros-colaboradores",
+      "capturas": {
+        "claro": {
+          "arquivo": "cadastros-colaboradores.claro.png",
+          "bytes": 129367
+        },
+        "escuro": {
+          "arquivo": "cadastros-colaboradores.escuro.png",
+          "bytes": 137702
+        }
+      }
+    },
+    {
+      "rota": "/cadastros/colaboradores/$colaboradorId",
+      "url": "/cadastros/colaboradores/emp-0001",
+      "apelido": "cadastros-colaboradores-colaboradorId",
+      "capturas": {
+        "claro": {
+          "arquivo": "cadastros-colaboradores-colaboradorId.claro.png",
+          "bytes": 152077
+        },
+        "escuro": {
+          "arquivo": "cadastros-colaboradores-colaboradorId.escuro.png",
+          "bytes": 159378
+        }
+      }
+    },
+    {
+      "rota": "/cadastros/fornecedores",
+      "url": "/cadastros/fornecedores",
+      "apelido": "cadastros-fornecedores",
+      "capturas": {
+        "claro": {
+          "arquivo": "cadastros-fornecedores.claro.png",
+          "bytes": 89020
+        },
+        "escuro": {
+          "arquivo": "cadastros-fornecedores.escuro.png",
+          "bytes": 93026
+        }
+      }
+    },
+    {
+      "rota": "/cadastros/fornecedores/$fornecedorId",
+      "url": "/cadastros/fornecedores/parc-0001",
+      "apelido": "cadastros-fornecedores-fornecedorId",
+      "capturas": {
+        "claro": {
+          "arquivo": "cadastros-fornecedores-fornecedorId.claro.png",
+          "bytes": 147477
+        },
+        "escuro": {
+          "arquivo": "cadastros-fornecedores-fornecedorId.escuro.png",
+          "bytes": 154252
+        }
+      }
+    },
+    {
+      "rota": "/cadastros/produtos",
+      "url": "/cadastros/produtos",
+      "apelido": "cadastros-produtos",
+      "capturas": {
+        "claro": {
+          "arquivo": "cadastros-produtos.claro.png",
+          "bytes": 93641
+        },
+        "escuro": {
+          "arquivo": "cadastros-produtos.escuro.png",
+          "bytes": 97162
+        }
+      }
+    },
+    {
+      "rota": "/cadastros/produtos/$produtoId",
+      "url": "/cadastros/produtos/prod-0001",
+      "apelido": "cadastros-produtos-produtoId",
+      "capturas": {
+        "claro": {
+          "arquivo": "cadastros-produtos-produtoId.claro.png",
+          "bytes": 176611
+        },
+        "escuro": {
+          "arquivo": "cadastros-produtos-produtoId.escuro.png",
+          "bytes": 187245
+        }
+      }
+    },
+    {
+      "rota": "/cadastros/profissionais",
+      "url": "/cadastros/profissionais",
+      "apelido": "cadastros-profissionais",
+      "capturas": {
+        "claro": {
+          "arquivo": "cadastros-profissionais.claro.png",
+          "bytes": 94408
+        },
+        "escuro": {
+          "arquivo": "cadastros-profissionais.escuro.png",
+          "bytes": 99906
+        }
+      }
+    },
+    {
+      "rota": "/cadastros/profissionais/$profissionalId",
+      "url": "/cadastros/profissionais/parc-0002",
+      "apelido": "cadastros-profissionais-profissionalId",
+      "capturas": {
+        "claro": {
+          "arquivo": "cadastros-profissionais-profissionalId.claro.png",
+          "bytes": 150051
+        },
+        "escuro": {
+          "arquivo": "cadastros-profissionais-profissionalId.escuro.png",
+          "bytes": 157930
+        }
+      }
+    },
+    {
+      "rota": "/compras",
+      "url": "/compras",
+      "apelido": "compras",
+      "capturas": {
+        "claro": {
+          "arquivo": "compras.claro.png",
+          "bytes": 54884
+        },
+        "escuro": {
+          "arquivo": "compras.escuro.png",
+          "bytes": 56735
+        }
+      }
+    },
+    {
+      "rota": "/compras/ordens",
+      "url": "/compras/ordens",
+      "apelido": "compras-ordens",
+      "capturas": {
+        "claro": {
+          "arquivo": "compras-ordens.claro.png",
+          "bytes": 97531
+        },
+        "escuro": {
+          "arquivo": "compras-ordens.escuro.png",
+          "bytes": 101168
+        }
+      }
+    },
+    {
+      "rota": "/compras/ordens/$ordemId",
+      "url": "/compras/ordens/oc-0001",
+      "apelido": "compras-ordens-ordemId",
+      "capturas": {
+        "claro": {
+          "arquivo": "compras-ordens-ordemId.claro.png",
+          "bytes": 159995
+        },
+        "escuro": {
+          "arquivo": "compras-ordens-ordemId.escuro.png",
+          "bytes": 165756
+        }
+      }
+    },
+    {
+      "rota": "/compras/pedidos",
+      "url": "/compras/pedidos",
+      "apelido": "compras-pedidos",
+      "capturas": {
+        "claro": {
+          "arquivo": "compras-pedidos.claro.png",
+          "bytes": 98731
+        },
+        "escuro": {
+          "arquivo": "compras-pedidos.escuro.png",
+          "bytes": 102361
+        }
+      }
+    },
+    {
+      "rota": "/compras/pedidos/$pedidoId",
+      "url": "/compras/pedidos/pc-0001",
+      "apelido": "compras-pedidos-pedidoId",
+      "capturas": {
+        "claro": {
+          "arquivo": "compras-pedidos-pedidoId.claro.png",
+          "bytes": 169214
+        },
+        "escuro": {
+          "arquivo": "compras-pedidos-pedidoId.escuro.png",
+          "bytes": 175581
+        }
+      }
+    },
+    {
+      "rota": "/compras/previsao",
+      "url": "/compras/previsao",
+      "apelido": "compras-previsao",
+      "capturas": {
+        "claro": {
+          "arquivo": "compras-previsao.claro.png",
+          "bytes": 107090
+        },
+        "escuro": {
+          "arquivo": "compras-previsao.escuro.png",
+          "bytes": 111369
+        }
+      }
+    },
+    {
+      "rota": "/config",
+      "url": "/config",
+      "apelido": "config",
+      "capturas": {
+        "claro": {
+          "arquivo": "config.claro.png",
+          "bytes": 116268
+        },
+        "escuro": {
+          "arquivo": "config.escuro.png",
+          "bytes": 121388
+        }
+      }
+    },
+    {
+      "rota": "/config/listas",
+      "url": "/config/listas",
+      "apelido": "config-listas",
+      "capturas": {
+        "claro": {
+          "arquivo": "config-listas.claro.png",
+          "bytes": 107485
+        },
+        "escuro": {
+          "arquivo": "config-listas.escuro.png",
+          "bytes": 113796
+        }
+      }
+    },
+    {
+      "rota": "/config/usuarios",
+      "url": "/config/usuarios",
+      "apelido": "config-usuarios",
+      "capturas": {
+        "claro": {
+          "arquivo": "config-usuarios.claro.png",
+          "bytes": 159594
+        },
+        "escuro": {
+          "arquivo": "config-usuarios.escuro.png",
+          "bytes": 168032
+        }
+      }
+    },
+    {
+      "rota": "/crm",
+      "url": "/crm",
+      "apelido": "crm",
+      "capturas": {
+        "claro": {
+          "arquivo": "crm.claro.png",
+          "bytes": 52428
+        },
+        "escuro": {
+          "arquivo": "crm.escuro.png",
+          "bytes": 54282
+        }
+      }
+    },
+    {
+      "rota": "/crm/funil",
+      "url": "/crm/funil",
+      "apelido": "crm-funil",
+      "capturas": {
+        "claro": {
+          "arquivo": "crm-funil.claro.png",
+          "bytes": 149184
+        },
+        "escuro": {
+          "arquivo": "crm-funil.escuro.png",
+          "bytes": 155619
+        }
+      }
+    },
+    {
+      "rota": "/crm/funil/$funilId",
+      "url": "/crm/funil/funil-projeto",
+      "apelido": "crm-funil-funilId",
+      "capturas": {
+        "claro": {
+          "arquivo": "crm-funil-funilId.claro.png",
+          "bytes": 149184
+        },
+        "escuro": {
+          "arquivo": "crm-funil-funilId.escuro.png",
+          "bytes": 155619
+        }
+      }
+    },
+    {
+      "rota": "/crm/funis",
+      "url": "/crm/funis",
+      "apelido": "crm-funis",
+      "capturas": {
+        "claro": {
+          "arquivo": "crm-funis.claro.png",
+          "bytes": 76451
+        },
+        "escuro": {
+          "arquivo": "crm-funis.escuro.png",
+          "bytes": 79760
+        }
+      }
+    },
+    {
+      "rota": "/crm/funis/$funilId",
+      "url": "/crm/funis/funil-projeto",
+      "apelido": "crm-funis-funilId",
+      "capturas": {
+        "claro": {
+          "arquivo": "crm-funis-funilId.claro.png",
+          "bytes": 139343
+        },
+        "escuro": {
+          "arquivo": "crm-funis-funilId.escuro.png",
+          "bytes": 146634
+        }
+      }
+    },
+    {
+      "rota": "/crm/motivos",
+      "url": "/crm/motivos",
+      "apelido": "crm-motivos",
+      "capturas": {
+        "claro": {
+          "arquivo": "crm-motivos.claro.png",
+          "bytes": 82393
+        },
+        "escuro": {
+          "arquivo": "crm-motivos.escuro.png",
+          "bytes": 86007
+        }
+      }
+    },
+    {
+      "rota": "/crm/oportunidades/$oportunidadeId",
+      "url": "/crm/oportunidades/op-0001",
+      "apelido": "crm-oportunidades-oportunidadeId",
+      "capturas": {
+        "claro": {
+          "arquivo": "crm-oportunidades-oportunidadeId.claro.png",
+          "bytes": 134289
+        },
+        "escuro": {
+          "arquivo": "crm-oportunidades-oportunidadeId.escuro.png",
+          "bytes": 141027
+        }
+      }
+    },
+    {
+      "rota": "/dashboard",
+      "url": "/dashboard",
+      "apelido": "dashboard",
+      "capturas": {
+        "claro": {
+          "arquivo": "dashboard.claro.png",
+          "bytes": 146367
+        },
+        "escuro": {
+          "arquivo": "dashboard.escuro.png",
+          "bytes": 151076
+        }
+      }
+    },
+    {
+      "rota": "/estoque",
+      "url": "/estoque",
+      "apelido": "estoque",
+      "capturas": {
+        "claro": {
+          "arquivo": "estoque.claro.png",
+          "bytes": 54760
+        },
+        "escuro": {
+          "arquivo": "estoque.escuro.png",
+          "bytes": 56604
+        }
+      }
+    },
+    {
+      "rota": "/estoque/movimentacao",
+      "url": "/estoque/movimentacao",
+      "apelido": "estoque-movimentacao",
+      "capturas": {
+        "claro": {
+          "arquivo": "estoque-movimentacao.claro.png",
+          "bytes": 96231
+        },
+        "escuro": {
+          "arquivo": "estoque-movimentacao.escuro.png",
+          "bytes": 99553
+        }
+      }
+    },
+    {
+      "rota": "/estoque/relatorios/orcado-x-estoque",
+      "url": "/estoque/relatorios/orcado-x-estoque",
+      "apelido": "estoque-relatorios-orcado-x-estoque",
+      "capturas": {
+        "claro": {
+          "arquivo": "estoque-relatorios-orcado-x-estoque.claro.png",
+          "bytes": 94079
+        },
+        "escuro": {
+          "arquivo": "estoque-relatorios-orcado-x-estoque.escuro.png",
+          "bytes": 97453
+        }
+      }
+    },
+    {
+      "rota": "/estoque/relatorios/parado",
+      "url": "/estoque/relatorios/parado",
+      "apelido": "estoque-relatorios-parado",
+      "capturas": {
+        "claro": {
+          "arquivo": "estoque-relatorios-parado.claro.png",
+          "bytes": 119114
+        },
+        "escuro": {
+          "arquivo": "estoque-relatorios-parado.escuro.png",
+          "bytes": 125025
+        }
+      }
+    },
+    {
+      "rota": "/estoque/relatorios/valorizado",
+      "url": "/estoque/relatorios/valorizado",
+      "apelido": "estoque-relatorios-valorizado",
+      "capturas": {
+        "claro": {
+          "arquivo": "estoque-relatorios-valorizado.claro.png",
+          "bytes": 116651
+        },
+        "escuro": {
+          "arquivo": "estoque-relatorios-valorizado.escuro.png",
+          "bytes": 122455
+        }
+      }
+    },
+    {
+      "rota": "/planner",
+      "url": "/planner",
+      "apelido": "planner",
+      "capturas": {
+        "claro": {
+          "arquivo": "planner.claro.png",
+          "bytes": 104887
+        },
+        "escuro": {
+          "arquivo": "planner.escuro.png",
+          "bytes": 109706
+        }
+      }
+    },
+    {
+      "rota": "/tarefas",
+      "url": "/tarefas",
+      "apelido": "tarefas",
+      "capturas": {
+        "claro": {
+          "arquivo": "tarefas.claro.png",
+          "bytes": 145078
+        },
+        "escuro": {
+          "arquivo": "tarefas.escuro.png",
+          "bytes": 150283
+        }
+      }
+    },
+    {
+      "rota": "/vendas",
+      "url": "/vendas",
+      "apelido": "vendas",
+      "capturas": {
+        "claro": {
+          "arquivo": "vendas.claro.png",
+          "bytes": 55242
+        },
+        "escuro": {
+          "arquivo": "vendas.escuro.png",
+          "bytes": 56952
+        }
+      }
+    },
+    {
+      "rota": "/vendas/cargas",
+      "url": "/vendas/cargas",
+      "apelido": "vendas-cargas",
+      "capturas": {
+        "claro": {
+          "arquivo": "vendas-cargas.claro.png",
+          "bytes": 87626
+        },
+        "escuro": {
+          "arquivo": "vendas-cargas.escuro.png",
+          "bytes": 92172
+        }
+      }
+    },
+    {
+      "rota": "/vendas/orcamentos",
+      "url": "/vendas/orcamentos",
+      "apelido": "vendas-orcamentos",
+      "capturas": {
+        "claro": {
+          "arquivo": "vendas-orcamentos.claro.png",
+          "bytes": 118442
+        },
+        "escuro": {
+          "arquivo": "vendas-orcamentos.escuro.png",
+          "bytes": 125608
+        }
+      }
+    },
+    {
+      "rota": "/vendas/orcamentos/$orcamentoId",
+      "url": "/vendas/orcamentos/orc-0001",
+      "apelido": "vendas-orcamentos-orcamentoId",
+      "capturas": {
+        "claro": {
+          "arquivo": "vendas-orcamentos-orcamentoId.claro.png",
+          "bytes": 154194
+        },
+        "escuro": {
+          "arquivo": "vendas-orcamentos-orcamentoId.escuro.png",
+          "bytes": 159748
+        }
+      }
+    },
+    {
+      "rota": "/vendas/pedidos",
+      "url": "/vendas/pedidos",
+      "apelido": "vendas-pedidos",
+      "capturas": {
+        "claro": {
+          "arquivo": "vendas-pedidos.claro.png",
+          "bytes": 111465
+        },
+        "escuro": {
+          "arquivo": "vendas-pedidos.escuro.png",
+          "bytes": 117930
+        }
+      }
+    },
+    {
+      "rota": "/vendas/pedidos/$pedidoId",
+      "url": "/vendas/pedidos/ped-21606",
+      "apelido": "vendas-pedidos-pedidoId",
+      "capturas": {
+        "claro": {
+          "arquivo": "vendas-pedidos-pedidoId.claro.png",
+          "bytes": 154555
+        },
+        "escuro": {
+          "arquivo": "vendas-pedidos-pedidoId.escuro.png",
+          "bytes": 161166
+        }
+      }
+    },
+    {
+      "rota": "/vendas/reservas-tecnicas",
+      "url": "/vendas/reservas-tecnicas",
+      "apelido": "vendas-reservas-tecnicas",
+      "capturas": {
+        "claro": {
+          "arquivo": "vendas-reservas-tecnicas.claro.png",
+          "bytes": 111059
+        },
+        "escuro": {
+          "arquivo": "vendas-reservas-tecnicas.escuro.png",
+          "bytes": 116277
+        }
+      }
+    },
+    {
+      "rota": "/definir-senha",
+      "url": "/definir-senha",
+      "apelido": "definir-senha",
+      "capturas": {
+        "claro": {
+          "arquivo": "definir-senha.claro.png",
+          "bytes": 34524
+        },
+        "escuro": {
+          "arquivo": "definir-senha.escuro.png",
+          "bytes": 53522
+        }
+      }
+    },
+    {
+      "rota": "/esqueci-senha",
+      "url": "/esqueci-senha",
+      "apelido": "esqueci-senha",
+      "capturas": {
+        "claro": {
+          "arquivo": "esqueci-senha.claro.png",
+          "bytes": 37618
+        },
+        "escuro": {
+          "arquivo": "esqueci-senha.escuro.png",
+          "bytes": 56843
+        }
+      }
+    },
+    {
+      "rota": "/login",
+      "url": "/login",
+      "apelido": "login",
+      "capturas": {
+        "claro": {
+          "arquivo": "login.claro.png",
+          "bytes": 32634
+        },
+        "escuro": {
+          "arquivo": "login.escuro.png",
+          "bytes": 51666
+        }
+      }
+    },
+    {
+      "rota": "/trocar-senha",
+      "url": "/trocar-senha",
+      "apelido": "trocar-senha",
+      "capturas": {
+        "claro": {
+          "arquivo": "trocar-senha.claro.png",
+          "bytes": 32634
+        },
+        "escuro": {
+          "arquivo": "trocar-senha.escuro.png",
+          "bytes": 51666
+        }
+      }
+    }
+  ]
+}

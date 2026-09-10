@@ -65,10 +65,37 @@ especificação de **entrada** que o backend precisa implementar, não cópia qu
 ## Stack (decidida — NÃO trocar sem confirmação do user)
 - **Vite + React 19 + TypeScript strict** · SPA
 - **Tailwind v4 + shadcn/ui** (copy-paste, sem runtime dep de UI kit)
-- **TanStack Query v5** (estado servidor) · **TanStack Table v8** · **TanStack Router** (adotado; rotas em `src/routes/`, árvore gerada em `src/routeTree.gen.ts`)
+- **TanStack Query v5** (estado servidor) · **TanStack Table v9** · **TanStack Router** (adotado; rotas em `src/routes/`, árvore gerada em `src/routeTree.gen.ts`)
 - **Orval** (codegen do contrato: tipos + hooks TanStack + Zod + handlers MSW) · cliente em `src/api/cliente.ts` (`fetch`, `credentials: 'include'` — a sessão é cookie opaco)
 - **react-hook-form + Zod 4**
-- **pnpm** com `minimumReleaseAge: 10080` (7d) no workspace — OBRIGATÓRIO, pós supply-chain. **Biome** (lint+format) · **vitest** + Testing Library
+- **pnpm** com `minimumReleaseAge: 10080` (7d) no workspace — OBRIGATÓRIO, pós supply-chain. **Biome 2** (lint+format) · **vitest 4** + Testing Library
+- **Node 24, e a versão tem UMA autoridade: o `.nvmrc`.** `engines.node` no `package.json` a
+  repete e os dois jobs do CI a leem por `node-version-file` — ninguém escreve o número à mão num
+  workflow. Isto foi fixado em 2026-09-07 e o motivo é medido: enquanto o CI rodava 22 num job e
+  24 no outro, sem nada declarando a versão, a suíte tinha uma janela estreita que ninguém sabia
+  que existia — em **Node 24 reprovava 1.247 testes** (o `AbortSignal` do jsdom não é o que o
+  `undici` aceita, e o `new Request(..., { signal })` do transporte lançava em todos), em 18
+  reprovava os 7 do Planner, e só o 22 passava. Quem clonasse o repo em 24 via a suíte inteira
+  vermelha. **Quem fechou a janela foi o vitest 4** (medido: com vitest 3 o defeito persiste
+  mesmo no jsdom 30; com vitest 4 some mesmo no jsdom 26). Ver `docs/relatorio-varredura-2026-09-07.md` §17.
+- **`@tanstack/react-table` está na v9** desde 07/09 (decisão do user), e a migração cabe numa
+  regra: **as features moram em `src/components/cabinet/listagem/tabela.ts`, e é de lá que as
+  telas importam `ColumnDef`.** A v9 trocou `ColumnDef<TData>` por `ColumnDef<TFeatures, TData,
+  TValue>`; aquele módulo amarra as features uma vez e reexporta o tipo com o MESMO nome, então
+  a tela continua escrevendo `ColumnDef<Cliente>` e só o caminho do import mudou — foi o que
+  manteve os 213 erros de tipo iniciais em 37 trocas de import e um arquivo de lógica.
+  **Não usar `useLegacyTable`**: o próprio guia do pacote o marca como ponte temporária, e o
+  repo não passou por ela. Feature nova (paginação, seleção, agrupamento no cliente) entra
+  naquele `tableFeatures()`, nunca numa tela: registrar de menos faz o método SUMIR da
+  instância, e o erro aparece na chamada, não no tipo. Hoje são três — visibilidade e ordem de
+  coluna, mais `rowSortingFeature` **sem** o `sortedRowModel`, porque quem ordena e pagina é o
+  servidor (era o antigo `manualSorting`/`manualPagination`). O `meta` da coluna (`numeric`,
+  `tipo`, `editavel`) deixou de ser `declare module` e virou slot `columnMeta` do mesmo objeto.
+- **`biome.json` NÃO aceita comentário `//`.** Um comentário ali faz o Biome falhar o parse, e o
+  `pnpm check` então roda **sem configuração**, reformatando o repositório inteiro com os padrões
+  de fábrica — 848 arquivos, e não se desfaz rodando o check de novo (o formatador preserva
+  quebras de objeto já feitas). Justificativa de config vem para cá; se precisar de comentário no
+  arquivo, renomeie para `biome.jsonc`.
 - **Vetos:** Redux · axios · styled-components · MUI/Antd/UI-kits de runtime · form-generator declarativo · SheetJS (`xlsx` npm) · float p/ dinheiro
 - Referência visual/estrutural: shadcn/ui docs · Kiranism next-shadcn-dashboard-starter (SÓ como referência de DataTable/layout — é Next, aqui é Vite: adaptar, não copiar rotas/SSR)
 
@@ -76,6 +103,8 @@ especificação de **entrada** que o backend precisa implementar, não cópia qu
 - **Dinheiro:** trafega em **centavos (int)**; formatar R$ só na borda de exibição (`Intl.NumberFormat('pt-BR')`). NUNCA float em estado/mock.
 - **Quantidade:** até 3 casas. **Datas:** ISO nos dados, exibição pt-BR. **CNPJ/CPF:** sem máscara no dado, máscara só no input.
 - **Atalhos — interface por clique** (decisão do user, 30/07/2026): toda ação é alcançável por mouse e nenhum fluxo depende de tecla memorizada. Navegação em formulário é a nativa do browser (Tab / Shift+Tab, Enter no controle focado). **NÃO criar atalho customizado novo.** Os que já existem em `src/lib/shortcuts.ts` (`Ctrl+K` **paleta de comandos** · `Alt+N` incluir · `Alt+P/A/T/I` nos documentos) ficam como conveniência, não como requisito — a paleta, por exemplo, abre também pelo botão de busca da appbar — não removê-los, não expandi-los, não desenhar tela que só funcione por eles. F3–F6 continuam proibidos (conflito com browser).
+  **A tecla tem UM dono (#362):** `bindShortcut` mantém uma PILHA por combo e quem ligou por último atende — antes, `Ctrl+K` disparava a paleta E a busca de cidade do cadastro de cliente ao mesmo tempo. E o mapa legado→hoje é DADO (`MAPA_DE_ATALHOS`, no próprio registry), publicado na tela `/ajuda/atalhos` e cobrado por `src/lib/mapa-de-atalhos.test.ts` — atalho novo sem linha no mapa reprova, e tecla no mapa sem chamador precisa de dívida nomeada. Conflito com o navegador é CONFERÊNCIA DOCUMENTAL de Chrome/Edge (28/08/2026: só `Ctrl+K` consta), nunca teste na máquina — quem fecha isso é `docs/atalhos-para-validacao.md`, com os operadores.
+- **A paleta `Ctrl+K` também acha REGISTRO** (#362) — cliente, fornecedor, profissional, produto, orçamento e pedido de venda, por `useBuscaDeRegistro` (`src/data/busca-de-registro.ts`). São QUATRO consultas por termo (o `q` de cada listagem, com debounce e página de 5), não uma rota nova: o `q` do backend já casa nome, código, documento e número, então isto é trabalho só de front. Se o custo apertar, o caminho é uma `/api/search` unificada — e ela troca só aquele arquivo. O motivo velho escrito em `comandos.ts` ("o contrato não tem busca global") estava vencido.
 - Componentes compartilhados moram em `src/components/cabinet/` (DataTable, LookupCombo, blocos) — telas só COMPÕEM, não reimplementam.
 - Acessibilidade mínima: label em todo campo, foco visível, dialog com focus-trap (shadcn já dá).
 
@@ -285,18 +314,28 @@ backend, e morre junto com o modo mock no dia em que as duas metades se encontra
 
 Variáveis documentadas em `.env.example` (copiar para `.env.local`, que é gitignored).
 
-**Provar contra o backend real** (feito em 2026-08-18, `cabinet-erp-api` `c34f763`):
+**Provar contra o backend real** — o par vivo agora RODA NO CI (job `ao-vivo`), e o que segue é
+o mesmo caminho na sua máquina:
 
 ```
-cd ../cabinet-erp-api && cp .env.example .env && pnpm setup:dev && pnpm dev   # :3000
-VITE_API_PROXY=http://localhost:3000 pnpm dev                                # :5173
-CABINET_AO_VIVO=1 npx vitest run src/mocks/ao-vivo.test.ts
+pnpm par:semear     # o api cria papel dono + unaccent, migra e SEMEIA (setup:ci de lá)
+pnpm e2e            # sobe api + Vite e roda o fluxo no navegador
+pnpm par:ao-vivo    # a fronteira em Node, com o par já de pé
 ```
 
-**O banco de dev nasce VAZIO** — os testes do backend semeiam por Testcontainers, e `setup:dev`
-só migra. Sem um `employees` com hash de senha de verdade (`protegerSenha`), mais `tenants` e
-`employee_company`, não há login real para provar. Semear é dado de ambiente, não código do outro
-repo.
+`CABINET_API_DIR` aponta o checkout do api (padrão `../cabinet-erp-api`), e
+`CABINET_API_PORT`/`CABINET_APP_PORT` movem as portas — necessário quando dois agentes têm par
+local no mesmo micro, senão o segundo mede o servidor do primeiro.
+
+**A frase que vivia aqui — "o banco de dev nasce VAZIO, semear é dado de ambiente" — VENCEU.**
+`pnpm seed:dev` do api semeia duas empresas, colaborador com senha de verdade, catálogo,
+parceiros, orçamentos e pedidos; `pnpm setup:ci` acrescenta o passo de superusuário
+(`preparar-banco.sql`), que em dev entra pelo `initdb` do compose e num *service container* do
+Actions não entraria nunca — service container não monta volume.
+
+**E o ritual manual era o problema, não o detalhe.** Enquanto provar o par fosse quatro comandos
+decorados, as baterias que dependiam dele não rodavam: a #341 mediu 27 declarações falsas em 48
+horas. Guarda que depende de alguém lembrar não é guarda.
 
 Três armadilhas de MEDIÇÃO, pagas nesta sessão:
 1. **curl no `:5173` não prova a divisão.** O MSW vive no navegador; curl atravessa o proxy e

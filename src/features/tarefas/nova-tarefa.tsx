@@ -1,5 +1,8 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
 import type { TaskDtoPriority, TaskDtoStatus } from '@/api/gerado'
-import { DateField, TextField, TextareaField } from '@/components/cabinet/form-controls'
+import { DateField, TextareaField, TextField } from '@/components/cabinet/form-controls'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -11,9 +14,6 @@ import {
 import { Form } from '@/components/ui/form'
 import { COLUNAS, useCriarTarefa } from '@/data/dashboard-api'
 import { mensagemDoErro } from '@/lib/erros'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
 
 /**
  * NOVA TAREFA — o diálogo do botão primário e do `+` de cada coluna.

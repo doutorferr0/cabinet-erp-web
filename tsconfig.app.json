@@ -4,7 +4,7 @@
     "ignoreDeprecations": "6.0",
     "useDefineForClassFields": true,
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
-    "types": ["vite/client"],
+    "types": ["vite/client", "node"],
     "module": "ESNext",
     "skipLibCheck": true,
 
@@ -15,9 +15,10 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
-    "baseUrl": ".",
+    // Sem `baseUrl`: o TypeScript 7 o REMOVEU, e o substituto é o caminho
+    // relativo aqui — `./src/*` em vez de `src/*` resolvido contra a base.
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     },
 
     /* Linting */

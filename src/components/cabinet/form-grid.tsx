@@ -1,4 +1,7 @@
+import { Minus, Plus } from 'lucide-react'
+import { Controller, useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import { VOZ_DE_NOME } from '@/components/cabinet/nome'
+import { TotalBox } from '@/components/cabinet/total-box'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -12,14 +15,67 @@ import {
 } from '@/components/ui/table'
 import { formatMoneyBRL, formatPercent } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
-import { Minus, Plus } from 'lucide-react'
-import { Controller, useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 
 /**
  * Tipo da célula. `money` guarda centavos (int) e digita em reais;
  * `check` guarda boolean; `select` é combo puro; `computed` é derivado da
  * linha (não vive no form state). Default `text`.
  */
+/**
+ * FormRow — a fileira de campos dentro de um bloco (D16, issue #484; mockup
+ * `Formulário`, seletor `.fr.c2/.c3/.c4`).
+ *
+ * ## Por que não se chama `FormGrid`
+ *
+ * A espec da issue pede "`FormGrid colunas={2|3|4}` com `gap 12`". O nome já
+ * estava ocupado NESTE arquivo por outra coisa — a grade de ITENS (padrão 6 da
+ * transcrição), consumida por doze telas em cinco zonas da rodada, e uma delas
+ * (D17) é justamente quem vai substituí-la por `GradeDeItens`. Renomear agora
+ * mexeria em doze arquivos fora da zona da D16 para trocar um identificador,
+ * com conflito garantido contra a D17. O COMPORTAMENTO pedido é o que vale, e
+ * ele está aqui inteiro; o nome segue o mockup, que chama a peça de `fr` —
+ * form row.
+ *
+ * ## O gap é `--s-3`, e a coluna é `auto-fit`
+ *
+ * `gap 12` = `--s-3`, o terceiro degrau da escala. A quebra é por
+ * `repeat(auto-fit, minmax(...))` e não por `@media`: a rodada proíbe media
+ * query para quebra, e a fileira precisa dobrar quando a COLUNA encolhe (a
+ * ficha tem duas), não quando a JANELA encolhe — media query mediria a janela e
+ * deixaria quatro campos espremidos numa coluna de 320px.
+ *
+ * Irmãos se separam por `gap`, nunca por `margin` por elemento — regra 1 da
+ * §Hierarquia.
+ */
+export interface FormRowProps {
+  /** Quantas colunas no largo. Estreito dobra sozinho. */
+  colunas?: 2 | 3 | 4
+  className?: string
+  children: React.ReactNode
+}
+
+/** Largura mínima por coluna, para o `auto-fit` decidir quando dobrar. */
+const MINIMO_DA_COLUNA: Record<2 | 3 | 4, string> = {
+  2: '220px',
+  3: '180px',
+  4: '150px',
+}
+
+export function FormRow({ colunas = 2, className, children }: FormRowProps) {
+  return (
+    <div
+      data-slot="form-row"
+      data-colunas={colunas}
+      className={cn('grid min-w-0 gap-[var(--s-3)]', className)}
+      style={{
+        gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${MINIMO_DA_COLUNA[colunas]}), 1fr))`,
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
 export type FormGridCellType = 'text' | 'money' | 'percent' | 'check' | 'select' | 'computed'
 
 export interface FormGridColumn {
@@ -39,8 +95,8 @@ export interface FormGridColumn {
    * Existe pelo mesmo motivo do `voz` do `<TextField>`: a célula editável é um
    * `<input>`, e `<input>` não aceita filho — `<Nome>` e `<Produto>` não
    * entram aqui. Sem isto, a mesma descrição de produto que a listagem mostra
-   * em Sora aparece em Inter dentro da grade do documento, e a regra vira
-   * "vale onde é texto, não vale onde é campo".
+   * na voz de O QUÊ aparece em Inter dentro da grade do documento, e a regra
+   * vira "vale onde é texto, não vale onde é campo".
    *
    * O produto NÃO recua para `--muted-foreground` aqui: na listagem ele é
    * coadjuvante do nome do cliente, mas na grade do documento ele É o assunto
@@ -55,7 +111,10 @@ export type FormGridRow = Record<string, string | number | boolean | null>
 export interface FormGridTotalRow {
   label: string
   valorCentavos: number
-  /** `Total`: régua forte acima e único em Title (1.125rem/600) — o GRAND TOTAL do invoice. */
+  /**
+   * `Total`: o GRAND TOTAL do invoice. Não é uma fileira com destaque — é o
+   * FECHO, e sai da malha para o bloco próprio abaixo da grade (#236).
+   */
   destaque?: boolean
 }
 
@@ -83,10 +142,12 @@ export interface FormGridProps {
    */
   sectionKey?: string
   /**
-   * Totais como últimas fileiras da própria grade (DESIGN.md §DocumentoTotais):
-   * células da esquerda mescladas, rótulo em Meta na coluna anterior à de
-   * valor, valor tabular caindo exatamente sob `valueColumnKey`. Sempre
-   * derivados dos itens — nunca campo paralelo.
+   * Totais do pé do documento (DESIGN.md §DocumentoTotais). SubTotal e ajustes
+   * são fileiras da própria grade — células da esquerda mescladas, rótulo em
+   * Meta na coluna anterior à de valor, valor tabular caindo exatamente sob
+   * `valueColumnKey`. A linha `destaque` é o Total e NÃO é fileira: vira o
+   * fecho, bloco próprio abaixo da grade. Sempre derivados dos itens — nunca
+   * campo paralelo.
    */
   totals?: { valueColumnKey: string; rows: FormGridTotalRow[] }
 }
@@ -238,6 +299,17 @@ export function FormGrid({
   const rows = useWatch({ control, name }) as FormGridRow[] | undefined
   // Coluna de valor sob a qual os totais caem (precisa ter uma coluna antes, para o rótulo).
   const totalsValueIndex = totals ? columns.findIndex((c) => c.key === totals.valueColumnKey) : -1
+  // FUSÃO v5 r3 (#236): o Total deixa de ser a última fileira da malha e vira
+  // o FECHO — bloco próprio abaixo da grade, em display condensado a 48px.
+  // SubTotal e ajustes continuam fileiras, onde o alinhamento sob a coluna de
+  // valor é o que os torna conferíveis contra os itens.
+  //
+  // O fecho NÃO depende de `totalsValueIndex`: fora da malha, ele não cai sob
+  // coluna nenhuma. Quando `valueColumnKey` não casa com coluna alguma, as
+  // fileiras somem — comportamento antigo — mas o total continua na tela, que
+  // é o dado que o operador foi ali buscar.
+  const fecho = totals?.rows.find((t) => t.destaque === true)
+  const fileirasNaMalha = totals?.rows.filter((t) => t.destaque !== true) ?? []
 
   return (
     // Barra→grade é relação entre partes de um mesmo componente: `{spacing.md}`.
@@ -257,13 +329,21 @@ export function FormGrid({
         )}
         {actions?.((row) => append(row))}
       </div>
-      {/* Caixa preta 2px — o mesmo contêiner da DataTable (a malha interna é Fio). */}
-      <div data-slot="form-grid-box" className="overflow-x-auto border-2 border-border">
+      {/* 2.0: a grade mora DENTRO de um card (o `FormBlock`), e card dentro de
+          card é o terceiro nível que a §Hierarquia proíbe. A fronteira aqui é a
+          mais barata que resolve — uma hairline em volta, o cabeçalho separado
+          por tint `n-50`, e hairline entre linhas. A caixa preta de 2px saiu. */}
+      <div
+        data-slot="form-grid-box"
+        className="overflow-x-auto rounded-[var(--r-item)] border [border-color:var(--n-200)]"
+      >
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="[background:var(--n-50)] hover:[background:var(--n-50)]">
               {columns.map((col) => (
-                <TableHead key={col.key}>{col.label}</TableHead>
+                <TableHead key={col.key} className="t-rotulo">
+                  {col.label}
+                </TableHead>
               ))}
               <TableHead className="w-10" />
             </TableRow>
@@ -271,10 +351,7 @@ export function FormGrid({
           <TableBody>
             {fields.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={columns.length + 1}
-                  className="h-16 text-center font-[family-name:var(--font-nome)] text-[0.9375rem] text-muted-foreground italic"
-                >
+                <TableCell colSpan={columns.length + 1} className="t-meta h-16 text-center">
                   Nenhum item ainda — os botões acima incluem o primeiro.
                 </TableCell>
               </TableRow>
@@ -287,13 +364,11 @@ export function FormGrid({
                   return (
                     <TableRow
                       key={field.id}
-                      className="border-y-2 border-border bg-muted hover:bg-muted"
+                      className="[background:var(--n-50)] hover:[background:var(--n-50)]"
                     >
                       <TableCell colSpan={columns.length + 1} className="p-1">
                         <div className="flex h-8 items-center justify-between px-2">
-                          <span className="font-mono text-[0.75rem] font-medium uppercase tracking-[0.06em] text-muted-foreground">
-                            {String(secao)}
-                          </span>
+                          <span className="t-rotulo">{String(secao)}</span>
                           <Button
                             type="button"
                             variant="ghost"
@@ -343,7 +418,7 @@ export function FormGrid({
                               className={cn(
                                 'h-8 border-0 bg-transparent focus-visible:focus-ring-inset',
                                 col.voz === 'nome' && VOZ_DE_NOME,
-                                col.voz === 'produto' && 'font-display',
+                                col.voz === 'produto' && 'font-sans font-medium tracking-[0.01em]',
                               )}
                               {...register(path)}
                             />
@@ -366,24 +441,12 @@ export function FormGrid({
                 )
               })
             )}
-            {totals && totalsValueIndex >= 1
-              ? totals.rows.map((t, i) => (
+            {totalsValueIndex >= 1
+              ? fileirasNaMalha.map((t) => (
                   // Totais são fileiras da grade: esquerda mesclada, rótulo em
-                  // Meta na coluna anterior, valor sob a coluna de valor.
-                  <TableRow
-                    key={t.label}
-                    className={cn(
-                      // Zona de dinheiro: creme-esverdeado é exclusivo das
-                      // fileiras de total — dado comum da malha fica em tinta
-                      // normal, senão a cor deixa de significar.
-                      t.destaque === true
-                        ? 'bg-fill-money hover:bg-fill-money'
-                        : 'bg-zone-money hover:bg-zone-money',
-                      // Sem fio duplo: a régua forte do Total substitui o fio da fileira acima.
-                      totals.rows[i + 1]?.destaque === true && 'border-b-0',
-                      t.destaque === true && 'rule-strong-top',
-                    )}
-                  >
+                  // Meta na coluna anterior, valor sob a coluna de valor. O
+                  // Total não está mais entre elas — ver `fecho`, abaixo.
+                  <TableRow key={t.label} className="bg-zone-money hover:bg-zone-money">
                     {totalsValueIndex > 1 ? (
                       <TableCell colSpan={totalsValueIndex - 1} className="p-1" />
                     ) : null}
@@ -399,9 +462,6 @@ export function FormGrid({
                           // que subtrai escreve em vermelho. Sem isso, um
                           // desconto se lê igualzinho a uma soma.
                           t.valorCentavos < 0 ? 'text-destructive' : 'text-money',
-                          // FUSÃO v5: o Total é o número-herói da tela —
-                          // 2xl, o maior dado da malha. Ninguém procura o total.
-                          t.destaque === true && 'text-2xl font-extrabold',
                         )}
                       >
                         {formatMoneyBRL(t.valorCentavos)}
@@ -415,6 +475,11 @@ export function FormGrid({
           </TableBody>
         </Table>
       </div>
+      {/* O fecho fica FORA da caixa da grade, encostado à direita: é o único
+          dado da tela que não deve alinhamento a coluna nenhuma. */}
+      {fecho ? (
+        <TotalBox label={fecho.label} valorCentavos={fecho.valorCentavos} className="self-end" />
+      ) : null}
     </div>
   )
 }

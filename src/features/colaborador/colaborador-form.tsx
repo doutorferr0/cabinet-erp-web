@@ -1,34 +1,55 @@
+import { useNavigate } from '@tanstack/react-router'
+import { useState } from 'react'
+import { useFormContext } from 'react-hook-form'
+import { z } from 'zod'
 import { BuscaDeCidade } from '@/components/cabinet/busca-de-cidade'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { CampoComBusca } from '@/components/cabinet/campo-com-busca'
+import {
+  CamposDoModulo,
+  Pendencias,
+  ProgressoDeObrigatorios,
+} from '@/components/cabinet/campos-do-modulo'
 import { FormBlock } from '@/components/cabinet/form-block'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { camposDe, colaborador as esquema, propsDoIcone } from '@/features/cadastro/modulos'
-import {
-  CamposDoModulo,
-  Pendencias,
-  ProgressoDeObrigatorios,
-} from '@/features/colaborador/campos-do-modulo'
 import type { Colaborador } from '@/mocks/colaboradores'
-import { useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
-import { useFormContext } from 'react-hook-form'
-import { z } from 'zod'
 
 // TODO(contract): Zod do codegen substituirá este schema na integração.
 export const colaboradorSchema = z.object({
-  id: z.number(),
+  /**
+   * TEXTO desde 2026-08-25, junto com `Colaborador.id`: a tela lê
+   * `GET /api/employees/{id}` e o id é o uuid do servidor.
+   *
+   * **Enquanto era `z.number()`, o Gravar falhava CALADO.** O uuid não passa em
+   * `z.number()`, o resolver recusa o submit e o formulário não navega — e o
+   * erro não aparece em campo nenhum, porque `id` não é campo desenhado. A tela
+   * ficava parada no `/novo` sem dizer por quê, que é o pior modo de recusar.
+   */
+  id: z.string(),
   nome: z.string().min(1, 'Nome é obrigatório'),
+  /**
+   * NÃO é `.email()` nem obrigatório aqui, e a ausência é decisão.
+   *
+   * O contrato declara `email` anulável e o servidor só o EXIGE no `POST` —
+   * ficha vinda da semente do mock tem `email: null`, e um obrigatório local
+   * travaria o `Alterar` de um registro que existe. Quem recusa é o servidor,
+   * com 400 `campos-invalidos` e `fields[].path = email`, e o `ErroDeGravacao`
+   * leva o foco ao campo por esse caminho.
+   */
+  email: z.string().nullable(),
+  telefone: z.string().nullable(),
   setor: z.string().nullable(),
   atendimentoCliente: z.boolean(),
   ativo: z.boolean(),
-  sexo: z.string().nullable(),
+  // `sexo` e `racaCor` saíram em 2026-08-28 — dado sensível (LGPD art. 5º II)
+  // sem finalidade nem regra de acesso no produto. O porquê inteiro está em
+  // `Colaborador`, no mock, que é onde o tipo mora.
   dtNascimento: z.string().nullable(),
   grauInstrucao: z.string().nullable(),
   profissao: z.string().nullable(),
-  racaCor: z.string().nullable(),
   estadoCivil: z.string().nullable(),
   nomeConjuge: z.string(),
   dtNascConjuge: z.string().nullable(),
@@ -83,7 +104,10 @@ function FotoFrame() {
 function BuscaNaturalidade({
   open,
   onOpenChange,
-}: { open: boolean; onOpenChange: (o: boolean) => void }) {
+}: {
+  open: boolean
+  onOpenChange: (o: boolean) => void
+}) {
   const { setValue } = useFormContext<Colaborador>()
   return (
     <BuscaDeCidade
@@ -143,7 +167,11 @@ function BlocosDoCadastro({
   onBuscaNaturalidade,
   readOnly,
   moduloEmFoco,
-}: { onBuscaNaturalidade: () => void; readOnly: boolean; moduloEmFoco: string | undefined }) {
+}: {
+  onBuscaNaturalidade: () => void
+  readOnly: boolean
+  moduloEmFoco: string | undefined
+}) {
   return (
     <div className="flex flex-col gap-3">
       {esquema.modulos.map((modulo) => (
@@ -183,32 +211,43 @@ export function ColaboradorForm({
   readOnly = false,
   contexto,
   moduloEmFoco,
+  onGravar,
+  gravando = false,
+  aviso,
 }: {
   colaborador: Colaborador
   readOnly?: boolean
   contexto?: string
   /** Módulo que o lápis da ficha mandou editar (issue #103) — nasce aberto. */
   moduloEmFoco?: string | undefined
+  /**
+   * O que o `Gravar` faz — `POST` ou `PUT`, decidido pela ROTA, que é quem sabe
+   * se o id da URL é `novo` (#402). Era `console.info` aqui dentro; um
+   * formulário que escolhe sozinho entre criar e alterar precisaria adivinhar
+   * isso pelo id em branco, e "id vazio" também é o estado de uma ficha que
+   * ainda não chegou.
+   */
+  onGravar: (values: Colaborador) => void
+  /** Escrita em curso: o `Gravar` desabilita para não mandar duas vezes. */
+  gravando?: boolean
+  /** Cobertura do contrato e recusa do servidor — sob o título, sobre os campos. */
+  aviso?: React.ReactNode
 }) {
   const navigate = useNavigate()
   const [buscaNaturalidadeOpen, setBuscaNaturalidadeOpen] = useState(false)
-
-  function onGravar(values: Colaborador) {
-    // Mock only: sem backend. Na integração, mutation do TanStack Query.
-    console.info('[mock] Gravar colaborador', values)
-    void navigate({ to: '/cadastros/colaboradores' })
-  }
 
   return (
     <CadastroForm
       schema={colaboradorSchema}
       defaultValues={colaborador}
       onGravar={onGravar}
+      gravando={gravando}
       onCancelar={() => void navigate({ to: '/cadastros/colaboradores' })}
       readOnly={readOnly}
       titulo="Cadastro de Colaboradores"
       familia="employees"
       {...(contexto ? { contexto } : {})}
+      {...(aviso ? { aviso } : {})}
     >
       {/* FotoFrame (~224px) é coluna lateral do bloco campos+abas, não sibling
           de só uma fileira — assim a altura da linha vem do conteúdo da aba

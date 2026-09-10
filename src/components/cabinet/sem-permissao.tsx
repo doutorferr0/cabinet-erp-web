@@ -1,4 +1,5 @@
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
+import { Lock } from 'lucide-react'
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { detalheDoErro } from '@/lib/erros'
 
 /**
@@ -22,6 +23,11 @@ import { detalheDoErro } from '@/lib/erros'
 export function SemPermissao({ erro, contexto }: { erro?: unknown; contexto?: string }) {
   return (
     <Empty data-slot="sem-permissao">
+      {/* Cadeado, e não um sinal de proibido: o segundo lê como "você fez algo
+          errado". Não fez — a conta é que não alcança esta tela. */}
+      <EmptyMedia>
+        <Lock />
+      </EmptyMedia>
       <EmptyHeader>
         <EmptyTitle>Sem permissão</EmptyTitle>
         <EmptyDescription>

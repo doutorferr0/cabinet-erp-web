@@ -19,7 +19,7 @@ import type {
   VinculoDeEmpresa,
 } from '@/api/gerado'
 import { diaLocalISO } from '@/lib/datas'
-import { VOCABULARIO_DE_APOIO, idDeApoio } from '@/mocks/lookups'
+import { idDeApoio, VOCABULARIO_DE_APOIO } from '@/mocks/lookups'
 
 /**
  * Estado em memória do modo mock (`VITE_API_MODE=mock`).

@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest'
 import { atividadeDoContrato, atividadeParaContrato } from '@/data/atividades-api'
 import {
   estagioDoContrato,
@@ -19,7 +20,6 @@ import { papelProfissional } from '@/features/parceiro/papeis/profissional'
 import { produtoSchema } from '@/features/produto/produto-form'
 import { profissionalSchema } from '@/features/profissional/profissional-form'
 import { atividadeSchema } from '@/features/tarefas/atividade-dialogo'
-import { describe, expect, it } from 'vitest'
 import contrato from '../../contracts/openapi-v1.json'
 
 /**

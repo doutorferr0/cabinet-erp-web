@@ -1,8 +1,9 @@
-import { colaborador as esquemaColaborador } from '@/features/cadastro/modulos'
-import { parceiro, servidorDeParceiros } from '@/test/parceiros'
-import { renderRoute } from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { colaborador as esquemaColaborador } from '@/features/cadastro/modulos'
+import { ID_DO_COLABORADOR, stubDeColaboradores } from '@/test/colaboradores'
+import { parceiro, servidorDeParceiros } from '@/test/parceiros'
+import { renderRoute } from '@/test/utils'
 
 /**
  * A FICHA LIGADA NA ROTA (issue #103) — pelas rotas de verdade, não pelo
@@ -20,11 +21,15 @@ const CLIENTE = '11111111-1111-4111-8111-111111111111'
 
 describe('modo consulta mostra a ficha, não o formulário', () => {
   it('colaborador: valores como texto, sem campo para digitar', async () => {
-    const { container } = renderRoute('/cadastros/colaboradores/1?modo=consulta')
-
-    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent(
-      'Cadastro de Colaboradores',
+    const { container } = renderRoute(
+      `/cadastros/colaboradores/${ID_DO_COLABORADOR}?modo=consulta`,
+      stubDeColaboradores(),
     )
+
+    // A ENTIDADE, não o nome da tela (D19, #487): o cabeçalho 2.0 é do registro
+    // aberto, e "Cadastro de Colaboradores" respondia "que tela é esta?", que
+    // não é a pergunta de quem já abriu a ficha.
+    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('Colaborador')
     // O nome aparece DUAS vezes, e as duas contam: no contexto da banda (quem
     // está aberto) e no par de leitura do módulo (o valor do campo `nome`).
     const identificacao = container.querySelector('[data-modulo-id="identificacao"]')
@@ -46,7 +51,10 @@ describe('modo consulta mostra a ficha, não o formulário', () => {
   })
 
   it('a ficha tem uma seção por módulo do schema — nem a mais, nem a menos', async () => {
-    const { container } = renderRoute('/cadastros/colaboradores/1?modo=consulta')
+    const { container } = renderRoute(
+      `/cadastros/colaboradores/${ID_DO_COLABORADOR}?modo=consulta`,
+      stubDeColaboradores(),
+    )
 
     await screen.findByRole('heading', { level: 1 })
     const secoes = [...container.querySelectorAll('[data-modulo-id]')].map(
@@ -56,7 +64,10 @@ describe('modo consulta mostra a ficha, não o formulário', () => {
   })
 
   it('módulo sem nada dentro convida a preencher', async () => {
-    renderRoute('/cadastros/colaboradores/1?modo=consulta')
+    renderRoute(
+      `/cadastros/colaboradores/${ID_DO_COLABORADOR}?modo=consulta`,
+      stubDeColaboradores(),
+    )
 
     // `Metas e comissão` é feito só de campos que o repo ainda não guarda
     // (`campo` ausente no schema): vazio de verdade, e a ficha o diz.
@@ -64,7 +75,10 @@ describe('modo consulta mostra a ficha, não o formulário', () => {
   })
 
   it('o lápis do módulo leva de volta à edição, dizendo qual módulo', async () => {
-    const { router, user } = renderRoute('/cadastros/colaboradores/1?modo=consulta')
+    const { router, user } = renderRoute(
+      `/cadastros/colaboradores/${ID_DO_COLABORADOR}?modo=consulta`,
+      stubDeColaboradores(),
+    )
 
     await user.click(await screen.findByRole('button', { name: 'Alterar Identificação' }))
 
@@ -73,13 +87,16 @@ describe('modo consulta mostra a ficha, não o formulário', () => {
     await waitFor(() => {
       expect(router.state.location.search).toEqual({ modulo: 'identificacao' })
     })
-    expect(router.state.location.pathname).toBe('/cadastros/colaboradores/1')
+    expect(router.state.location.pathname).toBe(`/cadastros/colaboradores/${ID_DO_COLABORADOR}`)
     // E na edição o formulário volta, editável.
     expect(await screen.findByLabelText('Nome completo')).toBeEnabled()
   })
 
   it('a saída da folha volta para a listagem', async () => {
-    const { router, user } = renderRoute('/cadastros/colaboradores/1?modo=consulta')
+    const { router, user } = renderRoute(
+      `/cadastros/colaboradores/${ID_DO_COLABORADOR}?modo=consulta`,
+      stubDeColaboradores(),
+    )
 
     await user.click(await screen.findByRole('button', { name: 'Voltar' }))
 
@@ -89,7 +106,7 @@ describe('modo consulta mostra a ficha, não o formulário', () => {
   })
 
   it('sem o search param a tela continua sendo o formulário', async () => {
-    renderRoute('/cadastros/colaboradores/1')
+    renderRoute(`/cadastros/colaboradores/${ID_DO_COLABORADOR}`, stubDeColaboradores())
 
     expect(await screen.findByLabelText('Nome completo')).toBeEnabled()
     expect(screen.getByRole('button', { name: /Gravar/ })).toBeInTheDocument()
@@ -107,9 +124,7 @@ describe('modo consulta mostra a ficha, não o formulário', () => {
     ])
     const { container } = renderRoute(`/cadastros/clientes/${CLIENTE}?modo=consulta`, stub)
 
-    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent(
-      'Cadastro de Clientes',
-    )
+    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('Cliente')
     await waitFor(() => {
       const identificacao = container.querySelector('[data-modulo-id="identificacao"]')
       expect(identificacao).not.toBeNull()

@@ -1,10 +1,13 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
 import type { ActivityDtoKind } from '@/api/gerado'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import {
   DateField,
   SelectIdField,
-  TextField,
   TextareaField,
+  TextField,
 } from '@/components/cabinet/form-controls'
 import { Button } from '@/components/ui/button'
 import {
@@ -22,9 +25,6 @@ import {
   useCriarAtividade,
 } from '@/data/atividades-api'
 import { useColaboradoresParaEscolha } from '@/data/crm-api'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
 
 /**
  * O diálogo de agendar e de remarcar — o MESMO, porque os campos são os mesmos.

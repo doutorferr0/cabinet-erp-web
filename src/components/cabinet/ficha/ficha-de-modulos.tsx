@@ -1,11 +1,11 @@
+import { Pencil, Plus } from 'lucide-react'
 import { FormBlock } from '@/components/cabinet/form-block'
 import { Button } from '@/components/ui/button'
 import {
   type EntidadeCadastro,
-  type ModuloCadastro,
   indicadoresSemOrigem,
+  type ModuloCadastro,
 } from '@/features/cadastro/modulos'
-import { Pencil, Plus } from 'lucide-react'
 import { camposPreenchidos, moduloVazio, textoDoCampo } from './valores'
 
 /**

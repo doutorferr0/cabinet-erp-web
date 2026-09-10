@@ -1,4 +1,9 @@
-import type { SupportGrantDto, SupportGrantRequest } from '@/api/gerado'
+import type {
+  PagedResultOfSupportAuditEntryDto,
+  PagedResultOfSupportGrantDto,
+  SupportGrantDto,
+  SupportGrantRequest,
+} from '@/api/gerado'
 import {
   getSupportGrant,
   listSupportGrantAudit,
@@ -6,7 +11,6 @@ import {
   openSupportGrant,
   revokeSupportGrant,
 } from '@/api/gerado'
-import type { PagedResultOfSupportAuditEntryDto, PagedResultOfSupportGrantDto } from '@/api/gerado'
 import { dadosOuErro, itemOuNulo } from '@/data/api-provider'
 
 /**

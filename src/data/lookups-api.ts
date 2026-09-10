@@ -1,12 +1,12 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   type CatalogLookupDto,
-  type PagedResultOfCatalogLookupDto,
-  ProblemType,
   createCatalogLookup,
   listCatalogLookups,
+  type PagedResultOfCatalogLookupDto,
+  ProblemType,
 } from '@/api/gerado'
-import { type RespostaDaApi, dadosOuErro } from '@/data/api-provider'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { dadosOuErro, type RespostaDaApi } from '@/data/api-provider'
 
 /**
  * LISTAS DE APOIO — o padrão `[combo]`/`[combo +...]` da transcrição (§9 padrão 2).
@@ -25,7 +25,11 @@ const KINDS = {
   setor: { label: 'Setor', backend: 'SETOR' },
   grauInstrucao: { label: 'Grau de Instrução', backend: 'GRAU_INSTRUCAO' },
   profissao: { label: 'Profissão', backend: 'PROFISSAO' },
-  racaCor: { label: 'Raça/Cor', backend: 'RACA_COR' },
+  // `racaCor` SAIU (2026-08-28), junto do campo que era seu único consumidor.
+  // O kind não é dado pessoal — é vocabulário —, mas o campo `racaCor` do
+  // colaborador saiu por LGPD (art. 5º II) e nenhum outro cadastro o usa. Kind
+  // sem campo é lista que a tela de gestão (`/listas`) oferece para o admin
+  // editar sem que editá-la mude coisa alguma.
   estadoCivil: { label: 'Estado Civil', backend: 'ESTADO_CIVIL' },
   nacionalidade: { label: 'Nacionalidade', backend: 'NACIONALIDADE' },
   cargo: { label: 'Cargo', backend: 'CARGO' },
@@ -80,6 +84,24 @@ const KINDS = {
 } as const satisfies Record<string, { label: string; backend: string }>
 
 export type LookupKind = keyof typeof KINDS
+
+/**
+ * Os kinds, na ordem em que `KINDS` os declara — a lista que a tela de gestão
+ * das listas de apoio percorre.
+ *
+ * **Derivada, nunca escrita à mão.** O vocabulário não viaja pelo contrato
+ * (ADR-011: `kind` é `string` livre, sem enum, porque enumerá-lo faria
+ * cadastrar uma lista nova virar PR de contrato), então a única fonte que o
+ * front tem é este mapa. Uma segunda lista, para a tela, envelheceria no
+ * primeiro kind acrescentado — e envelheceria calada, porque kind desconhecido
+ * na LEITURA devolve 200 vazio, não erro.
+ */
+export const LOOKUP_KINDS = Object.keys(KINDS) as LookupKind[]
+
+/** O nome do kind como o servidor o guarda (`MARCA`), a partir da chave de UI. */
+export function kindDoBackend(kind: LookupKind): string {
+  return KINDS[kind].backend
+}
 
 /** Nome do kind para o operador. Rótulo é UI, não dado — por isso não vem do servidor. */
 export function lookupLabel(kind: LookupKind): string {
@@ -259,7 +281,10 @@ export function useCadastrarItemDeApoio(kind: LookupKind) {
     mutationFn: async ({
       nome,
       opcoesCarregadas,
-    }: { nome: string; opcoesCarregadas: readonly OpcaoDeLookup[] }): Promise<CadastroDeApoio> => {
+    }: {
+      nome: string
+      opcoesCarregadas: readonly OpcaoDeLookup[]
+    }): Promise<CadastroDeApoio> => {
       const resposta: RespostaDaApi = await createCatalogLookup({
         kind: kindDoBackend,
         name: nome,

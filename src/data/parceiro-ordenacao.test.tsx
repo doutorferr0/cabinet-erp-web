@@ -1,8 +1,8 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { ORDENAVEIS } from '@/data/parceiros-api'
 import { parceiro, stubDeParceiros } from '@/test/parceiros'
 import { renderRoute } from '@/test/utils'
-import { screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 /**
  * A TELA NÃO PODE OFERECER ORDENAÇÃO QUE O SERVIDOR RECUSA.
@@ -81,15 +81,11 @@ describe('ordenação das listagens de parceiro', () => {
    * teste passa porque falha, e no dia em que a linha entrar ele fica vermelho
    * pedindo para virar um `it` comum. Um `it.skip` não faria isso.
    */
-  it.fails(
-    'Profissionais oferece `registration`, que o servidor recusa (#215)',
-    async () => {
-      const saiu = await ordenacoesQueSaem(
-        '/cadastros/profissionais',
-        parceiro({ legalName: 'PROFISSIONAL UM', isProfessional: true, registration: 'CAU-1' }),
-      )
-      for (const campo of saiu) expect(ORDENAVEIS).toContain(campo)
-    },
-    20_000,
-  )
+  it.fails('Profissionais oferece `registration`, que o servidor recusa (#215)', async () => {
+    const saiu = await ordenacoesQueSaem(
+      '/cadastros/profissionais',
+      parceiro({ legalName: 'PROFISSIONAL UM', isProfessional: true, registration: 'CAU-1' }),
+    )
+    for (const campo of saiu) expect(ORDENAVEIS).toContain(campo)
+  }, 20_000)
 })

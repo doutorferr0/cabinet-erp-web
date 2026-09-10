@@ -1,15 +1,15 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { PrintQuoteTemplate, type QuoteDetailDto } from '@/api/gerado'
 import {
   FILTRAVEIS_ORCAMENTO,
   ORDENAVEIS_ORCAMENTO,
-  URL_ORCAMENTOS,
   orcamentosApi,
   paraEscrita,
   paraOrcamento,
+  URL_ORCAMENTOS,
 } from '@/data/quotes-api'
 import { instalarServidor, json, problema } from '@/test/servidor'
 import { tableState } from '@/test/utils'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import contrato from '../../contracts/openapi-v1.json'
 
 /**

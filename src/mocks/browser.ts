@@ -1,4 +1,4 @@
-import { http, delay } from 'msw'
+import { delay, http } from 'msw'
 import { setupWorker } from 'msw/browser'
 import { handlers } from './api/handlers'
 import {

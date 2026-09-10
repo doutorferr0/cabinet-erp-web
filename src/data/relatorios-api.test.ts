@@ -1,3 +1,7 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { renderHook, waitFor } from '@testing-library/react'
+import { createElement, type ReactNode } from 'react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { StockValuationReportDto } from '@/api/gerado'
 import {
   type ConsultaDeEstoqueValorizado,
@@ -5,10 +9,6 @@ import {
   useEstoqueValorizado,
 } from '@/data/relatorios-api'
 import { instalarServidor, json } from '@/test/servidor'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { renderHook, waitFor } from '@testing-library/react'
-import { type ReactNode, createElement } from 'react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * A FRONTEIRA dos relatórios de estoque, contra servidor falso.

@@ -1,12 +1,4 @@
 export {
-  ENTIDADES,
-  cliente,
-  colaborador,
-  fornecedor,
-  profissional,
-} from './entidades'
-export { propsDoIcone } from './modulo-icones'
-export {
   moduloBancario,
   moduloContatos,
   moduloEndereco,
@@ -14,16 +6,24 @@ export {
   moduloRedesSociais,
 } from './compartilhados'
 export {
+  cliente,
+  colaborador,
+  ENTIDADES,
+  fornecedor,
+  profissional,
+} from './entidades'
+export { propsDoIcone } from './modulo-icones'
+export {
   type CampoCadastro,
-  type EntidadeCadastro,
-  type ModuloCadastro,
-  type TipoDeCampo,
-  type VarianteDeFiltro,
   camposDe,
   camposDoContrato,
   colunasDe,
+  type EntidadeCadastro,
   filtrosDe,
   indicadoresSemOrigem,
+  type ModuloCadastro,
   semConsulta,
   semLastro,
+  type TipoDeCampo,
+  type VarianteDeFiltro,
 } from './tipos'

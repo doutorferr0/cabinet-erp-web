@@ -1,3 +1,4 @@
+import { HttpResponse, http } from 'msw'
 import type {
   CancelDocumentRequest,
   QuoteDetailDto,
@@ -10,18 +11,18 @@ import type {
 } from '@/api/gerado'
 import { nomeDeApoio } from '@/mocks/lookups'
 import { type Orcamento, orcamentos } from '@/mocks/orcamentos'
-import { http, HttpResponse } from 'msw'
-import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
+import type { CamposFiltraveis } from './filtro-do-servidor'
+import { listar } from './listagem'
 import { obras } from './obras'
 import { condicaoAtiva, planoDoDocumento, politicaDaEmpresa } from './pagamento'
 import { verificarEscrita } from './permissao'
 import {
-  TIPO,
   camposInvalidos,
   naoEncontrado,
   problemaJson,
   semEmpresaAtiva,
   semSessao,
+  TIPO,
 } from './problema'
 import { servicoDoCadastro } from './servicos'
 import { store } from './store'
@@ -108,7 +109,18 @@ export const FILTRAVEIS: CamposFiltraveis = {
  * e valida, e acrescentar campo lá é mexer em tela. Aqui é estado de servidor
  * falso — o mesmo lugar onde `number` e `totalCents` já são do servidor.
  */
-export interface OrcamentoGuardado extends Orcamento {
+/**
+ * O orçamento do SEED sem a aba Serviços — ver `OrcamentoGuardado`.
+ *
+ * O `Orcamento` de `src/mocks/orcamentos.ts` ganhou `servicos` quando a tela
+ * passou a EDITAR a aba, e ali a coleção está na língua do formulário. Aqui ela
+ * seria a segunda cópia da mesma coisa ao lado de `Estado.servicos`, que é o
+ * DTO e é quem a resposta usa — duas coleções com o mesmo nome no mesmo módulo,
+ * uma delas sempre vazia.
+ */
+type OrcamentoDoSeed = Omit<Orcamento, 'servicos'>
+
+export interface OrcamentoGuardado extends OrcamentoDoSeed {
   /** `QuoteDetailDto.workId` — a OBRA (`Venda.Obr_codigo` do legado). */
   obraId: string | null
   /**
@@ -149,7 +161,9 @@ function estadoInicial(): Estado {
   // do PROFISSIONAL (§8.1, observação). Casar essas linhas com `obra-0001` seria
   // inventar o elo justamente onde a fonte diz que ele não existe — e o elo
   // inventado apareceria na demo pública como dado do servidor.
-  const linhas = orcamentos.map((o) => ({
+  // `servicos` fica de fora na desestruturação: no seed ele é sempre `[]` (a
+  // §8.1 não capturou a aba), e quem responde `serviceItems` é `Estado.servicos`.
+  const linhas = orcamentos.map(({ servicos: _daTela, ...o }) => ({
     ...o,
     obraId: null,
     // As 17 linhas da §8.1 nascem SEM cancelamento e na revisão 1 — o seed é
@@ -178,7 +192,7 @@ function estadoInicial(): Estado {
  * `serv-0001` agora não os reescreve. É a mesma regra que já vale para
  * `description` e `unitPriceCents` do produto.
  */
-function servicosDoSeed(linhas: Orcamento[]): Record<string, QuoteServiceItemDto[]> {
+function servicosDoSeed(linhas: OrcamentoDoSeed[]): Record<string, QuoteServiceItemDto[]> {
   const primeiro = linhas[0]
   if (!primeiro) return {}
   return {
@@ -265,7 +279,7 @@ function comDesconto(centavos: number, percentual: number | null): number {
  * casas) e é convertida aqui — no servidor de verdade ela é numérica, e o total
  * é dele. Desconto por PRODUTO usa o do item; desconto GERAL usa o do cabeçalho.
  */
-function totalDoOrcamento(o: Orcamento): number {
+function totalDoOrcamento(o: OrcamentoDoSeed): number {
   const brutoDeProdutos = o.itens.reduce((soma, item) => {
     const quantidade = quantidadeDe(item.quantidade)
     const unitario = item.valorUnitarioCentavos ?? 0
@@ -377,7 +391,7 @@ function itemDto(item: Orcamento['itens'][number], indice: number): QuoteItemDto
   }
 }
 
-function ambientesDto(o: Orcamento): QuoteEnvironmentDto[] {
+function ambientesDto(o: OrcamentoDoSeed): QuoteEnvironmentDto[] {
   // Coleção PRÓPRIA do documento, não derivada dos itens. Derivar montava
   // `name: code` — o único nome disponível era o código — e o servidor de
   // verdade grava o que recebe: um `Gravar` sem edição substituía o nome
@@ -442,7 +456,7 @@ function detalheDto(o: OrcamentoGuardado): QuoteDetailDto {
  * não pode gravar, e aparar (parcelar menos, arredondar até o mínimo) daria um
  * documento com plano que ninguém pediu.
  */
-function carimbarPagamento<T extends Orcamento>(
+function carimbarPagamento<T extends OrcamentoDoSeed>(
   o: T,
   tenantId: string,
 ): { orcamento: T } | { erro: ReturnType<typeof problemaJson> } {
@@ -685,47 +699,13 @@ export const handlersDeOrcamento = [
     if (!store.activeTenantId) return HttpResponse.json({ rows: [], total: 0 })
 
     const url = new URL(request.url)
-    const q = url.searchParams.get('q')
-    const sortBy = url.searchParams.get('sortBy')
-    const sortDesc = url.searchParams.get('sortDesc') === 'true'
-    const page = Number(url.searchParams.get('page') ?? '1')
-    const pageSize = Number(url.searchParams.get('pageSize') ?? '10')
-
-    if (page < 1 || pageSize < 1 || pageSize > 100) {
-      return problemaJson(
-        400,
-        'Paginação inválida: page é 1-based e pageSize vai até 100.',
-        {},
-        TIPO.paginacaoInvalida,
-      )
-    }
-    if (sortBy && !ORDENAVEIS.includes(sortBy)) {
-      return problemaJson(400, `sortBy inválido: ${sortBy}.`, {}, TIPO.ordenacaoInvalida)
-    }
-
-    let linhas = estado.linhas.map(resumoDto)
-    if (q) {
-      const alvo = q.toLowerCase()
-      linhas = linhas.filter((o) =>
-        [o.number, o.customerName, o.projectName].some((t) => t?.toLowerCase().includes(alvo)),
-      )
-    }
-    const filtradas = aplicarFiltros(linhas, url, FILTRAVEIS)
-    if (typeof filtradas === 'string') return problemaJson(400, filtradas, {}, TIPO.filtroInvalido)
-    linhas = filtradas
-
-    if (sortBy) {
-      const chave = sortBy as keyof QuoteDto
-      linhas.sort((a, b) => {
-        const va = String(a[chave] ?? '')
-        const vb = String(b[chave] ?? '')
-        return sortDesc ? vb.localeCompare(va) : va.localeCompare(vb)
-      })
-    }
-
-    const total = linhas.length
-    const inicio = (page - 1) * pageSize
-    return HttpResponse.json({ rows: linhas.slice(inicio, inicio + pageSize), total })
+    return listar(
+      estado.linhas.map(resumoDto),
+      url,
+      ORDENAVEIS,
+      (orcamento) => [orcamento.number, orcamento.customerName, orcamento.projectName],
+      FILTRAVEIS,
+    )
   }),
 
   http.get('*/api/quotes/:id', ({ params }) => {
@@ -893,7 +873,7 @@ function recusasDoCancelamento(corpo: CancelDocumentRequest | null) {
   return erros
 }
 
-function vazio(): Orcamento {
+function vazio(): OrcamentoDoSeed {
   return {
     id: '',
     numero: '',
@@ -923,4 +903,33 @@ function vazio(): Orcamento {
     condicaoPagamento: null,
     parcelas: [],
   }
+}
+
+// ------------------------------------------------- leitura para os agregados
+
+/**
+ * O orçamento REDUZIDO ao que a faixa de KPI pergunta (#479) — mesma razão que
+ * `ordensParaAgregado` em `compras.ts`: quem serve a grade responde pelo
+ * resumo, senão a faixa e a grade contam a mesma coisa de dois jeitos.
+ *
+ * `totalCents` sai daqui já somado pelo `totalDoOrcamento`, que é o mesmo que a
+ * listagem usa — o total do orçamento não é a soma dos itens (desconto e
+ * serviços entram por regra própria), e recalcular fora daqui erraria.
+ */
+export interface OrcamentoParaAgregado {
+  dataEmissao: string | null
+  dataValidade: string | null
+  dataFechamento: string | null
+  cancelado: boolean
+  totalCents: number
+}
+
+export function orcamentosParaAgregado(): OrcamentoParaAgregado[] {
+  return estado.linhas.map((o) => ({
+    dataEmissao: o.dataEmissao,
+    dataValidade: o.dataValidade,
+    dataFechamento: o.dataFechamento,
+    cancelado: o.cancelado,
+    totalCents: totalDoOrcamento(o),
+  }))
 }

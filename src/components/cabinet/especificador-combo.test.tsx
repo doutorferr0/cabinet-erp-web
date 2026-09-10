@@ -1,9 +1,9 @@
-import { configurarApi } from '@/api/cliente'
-import { EspecificadorCombo } from '@/components/cabinet/lookup-combo'
-import { renderWithQuery } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { useState } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { configurarApi } from '@/api/cliente'
+import { EspecificadorCombo } from '@/components/cabinet/lookup-combo'
+import { renderWithQuery } from '@/test/utils'
 
 /**
  * O ESPECIFICADOR SAI DO CADASTRO, NÃO DA LISTA DE APOIO (#265).

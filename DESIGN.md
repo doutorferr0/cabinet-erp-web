@@ -1,117 +1,136 @@
 ---
 name: Cabinet
-description: Sistema visual de um ERP denso, desktop, em PT-BR — documento comercial com estrutura neo-brutalista de superfícies cinzas delimitadas por traço preto, elevação em degraus e acento saturado.
+description: Sistema visual de um ERP denso, desktop, em PT-BR — documento comercial sobre papel quente, escala de neutros única, acento chartreuse de preenchimento, sombra dura de tinta e hierarquia tipográfica de 11 degraus.
+# ATENÇÃO — este bloco é a ficha 2.0 e o CORPO da página ainda é 1.7.
+# `docs/design/medir-contraste.py --frontmatter` compara cada linha abaixo com o
+# token real; divergiu, uma das duas está mentindo. Ver a nota logo após o
+# front-matter.
 colors:
-  bench: "hsl(47 31% 94%)"
-  sheet: "hsl(0 0% 100%)"
-  sheet-sunken: "hsl(0 0% 97%)"
-  neutral: "hsl(0 0% 96%)"
-  ink: "hsl(0 0% 7%)"
-  ink-muted: "hsl(0 0% 30%)"
-  ink-strong: "hsl(0 0% 7%)"
-  rule-hair: "hsl(0 0% 72%)"
-  surface-disabled: "hsl(0 0% 92%)"
-  rule-disabled: "hsl(210 8% 40%)"
-  main: "hsl(0 0% 7%)"
-  main-hover: "hsl(0 0% 10%)"
-  main-foreground: "hsl(0 0% 100%)"
-  accent: "hsl(262 97% 76%)"
-  info: "hsl(225 71% 75%)"
-  money: "hsl(155 81% 26%)"
-  danger: "hsl(357 84% 42%)"
-  warn: "hsl(47 100% 50%)"
-  ring: "hsl(47 100% 50%)"
-  empresa: "hsl(234 91% 60%)"
-  fill-money: "hsl(88 51% 71%)"
-  fill-focus: "hsl(44 87% 64%)"
-  fill-error: "hsl(355 76% 64%)"
-  zone-money: "hsl(154 96% 91%)"
-  zone-id: "hsl(263 94% 93%)"
-  zone-info: "hsl(223 69% 95%)"
-  zone-warn: "hsl(48 100% 95%)"
-  zone-danger: "hsl(6 76% 95%)"
-  shadow-1: "hsl(40 10% 60%)"
-  shadow-2: "hsl(40 11% 47%)"
-  shadow-3: "hsl(40 13% 36%)"
-  shadow-4: "hsl(40 14% 27%)"
-  shadow-5: "hsl(40 16% 19%)"
+  bench: "#ece9e1"
+  sheet: "#fffefa"
+  sheet-sunken: "#f6f4ee"
+  hairline: "#dcd7cb"
+  rule: "#c9c3b5"
+  ink-disabled: "#a9a395"
+  ink-muted: "#6d675b"
+  ink-secondary: "#4a463d"
+  ink: "#16140f"
+  main: "#e4f222"
+  main-hover: "#e9f27a"
+  main-foreground: "#16140f"
+  main-text: "#4f5c00"
+  ring: "#ffd23f"
+  ok: "#0e7a4b"
+  info: "#1c5fbf"
+  warn: "#9a5b00"
+  bad: "#b3261e"
+  money: "#0e7a4b"
 typography:
-  nome:
-    fontFamily: "Newsreader, ui-serif, Georgia, serif"
-    fontSize: "1.15em"
-    fontWeight: 400
   display:
-    fontFamily: "Newsreader, ui-serif, Georgia, serif"
-    fontSize: "1.85rem"
-    fontWeight: 700
-    letterSpacing: "-0.005em"
-  headline:
-    fontFamily: "Sora, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "1.35rem"
-    fontWeight: 700
-    letterSpacing: "-0.012em"
-  produto:
-    fontFamily: "Sora, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "0.875rem"
+    fontFamily: "Gambarino, Georgia, serif"
+    fontSize: "30px"
+    lineHeight: 1.05
     fontWeight: 400
-  value:
-    fontFamily: "PT Mono, ui-monospace, monospace"
-    fontSize: "1.5rem"
+  pagina:
+    fontFamily: "Gambarino, Georgia, serif"
+    fontSize: "28px"
+    lineHeight: 1.1
     fontWeight: 400
-    fontFeature: "tabular-nums"
-  body:
-    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "0.875rem"
+  registro:
+    fontFamily: "Gambarino, Georgia, serif"
+    fontSize: "24px"
+    lineHeight: 1.1
     fontWeight: 400
-  label:
-    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "0.875rem"
-    fontWeight: 500
-  control:
-    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "0.875rem"
+  secao:
+    fontFamily: "Gambarino, Georgia, serif"
+    fontSize: "20px"
+    lineHeight: 1.2
+    fontWeight: 400
+  bloco:
+    fontFamily: "Inter, system-ui, sans-serif"
+    fontSize: "13.5px"
+    lineHeight: 1.3
     fontWeight: 600
-  numeric:
-    fontFamily: "PT Mono, ui-monospace, monospace"
-    fontSize: "0.875rem"
+  corpo:
+    fontFamily: "Inter, system-ui, sans-serif"
+    fontSize: "13.5px"
+    lineHeight: 1.45
+    fontWeight: 400
+  ui:
+    fontFamily: "Inter, system-ui, sans-serif"
+    fontSize: "13px"
+    lineHeight: 1.3
+    fontWeight: 500
+  meta:
+    fontFamily: "Inter, system-ui, sans-serif"
+    fontSize: "12px"
+    lineHeight: 1.35
+    fontWeight: 400
+  rotulo:
+    fontFamily: "Inter, system-ui, sans-serif"
+    fontSize: "10.5px"
+    fontWeight: 600
+    letterSpacing: "0.12em"
+    textTransform: "uppercase"
+  dado:
+    fontFamily: "JetBrains Mono, ui-monospace, monospace"
+    fontSize: "12.5px"
+    fontWeight: 500
+    fontFeature: "tabular-nums"
+  dado-meta:
+    fontFamily: "JetBrains Mono, ui-monospace, monospace"
+    fontSize: "11px"
     fontWeight: 400
     fontFeature: "tabular-nums"
-  tag:
-    fontFamily: "PT Mono, ui-monospace, monospace"
-    fontSize: "10px"
-    letterSpacing: "0.12em"
-    textTransform: "uppercase"
-  meta:
-    fontFamily: "PT Mono, ui-monospace, monospace"
-    fontSize: "11px"
-    letterSpacing: "0.12em"
-    textTransform: "uppercase"
-  section:
-    fontFamily: "PT Mono, ui-monospace, monospace"
-    fontSize: "10.5px"
-    letterSpacing: "0.16em"
-    textTransform: "uppercase"
 rounded:
-  item: "0px"
-  data: "2px"
-  control: "4px"
-  card: "6px"
+  item: "4px"
+  data: "4px"
+  chip: "4px"
+  control: "6px"
+  card: "8px"
   panel: "10px"
+  pill: "999px"
 spacing:
-  xs: "4px"
-  sm: "8px"
-  md: "12px"
-  lg: "18px"
-  cell: "52px"
+  s-1: "4px"
+  s-2: "8px"
+  s-3: "12px"
+  s-4: "16px"
+  s-5: "24px"
+  s-6: "32px"
 effects:
-  el-1: "2px 2px 0 0 hsl(214 10% 61%)"
-  el-2: "3px 3px 0 0 hsl(215 11% 47%)"
-  el-3: "4px 4px 0 0 hsl(216 13% 36%)"
-  el-4: "6px 6px 0 0 hsl(216 14% 27%)"
-  el-5: "8px 8px 0 0 hsl(217 16% 19%)"
-  border-strong: "2px solid hsl(0 0% 0%)"
-  border-heavy: "3px solid hsl(0 0% 0%)"
+  key-1: "0 2px 0 0 #16140f"
+  key-2: "0 3px 0 0 #16140f"
+  hard-soft: "3px 3px 0 0 #c9c3b5"
+  hard-1: "2px 2px 0 0 #16140f"
+  hard-2: "4px 4px 0 0 #16140f"
+  hard-3: "6px 6px 0 0 #16140f"
 ---
+
+> **2.0 EM EXECUÇÃO (#469–#498). O front-matter acima já é 2.0; o corpo desta página é 1.7 até
+> D30.** A fundação vive em `src/styles/tokens-2.0.css` (escala `--n-*`, 8 rampas, semântica,
+> tints, `--hard-*`/`--key-*`, `--s-*`, os onze `--t-*` e o tema escuro) e o `src/index.css`
+> virou PONTE: todo nome 1.x aponta para um token 2.0, e nenhum guarda cor própria
+> (`identidade-visual.test.ts` cobra). As fontes da 1.5 saíram do `package.json` — são três
+> famílias agora, uma por papel: título, interface e dado.
+>
+> **Consequência que ninguém pode ler errado: as tabelas de contraste do corpo desta página
+> foram medidas contra tokens que não existem mais.** Citar um número delas hoje é citar medição
+> inválida, exatamente como aconteceu na virada de 2026-08-13. A medição VÁLIDA da 2.0 sai de
+> `python3 docs/design/medir-contraste.py` — reescrito em D1 para resolver hex, `var()` e
+> `color-mix`, e para medir cada par sobre a superfície em que ele realmente pousa. `--conferir`
+> sai com código 1 se algum par exigido reprovar em qualquer um dos dois temas. Quem regenera as
+> tabelas do corpo é D30.
+>
+> **O que a medição já mudou na paleta da auditoria** (§3 dela propunha os valores; o número
+> mandou): `--n-500` desceu de `#7e786b` para `#6d675b`, porque `--t-meta` e `--t-rotulo` davam
+> 4,35:1 e 3,62:1 — e a régua §Hierarquia nomeia esse par como onde o 1.x reprovava; os fundos de
+> badge deixaram de ser alpha e passaram a pousar sobre a folha, porque com alpha os cinco
+> reprovavam sobre a bancada; e a semântica no escuro sobe DOIS degraus da rampa (600 → 200), não
+> um, porque no 400 o badge de info dava 4,01:1.
+>
+> A régua de tipografia e separação da rodada é a **§Hierarquia** da issue-mãe #469, e ela está
+> demonstrada nos dois temas em `docs/design/hierarquia.html`. O overlay de grade de 8px liga com
+> `?grid` na URL, em dev.
 
 # Design System: Cabinet — Polaris por baixo, Cabinet por cima (2026-08-18)
 
@@ -193,6 +212,37 @@ por máscara, jamais preta.
 - **Serifada não leva caixa alta**: o título ficou com maiúscula só na inicial dos substantivos; caixa alta segue em mono e Inter (etiqueta, carimbo, cabeçalho de coluna)
 
 ## Colors
+
+> **2.0 · A RAMPA É OKLCH, E CLAREAR/ESCURECER É ANDAR NO DEGRAU (#527).** As oito rampas e a
+> escala de neutros são declaradas duas vezes em `src/styles/tokens-2.0.css`: hex no `:root` e
+> `oklch()` dentro de um `@supports (color: oklch(...))`. Todo navegador desde 2023 aplica o
+> segundo; o hex é rede para o resto e é a referência contra a qual o oklch é conferido.
+>
+> **O que muda na prática:** em hex o degrau era uma promessa (`400 = fill`) que a paleta não
+> cumpria — `amber-400` era perceptivelmente mais claro que `indigo-400`. Em OKLCH o degrau É a
+> luminosidade: `L` igual em todos os oito matizes, `C` por degrau, só `H` muda. O tema escuro dos
+> neutros vira aritmética — mesmo `H` e `C`, `L` espelhada.
+>
+> **Consequência para quem escreve componente:** precisa de uma variante mais clara ou mais
+> escura? Suba ou desça um degrau da rampa, ou componha com `color-mix`. **Hex novo em componente
+> continua proibido**, e agora tem motivo mecânico além do estético: um hex solto não participa da
+> uniformidade de `L`, então ele pesa diferente do resto do sistema em todo lugar onde aparecer.
+>
+> **Quando um par reprova contraste, o que se mexe é a `L` do degrau.** Foi o que aconteceu com
+> `--n-500`: a Rodada 5 propunha `L .55`, e ali `.t-dado-meta` (4,38:1), `.t-rotulo` (3,95:1) e o
+> badge `mut` (4,20:1) ficavam abaixo do piso de texto. Em `L .51` eles vão a 5,19, 4,68 e 4,92.
+> Trocar por um hex escolhido a olho teria consertado o número e quebrado a escala.
+>
+> **25 dos 57 valores ficam fora do gamut sRGB** (chartreuse inteiro, os 50/100 quentes, os
+> 600/800 frios) e isso é intencional: cada navegador mapeia para a tela que tem, e em P3 as cores
+> saem mais saturadas. As tabelas de contraste medem o corte em sRGB, que é o PISO.
+>
+> **A bancada carrega o matiz do módulo; a folha, nunca.** `[data-modulo]` tinge `--bancada` com
+> 4% do matiz do módulo (Boletim, 3%) — a página de Compras tem ar indigo, a de Estoque, menta.
+> Dado não é tingido: `--folha` é a mesma em todo módulo, e há teste que reprova quem a mover.
+>
+> Medição: `python3 docs/design/medir-contraste.py --conferir` mede as duas paletas nos dois
+> temas, confere que elas não se afastaram e sai 1 se algum par exigido reprovar.
 
 ### Superfícies — fundo cinza e cartão branco (Polaris, 2026-08-18)
 | papel | uso |
@@ -604,9 +654,10 @@ Folha.
 
 As tabelas acima medem superfície e voz. Falta o terceiro grupo, e é onde está a única reprovação
 de TEXTO desta página: os lugares em que a cheia /01 deixa de ser traço e vira **fundo com letra em
-cima**. Hoje são dois, e o par é o mesmo — `data-active:bg-modulo-cheia` no item de menu
-(`sidebar.tsx`) e a gaveta de notificações, que herda o `text-sidebar-foreground`/`text-foreground`
-do tema.
+cima**. Eram dois, e o par era o mesmo — `data-active:bg-modulo-cheia` no item de menu
+(`sidebar.tsx`) e a gaveta de notificações, que herdava o `text-sidebar-foreground`/`text-foreground`
+do tema. **Hoje é um:** a gaveta foi apagada em D7 (§Casca global), e a caixa de entrada que a
+substituiu não usa a /01 como fundo de texto — o monograma dela é a /02, onde a tinta passa folgado.
 
 <!-- tabela:estados-fundo -->
 | Módulo | claro: tinta × /01 | escuro: tinta × /01 |
@@ -1116,30 +1167,117 @@ bloqueio (vermelho) · pendência (amarelo) · neutro (Folha). O mapeamento tom 
 continua `[a resolver]` até a enumeração real do backend.
 
 ### Campo (input · select · textarea)
-Fundo Folha, traço 2px, raio de controle, foco pela `focus-ring` (§Foco). **Rótulo é etiqueta**:
-caixa clara com traço 2px, mono 10px, caixa alta — não texto solto acima do campo.
+Fundo Folha, traço 2px, raio de controle, foco pela `focus-ring` (§Foco).
 
-### DataTable (assinatura)
-Caixa de dado (raio 2px, `el-3`, `overflow:hidden`). **Cabeçalho: caixa clara, letra preta, mono 11px
-tracking 0.12em, 42px, régua inferior 3px** — a barra preta sólida sai. Célula 52px com régua de 2px
-entre linhas, e **sem malha vertical** — a régua horizontal já delimita, e coluna fechada dos dois
-lados vira gaiola. Linha selecionada = **violeta com texto branco**, mais peso 600 e `aria-selected`:
-cor sozinha não diz estado (1.4.1). Linha focada = utility `focus-ring-row`, que monta UM anel com as
-partes que cada célula pode desenhar (topo e base em todas, lateral só na primeira e na última) —
-`box-shadow` no `<tr>` não pinta sob o `border-collapse` que a tabela herda do preflight, e anel por
-célula desenharia uma moldura por coluna.
-Célula de dinheiro em verde sobre zona de valor (e sem zona quando a linha está selecionada).
+**Rótulo é TEXTO, não etiqueta** — mudou na 2.0 (D16, issue #484). Até a 1.7 ele vestia caixa clara
+com traço de 2px em mono caixa alta: um selo. Selo é peça de IDENTIDADE, e rótulo de campo não
+identifica coisa nenhuma — nomeia o que se digita ao lado. Com quarenta campos numa ficha, quarenta
+selos empatavam em peso com o dado. A §Hierarquia da rodada fecha isso: `--t-rotulo` nunca tem
+caixa/borda/fundo próprio.
+
+O componente `<Campo>` (`components/cabinet/campo.tsx`) é a moldura: rótulo `.t-ui` em `n-700`,
+controle, e UMA linha embaixo — ajuda (`.t-meta`) **ou** erro (`.t-meta` em `--bad`), nunca as duas.
+O erro vence a ajuda enquanto existe: quem já sabe que errou não precisa mais da dica de como
+digitar, e mostrar as duas empurraria o campo seguinte para baixo no instante do erro. Obrigatório =
+`*` `aria-hidden` + `sr-only` "(obrigatório)"; os ids de ajuda/erro vêm de fora, porque o
+`<FormControl>` do shadcn já monta o `aria-describedby` a partir dos dele.
+
+### DataTable (assinatura) — reescrita na 2.0 (#476 · D8)
+Caixa de dado: **UM traço de `n-300` e a sombra quieta (`--hard-soft`), `overflow-clip`**. A borda de
+2px de tinta saiu porque era a mesma espessura da régua entre linhas — cada linha lia como caixa
+própria, e a listagem virava pilha de caixas sem hierarquia entre o objeto e seus itens.
+
+**Cabeçalho: tint `n-50`, `sticky`, rótulo em `--t-rotulo`** (Inter 600 · 10.5 · tracking .12em ·
+caixa alta · `n-500`), com **ícone de tipo** de 12px à esquerda. O tint é a ÚNICA separação entre
+header e corpo — §Separação, uma ferramenta por fronteira: sem borda por baixo, sem caixa por célula.
+A barra preta da fusão v5 saiu com ela.
+
+**Célula 52px (`confortavel`) ou 40px (`compacta`), hairline `n-200` entre linhas**, e **sem malha
+vertical** — coluna fechada dos dois lados vira gaiola.
+
+**Linha selecionada = `--primary-soft` com faixa de 3px em chartreuse na borda esquerda**, mais
+`aria-selected`: cor sozinha não diz estado (1.4.1), e a faixa é forma. O violeta cheio da 1.x lavava
+o dado da linha justo quando o operador confere o que marcou. **Chartreuse aqui é área, nunca letra.**
+Linha concluída ou cancelada fica em `n-500` — continua conferível e para de disputar o olho; quem
+sabe disso é a coluna de situação (`tipo: 'status'`, tom `done`/`void`), não uma prop por tela.
+
+Linha focada = utility `focus-ring-row`, que monta UM anel com as partes que cada célula pode desenhar
+(topo e base em todas, lateral só na primeira e na última) — `box-shadow` no `<tr>` não pinta sob o
+`border-collapse` que a tabela herda do preflight, e anel por célula desenharia uma moldura por coluna.
+
+**Célula tipada** (`meta.tipo`): `id` (mono, `--primary-text`) · `entidade` (monograma + nome + subtítulo,
+que some na compacta) · `data` (mono) · `dinheiro` (mono à direita, `R$` em Meta) · `status` (carimbo) ·
+`progresso` (barra de 56px + `n / m`) · `texto` (trunca com `…` e `title`). Coluna que declara `cell`
+próprio manda no conteúdo; o tipo só lhe dá a moldura.
+
+**Ações de linha**: três botões de 26px na última coluna, visíveis no hover E no foco de teclado. `Abrir`
+é derivada de `aoAbrirLinha` — a tela não a declara.
+
+**Barra de lote**: aparece com ≥1 marcada, tinta cheia com texto de papel, `n selecionadas`, e `esc`
+limpa (anunciado na própria barra, com o botão ao lado — não é atalho memorizado).
+
+**Rodapé**: à esquerda `n de N registros · soma da página`; à direita `Por página`, a FAIXA `1–20 de 340`
+e o par de setas. A soma sai da coluna que declarou `tipo: 'dinheiro'`; com paginação ela é da PÁGINA, e
+o rótulo diz isso — chamá-la de filtrada seria um número certo com o nome errado.
+
 `rowNumbers` e cabeçalho agrupado: mecanismos inalterados.
 
-### CadastroForm / BandaDeIdentidade (assinatura)
+### CadastroForm / PageHeader (assinatura)
+
+> **2.0 (D5, #473) — a `BandaDeIdentidade` foi APAGADA.** A caixa lilás com borda de 2px em volta do
+> nome da tela gastava borda + fundo + gradiente numa fronteira que espaço resolve — três das quatro
+> ferramentas de separação de uma vez (§Hierarquia). O nome da tela passou a ter **uma voz só**, o
+> `<h1>` do `PageHeader`, e `src/routes/toda-rota-tem-cabecalho.test.ts` reprova rota que não chegue
+> nele e `<h1>` escrito fora dele. O cabeçalho ganhou `variante` (`display` 30 · `pagina` 28 ·
+> `registro` 24, os degraus `--t-*`), `subtitulo` (o que a tela TEM agora, não o que ela é), `acoes`
+> fracas em ghost e a **tecla `Voltar` de 32px colada ao título** — que saiu do `PageFrame` e voltou
+> para cá, sem opt-in: quem decide se há tecla é `rotaMaeDe`, não a tela.
+
 Painel (raio 10px, `el-3`) com **faixa de acento** de 8px à esquerda e zona de identidade no fundo.
 Título em Display; contexto em Meta. Rodapé fixo com régua superior de 3px. Modo consulta via
 `<fieldset disabled>`: inalterado.
+### FormBlock (assinatura) — 2.0
+**Card quiet**: borda `--n-300` + `--hard-soft`, fundo `--n-0`, padding `--s-4`. É a ÚNICA ferramenta
+de separação da fronteira — a faixa pastel do módulo, a barra de 4px na cheia `/01` e o `<legend>`
+sobre a borda saíram todos: eram três ferramentas na mesma fronteira, e a §Hierarquia manda usar a
+mais barata que resolve, nunca duas. Dentro do card só entram espaço, hairline e tint.
 
-### FormGrid (assinatura)
-Mesma malha da DataTable; célula editável sem borda (a malha É o campo), foco pela `focus-ring-inset`.
-Faixa de seção com fundo Neutro e réguas de 2px. Totais na zona de valor, `Total` em Display com régua
-de 3px acima. Negativo em vermelho.
+Título `.t-bloco` (`<h3>`), `acoes` opcional à direita em `.t-rotulo`, `tint` opcional (`lilac` ·
+`mint` · `sky` · `sand` · `rose`) para o card que separa por ASSUNTO — é o caso dos cards laterais da
+ficha. O `<fieldset>` fica: é ele que dá papel `group` com nome acessível e é o que faz
+`<fieldset disabled>` desligar a ficha inteira em modo consulta. `data-modulo` continua no
+`<fieldset>`, que é o gancho do tint em CSS. Carimbos `Obrigatório`/`Opcional` em `.t-rotulo` sem
+caixa; contador em `.t-dado-meta` (é número que se compara — mono, por definição).
+
+Invariante preservada: obrigatório mora em bloco sempre aberto, `obrigatorio` vence `colapsavel`, e
+corpo fechado é escondido (`hidden`), não desmontado.
+
+### Identidade (assinatura) — 2.0, o que sobrou da `BandaDeIdentidade`
+A `BandaDeIdentidade` **morreu na D16**. Ela era faixa colorida de largura inteira, com gradiente da
+zona de identidade, contorno de 2px e ornamento, dizendo o nome da TELA. Respondia a pergunta errada
+— quem abriu a ficha já sabe em que tela está — e cobrava a primeira dobra da página para repetir o
+breadcrumb. O nome da tela passou ao `PageHeader` (onde já vivia em toda listagem); **quem** é o
+registro passou ao `<BlocoIdentidade>`: card lateral tintado (lilás), monograma 34px em mono, nome
+`.t-ui`, documento `.t-dado-meta`, cidade `.t-meta`, `<dl>` de até 4 pares e "Ver cadastro →" em
+`--primary-text`.
+
+### CadastroForm (assinatura)
+Cabeçalho pelo `PageHeader`, fora do `<fieldset disabled>` — identidade não é campo, e em modo
+consulta continua legível. Rodapé fixo separado por UMA hairline `n-200` (a régua forte de 3px saiu:
+competia com a borda dos cards logo acima). Modo consulta via `<fieldset disabled>`: inalterado.
+
+### FormRow (assinatura) — 2.0
+A fileira de campos dentro de um bloco: `colunas={2|3|4}`, gap `--s-3`, quebra por
+`repeat(auto-fit, minmax(...))`. Mede o CONTÊINER, não a janela — o campo vive dentro de uma coluna
+de 320px na ficha de duas colunas, e `@media` para quebra está proibido na rodada. O nome não é
+`FormGrid` porque `FormGrid` já era, no mesmo arquivo, a grade de ITENS de doze telas.
+
+### FormGrid (assinatura) — a grade de ITENS
+Célula editável sem borda (a malha É o campo), foco pela `focus-ring-inset`. Fechada por UMA hairline
+`n-200` (a caixa preta de 2px saiu — a grade mora dentro de um card, e card dentro de card é o
+terceiro nível que a §Hierarquia proíbe); cabeçalho separado por tint `n-50` em `.t-rotulo`; faixa de
+seção por tint `n-50`, não por régua dupla. Totais na zona de valor, `Total` em Display com régua de
+3px acima. Negativo em vermelho.
 
 ### Indicadores (KPI)
 Cartão (raio 6px, `el-1`; `el-4` quando é o número que a tela existe para mostrar), rótulo em etiqueta,
@@ -1283,7 +1421,7 @@ e em parte dos browsers isso engole o `:active`.
 
 Nunca escrever a receita à mão no componente.
 
-## Casca global — appbar, gaveta e regra de quebra
+## Casca global — appbar, caixa de entrada e regra de quebra
 
 Cromo que aparece em **toda rota**, vive no `AppShell` (`src/app/shell.tsx`) e nunca na página —
 igual `data-modulo` do `<main>`. Origem: mockup `mockup-dashboard-cores.html`, sessão Cowork
@@ -1291,12 +1429,52 @@ igual `data-modulo` do `<main>`. Origem: mockup `mockup-dashboard-cores.html`, s
 
 ### Appbar
 
+> **2.0 (D5, #473) — o que vale hoje.** A appbar é `src/app/appbar/`, tem **56px**, e faz duas
+> coisas: **migalha à esquerda** (derivada da rota pela taxonomia de `navigation.ts`, nunca escrita
+> pela tela) e **quatro ações globais à direita** — Ajuda · Notificações · Configurações · Tema —,
+> fixas em toda rota e na mesma ordem. Nada mais: marca, fileira de seções, busca e seletor de
+> empresa desceram para a barra lateral (`src/app/cinto-provisorio.tsx`, que D4/D6 apagam inteiro).
+> A **segunda faixa de 52px** que repetia o lugar dentro do conteúdo, com o botão de colapso da
+> barra, foi removida — duas respostas para "onde estou", em duas tipografias. O contador do sino
+> virou **ponto** (`--bad`); o número continua no nome acessível, porque quem ouve não vê o ponto.
+> Ação de TELA não sobe para cá: ela mora no `PageHeader`. O parágrafo abaixo descreve a appbar 1.7.
+
 Faixa própria (`src/app/appbar.tsx`), acima do cabeçalho de página, presente em toda rota. À
 esquerda, a **entrada da paleta de comandos** (240px, `Pesquisar…` + a etiqueta `Ctrl+K`); cluster
 à direita: engrenagem (**desabilitada** — não existe tela de configurações; um botão que não leva a
 lugar nenhum é pior que apagado, a mesma razão que desabilita `Alterar`/`Consul.` sem `get` no
-contrato) · sino com badge de não-lidas (abre a gaveta) · divisor · usuário (avatar + nome + papel +
-chevron, menu com `Sair`).
+contrato) · sino com badge de não-lidas · divisor · usuário (avatar + nome + papel + chevron, menu
+com `Sair`).
+
+**O sino é LINK, e a gaveta não existe mais (Reface 2.0, D7 · #475).** Ele abria uma coluna irmã do
+`<main>` que EMPURRAVA o conteúdo (`src/app/gaveta-notificacoes.tsx`, apagado); hoje é
+`<Link to="/inbox">`. A troca não é de desenho, é de natureza: notificação era AVISO — um cartão com
+título e parágrafo, que respondia "aconteceu algo?" e parava aí — e virou LISTA DE TRABALHO, uma
+linha por item com **quem · o quê · qual registro · quando**, ação de resolver na própria linha e
+views (`Não lidas` / `Menções` / `Tudo`) publicadas no endereço (`/inbox?view=…`).
+
+O que a gaveta não tinha e o endereço dá de graça: sobrevive ao F5, cola para outra pessoa, volta
+pelo botão do navegador, entra no menu (`Hoje › Caixa de entrada`) e é achável pela paleta. Um
+painel que abre por clique não tem nenhuma dessas.
+
+**`Sheet` continua no repo e foi REESTILIZADO, não apagado** — são coisas distintas: a gaveta era
+escrita à mão, sem Dialog e sem véu; o `Sheet` é o painel modal do sistema, tem consumidor hoje
+(sidebar estreita, seletor de empresa) e encomendado em D24. Ele ganhou a sombra dura de tinta do
+degrau `--hard-3`, espelhada por `data-side` — painel encostado em `right-0` com sombra para a
+direita projeta para fora da janela e não existe.
+
+### Região de avisos (`src/components/cabinet/regiao-de-avisos.tsx`)
+
+**2.0 (D5, #473).** Deixou de ser cartão flutuante no canto inferior direito (borda preta de 2px +
+sombra dura, três ferramentas de separação para uma frase de cinco palavras) e virou **faixa logo
+abaixo da appbar**, no shell: tint do tom (`--ok-bg`/`--info-bg`/`--warn-bg`/`--bad-bg`), sem borda
+e sem sombra, texto forte à esquerda e a tecla de dispensar à direita. Ela **empurra** o conteúdo em
+vez de cobri-lo.
+
+O **tom** é dado (`Aviso.tom`, `lib/avisos.ts`), não decoração: `ok` é o padrão e é o único que sai
+pelo relógio; `warn` e `bad` ficam até alguém dispensar — é o que o próprio `lib/avisos` diz do que
+não pode sumir em cinco segundos, o que o operador precisa LER e AGIR. `aria-live` vira `assertive`
+quando há `bad` na fila, e `polite` no resto.
 
 #### Paleta de comandos (`src/app/paleta-de-comandos.tsx`)
 
@@ -1420,20 +1598,50 @@ identificação do ícone por uma frase solta. Onde o rótulo sumiu, a peça é 
 
 ## Motion
 
+> **2.0 · MOVIMENTO DE ARTESÃO — o que pode e o que não (#527).** Os tokens vivem em
+> `src/styles/tokens-2.0.css`: `--dur-1` (120 ms, micro), `--dur-2` (200 ms, peça), `--dur-3`
+> (320 ms, entrada de região), `--ease` (a curva geral), `--ease-out` (quem abre) e `--spring`,
+> uma `linear()` de 30 pontos que é a mola já medida da 1.6 — bezier de 4 pontos não representa
+> passar do alvo e voltar.
+>
+> **A regra que governa duração: saída mais rápida que entrada.** Quem sai já foi decidido pelo
+> operador, e atrasá-lo custa a próxima ação; quem entra precisa ser lido. Na troca de rota isso é
+> 90 ms contra 160 ms.
+>
+> **PERMITIDO:** troca de rota com View Transitions, com o título da página como shared element
+> (a lista vira a ficha e o título atravessa) · entrada de região (`cab-rise`, escalonada em ≤ 80 ms
+> e no máximo seis) · peça que aparece (`cab-pop`, com a mola) · linha desenhando em gráfico
+> (`cab-draw`) · barra enchendo (`cab-fill`) · pulso de atenção em pendência (`cab-pulse`, e uma
+> vez) · hover/press dos controles (120 ms).
+>
+> **PROIBIDO:** animar linha de tabela, célula de grade, campo ou anel de foco · loop infinito
+> fora do carregamento · `delay` acima de 80 ms · movimento que reposiciona o que o operador está
+> prestes a clicar · bounce em confirmação · animar `width`/`height`/`top`/`left` (é `transform` e
+> `opacity`, que não recalculam layout) · duração acima de `--dur-3` em qualquer coisa que não seja
+> carregamento.
+>
+> **As três guardas das View Transitions** (`src/app/transicao-de-rota.ts`): sem
+> `startViewTransition` a navegação acontece igual, sem transição; com `prefers-reduced-motion` não
+> acontece; e antes de `readyState === 'complete'` também não — transição durante o carregamento
+> fotografa uma tela pela metade. Há teto de 400 ms: enquanto o callback não resolve, o browser
+> segura a tela congelada na foto.
+
 Movimento aqui serve para dizer que a tela trocou, não para enfeitar — é ferramenta de oito horas.
 Três receitas, e a lista do que NÃO anima vale tanto quanto elas.
 
 | o quê | receita | onde mora |
 |---|---|---|
-| Entrada de tela | fade + sobe 16px, mola `{120,30}`, escalonamento ≤80ms (teto de 6 regiões) | `<Entrada>` (lib `motion`) |
+| ~~Entrada de tela~~ | **removida na 2.0 (D16)** — ver abaixo | `<Entrada>` virou embrulho sem mola |
 | Peça que aparece (popover, menu, diálogo, dica) | fade + escala 0,96→1, mola `{400,30}` | `pop-spring` (CSS) |
 | Cortina do diálogo | só opacidade, 160ms | `fade-veil` (CSS) |
 | Hover e press | §Lift, 140ms `ease-out` | `lift-control` / `lift-flat` (CSS) |
 
-**A entrada anima na MONTAGEM e só.** Quem garante "uma vez por navegação" é a `key` por caminho
-que o shell dá à folha: trocar de tela remonta e anima; paginar, ordenar e digitar mexem em search
-params ou estado, não no caminho, e não animam. Animação que se repete a cada re-render é a que faz
-o operador esperar a tela parar de se mexer.
+**A entrada de tela SAIU (D16, regra 7 da rodada 2.0).** O motivo é o mesmo que este parágrafo já
+dava em defesa dela: movimento que não informa é atrito num ERP de oito horas. "A tela trocou" o
+operador já sabe — foi ele quem clicou. O que a mola custava era meio segundo até a última região
+parar de se mexer, em toda navegação, para dizer o que o cursor já tinha dito. `<Entrada>` continua
+existindo como embrulho (o shell monta cinco regiões com ela e é zona de outra issue), sem mola e sem
+a dependência de `motion` naquele caminho.
 
 **Popover e companhia NÃO usam a lib**, e é decisão: quem os monta e desmonta é a
 `react-aria-components`, que segura o nó vivo enquanto houver animação CSS correndo e só então
@@ -1511,3 +1719,31 @@ Fusão, não substituição: a cara do v5 entra SEM revogar as lições medidas 
   2026-08-19), e os tamanhos vieram depois — 36px no nome e no nº do documento, 48px no total,
   este último fora da grade, em bloco próprio (`TotalBox`).
 - Sidebar escura com dots de módulo (avaliar contra a bancada creme antes de decidir).
+
+## Modos da listagem — lista · kanban · calendário (2.0, D12)
+
+A listagem tem TRÊS desenhos para a mesma consulta. A tabela existe sempre; kanban e calendário
+são visões alternativas, ligadas pelo alternador da barra (padrão 9, `visoes`/`agrupamentos`).
+Nenhuma delas consulta nada: recebem as linhas que a `VitraDataTable` já trouxe, e é isso que
+garante que alternar não troque o filtro por baixo do operador.
+
+- **Kanban** (`ModoKanban`, `visaoKanban`) — colunas por `campoDeColuna` (o `Agrupar por` da barra
+  vence, quando escolhido). Coluna em `--n-50` **sem borda** (tint separa região; borda ali seria a
+  segunda ferramenta na mesma fronteira), cabeçalho com quadradinho de cor + nome em `--t-rotulo` +
+  contagem em `--t-dado-meta`. Cartão = folha `--n-0`, borda `--n-300`, `--hard-soft` parado e
+  `--hard-1` no hover — o papel levanta. Dentro do cartão só espaço e hairline, nunca um terceiro
+  card. Título `--t-bloco`, subtítulo `--t-meta`, selo/data/dinheiro no rodapé, os dois últimos em
+  `--t-dado`. Arrastar entre colunas dispara `onMover`; **quem grava é a tela**. O menu `Mover para`
+  de cada cartão não é opcional: arrasto não existe para teclado nem leitor de tela.
+- **Calendário** (`ModoCalendario`, `visaoCalendario`) — mês ou semana por `campoDeData`. Grade de
+  hairline (`gap: 1px` sobre `--n-200`, nenhuma célula com borda própria), cabeçalho de dia em
+  `--t-rotulo`, número do dia em `--t-dado-meta` e **hoje** num quadrado `--n-900` — o único
+  preenchimento sólido da grade. Evento = pílula tintada pelo tom (`ok`/`info`/`warn`/`bad`/`mut`)
+  com ponto da mesma família; três por célula e `+n` para o resto, porque célula que cresce faz a
+  grade inteira pular de tamanho. Registro sem data **não some calado**: o rodapé conta quantos
+  ficaram de fora.
+
+**Três telas morreram nesta rodada** e viraram visão da listagem de origem: `Previsão de chegada`,
+`Quadro de cargas` e o calendário próprio da `Agenda` (que era Schedule-X). Tela própria para o
+mesmo recurso significava segunda barra de filtro, segunda tabela e segunda ideia de consulta
+salva sobre o mesmo dado — e o operador que estreitasse uma não via efeito na outra.

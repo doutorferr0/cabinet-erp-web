@@ -1,13 +1,18 @@
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import type { ParDoCartao } from '@/components/cabinet/cartao-lateral'
 import {
   ErroDeCarregamento,
   EsqueletoDeCarregamento,
 } from '@/components/cabinet/estado-de-consulta'
-import { FichaDeCadastro } from '@/components/cabinet/ficha/ficha-de-cadastro'
+import { RegistroNaoEncontrado } from '@/components/cabinet/vazio-com-saida'
+import { usePedidosComLinhaAberta } from '@/data/compras-api'
 import { useRotulosDeApoio } from '@/data/lookups-api'
+import { FichaDeRegistro } from '@/features/cadastro/ficha-de-registro'
 import { camposDoContrato, fornecedor as esquema } from '@/features/cadastro/modulos'
 import { FornecedorForm } from '@/features/fornecedor/fornecedor-form'
 import { CoberturaParceiro } from '@/features/parceiro/cobertura-parceiro'
 import { ContatosDoParceiro } from '@/features/parceiro/contatos-do-parceiro'
+import { papeisDoParceiro, resumoDoParceiro } from '@/features/parceiro/ficha-resumo'
 import { HierarquiaParceiro } from '@/features/parceiro/hierarquia'
 import { papelFornecedor } from '@/features/parceiro/papeis/fornecedor'
 import { registroParaFicha } from '@/features/parceiro/registro-para-ficha'
@@ -15,7 +20,6 @@ import { usarParceiro } from '@/features/parceiro/usar-parceiro'
 import { PainelDeAtividades } from '@/features/tarefas/painel-atividades'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import type { Fornecedor } from '@/mocks/fornecedores'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/cadastros/fornecedores/$fornecedorId')({
   component: FornecedorEditPage,
@@ -31,6 +35,21 @@ function FornecedorEditPage() {
   const navigate = useNavigate()
   const { query, isNovo, registro, ausentesNaFicha, gravar, incluir, vincular, jaExiste } =
     usarParceiro(papelFornecedor, fornecedorId)
+  // A única metade de "em aberto" que o contrato deixa provar:
+  // `/api/purchase-requests` filtra por `supplierId` + `onlyOpenItems`. Do lado
+  // do cliente não existe filtro por parceiro — ver `ficha-resumo.tsx`.
+  const { data: pedidosAbertos } = usePedidosComLinhaAberta(
+    isNovo ? '' : fornecedorId,
+    !isNovo && readOnly,
+  )
+  const emAberto: ParDoCartao[] = pedidosAbertos?.length
+    ? [
+        {
+          rotulo: 'Pedidos de compra em aberto',
+          valor: <span className="t-dado">{pedidosAbertos.length}</span>,
+        },
+      ]
+    : []
 
   if ((!isNovo && query.isPending) || carregandoApoio) {
     return <EsqueletoDeCarregamento />
@@ -50,7 +69,9 @@ function FornecedorEditPage() {
   }
 
   if (!registro) {
-    return <p className="text-muted-foreground">Fornecedor não encontrado.</p>
+    return (
+      <RegistroNaoEncontrado titulo="Fornecedor não encontrado." voltar="/cadastros/fornecedores" />
+    )
   }
 
   // O vínculo pai/filho vale para a tela inteira e não pertence a aba nenhuma:
@@ -96,12 +117,20 @@ function FornecedorEditPage() {
 
   if (readOnly && !isNovo) {
     return (
-      <FichaDeCadastro
+      <FichaDeRegistro
         entidade={esquema}
         {...(rotulos ? { rotulos } : {})}
         registro={registroParaFicha(registro, esquema, ausentesNaFicha)}
-        titulo="Cadastro de Fornecedores"
-        contexto={registro.nomeFantasia}
+        titulo="Fornecedor"
+        nome={registro.nomeFantasia}
+        {...(query.data?.code ? { id: query.data.code } : {})}
+        meta={papeisDoParceiro(query.data)}
+        ativo={registro.ativo}
+        // `Ativar`/`Desativar` é `PUT /api/partners/{id}` com o `active`
+        // invertido — o mesmo caminho do Gravar, e por isso a mesma mutação.
+        aoAlternarAtivo={() => gravar.mutate({ ...registro, ativo: !registro.ativo })}
+        alternando={gravar.isPending}
+        resumo={resumoDoParceiro(emAberto)}
         aviso={aviso}
         abaixo={
           <>
@@ -135,6 +164,9 @@ function FornecedorEditPage() {
           <ContatosDoParceiro partnerId={isNovo ? null : fornecedorId} readOnly={readOnly} />
         }
         onGravar={(v: Fornecedor) => (isNovo ? incluir.mutate(v) : gravar.mutate(v))}
+        // A alteração PERMANECE na tela (#405): é este sinal que devolve o
+        // formulário ao estado limpo depois que o servidor confirmou.
+        gravou={isNovo ? incluir.isSuccess : gravar.isSuccess}
       />
 
       {atividades}

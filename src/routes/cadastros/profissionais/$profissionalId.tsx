@@ -1,13 +1,15 @@
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import {
   ErroDeCarregamento,
   EsqueletoDeCarregamento,
 } from '@/components/cabinet/estado-de-consulta'
-import { FichaDeCadastro } from '@/components/cabinet/ficha/ficha-de-cadastro'
 import { useRotulosDeApoio } from '@/data/lookups-api'
+import { FichaDeRegistro } from '@/features/cadastro/ficha-de-registro'
 import { camposDoContrato, profissional as esquema } from '@/features/cadastro/modulos'
 import { PerfilDeParticipacaoDoProfissional } from '@/features/comissoes/perfil-do-profissional'
 import { CoberturaParceiro } from '@/features/parceiro/cobertura-parceiro'
 import { ContatosDoParceiro } from '@/features/parceiro/contatos-do-parceiro'
+import { papeisDoParceiro, resumoDoParceiro } from '@/features/parceiro/ficha-resumo'
 import { HierarquiaParceiro } from '@/features/parceiro/hierarquia'
 import { papelProfissional } from '@/features/parceiro/papeis/profissional'
 import { registroParaFicha } from '@/features/parceiro/registro-para-ficha'
@@ -16,7 +18,6 @@ import { ProfissionalForm } from '@/features/profissional/profissional-form'
 import { PainelDeAtividades } from '@/features/tarefas/painel-atividades'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import type { Profissional } from '@/mocks/profissionais'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/cadastros/profissionais/$profissionalId')({
   component: ProfissionalEditPage,
@@ -92,12 +93,20 @@ function ProfissionalEditPage() {
 
   if (readOnly && !isNovo) {
     return (
-      <FichaDeCadastro
+      <FichaDeRegistro
         entidade={esquema}
         {...(rotulos ? { rotulos } : {})}
         registro={registroParaFicha(registro, esquema, ausentesNaFicha)}
-        titulo="Cadastro de Profissional Externo"
-        contexto={registro.nomeApresentacao}
+        titulo="Profissional"
+        nome={registro.nomeApresentacao}
+        {...(query.data?.code ? { id: query.data.code } : {})}
+        meta={papeisDoParceiro(query.data)}
+        ativo={registro.ativo}
+        // `Ativar`/`Desativar` é `PUT /api/partners/{id}` com o `active`
+        // invertido — o mesmo caminho do Gravar, e por isso a mesma mutação.
+        aoAlternarAtivo={() => gravar.mutate({ ...registro, ativo: !registro.ativo })}
+        alternando={gravar.isPending}
+        resumo={resumoDoParceiro()}
         aviso={aviso}
         abaixo={
           <>
@@ -129,6 +138,9 @@ function ProfissionalEditPage() {
         partnerId={isNovo ? null : profissionalId}
         aviso={aviso}
         onGravar={(v: Profissional) => (isNovo ? incluir.mutate(v) : gravar.mutate(v))}
+        // A alteração PERMANECE na tela (#405): é este sinal que devolve o
+        // formulário ao estado limpo depois que o servidor confirmou.
+        gravou={isNovo ? incluir.isSuccess : gravar.isSuccess}
       />
 
       {/* O perfil de participação pende do CADASTRO, não do formulário: as

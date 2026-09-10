@@ -1,10 +1,10 @@
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { configurarApi } from '@/api/cliente'
 import type { ProjectPlanDto } from '@/api/gerado'
 import { authLogin, authSetActiveTenant, getProjectPlan, reschedulePlanItem } from '@/api/gerado'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { handlers } from './handlers'
-import { TENANT_FILIAL, TENANT_MATRIZ, resetStore, store } from './store'
+import { resetStore, store, TENANT_FILIAL, TENANT_MATRIZ } from './store'
 
 /**
  * Trava as SEMÂNTICAS do reagendamento no modo mock.

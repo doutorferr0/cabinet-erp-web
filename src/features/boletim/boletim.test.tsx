@@ -1,10 +1,10 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { boletim } from '@/data/boletim'
 import { URL_PARCEIROS } from '@/data/parceiros-api'
 import { URL_PRODUTOS } from '@/data/produtos-api'
 import { json } from '@/test/servidor'
 import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
-import { screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 /**
  * Escopo por compartimento. Sem isso a query pega o vizinho errado: a data de
@@ -12,12 +12,20 @@ import { describe, expect, it } from 'vitest'
  * da sidebar. Achar o compartimento primeiro é o que o operador faz com o olho.
  */
 async function compartimento(legenda: string): Promise<HTMLElement> {
-  // O seletor `legend` é parte da espera, não um filtro depois dela: `Cadastros`
+  // O papel `heading` é parte da espera, não um filtro depois dela: `Cadastros`
   // também é rótulo de grupo da sidebar e casa antes do boletim carregar.
-  const legend = await screen.findByText(legenda, { selector: 'legend' })
-  const fieldset = legend.closest('fieldset')
-  if (!fieldset) throw new Error(`compartimento "${legenda}" não encontrado`)
-  return fieldset
+  //
+  // Era `{ selector: 'legend' }` até a Reface 2.0: o painel da folha do dia era
+  // um `fieldset` com a legenda vazada na borda, e virou um `DCard` — a legenda
+  // passou a ser o TÍTULO do card, que é o que ela sempre foi na tela. Ver o
+  // comentário de `painel-boletim.tsx` sobre por que `fieldset` estava errado
+  // desde sempre aqui (as três regiões são tabelas de leitura, sem campo).
+  const titulo = await screen.findByRole('heading', { name: legenda })
+  const card = titulo.closest('[data-slot="painel-boletim"]')
+  if (!(card instanceof HTMLElement)) {
+    throw new Error(`compartimento "${legenda}" não encontrado`)
+  }
+  return card
 }
 
 /**

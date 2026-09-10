@@ -25,7 +25,10 @@ import { FaixasDeComissao } from '@/features/comissoes/faixas-de-comissao'
 export function PerfilDeParticipacaoDoProfissional({
   partnerId,
   readOnly = false,
-}: { partnerId: string | null; readOnly?: boolean }) {
+}: {
+  partnerId: string | null
+  readOnly?: boolean
+}) {
   return (
     <Painel titulo="Perfil de participação" modulo="profissionais">
       <FaixasDeComissao porta="partner" pessoaId={partnerId} readOnly={readOnly} />

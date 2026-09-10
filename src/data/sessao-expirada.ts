@@ -1,5 +1,5 @@
-import { ErroDaApi } from '@/data/api-provider'
 import type { UseMutationResult } from '@tanstack/react-query'
+import { ErroDaApi } from '@/data/api-provider'
 
 /**
  * Sessão que venceu NO MEIO de um envio — o pior caso do trilho Auth-Mock

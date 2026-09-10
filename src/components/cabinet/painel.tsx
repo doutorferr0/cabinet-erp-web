@@ -200,7 +200,7 @@ export function DCard({
  * no console.
  *
  * Medido: numa agenda de três linhas, a faixa de `entrega` (`--ok`) pintava e as
- * de `orçamento` e `reunião` saíam com `rgba(0,0,0,0)`. Passou pela suíte e pela
+ * de `orçamento` e `reunião` saíam TRANSPARENTES. Passou pela suíte e pela
  * revisão de código; só a sonda de `getComputedStyle` na tela viva pegou.
  *
  * Por isso as duas entram pela RAMPA, que ninguém sombreia — e é o mesmo valor

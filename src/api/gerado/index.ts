@@ -13,6 +13,10 @@ import type {
   ActivityWriteRequest,
   AddDeliveryItemRequest,
   AgendaEventDto,
+  ApprovalDecisionRequest,
+  ApprovalRejectionRequest,
+  ApprovalRequestDto,
+  ApprovalSummaryDto,
   BirthdaysReportDto,
   CancelDocumentRequest,
   CashMovementDto,
@@ -82,6 +86,7 @@ import type {
   LabelLayoutWriteRequest,
   ListActivitiesParams,
   ListAgendaEventsParams,
+  ListApprovalRequestsParams,
   ListBankAccountsParams,
   ListCashMovementsParams,
   ListCashRegistersParams,
@@ -109,6 +114,7 @@ import type {
   ListPaymentModesParams,
   ListPaymentTermsParams,
   ListPickingQueueParams,
+  ListPriceAdjustmentsParams,
   ListPriceIndexesParams,
   ListProductsParams,
   ListProjectsParams,
@@ -125,6 +131,7 @@ import type {
   ListTasksParams,
   ListTechnicalReservesParams,
   ListTenantsParams,
+  ListVariantTablePricesParams,
   ListWorksParams,
   LoginOk,
   LoginRequest,
@@ -137,6 +144,7 @@ import type {
   OrderParticipantsWriteRequest,
   OrderWriteRequest,
   PagedResultOfActivityDto,
+  PagedResultOfApprovalRequestDto,
   PagedResultOfBankAccountDto,
   PagedResultOfCashMovementDto,
   PagedResultOfCashRegisterDto,
@@ -162,6 +170,7 @@ import type {
   PagedResultOfPaymentModeDto,
   PagedResultOfPaymentTermDto,
   PagedResultOfPickingQueueItemDto,
+  PagedResultOfPriceAdjustmentDto,
   PagedResultOfPriceIndexDto,
   PagedResultOfProductDto,
   PagedResultOfPurchaseArrivalRowDto,
@@ -191,9 +200,12 @@ import type {
   PickOrderItemRequest,
   PlanItemDto,
   PlanItemRescheduleRequest,
+  PriceAdjustmentDto,
+  PriceAdjustmentWriteRequest,
   PriceIndexDto,
   PriceIndexWriteRequest,
   PrintProductLabelsParams,
+  PrintQuoteParams,
   PrintSettingsDto,
   PrintSettingsWriteRequest,
   ProblemDetails,
@@ -11736,24 +11748,35 @@ export type listVariantTablePricesResponseError = (listVariantTablePricesRespons
 
 export type listVariantTablePricesResponse = (listVariantTablePricesResponseSuccess | listVariantTablePricesResponseError)
 
-export const getListVariantTablePricesUrl = (variantId: string,) => {
+export const getListVariantTablePricesUrl = (variantId: string,
+    params?: ListVariantTablePricesParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/table-prices/${variantId}`
+  return stringifiedParams.length > 0 ? `/api/table-prices/${variantId}?${stringifiedParams}` : `/api/table-prices/${variantId}`
 }
 
 /**
- * Proposto. As tabelas de preço desta variante, uma por fornecedor.
+ * Proposto. As tabelas de preço desta variante — por padrão, **a vigente hoje**, uma linha por fornecedor.
  *
- * Lista curta e sem paginação — são os fornecedores da peça, não um cadastro. Mesmo desenho de `/api/variants/{variantId}/stock-balances`, que também devolve o conjunto inteiro por variante.
+ * Lista curta e sem paginação — são os fornecedores da peça, não um cadastro. Mesmo desenho de `/api/variants/{variantId}/stock-balances`, que também devolve o conjunto inteiro por variante. Com `history=true` ela deixa de ser curta por fornecedor e passa a ser curta por fornecedor × vigência, que continua sendo uma tela e não um cadastro.
+ *
+ * **O padrão é o vigente de propósito.** Quem abre a ficha da peça quer o preço que vale, e uma resposta que trouxesse o histórico inteiro obrigaria toda tela a filtrar por data antes de mostrar qualquer coisa — o primeiro que esquecesse mostraria o preço de 2019 ao lado do de hoje, sem nada distinguindo os dois.
  *
  * **O caminho é `/api/table-prices/{variantId}` e não `/api/variants/{variantId}/table-prices`, e a razão é do SERVIDOR.** A matriz de permissão do `cabinet-erp-api` casa por PREFIXO de caminho, e o trecho que distinguiria a tabela de preço das outras duas coisas que pendem da variante (`stock-movements`, `stock-balances`) vem DEPOIS do parâmetro — onde prefixo nenhum alcança. Sob o caminho aninhado, a tabela herdaria a exigência do kardex: quem movimenta estoque passaria a editar PREÇO, em silêncio e sem ninguém ter decidido isso. Pôr o recurso na frente custa uma URL menos bonita e não deixa a armadilha.
  */
-export const listVariantTablePrices = async (variantId: string, options?: Parameters<typeof apiFetch>[1]): Promise<listVariantTablePricesResponse> => {
+export const listVariantTablePrices = async (variantId: string,
+    params?: ListVariantTablePricesParams, options?: Parameters<typeof apiFetch>[1]): Promise<listVariantTablePricesResponse> => {
 
-  return apiFetch<listVariantTablePricesResponse>(getListVariantTablePricesUrl(variantId),
+  return apiFetch<listVariantTablePricesResponse>(getListVariantTablePricesUrl(variantId,params),
   {
     ...options,
     method: 'GET'
@@ -11812,11 +11835,15 @@ export const getReplaceVariantTablePricesUrl = (variantId: string,) => {
 }
 
 /**
- * Proposto. Substitui a lista inteira de tabelas desta variante.
+ * Proposto. **Abre uma vigência** para as tabelas desta variante — não substitui o histórico.
+ *
+ * A lista do corpo passa a valer a partir de `effectiveFrom` (ausente = hoje). Fornecedor que não vier fica sem tabela A PARTIR DAQUELA DATA, e as vigências anteriores continuam de pé: é assim que a venda de ontem continua explicável depois de a tabela de hoje mudar. Repetir uma `effectiveFrom` que já existe SUBSTITUI aquela vigência, que é a correção da tabela digitada errada.
  *
  * **Papel: `admin` ou superior**, o mesmo do índice e do perfil de custo — tabela, índice e deduções são os três fatores do preço, e proteger dois deixando o terceiro aberto não protege nada.
  *
  * Fornecedor repetido no corpo é **400**: duas tabelas para o mesmo par deixariam o preço depender da ordem do array.
+ *
+ * **Para mover o catálogo inteiro de um fornecedor, o caminho é `POST /api/price-adjustments`** — este aqui é uma variante por vez, e um reajuste feito por N chamadas dele deixaria N vigências sem nada em comum, que nenhuma tela consegue apresentar como um fato só.
  *
  * **O caminho é `/api/table-prices/{variantId}` e não `/api/variants/{variantId}/table-prices`, e a razão é do SERVIDOR.** A matriz de permissão do `cabinet-erp-api` casa por PREFIXO de caminho, e o trecho que distinguiria a tabela de preço das outras duas coisas que pendem da variante (`stock-movements`, `stock-balances`) vem DEPOIS do parâmetro — onde prefixo nenhum alcança. Sob o caminho aninhado, a tabela herdaria a exigência do kardex: quem movimenta estoque passaria a editar PREÇO, em silêncio e sem ninguém ter decidido isso. Pôr o recurso na frente custa uma URL menos bonita e não deixa a armadilha.
  */
@@ -12302,7 +12329,7 @@ export const getSettleInstallmentUrl = (id: string,) => {
  * As recusas:
  *
  * 1. **400** — destino ausente ou duplicado, valor zero ou negativo, modo de pagamento que não serve para quitação (`usableInSettlement = false`).
- * 2. **403** — quitação a menor sem a ação fina.
+ * 2. **403** — quitação a menor sem a ação fina (`urn:cabinet:erro:quitacao-a-menor`).
  * 3. **409** — parcela já quitada (`urn:cabinet:erro:parcela-ja-quitada`), valor acima do saldo (`urn:cabinet:erro:valor-acima-do-saldo`), título cancelado (`urn:cabinet:erro:transicao-invalida`), data em período fechado (`urn:cabinet:erro:periodo-fechado`) ou sem empresa ativa.
  *
  * **Data dentro de período já fechado é 409** (`urn:cabinet:erro:periodo-fechado`). O fechamento de contas existe para que o saldo conferido de ontem não mude hoje; sem a recusa, ele seria um carimbo decorativo.
@@ -12377,7 +12404,7 @@ export const getSettleBatchUrl = () => {
 /**
  * Proposto. QUITAÇÃO EM LOTE — paga N parcelas num ato só, com um `batchId` que as amarra.
  *
- * **Permissão: `financeiro:quitar`**, e a ação fina `financeiro:quitacao-a-menor` quando QUALQUER item do lote abate menos que o saldo da sua parcela.
+ * **Permissão: `financeiro:quitar`**, e a ação fina `financeiro:quitacao-a-menor` quando QUALQUER item do lote abate menos que o saldo da sua parcela — sem ela a recusa é **403** `urn:cabinet:erro:quitacao-a-menor`, e o lote inteiro cai com ela.
  *
  * **Tudo ou nada.** Uma parcela recusada derruba o lote inteiro e nenhuma baixa fica gravada — ver `SettlementBatchRequest` para por que o parcial seria pior. A resposta de erro diz em `detail` qual parcela recusou e por quê.
  *
@@ -12995,6 +13022,11 @@ export type printQuoteResponse200 = {
   status: 200
 }
 
+export type printQuoteResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
 export type printQuoteResponse401 = {
   data: NaoAutenticadoResponse
   status: 401
@@ -13018,18 +13050,26 @@ export type printQuoteResponse409 = {
 export type printQuoteResponseSuccess = (printQuoteResponse200) & {
   headers: Headers;
 };
-export type printQuoteResponseError = (printQuoteResponse401 | printQuoteResponse403 | printQuoteResponse404 | printQuoteResponse409) & {
+export type printQuoteResponseError = (printQuoteResponse400 | printQuoteResponse401 | printQuoteResponse403 | printQuoteResponse404 | printQuoteResponse409) & {
   headers: Headers;
 };
 
 export type printQuoteResponse = (printQuoteResponseSuccess | printQuoteResponseError)
 
-export const getPrintQuoteUrl = (id: string,) => {
+export const getPrintQuoteUrl = (id: string,
+    params?: PrintQuoteParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/quotes/${id}/print`
+  return stringifiedParams.length > 0 ? `/api/quotes/${id}/print?${stringifiedParams}` : `/api/quotes/${id}/print`
 }
 
 /**
@@ -13041,9 +13081,10 @@ export const getPrintQuoteUrl = (id: string,) => {
  *
  * **Sem storage: o PDF é gerado a cada chamada e não fica guardado.** Não existe 'via emitida' arquivada — o documento sai sempre como o orçamento está AGORA. Guardar a via é decisão própria, e traz junto onde mora o blob.
  */
-export const printQuote = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<printQuoteResponse> => {
+export const printQuote = async (id: string,
+    params?: PrintQuoteParams, options?: Parameters<typeof apiFetch>[1]): Promise<printQuoteResponse> => {
 
-  return apiFetch<printQuoteResponse>(getPrintQuoteUrl(id),
+  return apiFetch<printQuoteResponse>(getPrintQuoteUrl(id,params),
   {
     ...options,
     method: 'GET'
@@ -14202,6 +14243,462 @@ export const deleteMyView = async (id: string, options?: Parameters<typeof apiFe
     method: 'DELETE'
 
 
+  }
+);}
+
+
+
+export type listPriceAdjustmentsResponse200 = {
+  data: PagedResultOfPriceAdjustmentDto
+  status: 200
+}
+
+export type listPriceAdjustmentsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listPriceAdjustmentsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listPriceAdjustmentsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listPriceAdjustmentsResponseSuccess = (listPriceAdjustmentsResponse200) & {
+  headers: Headers;
+};
+export type listPriceAdjustmentsResponseError = (listPriceAdjustmentsResponse400 | listPriceAdjustmentsResponse401 | listPriceAdjustmentsResponse403) & {
+  headers: Headers;
+};
+
+export type listPriceAdjustmentsResponse = (listPriceAdjustmentsResponseSuccess | listPriceAdjustmentsResponseError)
+
+export const getListPriceAdjustmentsUrl = (params?: ListPriceAdjustmentsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/price-adjustments?${stringifiedParams}` : `/api/price-adjustments`
+}
+
+/**
+ * Proposto. Os reajustes de tabela da empresa ativa, do mais recente para o mais antigo.
+ *
+ * **Inclui os de vigência FUTURA, e é metade da razão de a listagem existir.** Um reajuste lançado hoje para valer no dia 1º não aparece em preço nenhum até lá; sem uma lista que o mostre, a única forma de saber que ele existe é a virada acontecer.
+ *
+ * Empresa ativa vazia devolve `{rows: [], total: 0}`, como toda listagem deste contrato: aqui a empresa vem da sessão, e "sem empresa" é o operador recém-criado, não erro do cliente.
+ */
+export const listPriceAdjustments = async (params?: ListPriceAdjustmentsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listPriceAdjustmentsResponse> => {
+
+  return apiFetch<listPriceAdjustmentsResponse>(getListPriceAdjustmentsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type createPriceAdjustmentResponse201 = {
+  data: PriceAdjustmentDto
+  status: 201
+}
+
+export type createPriceAdjustmentResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type createPriceAdjustmentResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type createPriceAdjustmentResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type createPriceAdjustmentResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type createPriceAdjustmentResponseSuccess = (createPriceAdjustmentResponse201) & {
+  headers: Headers;
+};
+export type createPriceAdjustmentResponseError = (createPriceAdjustmentResponse400 | createPriceAdjustmentResponse401 | createPriceAdjustmentResponse403 | createPriceAdjustmentResponse409) & {
+  headers: Headers;
+};
+
+export type createPriceAdjustmentResponse = (createPriceAdjustmentResponseSuccess | createPriceAdjustmentResponseError)
+
+export const getCreatePriceAdjustmentUrl = () => {
+
+
+
+
+  return `/api/price-adjustments`
+}
+
+/**
+ * Proposto. Reajusta em massa as tabelas de um fornecedor, abrindo uma vigência nova.
+ *
+ * É a operação que a metade VENDA do preço pedia e não tinha: sem ela, "o fornecedor subiu 12%" é digitar 200 vezes o mesmo raciocínio, uma variante por vez, e cada digitação é uma chance de o preço sair errado numa peça que ninguém vai conferir.
+ *
+ * **Aplica na hora e responde com o resultado**, não agenda. As linhas de `VariantTablePriceDto` já existem quando o 201 volta, com `adjustmentId` apontando para o `id` desta resposta; a vigência futura é que decide quando elas passam a valer. Ver `PriceAdjustmentDto`.
+ *
+ * **Papel: `admin` ou superior**, a mesma linha de corte de `/api/price-indexes` e `/api/table-prices/{variantId}`, e aqui ela pesa mais: uma requisição move o preço de todo o catálogo daquele fornecedor.
+ *
+ * **Recusas, e nenhuma delas apara em silêncio:**
+ *
+ * * `percent` e `prices` juntos, ou nenhum dos dois — **400** `campos-invalidos`.
+ * * `variantId` repetido em `prices` — **400**, pela mesma razão do `PUT` de tabelas.
+ * * variante de `prices` que não existe, ou que não é da empresa ativa — **400**, com a linha nomeada em `fields`. Não é 404: o que não existe é um item do corpo, não o recurso pedido.
+ * * `percent` sobre fornecedor sem NENHUMA tabela vigente em `effectiveFrom` — **409** `reajuste-sem-base`.
+ *
+ * **Não há como desfazer por este contrato, e é decisão.** O que desfaz um reajuste é outro reajuste, com vigência própria — apagar a vigência criada faria sumir a explicação dos preços que valeram entre a aplicação e o arrependimento, que é exatamente o que o histórico existe para guardar.
+ */
+export const createPriceAdjustment = async (priceAdjustmentWriteRequest: PriceAdjustmentWriteRequest, options?: Parameters<typeof apiFetch>[1]): Promise<createPriceAdjustmentResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return apiFetch<createPriceAdjustmentResponse>(getCreatePriceAdjustmentUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(priceAdjustmentWriteRequest)
+  }
+);}
+
+
+
+export type listApprovalRequestsResponse200 = {
+  data: PagedResultOfApprovalRequestDto
+  status: 200
+}
+
+export type listApprovalRequestsResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type listApprovalRequestsResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type listApprovalRequestsResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type listApprovalRequestsResponseSuccess = (listApprovalRequestsResponse200) & {
+  headers: Headers;
+};
+export type listApprovalRequestsResponseError = (listApprovalRequestsResponse400 | listApprovalRequestsResponse401 | listApprovalRequestsResponse403) & {
+  headers: Headers;
+};
+
+export type listApprovalRequestsResponse = (listApprovalRequestsResponseSuccess | listApprovalRequestsResponseError)
+
+export const getListApprovalRequestsUrl = (params?: ListApprovalRequestsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/approval-requests?${stringifiedParams}` : `/api/approval-requests`
+}
+
+/**
+ * Proposto. A FILA DE APROVAÇÕES da empresa ativa.
+ *
+ * **Quem vê o quê é decisão do SERVIDOR, e a tela não filtra.** Quem tem a permissão de decidir vê a fila inteira; quem não tem vê só os pedidos que ELE abriu — é assim que o vendedor acompanha o próprio desconto sem enxergar o do colega. Fazer esse recorte no cliente exigiria mandar para o navegador exatamente o que se quer esconder.
+ *
+ * **Sem empresa ativa devolve `{rows: [], total: 0}`.**
+ */
+export const listApprovalRequests = async (params?: ListApprovalRequestsParams, options?: Parameters<typeof apiFetch>[1]): Promise<listApprovalRequestsResponse> => {
+
+  return apiFetch<listApprovalRequestsResponse>(getListApprovalRequestsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getApprovalSummaryResponse200 = {
+  data: ApprovalSummaryDto
+  status: 200
+}
+
+export type getApprovalSummaryResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getApprovalSummaryResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getApprovalSummaryResponseSuccess = (getApprovalSummaryResponse200) & {
+  headers: Headers;
+};
+export type getApprovalSummaryResponseError = (getApprovalSummaryResponse401 | getApprovalSummaryResponse403) & {
+  headers: Headers;
+};
+
+export type getApprovalSummaryResponse = (getApprovalSummaryResponseSuccess | getApprovalSummaryResponseError)
+
+export const getGetApprovalSummaryUrl = () => {
+
+
+
+
+  return `/api/approval-requests/summary`
+}
+
+/**
+ * Proposto. Quantos pedidos esperam ESTA sessão. Barato de propósito — o shell o pede em toda tela.
+ *
+ * **Sem empresa ativa devolve `{pendingCount: 0, canDecide: false}`**, e não 409: o badge é ornamento de barra, e derrubar a navegação inteira porque ninguém escolheu empresa seria o rabo abanando o cachorro.
+ */
+export const getApprovalSummary = async ( options?: Parameters<typeof apiFetch>[1]): Promise<getApprovalSummaryResponse> => {
+
+  return apiFetch<getApprovalSummaryResponse>(getGetApprovalSummaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type getApprovalRequestResponse200 = {
+  data: ApprovalRequestDto
+  status: 200
+}
+
+export type getApprovalRequestResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type getApprovalRequestResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type getApprovalRequestResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type getApprovalRequestResponseSuccess = (getApprovalRequestResponse200) & {
+  headers: Headers;
+};
+export type getApprovalRequestResponseError = (getApprovalRequestResponse401 | getApprovalRequestResponse403 | getApprovalRequestResponse404) & {
+  headers: Headers;
+};
+
+export type getApprovalRequestResponse = (getApprovalRequestResponseSuccess | getApprovalRequestResponseError)
+
+export const getGetApprovalRequestUrl = (id: string,) => {
+
+
+
+
+  return `/api/approval-requests/${id}`
+}
+
+/**
+ * Proposto. Um pedido. Mesma forma da linha da fila — não há filho a carregar, e um `DetailDto` que só repete o `Dto` seria dois nomes para uma coisa.
+ */
+export const getApprovalRequest = async (id: string, options?: Parameters<typeof apiFetch>[1]): Promise<getApprovalRequestResponse> => {
+
+  return apiFetch<getApprovalRequestResponse>(getGetApprovalRequestUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+export type approveApprovalRequestResponse200 = {
+  data: ApprovalRequestDto
+  status: 200
+}
+
+export type approveApprovalRequestResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type approveApprovalRequestResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type approveApprovalRequestResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type approveApprovalRequestResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type approveApprovalRequestResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type approveApprovalRequestResponseSuccess = (approveApprovalRequestResponse200) & {
+  headers: Headers;
+};
+export type approveApprovalRequestResponseError = (approveApprovalRequestResponse400 | approveApprovalRequestResponse401 | approveApprovalRequestResponse403 | approveApprovalRequestResponse404 | approveApprovalRequestResponse409) & {
+  headers: Headers;
+};
+
+export type approveApprovalRequestResponse = (approveApprovalRequestResponseSuccess | approveApprovalRequestResponseError)
+
+export const getApproveApprovalRequestUrl = (id: string,) => {
+
+
+
+
+  return `/api/approval-requests/${id}/approve`
+}
+
+/**
+ * Proposto. LIBERA o pedido, e com ele o documento.
+ *
+ * Quem PEDIU não pode aprovar o próprio pedido: 403 `aprovacao-do-solicitante`, e a URN é separada de `papel-insuficiente` porque a saída é outra — não falta acesso, falta outra pessoa. Pedido já decidido é 409 `aprovacao-ja-decidida`: não há reabrir, e a tela recarrega a fila em vez de insistir.
+ */
+export const approveApprovalRequest = async (id: string,
+    approvalDecisionRequest?: ApprovalDecisionRequest, options?: Parameters<typeof apiFetch>[1]): Promise<approveApprovalRequestResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return apiFetch<approveApprovalRequestResponse>(getApproveApprovalRequestUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(approvalDecisionRequest)
+  }
+);}
+
+
+
+export type rejectApprovalRequestResponse200 = {
+  data: ApprovalRequestDto
+  status: 200
+}
+
+export type rejectApprovalRequestResponse400 = {
+  data: ProblemDetails
+  status: 400
+}
+
+export type rejectApprovalRequestResponse401 = {
+  data: NaoAutenticadoResponse
+  status: 401
+}
+
+export type rejectApprovalRequestResponse403 = {
+  data: SemPermissaoResponse
+  status: 403
+}
+
+export type rejectApprovalRequestResponse404 = {
+  data: ProblemDetails
+  status: 404
+}
+
+export type rejectApprovalRequestResponse409 = {
+  data: ProblemDetails
+  status: 409
+}
+
+export type rejectApprovalRequestResponseSuccess = (rejectApprovalRequestResponse200) & {
+  headers: Headers;
+};
+export type rejectApprovalRequestResponseError = (rejectApprovalRequestResponse400 | rejectApprovalRequestResponse401 | rejectApprovalRequestResponse403 | rejectApprovalRequestResponse404 | rejectApprovalRequestResponse409) & {
+  headers: Headers;
+};
+
+export type rejectApprovalRequestResponse = (rejectApprovalRequestResponseSuccess | rejectApprovalRequestResponseError)
+
+export const getRejectApprovalRequestUrl = (id: string,) => {
+
+
+
+
+  return `/api/approval-requests/${id}/reject`
+}
+
+/**
+ * Proposto. RECUSA o pedido, com motivo obrigatório, e o documento fica barrado.
+ *
+ * **A recusa não desfaz nada e não apaga o documento** — ela registra que aquele desconto não passou. Quem gravou corrige e grava de novo, o que gera pedido NOVO: decisão é fato, e reciclar o pedido antigo apagaria a primeira recusa junto com o motivo dela.
+ *
+ * Mesmas duas recusas do `approve`: 403 `aprovacao-do-solicitante` para quem pediu, 409 `aprovacao-ja-decidida` para pedido fora de `pending`.
+ */
+export const rejectApprovalRequest = async (id: string,
+    approvalRejectionRequest: ApprovalRejectionRequest, options?: Parameters<typeof apiFetch>[1]): Promise<rejectApprovalRequestResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return apiFetch<rejectApprovalRequestResponse>(getRejectApprovalRequestUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(approvalRejectionRequest)
   }
 );}
 

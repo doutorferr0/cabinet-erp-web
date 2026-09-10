@@ -14,6 +14,7 @@ import {
   type LucideIcon,
   Package,
   Settings,
+  ShieldCheck,
   ShoppingCart,
   SquareKanban,
   Store,
@@ -94,7 +95,7 @@ export interface NavItem {
    * A chave do contador que este item mostra à direita. Quem os produz é
    * `useContadoresNav()`; item sem chave não desenha número.
    */
-  contador?: 'minhasTarefas' | 'caixaDeEntrada'
+  contador?: 'minhasTarefas' | 'caixaDeEntrada' | 'aprovacoesPendentes'
 }
 
 /**
@@ -155,11 +156,13 @@ export interface NavGroup {
  * endereço dos registros — mas nenhum item da barra leva ao hub delas:
  * "cadastros" descreve a natureza do dado, não o trabalho de ninguém.
  *
- * Financeiro também deixou de ser bloco próprio. As três telas dele são todas
- * `futuro`, e uma seção inteira em cinza no meio da barra pesava mais do que
- * informava; cada uma foi para o módulo que a origina — o que se deve ao
- * fornecedor em COMPRAS, o que o cliente deve em VENDAS, a comissão de quem
- * vendeu em PESSOAS.
+ * Financeiro também deixou de ser bloco próprio. Quando a decisão foi tomada as
+ * três telas dele eram `futuro`, e uma seção inteira em cinza no meio da barra
+ * pesava mais do que informava; cada uma foi para o módulo que a origina — o
+ * que se deve ao fornecedor em COMPRAS, o que o cliente deve em VENDAS, a
+ * comissão de quem vendeu em PESSOAS. Contas a Pagar e a Receber existem desde
+ * a G7 fase C (#358) e continuam onde estão: o lugar é pelo processo, não pela
+ * fase.
  */
 export const GRUPOS_NAV: readonly NavGroup[] = [
   {
@@ -257,8 +260,11 @@ export const GRUPOS_NAV: readonly NavGroup[] = [
         title: 'Contas a Pagar',
         url: '/financeiro/pagar',
         icon: CircleDollarSign,
-        descricao: 'Ainda não existe. O que se deve ao fornecedor, por vencimento.',
-        futuro: true,
+        // G7 fase C (#358): a tela é a AGENDA DE VENCIMENTOS, com a quitação.
+        descricao: 'O que se deve ao fornecedor, por vencimento — com a quitação.',
+        // `Incluir` abre um TÍTULO, que é onde a conta nasce: o vencimento não
+        // é registro que se cria sozinho, ele é parcela de um título.
+        incluir: '/financeiro/pagar/titulos/novo',
       },
     ],
   },
@@ -348,6 +354,22 @@ export const GRUPOS_NAV: readonly NavGroup[] = [
         descricao: 'O que o profissional externo recebe pela indicação. Cancela, não apaga.',
       },
       {
+        /**
+         * A FILA DE APROVAÇÕES (F12, #417) fica DEPOIS dos documentos: ela é o
+         * que acontece por causa de um documento, não um documento.
+         *
+         * **Sem `incluir`, e a ausência é informação** — o pedido nasce no
+         * servidor, ao gravar desconto acima do teto; a paleta lê `incluir`
+         * para oferecer "Novo …", e inventar o caminho daria um comando que
+         * leva a uma tela sem botão.
+         */
+        title: 'Aprovações',
+        url: '/vendas/aprovacoes',
+        icon: ShieldCheck,
+        descricao: 'O desconto que passou do teto e espera alguém liberar. Recusa pede motivo.',
+        contador: 'aprovacoesPendentes',
+      },
+      {
         title: 'Clientes',
         url: '/cadastros/clientes',
         incluir: '/cadastros/clientes/novo',
@@ -373,8 +395,9 @@ export const GRUPOS_NAV: readonly NavGroup[] = [
         title: 'Contas a Receber',
         url: '/financeiro/receber',
         icon: CircleDollarSign,
-        descricao: 'Ainda não existe. O que o cliente deve, por vencimento.',
-        futuro: true,
+        // G7 fase C (#358): a tela é a AGENDA DE VENCIMENTOS, com a quitação.
+        descricao: 'O que o cliente deve, por vencimento — com a quitação.',
+        incluir: '/financeiro/receber/titulos/novo',
       },
     ],
   },

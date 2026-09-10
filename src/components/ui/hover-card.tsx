@@ -1,7 +1,7 @@
-import { cn } from '@/lib/utils'
 import { Slot } from '@radix-ui/react-slot'
 import * as React from 'react'
 import { Popover as PopoverPrimitive } from 'react-aria-components'
+import { cn } from '@/lib/utils'
 
 /**
  * HOVER CARD — o cartão que aparece ao pousar o mouse numa peça e mostra mais
@@ -155,12 +155,16 @@ function HoverCardContent({
       placement={placement}
       offset={offset}
       className={cn(
-        // Translúcido a 85% com desfoque leve: o cartão é APOIO, e deixar a tela
-        // aparecer por baixo diz isso sem precisar de outra borda. A borda de 2px
-        // e a sombra sem blur continuam — a peça não vira vidro, só para de ser
-        // uma parede opaca sobre o que o operador estava lendo. O desfoque é o
-        // que segura a legibilidade sobre a grade do papel.
-        'z-50 w-64 max-w-xs rounded-card border-2 border-border bg-popover/85 p-3 text-popover-foreground text-sm pop-spring shadow-el3 outline-none backdrop-blur-sm',
+        // QUIET (D29): traço de 1px e `--hard-soft` (alias `shadow-el1`).
+        // §Hierarquia dá uma sombra dura por tela, e ela pertence ao painel da
+        // página — o cartão que aparece porque o ponteiro passou por cima não
+        // pode competir com a peça que o operador foi buscar. Com `el-3` e
+        // borda de 2px ele pesava como diálogo, e diálogo é coisa que se pede.
+        //
+        // Translúcido a 85% com desfoque leve, que continua: o cartão é APOIO, e
+        // deixar a tela aparecer por baixo diz isso sem precisar de mais traço.
+        // O desfoque é o que segura a legibilidade sobre a grade do papel.
+        'z-50 w-64 max-w-xs rounded-card border border-border bg-popover/85 p-3 text-popover-foreground t-corpo pop-spring shadow-el1 outline-none backdrop-blur-sm',
         className,
       )}
       // Enquanto o ponteiro estiver sobre o CARTÃO — padding incluído — ele não
@@ -176,4 +180,4 @@ function HoverCardContent({
   )
 }
 
-export { HoverCard, HoverCardTrigger, HoverCardContent }
+export { HoverCard, HoverCardContent, HoverCardTrigger }

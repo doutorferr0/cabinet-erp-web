@@ -1,8 +1,8 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { URL_FUNIS } from '@/data/crm-api'
 import { json } from '@/test/servidor'
 import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
-import { screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 /**
  * Cadastro de Funis contra o BACKEND (servidor falso no `fetch`), pelo cliente

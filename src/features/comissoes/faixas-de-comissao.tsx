@@ -1,21 +1,21 @@
+import { Loader2 } from 'lucide-react'
+import { useEffect, useId, useState } from 'react'
+import { FormProvider, useForm } from 'react-hook-form'
 import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
 import { FormGrid } from '@/components/cabinet/form-grid'
 import { ComboDeEscolha } from '@/components/cabinet/lookup-combo'
 import { Button } from '@/components/ui/button'
 import {
   type FaixaDaGrade,
-  OPERADORES_DE_FAIXA,
-  type PortaDePerfil,
   faixaVazia,
   motivoDaRecusa,
+  OPERADORES_DE_FAIXA,
+  type PortaDePerfil,
   useFaixas,
   useGravarFaixas,
 } from '@/data/comissoes-api'
 import { useLookupOptions } from '@/data/lookups-api'
 import { avisar } from '@/lib/avisos'
-import { Loader2 } from 'lucide-react'
-import { useEffect, useId, useState } from 'react'
-import { FormProvider, useForm } from 'react-hook-form'
 
 /**
  * O PERFIL DE PARTICIPAÇÃO — as faixas por grupo de uma pessoa.

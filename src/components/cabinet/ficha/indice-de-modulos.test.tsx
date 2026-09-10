@@ -1,10 +1,10 @@
+import { screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
 import { FichaDeCadastro } from '@/components/cabinet/ficha/ficha-de-cadastro'
 import { cliente as entidadeCliente } from '@/features/cadastro/modulos'
 import { clienteVazio } from '@/mocks/clientes'
 import { renderWithQuery } from '@/test/utils'
-import { screen, within } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
 
 /**
  * O ÍNDICE LATERAL da ficha (issue #103) — montado pela moldura de verdade,

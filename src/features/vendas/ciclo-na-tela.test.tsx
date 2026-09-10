@@ -1,3 +1,5 @@
+import { screen, waitFor } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import {
   acaoNaLinha,
   renderRoute,
@@ -5,8 +7,6 @@ import {
   respostaSessao,
   respostaVinculos,
 } from '@/test/utils'
-import { screen, waitFor } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 /**
  * O CICLO DO PEDIDO NA TELA — concluir, retorno da demonstração, transferência

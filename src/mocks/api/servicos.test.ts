@@ -1,3 +1,5 @@
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { configurarApi } from '@/api/cliente'
 import {
   authLogin,
@@ -8,11 +10,9 @@ import {
   updateQuote,
   updateService,
 } from '@/api/gerado'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { handlers } from './handlers'
 import { resetQuotes } from './quotes'
-import { TENANT_FILIAL, TENANT_MATRIZ, resetStore, store } from './store'
+import { resetStore, store, TENANT_FILIAL, TENANT_MATRIZ } from './store'
 
 /**
  * O MOCK DOS SERVIÇOS — o cadastro e a aba do documento (contrato S2).

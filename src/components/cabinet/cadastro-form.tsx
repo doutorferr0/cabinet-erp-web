@@ -1,13 +1,13 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Check, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { type DefaultValues, type FieldValues, type Resolver, useForm } from 'react-hook-form'
+import type { z } from 'zod'
 import { AlteracoesNaoSalvas } from '@/components/cabinet/alteracoes-nao-salvas'
-import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
+import { PageHeader } from '@/components/cabinet/page-header'
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
 import { type FamiliaDeCaminho, useReadOnlyPorPapel } from '@/data/papeis'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Check, X } from 'lucide-react'
-import { useRef, useState } from 'react'
-import { type DefaultValues, type FieldValues, type Resolver, useForm } from 'react-hook-form'
-import type { z } from 'zod'
 
 export interface CadastroFormProps<T extends FieldValues> {
   /** TODO(contract): o Zod do codegen substituirá estes schemas na integração. */
@@ -21,6 +21,19 @@ export interface CadastroFormProps<T extends FieldValues> {
    * idênticas virariam dois registros ou um 409 sem explicação.
    */
   gravando?: boolean
+  /**
+   * Gravação que deu CERTO (`mutation.isSuccess`) — o par de `gravando`.
+   *
+   * Existe desde a #405, quando a alteração passou a PERMANECER na tela: o que
+   * está nos campos acabou de virar o que o servidor tem, e um formulário que
+   * segue marcado como sujo depois disso mente duas vezes — levanta a barra de
+   * "alterações não salvas" na primeira tecla e faz a guarda de navegação
+   * perguntar se pode descartar o que já foi gravado.
+   *
+   * Na inclusão o efeito é inofensivo: a tela navega para o documento que
+   * nasceu e o formulário desmonta em seguida.
+   */
+  gravou?: boolean
   /**
    * Modo `Consul.` da barra de ações (§9 padrão 8): mesma tela, sem edição.
    * Desabilita TODO o conteúdo via `<fieldset disabled>` — inclusive botões de
@@ -67,6 +80,7 @@ export function CadastroForm<T extends FieldValues>({
   onGravar,
   onCancelar,
   gravando = false,
+  gravou = false,
   readOnly: readOnlyProp = false,
   titulo,
   contexto,
@@ -102,6 +116,26 @@ export function CadastroForm<T extends FieldValues>({
     if (enviado) setEnviado(false)
   }
 
+  /**
+   * Gravou e a tela PERMANECE (#405): o que está nos campos é o que o servidor
+   * tem, então o formulário deixa de estar sujo — `reset` com os próprios
+   * valores zera `isDirty` sem mexer em nada do que está escrito.
+   *
+   * O `enviado` volta a `false` no mesmo gesto, e é ele que devolve a barra de
+   * alterações à próxima tecla: sem isto, a segunda edição da mesma tela seria
+   * a única do sistema sem aviso de trabalho pendente.
+   */
+  useEffect(() => {
+    if (!gravou) return
+    form.reset(form.getValues())
+    enviadoRef.current = false
+    setEnviado(false)
+    // `form` entra na lista porque a regra do lint a exige; a referência do RHF
+    // é estável entre renders, então quem dispara o efeito continua sendo a
+    // gravação — e o `reset` com os próprios valores é idempotente de qualquer
+    // forma.
+  }, [gravou, form])
+
   // Modo consulta não tem o que gravar; e depois do `Gravar` a barra sai de
   // cena para não pedir de novo o que já foi pedido.
   const temAlteracaoPendente = form.formState.isDirty && !readOnly && !enviado
@@ -121,9 +155,17 @@ export function CadastroForm<T extends FieldValues>({
             O `gap-4` mora aqui: regiões da tela (fileira de cabeçalho, tira de
             abas, barra de rodapé) se separam por `{spacing.lg}` uma vez só, em
             vez de cada tela repetir `mt-2`/`pt-3` no olho. */}
-        {/* Fora do `<fieldset disabled>`: a banda é identidade, não campo — em
-            modo consulta ela continua legível, não apagada com o formulário. */}
-        {titulo ? <BandaDeIdentidade titulo={titulo} {...(contexto ? { contexto } : {})} /> : null}
+        {/* Fora do `<fieldset disabled>`: o cabeçalho é identidade, não campo —
+            em modo consulta ele continua legível, não apagado com o formulário.
+
+            **A `BandaDeIdentidade` morreu aqui (D16).** Ela era uma faixa
+            colorida de largura inteira com o nome da TELA dentro, e respondia a
+            pergunta errada: quem abriu o formulário já sabe em que tela está.
+            Custava a primeira dobra da página — 60px de gradiente, contorno de
+            2px e ornamento — para repetir o breadcrumb. O nome da tela passa ao
+            `PageHeader`, que é onde ele já mora em toda listagem e em toda ficha;
+            **quem** é o registro passa ao card lateral `BlocoIdentidade`. */}
+        {titulo ? <PageHeader titulo={titulo} {...(contexto ? { contexto } : {})} /> : null}
         {/* Acima do aviso e dos campos, colada no topo: é a única coisa da tela
             que fala do ESTADO do trabalho, e ela precisa continuar à vista com a
             página rolada. */}
@@ -147,10 +189,15 @@ export function CadastroForm<T extends FieldValues>({
         >
           {children}
         </fieldset>
-        {/* Rodapé é Documento (`bg-card`): senta na folha; régua superior em
-            Régua Forte (DESIGN.md) — separa a tira de ações do conteúdo. */}
-        {/* Padding nos dois lados: `sticky bottom-0` sem `pb` encosta o botão na moldura. */}
-        <div className="sticky bottom-0 flex justify-end gap-2 rule-strong-top bg-card py-3">
+        {/* Rodapé colado embaixo, separado do conteúdo por UMA hairline — a
+            régua forte de 2px do 1.7 competia com a borda dos cards logo acima e
+            desenhava duas linhas na mesma fronteira.
+            Padding nos dois lados: `sticky bottom-0` sem `pb` encosta o botão na
+            moldura. */}
+        <div
+          data-slot="rodape-do-formulario"
+          className="sticky bottom-0 flex justify-end gap-[var(--s-2)] border-t py-[var(--s-3)] [background:var(--n-0)] [border-color:var(--n-200)]"
+        >
           {readOnly ? (
             <Button type="button" variant="outline" onClick={onCancelar}>
               <X />

@@ -1,18 +1,18 @@
+import { useQuery } from '@tanstack/react-query'
+import { Link2, Link2Off, Search } from 'lucide-react'
+import { useState } from 'react'
 import type { PartnerDto } from '@/api/gerado'
 import { FormBlock } from '@/components/cabinet/form-block'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { Nome } from '@/components/cabinet/nome'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
 import { Button } from '@/components/ui/button'
 import {
-  LISTA_DE_PARCEIROS,
   filhosDoParceiro,
+  LISTA_DE_PARCEIROS,
   motivoDeRecusaDoVinculo,
   useVincularPai,
 } from '@/data/parceiros-api'
-import { useQuery } from '@tanstack/react-query'
-import type { ColumnDef } from '@tanstack/react-table'
-import { Link2, Link2Off, Search } from 'lucide-react'
-import { useState } from 'react'
 
 /**
  * HIERARQUIA PAI/FILHO DO PARCEIRO (issue #91).

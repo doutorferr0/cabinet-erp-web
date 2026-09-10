@@ -1,9 +1,9 @@
+import { screen, waitFor } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import type { CrmOpportunityDto, CrmStageDto } from '@/api/gerado'
 import { URL_FUNIS, URL_OPORTUNIDADES } from '@/data/crm-api'
 import { json } from '@/test/servidor'
 import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
-import { screen, waitFor } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 /**
  * A tela da oportunidade contra servidor falso, pelo cliente gerado.

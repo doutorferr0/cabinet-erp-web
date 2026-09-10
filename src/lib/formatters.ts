@@ -56,6 +56,7 @@ export function formatInstanteBR(iso: string | null | undefined): string {
 /** Datas: ISO (yyyy-mm-dd) no dado, pt-BR na exibição (CLAUDE.md). */
 export function formatDateBR(iso: string | null | undefined): string {
   if (!iso) return ''
+  if (iso.includes('T')) return formatInstanteBR(iso)
   const [ano, mes, dia] = iso.split('-')
   return `${dia}/${mes}/${ano}`
 }
@@ -66,9 +67,9 @@ export function formatDateBR(iso: string | null | undefined): string {
  */
 export const PERCENT_ESCALA = 10_000
 
-export function formatPercent(valor: number): string {
+export function formatPercent(valor: number, casas = 4): string {
   return (valor / PERCENT_ESCALA).toLocaleString('pt-BR', {
-    minimumFractionDigits: 4,
-    maximumFractionDigits: 4,
+    minimumFractionDigits: casas,
+    maximumFractionDigits: casas,
   })
 }

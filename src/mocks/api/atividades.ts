@@ -1,9 +1,9 @@
+import { HttpResponse, http } from 'msw'
 import type { ActivityDto, ActivityWriteRequest } from '@/api/gerado'
 import { diaLocalISO } from '@/lib/datas'
-import { http, HttpResponse } from 'msw'
 import { crm } from './crm'
 import { verificarEscrita } from './permissao'
-import { TIPO, naoEncontrado, problemaJson, semEmpresaAtiva, semSessao } from './problema'
+import { naoEncontrado, problemaJson, semEmpresaAtiva, semSessao, TIPO } from './problema'
 import { novoId, store } from './store'
 
 /**

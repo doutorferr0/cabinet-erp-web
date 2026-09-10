@@ -1,13 +1,16 @@
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import {
   ErroDeCarregamento,
   EsqueletoDeCarregamento,
 } from '@/components/cabinet/estado-de-consulta'
-import { FichaDeCadastro } from '@/components/cabinet/ficha/ficha-de-cadastro'
+import { RegistroNaoEncontrado } from '@/components/cabinet/vazio-com-saida'
 import { useRotulosDeApoio } from '@/data/lookups-api'
+import { FichaDeRegistro } from '@/features/cadastro/ficha-de-registro'
 import { camposDoContrato, cliente as esquema } from '@/features/cadastro/modulos'
 import { ClienteForm } from '@/features/cliente/cliente-form'
 import { CoberturaParceiro } from '@/features/parceiro/cobertura-parceiro'
 import { ContatosDoParceiro } from '@/features/parceiro/contatos-do-parceiro'
+import { papeisDoParceiro, resumoDoParceiro } from '@/features/parceiro/ficha-resumo'
 import { HierarquiaParceiro } from '@/features/parceiro/hierarquia'
 import { papelCliente } from '@/features/parceiro/papeis/cliente'
 import { registroParaFicha } from '@/features/parceiro/registro-para-ficha'
@@ -15,7 +18,6 @@ import { usarParceiro } from '@/features/parceiro/usar-parceiro'
 import { PainelDeAtividades } from '@/features/tarefas/painel-atividades'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import type { Cliente } from '@/mocks/clientes'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/cadastros/clientes/$clienteId')({
   component: ClienteEditPage,
@@ -50,7 +52,7 @@ function ClienteEditPage() {
   }
 
   if (!registro) {
-    return <p className="text-muted-foreground">Cliente não encontrado.</p>
+    return <RegistroNaoEncontrado titulo="Cliente não encontrado." voltar="/cadastros/clientes" />
   }
 
   // O vínculo pai/filho vale para a tela inteira e não pertence a aba nenhuma:
@@ -96,12 +98,22 @@ function ClienteEditPage() {
 
   if (readOnly && !isNovo) {
     return (
-      <FichaDeCadastro
+      <FichaDeRegistro
         entidade={esquema}
         {...(rotulos ? { rotulos } : {})}
         registro={registroParaFicha(registro, esquema, ausentesNaFicha)}
-        titulo="Cadastro de Clientes"
-        contexto={registro.nome}
+        // A entidade no SINGULAR: o cabeçalho 2.0 é do registro aberto, não da
+        // tela. "Cadastro de Clientes" dizia onde o operador está — ele já sabe.
+        titulo="Cliente"
+        nome={registro.nome}
+        {...(query.data?.code ? { id: query.data.code } : {})}
+        meta={papeisDoParceiro(query.data)}
+        ativo={registro.ativo}
+        // `Ativar`/`Desativar` é `PUT /api/partners/{id}` com o `active`
+        // invertido — o mesmo caminho do Gravar, e por isso a mesma mutação.
+        aoAlternarAtivo={() => gravar.mutate({ ...registro, ativo: !registro.ativo })}
+        alternando={gravar.isPending}
+        resumo={resumoDoParceiro()}
         aviso={aviso}
         abaixo={
           <>
@@ -132,6 +144,9 @@ function ClienteEditPage() {
         contexto={isNovo ? 'Incluir' : registro.nome}
         aviso={aviso}
         onGravar={(v: Cliente) => (isNovo ? incluir.mutate(v) : gravar.mutate(v))}
+        // A alteração PERMANECE na tela (#405): é este sinal que devolve o
+        // formulário ao estado limpo depois que o servidor confirmou.
+        gravou={isNovo ? incluir.isSuccess : gravar.isSuccess}
       />
 
       {atividades}

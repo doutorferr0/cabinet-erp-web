@@ -27,5 +27,17 @@ import { Badge } from '@/components/cabinet/badge'
  * qual cor é qual.
  */
 export function CelulaAtivo({ ativo }: { ativo: boolean }) {
-  return <Badge tom={ativo ? 'ok' : 'mut'}>{ativo ? 'Ativo' : 'Inativo'}</Badge>
+  // `data-slot="stamp"` é o contrato que o próprio `badge.tsx` declara: "os
+  // aliases (`Stamp`, `CelulaAtivo`) sobrescrevem `data-slot`/`data-tom` para
+  // não quebrar quem os consulta". A promessa estava escrita e não cumprida
+  // aqui — o alias saía como `badge`, e `produto-form.test.tsx` (que consulta
+  // `[data-slot="stamp"]` desde a 1.x, quando a coluna era um `Stamp`) parou de
+  // achar a célula. Quem lê o slot lê PAPEL — "o selo de estado desta linha" —,
+  // não a peça que o desenha; por isso o alias mantém o nome do papel em vez de
+  // vazar o `badge` que passou a implementá-lo.
+  return (
+    <Badge tom={ativo ? 'ok' : 'mut'} data-slot="stamp">
+      {ativo ? 'Ativo' : 'Inativo'}
+    </Badge>
+  )
 }

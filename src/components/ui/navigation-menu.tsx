@@ -1,19 +1,19 @@
+import { ChevronDownIcon } from 'lucide-react'
+import type * as React from 'react'
+import {
+  Button as ButtonPrimitive,
+  composeRenderProps,
+  Link as LinkPrimitive,
+  MenuTrigger as MenuTriggerPrimitive,
+  Toolbar as ToolbarPrimitive,
+  type ToolbarProps as ToolbarPrimitiveProps,
+} from 'react-aria-components'
 import {
   DropdownMenu,
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
-import { ChevronDownIcon } from 'lucide-react'
-import type * as React from 'react'
-import {
-  Button as ButtonPrimitive,
-  Link as LinkPrimitive,
-  MenuTrigger as MenuTriggerPrimitive,
-  Toolbar as ToolbarPrimitive,
-  type ToolbarProps as ToolbarPrimitiveProps,
-  composeRenderProps,
-} from 'react-aria-components'
 
 /**
  * NAVIGATION MENU — a barra horizontal que leva a OUTRA TELA.
@@ -143,13 +143,13 @@ function NavigationMenuContent({ className, ...props }: React.ComponentProps<typ
 }
 
 export {
-  NavigationMenu,
-  NavigationMenuLink,
-  NavigationMenuGroup,
-  NavigationMenuTrigger,
-  NavigationMenuContent,
   // O destino DENTRO da lista é um item de menu com `href` — a RAC o renderiza
   // como `<a>`, então continua sendo link para o botão direito e para o teclado.
   DropdownMenuItem as NavigationMenuItem,
   DropdownMenuSeparator as NavigationMenuSeparator,
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuGroup,
+  NavigationMenuLink,
+  NavigationMenuTrigger,
 }

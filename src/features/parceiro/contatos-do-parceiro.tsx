@@ -1,3 +1,6 @@
+import { Loader2 } from 'lucide-react'
+import { useEffect, useRef } from 'react'
+import { FormProvider, useForm } from 'react-hook-form'
 import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
 import { FormGrid } from '@/components/cabinet/form-grid'
@@ -10,9 +13,6 @@ import {
   useGravarContatos,
 } from '@/data/contatos-api'
 import { avisar } from '@/lib/avisos'
-import { Loader2 } from 'lucide-react'
-import { useEffect, useRef } from 'react'
-import { FormProvider, useForm } from 'react-hook-form'
 
 /**
  * OS CONTATOS DO CADASTRO — grade com gravação PRÓPRIA.

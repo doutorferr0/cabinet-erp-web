@@ -1,10 +1,10 @@
+import { screen, within } from '@testing-library/react'
+import { beforeEach, describe, expect, it } from 'vitest'
 import type { CrmOpportunityDto, CrmStageDto } from '@/api/gerado'
 import { URL_FUNIS, URL_MOTIVOS_DE_PERDA, URL_OPORTUNIDADES } from '@/data/crm-api'
 import { apodrecimentoDoCartao, diasParado } from '@/features/crm/apodrecimento'
 import { json } from '@/test/servidor'
 import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
-import { screen, within } from '@testing-library/react'
-import { beforeEach, describe, expect, it } from 'vitest'
 
 /**
  * APODRECIMENTO (#87): régua pura primeiro, tela contra servidor falso depois.
@@ -220,11 +220,11 @@ describe('apodrecimento no quadro', () => {
     await screen.findByText('Quase la')
     const perto = cartaoDe('Quase la').querySelector('[data-slot="apodrecimento"]')
     expect(perto?.getAttribute('data-estado')).toBe('perto')
-    expect(cartaoDe('Quase la').className).not.toContain('bg-zone-danger')
+    expect(cartaoDe('Quase la').className).not.toContain('bg-[var(--tint-rose)]')
 
     const podre = cartaoDe('Podre').querySelector('[data-slot="apodrecimento"]')
     expect(podre?.getAttribute('data-estado')).toBe('apodrecido')
-    expect(cartaoDe('Podre').className).toContain('bg-zone-danger')
+    expect(cartaoDe('Podre').className).toContain('bg-[var(--tint-rose)]')
   })
 
   /** O selo sozinho seria um número mudo — a frase inteira vai junto. */

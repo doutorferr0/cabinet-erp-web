@@ -1,3 +1,5 @@
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { configurarApi } from '@/api/cliente'
 import {
   authLogin,
@@ -14,10 +16,8 @@ import {
 import { data } from '@/data'
 import type { FiltroDaTabela, OperadorDeFiltro } from '@/lib/filtro-de-consulta'
 import { tableState } from '@/test/utils'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { handlers } from './handlers'
-import { TENANT_MATRIZ, resetStore } from './store'
+import { resetStore, TENANT_MATRIZ } from './store'
 
 /**
  * Trava as SEMÂNTICAS do modo mock — não o dado do seed.

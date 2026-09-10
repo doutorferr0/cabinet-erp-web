@@ -1,5 +1,5 @@
-import { moduloDaRota } from '@/app/modulo'
 import { describe, expect, it } from 'vitest'
+import { moduloDaRota } from '@/app/modulo'
 
 describe('moduloDaRota', () => {
   it('casa a raiz EXATAMENTE — `/` é prefixo de tudo', () => {

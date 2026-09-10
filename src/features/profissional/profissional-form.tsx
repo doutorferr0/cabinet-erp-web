@@ -1,3 +1,7 @@
+import { useNavigate } from '@tanstack/react-router'
+import { useState } from 'react'
+import { useFormContext } from 'react-hook-form'
+import { z } from 'zod'
 import { EnderecoBlock } from '@/components/cabinet/blocks'
 import { BuscaDeCidade } from '@/components/cabinet/busca-de-cidade'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
@@ -9,6 +13,7 @@ import {
 } from '@/components/cabinet/campos-do-modulo'
 import { FormBlock } from '@/components/cabinet/form-block'
 import { TextField } from '@/components/cabinet/form-controls'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
 import { Input } from '@/components/ui/input'
 import { data } from '@/data'
@@ -16,11 +21,6 @@ import { camposDe, profissional as esquema, propsDoIcone } from '@/features/cada
 import { ContatosDoParceiro } from '@/features/parceiro/contatos-do-parceiro'
 import type { Banco } from '@/mocks/bancos'
 import type { Profissional } from '@/mocks/profissionais'
-import { useNavigate } from '@tanstack/react-router'
-import type { ColumnDef } from '@tanstack/react-table'
-import { useState } from 'react'
-import { useFormContext } from 'react-hook-form'
-import { z } from 'zod'
 
 const enderecoSchema = z.object({
   cep: z.string(),
@@ -80,7 +80,10 @@ type PrefixoCidade = 'endereco' | 'enderecoBanco'
 function BuscaCidade({
   prefix,
   onOpenChange,
-}: { prefix: PrefixoCidade | null; onOpenChange: (p: PrefixoCidade | null) => void }) {
+}: {
+  prefix: PrefixoCidade | null
+  onOpenChange: (p: PrefixoCidade | null) => void
+}) {
   const { setValue } = useFormContext<Profissional>()
   return (
     <BuscaDeCidade
@@ -238,6 +241,7 @@ export function ProfissionalForm({
   moduloEmFoco,
   partnerId = null,
   onGravar: gravarDeFora,
+  gravou = false,
 }: {
   profissional: Profissional
   readOnly?: boolean
@@ -258,6 +262,11 @@ export function ProfissionalForm({
    * ainda não atende.
    */
   onGravar?: (values: Profissional) => void
+  /**
+   * Gravação que deu certo (#405) — a alteração PERMANECE na tela, e é este
+   * sinal que devolve o formulário ao estado limpo. Ver `CadastroForm`.
+   */
+  gravou?: boolean
 }) {
   const navigate = useNavigate()
   const [buscaCidadePrefix, setBuscaCidadePrefix] = useState<PrefixoCidade | null>(null)
@@ -280,6 +289,7 @@ export function ProfissionalForm({
       onGravar={onGravar}
       onCancelar={() => void navigate({ to: '/cadastros/profissionais' })}
       readOnly={readOnly}
+      gravou={gravou}
       titulo="Cadastro de Profissional Externo"
       familia="partners"
       {...(contexto ? { contexto } : {})}

@@ -1,3 +1,7 @@
+import { useNavigate } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
+import { useFormContext } from 'react-hook-form'
+import { z } from 'zod'
 import { EnderecoBlock, RedesSociaisBlock } from '@/components/cabinet/blocks'
 import { BuscaDeCidade } from '@/components/cabinet/busca-de-cidade'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
@@ -10,21 +14,17 @@ import {
   LookupField,
   RadioField,
   SelectField,
-  TextField,
   TextareaField,
+  TextField,
 } from '@/components/cabinet/form-controls'
 import {
-  type ModuloCadastro,
   cliente as entidadeCliente,
+  type ModuloCadastro,
   propsDoIcone,
 } from '@/features/cadastro/modulos'
 import { ContatosDoParceiro } from '@/features/parceiro/contatos-do-parceiro'
-import { SHORTCUTS, bindShortcut } from '@/lib/shortcuts'
+import { bindShortcut, SHORTCUTS } from '@/lib/shortcuts'
 import type { Cliente } from '@/mocks/clientes'
-import { useNavigate } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
-import { useFormContext } from 'react-hook-form'
-import { z } from 'zod'
 import { ProgressoObrigatorios } from './progresso-obrigatorios'
 
 /**
@@ -134,7 +134,11 @@ function BlocoDoModulo({
   id,
   emFoco,
   children,
-}: { id: string; emFoco: string | undefined; children: React.ReactNode }) {
+}: {
+  id: string
+  emFoco: string | undefined
+  children: React.ReactNode
+}) {
   const m = modulo(id)
   return (
     <FormBlock
@@ -161,7 +165,10 @@ type PrefixoCidade = 'endereco' | 'enderecoCobranca' | 'enderecoComercial'
 function BuscaCidade({
   prefixo,
   onOpenChange,
-}: { prefixo: PrefixoCidade | null; onOpenChange: (aberto: PrefixoCidade | null) => void }) {
+}: {
+  prefixo: PrefixoCidade | null
+  onOpenChange: (aberto: PrefixoCidade | null) => void
+}) {
   const { setValue } = useFormContext<Cliente>()
   return (
     <BuscaDeCidade
@@ -385,6 +392,7 @@ export function ClienteForm({
   moduloEmFoco,
   idDoRegistro,
   onGravar: gravarDeFora,
+  gravou = false,
 }: {
   cliente: Cliente
   readOnly?: boolean
@@ -414,6 +422,11 @@ export function ClienteForm({
    * ainda não atende.
    */
   onGravar?: (values: Cliente) => void
+  /**
+   * Gravação que deu certo (#405) — a alteração PERMANECE na tela, e é este
+   * sinal que devolve o formulário ao estado limpo. Ver `CadastroForm`.
+   */
+  gravou?: boolean
 }) {
   const navigate = useNavigate()
   const [buscaCidadePrefixo, setBuscaCidadePrefixo] = useState<PrefixoCidade | null>(null)
@@ -439,6 +452,7 @@ export function ClienteForm({
       onGravar={onGravar}
       onCancelar={() => void navigate({ to: '/cadastros/clientes' })}
       readOnly={readOnly}
+      gravou={gravou}
       titulo="Cadastro de Clientes"
       familia="partners"
       {...(contexto ? { contexto } : {})}

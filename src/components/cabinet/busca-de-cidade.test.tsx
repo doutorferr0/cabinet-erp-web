@@ -1,7 +1,7 @@
-import { BuscaDeCidade } from '@/components/cabinet/busca-de-cidade'
-import { renderWithQuery } from '@/test/utils'
 import { screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import { BuscaDeCidade } from '@/components/cabinet/busca-de-cidade'
+import { renderWithQuery } from '@/test/utils'
 
 describe('BuscaDeCidade', () => {
   it('mostra a busca configurada e devolve a cidade selecionada', async () => {

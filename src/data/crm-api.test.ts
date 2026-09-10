@@ -1,3 +1,4 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CrmOpportunityDto, CrmPipelineDto, CrmStageDto } from '@/api/gerado'
 import {
   createCrmOpportunity,
@@ -7,20 +8,18 @@ import {
   moveCrmOpportunityStage,
   updateCrmOpportunity,
 } from '@/api/gerado'
-import { ErroDaApi } from '@/data/api-provider'
-import { dadosOuErro, itemOuNulo } from '@/data/api-provider'
+import { dadosOuErro, ErroDaApi, itemOuNulo } from '@/data/api-provider'
 import {
   FILTRAVEIS_OPORTUNIDADE,
+  funis,
+  motivosDePerda,
   ORDENAVEIS_FUNIL,
   ORDENAVEIS_MOTIVO_DE_PERDA,
   ORDENAVEIS_OPORTUNIDADE,
-  funis,
-  motivosDePerda,
   oportunidadesDoFunil,
 } from '@/data/crm-api'
 import { instalarServidor, json, problema } from '@/test/servidor'
 import { tableState } from '@/test/utils'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import contrato from '../../contracts/openapi-v1.json'
 
 /**

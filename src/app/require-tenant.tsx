@@ -1,10 +1,10 @@
-import { BandaDeIdentidade } from '@/components/cabinet/banda-identidade'
+import { useQueryClient } from '@tanstack/react-query'
+import { Building2 } from 'lucide-react'
+import { PageHeader } from '@/components/cabinet/page-header'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useEmpresasDaSessao } from '@/data/empresas-api'
 import { useSessao } from '@/data/sessao'
-import { useQueryClient } from '@tanstack/react-query'
-import { Building2 } from 'lucide-react'
 
 /**
  * Guarda de contexto: tela do sistema NÃO renderiza sem empresa ativa.
@@ -50,7 +50,7 @@ function SelecionarEmpresa() {
     <div className="bg-paper-grid flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-sm rounded-panel border-2 border-border bg-card p-4 shadow-el3">
         <div className="mb-4">
-          <BandaDeIdentidade titulo="Escolha a Empresa" contexto="Empresa ativa" />
+          <PageHeader titulo="Escolha a Empresa" contexto="Empresa ativa" />
         </div>
 
         {carregando ? (

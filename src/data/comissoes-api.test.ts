@@ -1,8 +1,6 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CommissionTierDto, OrderParticipantDto, TechnicalReserveDto } from '@/api/gerado'
 import {
-  ORDENAVEIS_FAIXA,
-  ORDENAVEIS_PARTICIPACAO,
-  ORDENAVEIS_RESERVA_TECNICA,
   cancelarReservaTecnica,
   faixaDoContrato,
   faixaParaContrato,
@@ -10,11 +8,13 @@ import {
   lancarReservaTecnica,
   listarParticipantes,
   listarReservasTecnicas,
+  ORDENAVEIS_FAIXA,
+  ORDENAVEIS_PARTICIPACAO,
+  ORDENAVEIS_RESERVA_TECNICA,
   participanteParaContrato,
 } from '@/data/comissoes-api'
 import { instalarServidor, json, problema } from '@/test/servidor'
 import { tableState } from '@/test/utils'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import contrato from '../../contracts/openapi-v1.json'
 
 /**

@@ -1,7 +1,7 @@
+import { HttpResponse, http } from 'msw'
 import type { CatalogLookupCreateRequest, CatalogLookupUpdateRequest } from '@/api/gerado'
 import { normalize } from '@/lib/texto'
 import { VOCABULARIO_DE_APOIO } from '@/mocks/lookups'
-import { http, HttpResponse } from 'msw'
 import { camposInvalidos, conflito, naoEncontrado, semEmpresaAtiva, semSessao } from './problema'
 import { novoId, store } from './store'
 

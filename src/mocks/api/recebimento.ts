@@ -1,29 +1,29 @@
+import { HttpResponse, http } from 'msw'
 import type { GoodsReceiptDto, GoodsReceiptItemDto, GoodsReceiptWriteRequest } from '@/api/gerado'
 import { colaboradores, idDeColaborador } from '@/mocks/colaboradores'
-import { http, HttpResponse } from 'msw'
 import {
-  type LinhaDeRecebimento,
-  type RecebimentoGuardado,
   casaTexto,
   daEmpresa,
   estadoDeCompras,
   faltaChegar,
   fornecedorDoCadastro,
+  type LinhaDeRecebimento,
   lerConsulta,
   linhaDeOrdemPara,
   nomeDeParceiro,
+  type RecebimentoGuardado,
   responder,
 } from './compras'
 import { aplicarSaldo, depositoDoMovimento } from './depositos'
 import { verificarEscrita } from './permissao'
 import {
-  TIPO,
   camposInvalidos,
   conflito,
   naoEncontrado,
   problemaJson,
   semEmpresaAtiva,
   semSessao,
+  TIPO,
 } from './problema'
 import { novoId, store } from './store'
 

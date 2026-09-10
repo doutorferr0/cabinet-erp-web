@@ -1,8 +1,14 @@
+import { useNavigate } from '@tanstack/react-router'
+import { Building2, FileText, Hash, List, Search, ShoppingCart } from 'lucide-react'
+import { useState } from 'react'
+import { useFormContext, useWatch } from 'react-hook-form'
+import { z } from 'zod'
 import type { OrderDto, PurchaseRequestDto } from '@/api/gerado'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { DocumentoBloco } from '@/components/cabinet/documento'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { DateField, TextareaField } from '@/components/cabinet/form-controls'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { Nome } from '@/components/cabinet/nome'
 import { posGravar } from '@/components/cabinet/pos-gravar'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
@@ -11,21 +17,15 @@ import { Button } from '@/components/ui/button'
 import { data } from '@/data'
 import {
   DESTINO_ROTULO,
+  destinoDoRotulo,
+  fornecedoresComLinhaAberta,
   type ItemDoPedidoDeCompra,
   type PedidoDeCompra,
   SITUACAO_DO_PEDIDO,
-  destinoDoRotulo,
-  fornecedoresComLinhaAberta,
   useCancelarPedidoDeCompra,
   useGravarPedidoDeCompra,
 } from '@/data/compras-api'
 import { formatDateBR } from '@/lib/formatters'
-import { useNavigate } from '@tanstack/react-router'
-import type { ColumnDef } from '@tanstack/react-table'
-import { Building2, FileText, Hash, List, Search, ShoppingCart } from 'lucide-react'
-import { useState } from 'react'
-import { useFormContext, useWatch } from 'react-hook-form'
-import { z } from 'zod'
 import { ItensDoPedido } from './itens-do-pedido'
 
 /**
@@ -294,7 +294,10 @@ function PonteParaOrdem({ pedido }: { pedido: PedidoDeCompra }) {
 export function PedidoCompraForm({
   pedido,
   readOnly = false,
-}: { pedido: PedidoDeCompra; readOnly?: boolean }) {
+}: {
+  pedido: PedidoDeCompra
+  readOnly?: boolean
+}) {
   const navigate = useNavigate()
   const gravar = useGravarPedidoDeCompra()
   const cancelar = useCancelarPedidoDeCompra()

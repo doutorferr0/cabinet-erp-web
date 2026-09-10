@@ -1,3 +1,5 @@
+import { render, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import type { EstadoDoAutosave } from '@/components/cabinet/alteracoes-nao-salvas'
 import {
   CabecalhoDoRegistro,
@@ -7,8 +9,6 @@ import {
   LayoutDoRegistro,
 } from '@/components/cabinet/documento'
 import { renderWithQuery } from '@/test/utils'
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
 
 const OCIOSO: EstadoDoAutosave = { fase: 'ocioso', salvoEm: null, erro: null }
 

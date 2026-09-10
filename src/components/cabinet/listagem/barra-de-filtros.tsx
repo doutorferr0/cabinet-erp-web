@@ -1,17 +1,16 @@
+import { ArrowDown, ArrowUp, X } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { Button as ButtonAria } from 'react-aria-components'
 import { CaixaDeBusca } from '@/components/cabinet/filtros/caixa-de-busca'
 import { PilulasDeFiltro } from '@/components/cabinet/filtros/pilulas-de-filtro'
+import { ChipDeAgrupamento } from '@/components/cabinet/listagem/chip-de-agrupamento'
 import {
   type ColunaDoMenu,
   type GrupoDeColunasOpcionais,
   MenuDeColunas,
 } from '@/components/cabinet/listagem/menu-de-colunas'
-import { Popover, PopoverTrigger } from '@/components/ui/popover'
 import type { CampoFiltravel, FiltroDaTabela, Juncao } from '@/lib/filtro-de-consulta'
 import { cn } from '@/lib/utils'
-import { ArrowDown, ArrowUp, Group, X } from 'lucide-react'
-import type { ReactNode } from 'react'
-import { useState } from 'react'
-import { Button as ButtonAria } from 'react-aria-components'
 
 /**
  * A BARRA DE FILTROS 2.0 (`fbar` do mockup) — o estado da consulta, visível.
@@ -147,16 +146,14 @@ export function BarraDeFiltros({
   modos,
   acoes,
 }: BarraDeFiltrosProps) {
-  const [escolhendoGrupo, setEscolhendoGrupo] = useState(false)
   const temCampos = (campos?.length ?? 0) > 0
-  const grupoAtivo = agrupamentos?.find((opcao) => opcao.id === agruparPor) ?? null
 
   return (
     <div
       data-slot="barra-de-filtros"
       className={cn(
         'flex flex-wrap items-center gap-[var(--s-2)] gap-y-[var(--s-2)]',
-        'border-rule-hair border-b px-[var(--s-3)] py-2.5',
+        'border-input border-b bg-card px-[var(--s-3)] py-2.5',
         '[&_button]:whitespace-nowrap',
       )}
     >
@@ -181,66 +178,12 @@ export function BarraDeFiltros({
         />
       ) : null}
 
-      {/* O chip de agrupamento é do MESMO material dos chips de filtro, e de
-          propósito: agrupar é uma condição sobre a lista, como filtrar. Ele usa
-          o primário porque muda o DESENHO da grade, não o conjunto — a única
-          diferença que o operador precisa ler daqui. */}
       {agrupamentos && agrupamentos.length > 0 && onAgruparPorChange ? (
-        <div
-          className={cn(
-            'inline-flex h-7 items-center rounded-[var(--r-pill)] border pr-[5px] pl-2.5',
-            grupoAtivo
-              ? 'border-foreground bg-[var(--primary-soft)]'
-              : 'border-rule-hair border-dashed',
-          )}
-        >
-          {/* O `PopoverTrigger` (o `DialogTrigger` do react-aria) envolve SÓ o
-              botão: o primeiro filho dele tem de ser um pressable, e um `<div>`
-              ali derruba a tela inteira em branco — foi o que aconteceu na
-              primeira montagem deste chip. */}
-          <PopoverTrigger isOpen={escolhendoGrupo} onOpenChange={setEscolhendoGrupo}>
-            <ButtonAria
-              aria-label={
-                grupoAtivo ? `Agrupado por ${grupoAtivo.rotulo} — trocar` : 'Agrupar por um campo'
-              }
-              className="t-ui flex h-full items-center gap-1 outline-none focus-visible:focus-ring"
-            >
-              <Group aria-hidden="true" className="size-3.5" />
-              <span style={{ color: 'var(--n-700)' }}>Agrupar</span>
-              {grupoAtivo ? <span className="font-semibold">{grupoAtivo.rotulo}</span> : null}
-            </ButtonAria>
-            <Popover className="w-56 p-1" placement="bottom start">
-              <ul className="flex flex-col">
-                {agrupamentos.map((opcao) => (
-                  <li key={opcao.id}>
-                    <ButtonAria
-                      className={cn(
-                        't-ui w-full rounded-[var(--r-item)] px-2 py-1.5 text-left outline-none hover:bg-[var(--hover)] focus-visible:focus-ring',
-                        opcao.id === agruparPor && 'bg-[var(--primary-soft)]',
-                      )}
-                      onPress={() => {
-                        onAgruparPorChange(opcao.id)
-                        setEscolhendoGrupo(false)
-                      }}
-                    >
-                      {opcao.rotulo}
-                    </ButtonAria>
-                  </li>
-                ))}
-              </ul>
-            </Popover>
-          </PopoverTrigger>
-          {grupoAtivo ? (
-            <button
-              type="button"
-              aria-label={`Desagrupar — tirar ${grupoAtivo.rotulo}`}
-              className="ml-1 grid size-5 shrink-0 place-content-center rounded-[var(--r-pill)] text-muted-foreground outline-none hover:text-foreground focus-visible:focus-ring"
-              onClick={() => onAgruparPorChange('')}
-            >
-              <X aria-hidden="true" className="size-3.5" />
-            </button>
-          ) : null}
-        </div>
+        <ChipDeAgrupamento
+          campos={agrupamentos}
+          valor={agruparPor ?? ''}
+          onChange={onAgruparPorChange}
+        />
       ) : null}
 
       {/* Empurra o resto para a direita: à esquerda fica o que RESTRINGE a

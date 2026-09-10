@@ -1,5 +1,3 @@
-import type { Modulo } from '@/app/modulo'
-import { RECURSOS, type RecursoDaEmpresa } from '@/data/recursos-da-empresa'
 import {
   ArrowLeftRight,
   BookUser,
@@ -23,6 +21,8 @@ import {
   Truck,
   Users,
 } from 'lucide-react'
+import type { Modulo } from '@/app/modulo'
+import { RECURSOS, type RecursoDaEmpresa } from '@/data/recursos-da-empresa'
 
 export interface NavItem {
   title: string

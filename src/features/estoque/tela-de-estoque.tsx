@@ -1,7 +1,11 @@
+import { useQuery } from '@tanstack/react-query'
+import { PackageSearch } from 'lucide-react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { ProductDto, StockLocationDto, StockMovementDto } from '@/api/gerado'
 import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
 import { VitraDataTable } from '@/components/cabinet/data-table'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { PageHeader } from '@/components/cabinet/page-header'
 import { Painel } from '@/components/cabinet/painel'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
@@ -31,10 +35,6 @@ import { KpisDaPeca } from '@/features/estoque/kpis-da-peca'
 import { LancarMovimento, type ModoDeLancamento } from '@/features/estoque/lancar-movimento'
 import { formatInstanteBR, formatQuantidade } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
-import { useQuery } from '@tanstack/react-query'
-import type { ColumnDef } from '@tanstack/react-table'
-import { PackageSearch } from 'lucide-react'
-import { useEffect, useId, useRef, useState } from 'react'
 
 /**
  * MOVIMENTAÇÃO — o estoque visto POR DEPÓSITO.

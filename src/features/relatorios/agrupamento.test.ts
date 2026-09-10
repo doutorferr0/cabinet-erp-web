@@ -1,6 +1,6 @@
+import { describe, expect, it } from 'vitest'
 import { type AgrupamentoDeRelatorio, agrupar, somar } from '@/features/relatorios/agrupamento'
 import { faixaDeDiasSemVenda, tomDaFaixa } from '@/features/relatorios/tela-estoque-parado'
-import { describe, expect, it } from 'vitest'
 
 /**
  * AS REGRAS DA QUEBRA — puras, exercitadas sem montar tela.

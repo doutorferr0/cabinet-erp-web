@@ -1,3 +1,5 @@
+import { render, screen, waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   DURACAO_DA_CONTAGEM,
   FaixaDeKpi,
@@ -8,8 +10,6 @@ import {
   PESO_DO_HEROI,
 } from '@/components/cabinet/kpi-tile'
 import { TotalBox } from '@/components/cabinet/total-box'
-import { render, screen, waitFor } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * A suíte roda com `matchMedia` devolvendo `matches: false` para tudo
@@ -174,14 +174,14 @@ describe('KpiTile', () => {
     expect(tile.className).toContain('overflow-hidden')
   })
 
-  it('as três escalas são 26 / 32 / 40, e nenhuma escreve o número na peça', () => {
+  it('as três escalas são 30 / 36 / 44, e nenhuma escreve o número na peça', () => {
     // §Hierarquia proíbe `font-size` literal em componente: as três saem por
     // token com fallback, que é o que a regra 4 do regime paralelo autoriza
     // enquanto D1 não promove o degrau.
     const medidas: Record<string, string> = {
-      padrao: 'var(--t-kpi-valor, 26px)',
-      destaque: 'var(--t-kpi-valor-big, 32px)',
-      heroi: 'var(--t-kpi-valor-heroi, 40px)',
+      padrao: 'var(--t-kpi-valor, 30px)',
+      destaque: 'var(--t-kpi-valor-big, 36px)',
+      heroi: 'var(--t-kpi-valor-heroi, 44px)',
     }
     for (const [escala, medida] of Object.entries(medidas)) {
       const { container, unmount } = render(
@@ -191,7 +191,14 @@ describe('KpiTile', () => {
       expect(saida.style.fontSize).toBe(medida)
       // Tracking fechado nos três (§6): a 40px o padrão da mono abre os grupos
       // de milhar até parecerem números separados.
-      expect(saida.style.letterSpacing).toBe('-.03em')
+      //
+      // `-0.03em` com o zero, e o componente declara `-.03em` sem ele: o CSSOM
+      // NORMALIZA o valor ao serializá-lo de volta, e é a forma normalizada que
+      // todo navegador devolve. O jsdom só passou a fazê-lo na 30 — até então a
+      // asserção lia a string crua e casava por acidente com o que o componente
+      // escreveu. O produto não mudou; a asserção é que estava medindo o texto
+      // do fonte em vez do valor computado.
+      expect(saida.style.letterSpacing).toBe('-0.03em')
       expect(saida.style.fontVariantNumeric).toBe('tabular-nums')
       unmount()
     }
@@ -254,7 +261,9 @@ describe('KpiTile — contagem crescente', () => {
     )
   })
 
-  it('começa longe do alvo — senão não há contagem nenhuma', () => {
+  // count-up desligado (user, 2026-09-04) — o hook existe, o KPI não o chama.
+
+  it.skip('começa longe do alvo — senão não há contagem nenhuma', () => {
     // Sem esta asserção o caso acima passaria com a contagem removida.
     render(
       <FaixaDeKpi>
@@ -264,7 +273,9 @@ describe('KpiTile — contagem crescente', () => {
     expect(screen.getByLabelText('Vendido').textContent).not.toContain('182.400')
   })
 
-  it('conta a CONTAGEM também, e agrupa milhar em pt-BR', async () => {
+  // count-up desligado (user, 2026-09-04) — o hook existe, o KPI não o chama.
+
+  it.skip('conta a CONTAGEM também, e agrupa milhar em pt-BR', async () => {
     render(
       <FaixaDeKpi>
         <KpiTile rotulo="Variantes" valor={38_410} unidade="SKUs" />
@@ -286,7 +297,9 @@ describe('KpiTile — contagem crescente', () => {
     expect(screen.getByLabelText('Vendido').textContent).toContain(',99')
   })
 
-  it('`prefers-reduced-motion` PULA a contagem — não a encurta', () => {
+  // count-up desligado (user, 2026-09-04) — o hook existe, o KPI não o chama.
+
+  it.skip('`prefers-reduced-motion` PULA a contagem — não a encurta', () => {
     // Síncrono de propósito: com a preferência ligada o PRIMEIRO quadro já tem
     // o número final. Encurtar a duração ainda seria movimento, e a preferência
     // do sistema não pede menos movimento — pede nenhum.
@@ -299,7 +312,9 @@ describe('KpiTile — contagem crescente', () => {
     expect(screen.getByLabelText('Vendido').textContent?.replace(/\s/g, '')).toBe('R$182.400,00')
   })
 
-  it('o fecho do documento NÃO conta — o total muda a cada tecla na grade', () => {
+  // count-up desligado (user, 2026-09-04) — o hook existe, o KPI não o chama.
+
+  it.skip('o fecho do documento NÃO conta — o total muda a cada tecla na grade', () => {
     // `TotalBox` é este componente fora de uma faixa. Contar 600 ms por
     // alteração faria o total nunca ficar parado enquanto se preenche um
     // orçamento, e é por isso que o gatilho é o contexto da faixa.
@@ -307,7 +322,9 @@ describe('KpiTile — contagem crescente', () => {
     expect(screen.getByLabelText('Total').textContent?.replace(/\s/g, '')).toBe('R$182.400,00')
   })
 
-  it('o valor que MUDA depois da entrada salta, sem recontar', async () => {
+  // count-up desligado (user, 2026-09-04) — o hook existe, o KPI não o chama.
+
+  it.skip('o valor que MUDA depois da entrada salta, sem recontar', async () => {
     const { rerender } = render(
       <FaixaDeKpi>
         <KpiTile rotulo="Vendido" valorCentavos={1000} />
@@ -323,7 +340,9 @@ describe('KpiTile — contagem crescente', () => {
     expect(screen.getByLabelText('Vendido')).toHaveTextContent('9.000,00')
   })
 
-  it('600 ms é a duração da pesquisa, e ela é DADO, não número solto no meio', () => {
+  // count-up desligado (user, 2026-09-04) — o hook existe, o KPI não o chama.
+
+  it.skip('600 ms é a duração da pesquisa, e ela é DADO, não número solto no meio', () => {
     expect(DURACAO_DA_CONTAGEM).toBe(600)
   })
 
@@ -452,7 +471,9 @@ describe('FaixaDeKpi com herói (bento)', () => {
     silencio.mockRestore()
   })
 
-  it('o bento também liga a contagem e a ambiente — é faixa, com outra medida', () => {
+  // count-up desligado (user, 2026-09-04) — o hook existe, o KPI não o chama.
+
+  it.skip('o bento também liga a contagem e a ambiente — é faixa, com outra medida', () => {
     const { container } = render(
       <FaixaDeKpi heroi={<KpiTile rotulo="Herói" valorCentavos={1000} escala="heroi" />}>
         <KpiTile rotulo="Um" valor={1} />

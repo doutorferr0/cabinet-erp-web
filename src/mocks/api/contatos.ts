@@ -1,13 +1,7 @@
+import { HttpResponse, http } from 'msw'
 import type { PartnerContactDto, PartnerContactWriteRequest } from '@/api/gerado'
-import { http, HttpResponse } from 'msw'
-import {
-  TIPO,
-  camposInvalidos,
-  naoEncontrado,
-  problemaJson,
-  semEmpresaAtiva,
-  semSessao,
-} from './problema'
+import { listar } from './listagem'
+import { camposInvalidos, naoEncontrado, semEmpresaAtiva, semSessao } from './problema'
 import { novoId, store } from './store'
 
 /**
@@ -134,46 +128,8 @@ export const handlersDeContatos = [
     if (!parceiroAoAlcance(partnerId)) return naoEncontrado('Parceiro não encontrado.')
 
     const url = new URL(request.url)
-    const sortBy = url.searchParams.get('sortBy')
-    if (sortBy && !ORDENAVEIS.includes(sortBy)) {
-      return problemaJson(400, `sortBy inválido: ${sortBy}.`, {}, TIPO.ordenacaoInvalida)
-    }
-    const page = Number(url.searchParams.get('page') ?? '1')
-    const pageSize = Number(url.searchParams.get('pageSize') ?? '10')
-    if (page < 1 || pageSize < 1 || pageSize > 100) {
-      return problemaJson(
-        400,
-        'Paginação inválida: page é 1-based e pageSize vai até 100.',
-        {},
-        TIPO.paginacaoInvalida,
-      )
-    }
-
-    let linhas = contatos.contatos.filter((c) => c.partnerId === partnerId).map(contactDto)
-
-    const q = url.searchParams.get('q')
-    if (q) {
-      const alvo = q.toLowerCase()
-      linhas = linhas.filter((c) =>
-        [c.name, c.role, c.email].some((texto) => texto?.toLowerCase().includes(alvo)),
-      )
-    }
-
-    if (sortBy) {
-      const desc = url.searchParams.get('sortDesc') === 'true'
-      const chave = sortBy as keyof PartnerContactDto
-      linhas.sort((a, b) => {
-        const va = String(a[chave] ?? '')
-        const vb = String(b[chave] ?? '')
-        return desc ? vb.localeCompare(va) : va.localeCompare(vb)
-      })
-    }
-
-    const inicio = (page - 1) * pageSize
-    return HttpResponse.json({
-      rows: linhas.slice(inicio, inicio + pageSize),
-      total: linhas.length,
-    })
+    const linhas = contatos.contatos.filter((c) => c.partnerId === partnerId).map(contactDto)
+    return listar(linhas, url, ORDENAVEIS, (contato) => [contato.name, contato.role, contato.email])
   }),
 
   http.post('*/api/partners/:partnerId/contacts', async ({ params, request }) => {

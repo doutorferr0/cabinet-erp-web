@@ -1,6 +1,6 @@
-import { cn } from '@/lib/utils'
 import type * as React from 'react'
-import { TextArea as TextareaPrimitive, composeRenderProps } from 'react-aria-components'
+import { composeRenderProps, TextArea as TextareaPrimitive } from 'react-aria-components'
+import { cn } from '@/lib/utils'
 
 /**
  * Área de texto: o mesmo sulco do `Input` (borda 1px n-300 + `--inset`), com

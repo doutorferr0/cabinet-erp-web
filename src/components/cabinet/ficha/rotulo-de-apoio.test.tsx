@@ -1,8 +1,8 @@
+import { screen } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { VOCABULARIO_DE_APOIO } from '@/mocks/lookups'
 import { ID_DO_COLABORADOR, stubDeColaboradores } from '@/test/colaboradores'
 import { renderRoute } from '@/test/utils'
-import { screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 /**
  * SENTINELA: a ficha mostra o RÓTULO da lista de apoio, nunca o id.

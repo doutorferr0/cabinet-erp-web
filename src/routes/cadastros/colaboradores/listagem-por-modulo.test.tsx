@@ -1,7 +1,7 @@
-import { stubDeColaboradores } from '@/test/colaboradores'
-import { renderRoute } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { stubDeColaboradores } from '@/test/colaboradores'
+import { renderRoute } from '@/test/utils'
 
 /**
  * ESTE ARQUIVO MUDOU DE LADO em 2026-08-25, e a inversão é o assunto dele.

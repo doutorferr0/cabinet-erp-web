@@ -1,5 +1,5 @@
-import type { ProblemDetails, ProblemFieldError, ProblemType } from '@/api/gerado'
 import { HttpResponse } from 'msw'
+import type { ProblemDetails, ProblemFieldError, ProblemType } from '@/api/gerado'
 
 /**
  * O erro do servidor falso, num lugar só — RFC 9457 Problem Details.

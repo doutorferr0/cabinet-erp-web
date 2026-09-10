@@ -1,5 +1,5 @@
-import { cn } from '@/lib/utils'
 import type { LucideIcon } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 /**
  * Ação que age sobre UMA linha, alcançável no lugar onde o olho já está.
@@ -26,13 +26,7 @@ export interface AcaoDeLinha<T> {
  * fica para o leitor de tela e para o Tab — quem navega por teclado precisa
  * encontrá-los na ordem da linha, e `hidden` os tiraria da árvore.
  */
-export function AcoesDeLinha<T>({
-  acoes,
-  linha,
-}: {
-  acoes: readonly AcaoDeLinha<T>[]
-  linha: T
-}) {
+export function AcoesDeLinha<T>({ acoes, linha }: { acoes: readonly AcaoDeLinha<T>[]; linha: T }) {
   if (acoes.length === 0) return null
   return (
     <div

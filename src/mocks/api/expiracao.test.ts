@@ -1,14 +1,14 @@
-import { configurarApi } from '@/api/cliente'
-import { authLogin, authMe, authSetActiveTenant, createPartner, listProducts } from '@/api/gerado'
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { configurarApi } from '@/api/cliente'
+import { authLogin, authMe, authSetActiveTenant, createPartner, listProducts } from '@/api/gerado'
 import { handlers } from './handlers'
 import {
-  TENANT_MATRIZ,
   armarExpiracaoDaProximaEscrita,
   expirarSessaoAgora,
   resetStore,
   store,
+  TENANT_MATRIZ,
 } from './store'
 
 /**

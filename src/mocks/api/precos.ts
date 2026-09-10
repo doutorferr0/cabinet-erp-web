@@ -1,3 +1,4 @@
+import { HttpResponse, http } from 'msw'
 import type {
   CostProfileDto,
   CostProfileWriteRequest,
@@ -6,10 +7,8 @@ import type {
   VariantTablePriceDto,
   VariantTablePricesWriteRequest,
 } from '@/api/gerado'
-import { http, HttpResponse } from 'msw'
 import { verificarEscrita } from './permissao'
 import {
-  TIPO,
   camposInvalidos,
   conflito,
   naoEncontrado,
@@ -17,8 +16,9 @@ import {
   problemaJson,
   semEmpresaAtiva,
   semSessao,
+  TIPO,
 } from './problema'
-import { TENANT_MATRIZ, novoId, store } from './store'
+import { novoId, store, TENANT_MATRIZ } from './store'
 
 /**
  * O módulo PREÇO no modo mock — e ele guarda o CADASTRO e RECUSA a APURAÇÃO.

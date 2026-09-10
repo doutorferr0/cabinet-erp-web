@@ -1,3 +1,5 @@
+import { type LucideIcon, MoreHorizontal } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { BotaoVoltar } from '@/components/cabinet/botao-voltar'
 import { Button } from '@/components/ui/button'
 import {
@@ -7,8 +9,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
-import { type LucideIcon, MoreHorizontal } from 'lucide-react'
-import type { ReactNode } from 'react'
 
 /**
  * Ação do cabeçalho — a mesma forma para a fraca, a forte e a do menu `⋯`.

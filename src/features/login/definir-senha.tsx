@@ -1,12 +1,12 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Link, useNavigate } from '@tanstack/react-router'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
 import { TextField } from '@/components/cabinet/form-controls'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
 import { type LinkDeCredencial, useDefinirSenha, useLinkDeCredencial } from '@/data/sessao'
 import { PaginaDeAuth } from '@/features/login/pagina-de-auth'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Link, useNavigate } from '@tanstack/react-router'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
 
 const definirSenhaSchema = z
   .object({

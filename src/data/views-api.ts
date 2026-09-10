@@ -1,7 +1,7 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { SavedViewDto, SavedViewWriteRequest } from '@/api/gerado'
 import { createMyView, deleteMyView, listMyViews, updateMyView } from '@/api/gerado'
-import { type RespostaDaApi, dadosOuErro, respostaOk } from '@/data/api-provider'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { dadosOuErro, type RespostaDaApi, respostaOk } from '@/data/api-provider'
 
 /**
  * FRONTEIRA DAS VIEWS SALVAS — `/api/me/views` (D13).
@@ -86,9 +86,10 @@ export function corpoDaView(
  * É a mesma regra que o mock já aplica ao ler lixo do `localStorage`: perder as
  * views é aborrecimento, perder a tela por causa delas é defeito.
  */
-export function useViews() {
+export function useViews(habilitada = true) {
   return useQuery({
     queryKey: CHAVE_VIEWS,
+    enabled: habilitada,
     queryFn: async () => {
       const resposta: RespostaDaApi = await listMyViews()
       const dados = dadosOuErro<SavedViewDto[]>(resposta, 'Falha ao carregar as consultas salvas.')

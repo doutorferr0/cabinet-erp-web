@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { Stamp } from '@/components/cabinet/stamp'
@@ -14,7 +15,6 @@ import {
 } from '@/components/ui/table'
 import { useAlterarVinculo, usePapeis, useVinculosDoUsuario } from '@/data/acesso-api'
 import { useEmpresasDaSessao } from '@/data/empresas-api'
-import { useState } from 'react'
 
 /**
  * EM QUAIS EMPRESAS DO GRUPO esta pessoa entra, e com que papel.

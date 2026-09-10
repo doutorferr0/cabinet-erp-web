@@ -1,5 +1,5 @@
-import { normalize } from '@/lib/texto'
 import type { LucideIcon } from 'lucide-react'
+import { normalize } from '@/lib/texto'
 
 /**
  * FILTRO DE CONSULTA — vocabulário e avaliação.

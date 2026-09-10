@@ -1,3 +1,5 @@
+import { useNavigate, useRouterState } from '@tanstack/react-router'
+import { useState } from 'react'
 import { Appbar } from '@/app/appbar'
 import { moduloDaRota } from '@/app/modulo'
 import { SidebarNav } from '@/app/nav/sidebar-nav'
@@ -5,8 +7,6 @@ import { PageFrame } from '@/app/page-frame'
 import { PaletaDeComandos } from '@/app/paleta-de-comandos'
 import { RequireRecurso } from '@/app/require-recurso'
 import { useNaoLidasDoInbox } from '@/features/inbox/estado-do-inbox'
-import { useNavigate, useRouterState } from '@tanstack/react-router'
-import { useState } from 'react'
 
 /**
  * A CASCA — barra à esquerda, appbar no topo, folha no meio.
@@ -70,7 +70,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             escreve o atributo — o par padrão do `:root` é o que vale. */}
         <main
           {...(modulo && { 'data-modulo': modulo })}
-          className="bg-paper-grid flex flex-1 flex-col p-5"
+          className="flex flex-1 flex-col bg-background p-5"
         >
           {/* `key` por CAMINHO: trocar de tela remonta a folha e a entrada
               anima; paginar e ordenar mexem em search params, não no caminho,

@@ -1,3 +1,5 @@
+import { Package } from 'lucide-react'
+import { useWatch } from 'react-hook-form'
 import type { PartnerDto } from '@/api/gerado'
 import {
   type FonteDeItens,
@@ -5,15 +7,13 @@ import {
   GradeDeItens,
   type LinhaDaGrade,
 } from '@/components/cabinet/grade-de-itens'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { Nome } from '@/components/cabinet/nome'
 import { data } from '@/data'
-import { DESTINO_ROTULO, ROTULOS_DE_DESTINO, SITUACAO_DA_LINHA } from '@/data/compras-api'
 import type { ItemDoPedidoDeCompra } from '@/data/compras-api'
+import { DESTINO_ROTULO, ROTULOS_DE_DESTINO, SITUACAO_DA_LINHA } from '@/data/compras-api'
 import { tabelas } from '@/data/tabelas'
 import { SHORTCUTS } from '@/lib/shortcuts'
-import type { ColumnDef } from '@tanstack/react-table'
-import { Package } from 'lucide-react'
-import { useWatch } from 'react-hook-form'
 import type { LinhaNoFormulario } from './pedido-compra-form'
 
 /**

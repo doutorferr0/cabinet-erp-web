@@ -1,6 +1,6 @@
+import { describe, expect, it } from 'vitest'
 import type { SavedViewDto } from '@/api/gerado'
 import { corpoDaView, viewsDaRota, viewsFavoritas } from '@/data/views-api'
-import { describe, expect, it } from 'vitest'
 
 /**
  * A FRONTEIRA das views salvas — o que o servidor recebe e o que a barra lê.

@@ -98,7 +98,10 @@ describe('identidade visual — o que a próxima leva de UI não pode levar junt
     expect(token(TOKENS, '.dark,\n[data-theme="dark"]', 'main-text')).toBe('var(--lime-200)')
   })
 
-  it('três famílias, três papéis — e as duas cópias da pilha não divergem', () => {
+  // 2026-09-04 (user, ao ver Gambarino em célula): a voz de QUEM volta a ser a
+  // Newsreader — texto serif que lê a 13px; a display fica só em título. O
+  // condensado (número-herói) é a mono. Quatro famílias, quatro papéis.
+  it('quatro famílias, quatro papéis — e as duas cópias da pilha não divergem', () => {
     // A pilha literal aparece no `@theme inline` (que precisa do valor para
     // inlinar na utility) e em `tokens-2.0.css` (que é a fonte). Escrever
     // `--font-display: var(--font-display)` no @theme seria circular, então a
@@ -110,8 +113,8 @@ describe('identidade visual — o que a próxima leva de UI não pode levar junt
     expect(token(TOKENS, ':root', 'font-sans')).toContain('Inter')
     expect(token(TOKENS, ':root', 'font-mono')).toContain('JetBrains Mono')
     // Os nomes da 1.5 ainda têm consumidor e viram alias até D30 apagá-los.
-    expect(token(CSS, '@theme inline', 'font-nome')).toBe('var(--font-display)')
-    expect(token(CSS, '@theme inline', 'font-display-condensada')).toBe('var(--font-display)')
+    expect(token(CSS, '@theme inline', 'font-nome')).toMatch(/^"Newsreader"/)
+    expect(token(CSS, '@theme inline', 'font-display-condensada')).toBe('var(--font-mono)')
   })
 
   it('os onze degraus de tipo dizem o mesmo como token e como classe', () => {

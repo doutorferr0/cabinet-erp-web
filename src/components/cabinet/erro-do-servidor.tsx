@@ -1,12 +1,12 @@
+import { useFormContext } from 'react-hook-form'
 import { DetalheTecnico } from '@/components/cabinet/detalhe-tecnico'
 import { GravacaoEmConstrucao } from '@/components/cabinet/modulo-em-construcao'
 import { Button } from '@/components/ui/button'
 import { ErroDaApi } from '@/data/api-provider'
 import { ehModuloEmConstrucao } from '@/data/modulos-em-construcao'
-import { type MutacaoObservavel, ehSessaoExpirada } from '@/data/sessao-expirada'
+import { ehSessaoExpirada, type MutacaoObservavel } from '@/data/sessao-expirada'
 import { ReentrarNaSessao } from '@/features/login/reentrar'
 import { cn } from '@/lib/utils'
-import { useFormContext } from 'react-hook-form'
 
 /**
  * De que campo da TELA fala este `path` do contrato.

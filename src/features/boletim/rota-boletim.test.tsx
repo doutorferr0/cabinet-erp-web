@@ -1,6 +1,6 @@
-import { renderRoute } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { renderRoute } from '@/test/utils'
 
 /**
  * `/boletim` caía na tela de endereço inexistente, e o nome estava em uso no

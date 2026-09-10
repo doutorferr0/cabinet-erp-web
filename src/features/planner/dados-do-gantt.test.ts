@@ -1,8 +1,7 @@
-import type { ProjectPlanDto } from '@/api/gerado'
 import { describe, expect, it } from 'vitest'
+import type { ProjectPlanDto } from '@/api/gerado'
 import {
   type EventoDeTarefa,
-  TIPOS,
   ehMarco,
   idDaFase,
   idDoItem,
@@ -14,6 +13,7 @@ import {
   periodoDaFase,
   progressoDoProjeto,
   reagendamentoDoEvento,
+  TIPOS,
   tarefasDoPlano,
   totalDeItens,
 } from './dados-do-gantt'

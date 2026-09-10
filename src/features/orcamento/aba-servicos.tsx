@@ -1,16 +1,16 @@
+import { PencilLine, Wrench } from 'lucide-react'
+import { useState } from 'react'
+import { useWatch } from 'react-hook-form'
 import type { ServiceDto } from '@/api/gerado'
 import { totalItemCentavos } from '@/components/cabinet/documento'
 import { FormGrid, type FormGridRow } from '@/components/cabinet/form-grid'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
 import { Button } from '@/components/ui/button'
 import { data } from '@/data'
 import { tabelas } from '@/data/tabelas'
 import { useTotaisDoOrcamento } from '@/features/orcamento/bloco-pagamento'
 import { formatMoneyBRL } from '@/lib/formatters'
-import type { ColumnDef } from '@tanstack/react-table'
-import { PencilLine, Wrench } from 'lucide-react'
-import { useState } from 'react'
-import { useWatch } from 'react-hook-form'
 
 /**
  * A ABA SERVIÇOS do documento de venda — instalação, projeto e entrega.

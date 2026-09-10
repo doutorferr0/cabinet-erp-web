@@ -1,5 +1,5 @@
-import { cn } from '@/lib/utils'
 import type { ReactNode } from 'react'
+import { cn } from '@/lib/utils'
 
 /**
  * Campo — a moldura de UM campo de formulário no desenho 2.0 (D16, issue #484;

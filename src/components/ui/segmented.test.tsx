@@ -1,9 +1,9 @@
-import { Segmented, SegmentedItem } from '@/components/ui/segmented'
-import { renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { describe, expect, it } from 'vitest'
+import { Segmented, SegmentedItem } from '@/components/ui/segmented'
+import { renderWithQuery } from '@/test/utils'
 
 /**
  * O segmentado é escolha exclusiva DE VERDADE — e é por isso que ele nasceu

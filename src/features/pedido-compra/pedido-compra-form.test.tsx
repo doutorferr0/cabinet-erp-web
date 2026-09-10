@@ -1,6 +1,6 @@
-import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 
 /**
  * PEDIDO DE COMPRA NA TELA — a fase C do G2.
@@ -134,7 +134,10 @@ function json(corpo: unknown, status = 200): Response {
 function servidor({
   escritas = [],
   pedido = PEDIDO,
-}: { escritas?: Escrita[]; pedido?: Record<string, unknown> } = {}) {
+}: {
+  escritas?: Escrita[]
+  pedido?: Record<string, unknown>
+} = {}) {
   return async (entrada: RequestInfo | URL) => {
     const req = entrada instanceof Request ? entrada : null
     const url = String(req ? req.url : entrada)

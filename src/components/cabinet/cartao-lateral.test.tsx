@@ -1,6 +1,6 @@
-import { CartaoLateral } from '@/components/cabinet/cartao-lateral'
 import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { CartaoLateral } from '@/components/cabinet/cartao-lateral'
 
 /**
  * CARTÃO LATERAL (Reface 2.0, D18).

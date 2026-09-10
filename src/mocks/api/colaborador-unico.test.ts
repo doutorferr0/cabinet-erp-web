@@ -1,3 +1,5 @@
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { configurarApi } from '@/api/cliente'
 import {
   authLogin,
@@ -6,13 +8,11 @@ import {
   listEmployees,
   updateEmployee,
 } from '@/api/gerado'
-import { ID_DO_USUARIO_DEMO, colaboradores, idDeColaborador } from '@/mocks/colaboradores'
+import { colaboradores, ID_DO_USUARIO_DEMO, idDeColaborador } from '@/mocks/colaboradores'
 import { nomeDeApoio } from '@/mocks/lookups'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { resetCrm } from './crm'
 import { handlers } from './handlers'
-import { TENANT_MATRIZ, resetStore } from './store'
+import { resetStore, TENANT_MATRIZ } from './store'
 
 /**
  * UMA lista de pessoas, não duas (#276).

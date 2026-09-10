@@ -1,3 +1,6 @@
+import { Loader2 } from 'lucide-react'
+import { useEffect, useId, useState } from 'react'
+import { FormProvider, useForm } from 'react-hook-form'
 import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
 import { FormGrid } from '@/components/cabinet/form-grid'
 import { ComboDeEscolha } from '@/components/cabinet/lookup-combo'
@@ -13,9 +16,9 @@ import {
 import {
   type FaixaCongelada,
   type LinhaDeParticipacao,
+  motivoDaRecusa,
   type ParticipanteDoPedido,
   ROTULO_DO_PAPEL,
-  motivoDaRecusa,
   useGravarParticipantes,
   useParticipantes,
 } from '@/data/comissoes-api'
@@ -23,9 +26,6 @@ import { useColaboradoresParaEscolha } from '@/data/crm-api'
 import { useEspecificadorOptions } from '@/data/parceiros-api'
 import { avisar } from '@/lib/avisos'
 import { formatDateBR, formatPercent } from '@/lib/formatters'
-import { Loader2 } from 'lucide-react'
-import { useEffect, useId, useState } from 'react'
-import { FormProvider, useForm } from 'react-hook-form'
 
 /**
  * A PARTICIPAÇÃO DO PEDIDO — quem ganha por esta venda, com gravação PRÓPRIA.

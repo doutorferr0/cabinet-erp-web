@@ -1,6 +1,3 @@
-import { Stamp, type StampTom } from '@/components/cabinet/stamp'
-import { formatMoneyBRL } from '@/lib/formatters'
-import { cn } from '@/lib/utils'
 import {
   Calendar as CalendarIcon,
   CircleDot,
@@ -12,6 +9,9 @@ import {
   User,
 } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { Stamp, type StampTom } from '@/components/cabinet/stamp'
+import { formatMoneyBRL } from '@/lib/formatters'
+import { cn } from '@/lib/utils'
 
 /**
  * O TIPO DA COLUNA — o que aquele valor É, e não como a tela quer desenhá-lo.
@@ -91,7 +91,7 @@ export function classeDoTipo(tipo: TipoDeColuna | undefined): string | undefined
   return cn(
     A_DIREITA.has(tipo) && 'text-right',
     EM_MONO.has(tipo) && 't-dado',
-    tipo === 'id' && 'text-[color:var(--primary-text,hsl(var(--foreground)))]',
+    tipo === 'id' && 'font-semibold text-[color:var(--primary-text,hsl(var(--foreground)))]',
     tipo === 'texto' && 'max-w-[28ch]',
   )
 }

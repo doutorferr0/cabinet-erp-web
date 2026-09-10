@@ -1,3 +1,4 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type {
   ProductDetailDto,
   ProductDimensions,
@@ -17,11 +18,11 @@ import {
   updateVariant,
 } from '@/api/gerado'
 import {
-  ErroDaApi,
-  type RespostaDaApi,
   createApiListProvider,
   detalheDoProblema,
+  ErroDaApi,
   itemOuNulo,
+  type RespostaDaApi,
   respostaOk,
 } from '@/data/api-provider'
 import type { ListProvider } from '@/data/provider'
@@ -35,7 +36,6 @@ import {
   type ProdutoVariante,
   produtoVazio,
 } from '@/mocks/produtos'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 /**
  * FRONTEIRA DE PRODUTOS — o primeiro cadastro servido pelo backend.

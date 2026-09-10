@@ -1,9 +1,9 @@
+import { useId, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useLogin } from '@/data/sessao'
 import { type EnvioInterrompido, envioInterrompido } from '@/data/sessao-expirada'
-import { useId, useState } from 'react'
 
 /**
  * Reentrada SEM sair da tela, quando a sessão vence no meio de um envio

@@ -1,3 +1,5 @@
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useState } from 'react'
 import type { AgendaEventDto } from '@/api/gerado'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
 import { Painel } from '@/components/cabinet/painel'
@@ -7,18 +9,16 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useAgenda, useMarcarTodo, useTodos } from '@/data/dashboard-api'
 import {
   DIAS_DA_SEMANA,
-  type Mes,
   diaLocalISO,
   gradeDoMes,
   horaLocal,
   limitesDoMes,
+  type Mes,
   mesDeslocado,
   nomeDoMes,
 } from '@/lib/datas'
 import { cn } from '@/lib/utils'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useState } from 'react'
-import { MarcaDeTipo, TIPOS, TIPOS_NA_ORDEM, eventosDoDia } from './tipos-de-evento'
+import { eventosDoDia, MarcaDeTipo, TIPOS, TIPOS_NA_ORDEM } from './tipos-de-evento'
 
 /**
  * A LINHA DO "HOJE" — calendário do mês, agenda do dia e a lista A fazer.

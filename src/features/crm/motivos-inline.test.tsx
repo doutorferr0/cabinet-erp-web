@@ -1,13 +1,13 @@
+import { screen, waitFor } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { json } from '@/test/servidor'
 import {
-  type FetchStub,
   acaoNaLinha,
+  type FetchStub,
   renderRoute,
   respostaSessao,
   respostaVinculos,
 } from '@/test/utils'
-import { screen, waitFor } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 /**
  * Motivos de perda com EDIÇÃO INLINE (D22) — contra servidor falso, pelo

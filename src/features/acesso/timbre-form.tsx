@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import type { CompanyLetterheadWriteRequest } from '@/api/gerado'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { Button } from '@/components/ui/button'
@@ -5,7 +6,6 @@ import { Dialog, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAlterarTimbre, useTimbre } from '@/data/empresas-do-grupo-api'
-import { useEffect, useState } from 'react'
 
 /**
  * O TIMBRE — o cabeçalho que todo documento impresso repete no alto da página.

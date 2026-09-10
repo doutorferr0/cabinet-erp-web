@@ -1,6 +1,6 @@
-import { PaginaDoInbox } from '@/features/inbox/pagina-do-inbox'
-import { VIEW_PADRAO, type ViewDoInbox, ehView } from '@/features/inbox/views'
 import { createFileRoute } from '@tanstack/react-router'
+import { PaginaDoInbox } from '@/features/inbox/pagina-do-inbox'
+import { ehView, VIEW_PADRAO, type ViewDoInbox } from '@/features/inbox/views'
 
 /**
  * A view viaja no ENDEREÇO, e não em estado local.

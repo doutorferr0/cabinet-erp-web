@@ -1,8 +1,12 @@
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { CircleCheck, FileText, Hash } from 'lucide-react'
+import { useState } from 'react'
 import type { ProductDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import type { OpcaoDeAgrupamento } from '@/components/cabinet/data-table'
 import { FaixaDeKpi, KpiTile } from '@/components/cabinet/kpi-tile'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { Produto } from '@/components/cabinet/nome'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
@@ -10,10 +14,6 @@ import { useResumoDeEstoque, variacao } from '@/data/agregados-api'
 import { useReadOnlyPorPapel } from '@/data/papeis'
 import { useDesativarProduto } from '@/data/produtos-api'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import type { ColumnDef } from '@tanstack/react-table'
-import { CircleCheck, FileText, Hash } from 'lucide-react'
-import { useState } from 'react'
 
 export const Route = createFileRoute('/cadastros/produtos/')({
   component: ProdutosPage,

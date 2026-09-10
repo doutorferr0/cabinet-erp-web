@@ -1,3 +1,5 @@
+import { useNavigate } from '@tanstack/react-router'
+import { z } from 'zod'
 import type { CrmPipelineDto } from '@/api/gerado'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
@@ -5,9 +7,7 @@ import { FormBlock } from '@/components/cabinet/form-block'
 import { CheckboxField, TextField } from '@/components/cabinet/form-controls'
 import { FormGrid } from '@/components/cabinet/form-grid'
 import { posGravar } from '@/components/cabinet/pos-gravar'
-import { type Funil, estagioVazio, useGravarFunil } from '@/data/crm-api'
-import { useNavigate } from '@tanstack/react-router'
-import { z } from 'zod'
+import { estagioVazio, type Funil, useGravarFunil } from '@/data/crm-api'
 
 /**
  * TODO(contract): o Zod do codegen substituirá este schema na integração.

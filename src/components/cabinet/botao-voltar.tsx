@@ -1,7 +1,7 @@
-import { rotaMaeDe } from '@/app/navigation'
-import { Button } from '@/components/ui/button'
 import { useCanGoBack, useLocation, useNavigate, useRouter } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
+import { rotaMaeDe } from '@/app/navigation'
+import { Button } from '@/components/ui/button'
 
 /**
  * A SAÍDA DA TELA — um botão só, sempre no mesmo canto (issue #235; espec da

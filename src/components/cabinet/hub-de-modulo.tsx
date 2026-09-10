@@ -1,5 +1,7 @@
+import { Link } from '@tanstack/react-router'
+import type { CSSProperties, ReactNode } from 'react'
 import type { Modulo } from '@/app/modulo'
-import { type NavItem, gruposVisiveis } from '@/app/navigation'
+import { gruposVisiveis, type NavItem } from '@/app/navigation'
 import { KpiTile, ZonaDeKpi } from '@/components/cabinet/kpi-tile'
 import { DCard } from '@/components/cabinet/painel'
 import {
@@ -13,8 +15,6 @@ import { type RecursoDaEmpresa, useRecursosDaEmpresa } from '@/data/recursos-da-
 import { FeedDeAtividade } from '@/features/dashboard/atividade'
 import { formatMoneyBRL } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
-import { Link } from '@tanstack/react-router'
-import type { CSSProperties, ReactNode } from 'react'
 
 /**
  * HUB DE MÓDULO — a rota-índice deixa de ser um beco.

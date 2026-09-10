@@ -1,20 +1,20 @@
+import { Plus, X } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Button as ButtonAria } from 'react-aria-components'
 import { ControleDeValor, SeletorDeOperador } from '@/components/cabinet/filtro-controles'
 import { partesDoChip, resumoDoFiltro } from '@/components/cabinet/filtros/resumo-do-filtro'
 import { Command, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverTrigger } from '@/components/ui/popover'
 import {
   type CampoFiltravel,
+  dispensaValor,
   type FiltroDaTabela,
   type Juncao,
-  ROTULO_DA_JUNCAO,
-  dispensaValor,
   novoFiltroId,
   operadorPadrao,
+  ROTULO_DA_JUNCAO,
 } from '@/lib/filtro-de-consulta'
 import { cn } from '@/lib/utils'
-import { Plus, X } from 'lucide-react'
-import { useRef, useState } from 'react'
-import { Button as ButtonAria } from 'react-aria-components'
 
 /**
  * CHIPS DE FILTRO ATIVO (#199; redesenhados na Reface 2.0) — a pergunta em

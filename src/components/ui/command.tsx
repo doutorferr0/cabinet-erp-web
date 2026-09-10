@@ -1,13 +1,10 @@
-import type { Modulo } from '@/app/modulo'
-import { Dialog, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { InputGroup, InputGroupAddon } from '@/components/ui/input-group'
-import { cn } from '@/lib/utils'
 import { CheckIcon, SearchIcon } from 'lucide-react'
 import type * as React from 'react'
 import {
   Autocomplete,
   type AutocompleteProps,
   Collection,
+  composeRenderProps,
   Header,
   Input,
   type InputProps,
@@ -20,9 +17,12 @@ import {
   SearchField,
   Separator,
   type SeparatorProps,
-  composeRenderProps,
   useFilter,
 } from 'react-aria-components'
+import type { Modulo } from '@/app/modulo'
+import { Dialog, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { InputGroup, InputGroupAddon } from '@/components/ui/input-group'
+import { cn } from '@/lib/utils'
 
 /**
  * Command sobre RAC Autocomplete+Menu (o cmdk saiu com a base aria).
@@ -297,11 +297,11 @@ export {
   Command,
   CommandCaminho,
   CommandDialog,
-  CommandInput,
-  CommandList,
   CommandEmpty,
   CommandGroup,
+  CommandInput,
   CommandItem,
-  CommandShortcut,
+  CommandList,
   CommandSeparator,
+  CommandShortcut,
 }

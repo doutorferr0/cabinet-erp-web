@@ -1,8 +1,10 @@
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { AvisoDadosDeExemplo } from '@/components/cabinet/aviso-dados-de-exemplo'
 import {
   ErroDeCarregamento,
   EsqueletoDeCarregamento,
 } from '@/components/cabinet/estado-de-consulta'
+import { RegistroNaoEncontrado } from '@/components/cabinet/vazio-com-saida'
 import { data } from '@/data'
 import { useRotulosDeApoio } from '@/data/lookups-api'
 import { FichaDeRegistro } from '@/features/cadastro/ficha-de-registro'
@@ -13,7 +15,6 @@ import { resumoDoColaborador } from '@/features/colaborador/ficha-resumo'
 import { usarColaborador } from '@/features/colaborador/usar-colaborador'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import type { Colaborador } from '@/mocks/colaboradores'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/cadastros/colaboradores/$colaboradorId')({
   component: ColaboradorEditPage,
@@ -51,7 +52,12 @@ function ColaboradorEditPage() {
   }
 
   if (!registro) {
-    return <p className="text-muted-foreground">Colaborador não encontrado.</p>
+    return (
+      <RegistroNaoEncontrado
+        titulo="Colaborador não encontrado."
+        voltar="/cadastros/colaboradores"
+      />
+    )
   }
 
   // `Consul.` mostra a FICHA, não o formulário desabilitado (issue #103): ler é

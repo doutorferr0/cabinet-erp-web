@@ -1,14 +1,14 @@
+import { screen, within } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import {
+  agruparLinhas,
   type DecoracaoDaLinha,
   type OpcaoDeAgrupamento,
   VitraDataTable,
-  agruparLinhas,
 } from '@/components/cabinet/data-table'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import { renderWithQuery } from '@/test/utils'
-import type { ColumnDef } from '@tanstack/react-table'
-import { screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 /**
  * AGRUPAMENTO E DECORAÇÃO DA TABELA (D10) — a grade vira banco.

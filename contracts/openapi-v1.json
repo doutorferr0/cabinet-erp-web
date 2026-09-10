@@ -58,6 +58,49 @@
         }
       }
     },
+    "/api/postal-codes/{postalCode}": {
+      "get": {
+        "tags": ["apoio"],
+        "operationId": "LookupPostalCode",
+        "description": "Proposto. Consulta o endereço público de um CEP e devolve o mesmo formato que os cadastros guardam. Número e complemento não pertencem ao CEP e voltam nulos; o operador os informa. O front não consulta serviço externo diretamente: este caminho deixa cache, disponibilidade e política de fornecedor sob controle do servidor.",
+        "parameters": [
+          {
+            "name": "postalCode",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "pattern": "^[0-9]{8}$" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/PartnerAddress" }
+              }
+            }
+          },
+          "400": {
+            "description": "CEP inválido.",
+            "content": {
+              "application/problem+json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/NaoAutenticado" },
+          "403": { "$ref": "#/components/responses/SemPermissao" },
+          "404": {
+            "description": "CEP não encontrado.",
+            "content": {
+              "application/problem+json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/catalog-lookups": {
       "get": {
         "tags": ["catalogo"],

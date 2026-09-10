@@ -1,6 +1,6 @@
-import { Badge, type TomDeBadge } from '@/components/cabinet/badge'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { Badge, type TomDeBadge } from '@/components/cabinet/badge'
 
 /**
  * BADGE — a pílula pastel da 2.0 (#471, D3).

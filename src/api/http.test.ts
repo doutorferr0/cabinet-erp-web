@@ -1,8 +1,9 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { configurarApi } from '@/api/cliente'
 import { authTenants } from '@/api/gerado'
-import { type RespostaDaApi, dadosOuErro, respostaOk } from '@/data/api-provider'
+import { apiFetch } from '@/api/http'
+import { dadosOuErro, type RespostaDaApi, respostaOk } from '@/data/api-provider'
 import { instalarServidor, json, problema } from '@/test/servidor'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * `200` NÃO PROVA QUE A RESPOSTA É DA API (issue #226).
@@ -288,5 +289,15 @@ describe('servidor que não responde', () => {
 
     expect(resposta.status).toBe(200)
     expect(dadosOuErro(resposta, 'Falha ao carregar as empresas.')).toEqual(vinculos)
+  })
+})
+
+describe('erros de programação na montagem da requisição', () => {
+  it('relança header inválido em vez de fingir que a rede caiu', async () => {
+    configurarApi('http://api.teste')
+
+    await expect(
+      apiFetch('/auth/tenants', { method: 'GET', headers: { 'nome\ninválido': 'x' } }),
+    ).rejects.toThrow(TypeError)
   })
 })

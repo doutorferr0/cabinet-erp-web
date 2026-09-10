@@ -1,11 +1,11 @@
+import { Link } from '@tanstack/react-router'
+import { useEffect, useId, useState } from 'react'
 import type { CrmStageDto } from '@/api/gerado'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { useMotivosDePerda, useMoverOportunidade } from '@/data/crm-api'
-import { Link } from '@tanstack/react-router'
-import { useEffect, useId, useState } from 'react'
 
 /**
  * O que o diálogo precisa saber do negócio: quem é, e de onde ele sai.
@@ -109,9 +109,7 @@ export function PerderOportunidadeDialog({
         {/* O título do negócio, e não só "esta oportunidade": o diálogo pode ter
             vindo da barra, onde a linha selecionada some de vista ao abrir. */}
         <p className="text-sm text-muted-foreground">
-          <span className="font-display font-semibold text-foreground">
-            {oportunidade?.name ?? ''}
-          </span>{' '}
+          <span className="font-nome font-medium text-foreground">{oportunidade?.name ?? ''}</span>{' '}
           sai de <span className="text-foreground">{oportunidade?.stageName ?? ''}</span>.
         </p>
 

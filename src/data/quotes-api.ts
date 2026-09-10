@@ -1,3 +1,4 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { OrderDetailDto, QuoteDetailDto, QuoteDto, QuoteWriteRequest } from '@/api/gerado'
 import {
   cancelQuote,
@@ -8,18 +9,17 @@ import {
   updateQuote,
 } from '@/api/gerado'
 import {
-  PAGE_SIZE_MAX,
-  type RespostaDaApi,
   createApiListProvider,
   dadosOuErro,
   itemOuNulo,
+  PAGE_SIZE_MAX,
+  type RespostaDaApi,
 } from '@/data/api-provider'
-import { type MotivoDoCancelamento, corpoDoCancelamento } from '@/data/cancelamento-de-documento'
+import { corpoDoCancelamento, type MotivoDoCancelamento } from '@/data/cancelamento-de-documento'
 import { CHAVES_PEDIDO_VENDA } from '@/data/pedidos-venda-api'
 import type { DocumentoProvider, ListProvider } from '@/data/provider'
 import { avisar } from '@/lib/avisos'
 import { type Orcamento, orcamentoVazio } from '@/mocks/orcamentos'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 /**
  * FRONTEIRA DO ORÇAMENTO — `/api/quotes`.

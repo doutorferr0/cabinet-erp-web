@@ -1,7 +1,7 @@
-import type { ModuloCor } from '@/components/cabinet/modulo-cores'
-import { cn } from '@/lib/utils'
 import { ChevronDown, type LucideIcon } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
+import type { ModuloCor } from '@/components/cabinet/modulo-cores'
+import { cn } from '@/lib/utils'
 
 /**
  * FormBlock — o bloco de dados da ficha no desenho 2.0 (D16, issue #484).
@@ -271,6 +271,7 @@ export function FormBlock({
               aria-controls={idCorpo}
               aria-label={nome ?? 'Expandir bloco'}
               onClick={() => setAberto((estava) => !estava)}
+              data-slot="form-block-cabecalho"
               className="flex w-full cursor-pointer items-center gap-[var(--s-2)] focus-visible:focus-ring-inset"
             >
               {cabecalho}
@@ -283,7 +284,9 @@ export function FormBlock({
               />
             </button>
           ) : (
-            <div className="flex items-center gap-[var(--s-2)]">{cabecalho}</div>
+            <div data-slot="form-block-cabecalho" className="flex items-center gap-[var(--s-2)]">
+              {cabecalho}
+            </div>
           )}
         </>
       ) : null}

@@ -1,5 +1,5 @@
-import { cn } from '@/lib/utils'
 import type { ComponentPropsWithoutRef, ReactNode } from 'react'
+import { cn } from '@/lib/utils'
 
 /**
  * BADGE — a pílula pastel com ponto. Reface 2.0, issue #471 (D3).

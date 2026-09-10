@@ -1,8 +1,8 @@
+import { screen, within } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import { ModoCalendario } from '@/components/cabinet/listagem/modo-calendario'
 import { diaLocalISO } from '@/lib/datas'
 import { renderWithQuery } from '@/test/utils'
-import { screen, within } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
 
 interface Linha {
   id: string

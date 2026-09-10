@@ -1,21 +1,25 @@
 import { useContadoresNav } from '@/app/nav/contadores'
 import {
-  MAXIMO_DE_RECENTES,
   idadeRelativa,
+  MAXIMO_DE_RECENTES,
   useBarraColapsada,
   useFavoritos,
   useGruposAbertos,
   useRecentes,
 } from '@/app/nav/estado'
 import {
-  GRUPOS_NAV,
   GRUPO_CONFIG,
+  GRUPOS_NAV,
+  grupoDaRota,
   ITENS_DO_MENU_DO_OPERADOR,
   type NavGroup,
   type NavItem,
-  grupoDaRota,
 } from '@/app/nav/grupos'
 import '@/app/nav/nav.css'
+import { Link, useRouterState } from '@tanstack/react-router'
+import { ChevronDown, Clock, PanelLeftClose, PanelLeftOpen, Search, Star } from 'lucide-react'
+import { useEffect, useMemo } from 'react'
+import { Button as ButtonAria } from 'react-aria-components'
 import { CompanySwitcher } from '@/components/cabinet/company-switcher'
 import { Marca } from '@/components/cabinet/marca'
 import {
@@ -29,12 +33,8 @@ import { useEmpresasDaSessao } from '@/data/empresas-api'
 import { papelLabel } from '@/data/papeis'
 import { type RecursoDaEmpresa, useRecursosDaEmpresa } from '@/data/recursos-da-empresa'
 import { useLogout, useSessao } from '@/data/sessao'
-import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
+import { bindShortcut, SHORTCUTS, shortcutLabel } from '@/lib/shortcuts'
 import { cn } from '@/lib/utils'
-import { Link, useRouterState } from '@tanstack/react-router'
-import { ChevronDown, Clock, PanelLeftClose, PanelLeftOpen, Search, Star } from 'lucide-react'
-import { useEffect, useMemo } from 'react'
-import { Button as ButtonAria } from 'react-aria-components'
 
 /**
  * A BARRA LATERAL — a navegação INTEIRA do Cabinet, numa lista só.
@@ -158,7 +158,9 @@ function ItemDaBarra({
         </span>
       ) : null}
       {!colapsada && contador !== undefined ? (
-        <span className="t-dado-meta shrink-0">{contador}</span>
+        <span data-contador className="t-dado-meta shrink-0">
+          {contador}
+        </span>
       ) : null}
     </>
   )
@@ -260,6 +262,7 @@ function GrupoDaBarra({
 
   return (
     <div
+      data-grupo={grupo.id}
       className="flex flex-col"
       style={{
         gap: 'var(--s-1)',

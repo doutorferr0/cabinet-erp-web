@@ -1,7 +1,7 @@
-import { json, problema } from '@/test/servidor'
-import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { json, problema } from '@/test/servidor'
+import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 
 /**
  * A tela de USUÁRIOS E EMPRESAS contra servidor falso, pelo cliente gerado.

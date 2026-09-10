@@ -1,5 +1,3 @@
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
 import type * as React from 'react'
 import {
   Dialog as AlertDialogPrimitive,
@@ -12,6 +10,8 @@ import {
   Modal as ModalPrimitive,
   Text,
 } from 'react-aria-components'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 /**
  * DIÁLOGO DE ALERTA — a pergunta que interrompe porque a resposta tem
@@ -195,8 +195,6 @@ function AlertDialogCancel({
 }
 
 export {
-  type AlertDialogPrimitiveProps,
-  type AlertDialogTriggerPrimitiveProps,
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -205,6 +203,8 @@ export {
   AlertDialogHeader,
   AlertDialogMedia,
   AlertDialogOverlay,
+  type AlertDialogPrimitiveProps,
   AlertDialogTitle,
   AlertDialogTrigger,
+  type AlertDialogTriggerPrimitiveProps,
 }

@@ -77,7 +77,7 @@ const { Quadro } = await vite.ssrLoadModule('/src/features/tarefas/quadro.tsx')
 const { FaixaDoQuadro } = await vite.ssrLoadModule('/src/features/tarefas/faixa.tsx')
 const { CHAVES } = await vite.ssrLoadModule('/src/data/dashboard-api.ts')
 const { QueryClient, QueryClientProvider } = await import('@tanstack/react-query')
-const { jsx, jsxs, Fragment } = await import('react/jsx-runtime')
+const { jsx, jsxs } = await import('react/jsx-runtime')
 
 /** O dia da cena, fixo: captura que lê o relógio muda de conteúdo a cada dia. */
 const HOJE = '2026-09-03'

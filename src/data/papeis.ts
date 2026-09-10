@@ -225,6 +225,7 @@ export const PAPEL_MINIMO_POR_FAMILIA: Record<FamiliaDeCaminho, Papel> = {
    * depósito e para a condição.
    */
   'approval-requests': 'admin',
+  /**
    * PREÇO (G9) — `admin`, e a linha vem do contrato, não desta matriz.
    *
    * As duas escritas do módulo — a tabela do fornecedor e o índice de venda —

@@ -388,6 +388,19 @@ export const ERROS_CANONICOS = {
     extensoes: [],
     origem: 'mock',
   },
+  // A FILA DE APROVAÇÕES (F12, #417) — as duas saem do handler do mock.
+  'urn:cabinet:erro:aprovacao-ja-decidida': {
+    status: 409,
+    detail: 'Este pedido já foi decidido. Recarregue a fila.',
+    extensoes: [],
+    origem: 'mock',
+  },
+  'urn:cabinet:erro:aprovacao-do-solicitante': {
+    status: 403,
+    detail: 'Quem pediu o desconto não decide o próprio pedido.',
+    extensoes: [],
+    origem: 'mock',
+  },
   'urn:cabinet:erro:movimento-ja-conciliado': {
     status: 409,
     detail: 'Este movimento já foi conciliado.',

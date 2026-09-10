@@ -1,5 +1,5 @@
-import { FILTRAVEIS, ORDENAVEIS } from '@/data/parceiros-api'
 import { describe, expect, it } from 'vitest'
+import { FILTRAVEIS, ORDENAVEIS } from '@/data/parceiros-api'
 import contrato from '../../contracts/openapi-v1.json'
 
 /**

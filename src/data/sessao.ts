@@ -1,9 +1,5 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  type ChangePasswordRequest,
-  type CredentialTokenDto,
-  type LoginOk,
-  type LoginRequest,
-  type SessaoAtual,
   authChangePassword,
   authCredentialToken,
   authForgotPassword,
@@ -11,9 +7,13 @@ import {
   authLogout,
   authMe,
   authSetPassword,
+  type ChangePasswordRequest,
+  type CredentialTokenDto,
+  type LoginOk,
+  type LoginRequest,
+  type SessaoAtual,
 } from '@/api/gerado'
-import { type RespostaDaApi, detalheDoProblema, tipoDoProblema } from '@/data/api-provider'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { detalheDoProblema, type RespostaDaApi, tipoDoProblema } from '@/data/api-provider'
 
 /**
  * Sessão do usuário (ADR-010): a autenticação é um COOKIE opaco — o front

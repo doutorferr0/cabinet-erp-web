@@ -1,5 +1,5 @@
+import { TriangleAlert } from 'lucide-react'
 import { Nome } from '@/components/cabinet/nome'
-import { Ornamento } from '@/components/cabinet/ornamento'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -62,12 +62,12 @@ export function ConfirmarDesativacao({
     <AlertDialog isOpen={aberto} onOpenChange={(open) => !open && onFechar()}>
       <AlertDialogHeader>
         <div className="flex items-center gap-3">
-          {/* Ornamento de alerta (memória §@ornamentos: `brutalist-shape-193`,
+          {/* Sinal de alerta (memória, §desenho por região:
               40px, Danger/01). É a única cor de estado permitida a um
-              ornamento — aqui o significado É erro. `aria-hidden`: quem diz o
+              desenho — aqui o significado É erro. `aria-hidden`: quem diz o
               que houve é o título ao lado. */}
           <AlertDialogMedia>
-            <Ornamento shape="alerta" tom="erro" tamanho={40} />
+            <TriangleAlert className="text-destructive" />
           </AlertDialogMedia>
           <AlertDialogTitle>
             {ativo ? `Desativar ${entidade}?` : `${nome} já está inativo`}

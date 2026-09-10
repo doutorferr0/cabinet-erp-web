@@ -1,12 +1,12 @@
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { configurarApi } from '@/api/cliente'
 import { authLogin, authSetActiveTenant, getQuote, listQuotes } from '@/api/gerado'
 import { apiFetch } from '@/api/http'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { handlers } from './handlers'
 import { resetObras } from './obras'
 import { resetQuotes } from './quotes'
-import { TENANT_MATRIZ, resetStore } from './store'
+import { resetStore, TENANT_MATRIZ } from './store'
 
 /**
  * O servidor falso de `/api/quotes` — o que o site demo realmente executa.

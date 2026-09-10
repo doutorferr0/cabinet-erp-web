@@ -1,6 +1,6 @@
-import { renderRoute } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { renderRoute } from '@/test/utils'
 
 /** A folha que o shell monta em volta do `<Outlet/>`. */
 function folha(): HTMLElement {
@@ -24,32 +24,23 @@ function folha(): HTMLElement {
  * `border-2` por `border`, tirar `border-border` ou remover a sombra são
  * mudanças que passam em toda a suíte e só aparecem na tela, para o operador.
  *
- * Monta pelo ROTEADOR e não com `render(<PageFrame/>)` puro: desde a #235 a
- * folha abriga o `Voltar` universal, que lê a rota. Montá-la fora do router
- * mediria uma peça que não existe em tela nenhuma.
+ * Monta pelo ROTEADOR e não com `render(<PageFrame/>)` puro: a folha abriga o
+ * conteúdo da rota, e a saída universal — que na 2.0 (D5) voltou para o
+ * `PageHeader` — lê a rota. Montá-la fora do router mediria uma peça que não
+ * existe em tela nenhuma.
  */
-describe('PageFrame — a folha', () => {
-  it('é delimitada por traço de 2px no token do traço', async () => {
+describe('PageFrame — a página pousa na bancada (2.0)', () => {
+  // 2.0 (ajustes pós-integração, 2026-09-04): a folha em volta da página
+  // inteira SAIU. No mockup quem tem caixa é o painel da listagem, o card da
+  // ficha e o KPI; a página é bancada tonal do módulo. Este teste é o inverso
+  // do antigo: reprova se alguém devolver borda, fundo de card ou sombra ao frame.
+  it('não é caixa: sem traço, sem fundo de card, sem sombra', async () => {
     renderRoute('/')
     await waitFor(() => expect(document.querySelector('[data-slot="page-frame"]')).toBeTruthy())
-
     const classes = folha().className.split(/\s+/)
-
-    // O par que segura a folha: espessura E token. `border` sozinho (1px) ou um
-    // literal no lugar do token quebram a delimitação sem quebrar nada mais.
-    expect(classes).toContain('border-2')
-    expect(classes).toContain('border-border')
-    // Superfície da folha, não da bancada — o degrau de luz que o traço fecha.
-    expect(classes).toContain('bg-card')
-  })
-
-  it('leva a elevação padrão, que é o segundo sinal de que a folha pousa sobre a bancada', async () => {
-    renderRoute('/')
-    await waitFor(() => expect(document.querySelector('[data-slot="page-frame"]')).toBeTruthy())
-
-    // FUSÃO v5 (fase 1.7): superfície estática usa a sombra MACIA; a escada
-    // dura el1-5 ficou para o que é interativo ou decisão.
-    expect(folha().className).toContain('shadow-macia')
+    expect(classes).not.toContain('border-2')
+    expect(classes).not.toContain('bg-card')
+    expect(classes.some((c) => c.startsWith('shadow'))).toBe(false)
   })
 })
 
@@ -63,8 +54,11 @@ describe('PageFrame — a folha', () => {
  * link ou recarga dependia do botão do navegador, que numa SPA volta para fora
  * da aplicação com a mesma facilidade com que volta para dentro.
  *
- * Mora na FOLHA e não em cada tela justamente para não voltar a ser opt-in:
- * tela nova nasce com saída sem lembrar de nada.
+ * Morou na FOLHA por isso, e na 2.0 (D5) voltou para o `PageHeader` — colada
+ * ao título, que é onde o olho já está. **O que não voltou foi o opt-in:** o
+ * padrão do cabeçalho é ligado e quem decide se há tecla é `rotaMaeDe`, não a
+ * tela. Por isso os casos abaixo não mudaram uma linha ao mudar de casa: eles
+ * medem a GARANTIA, não onde ela é montada.
  */
 describe('Voltar universal (#235)', () => {
   it('não aparece em tela que o menu publica — não há para onde voltar', async () => {

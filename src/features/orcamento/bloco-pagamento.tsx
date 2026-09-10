@@ -1,3 +1,4 @@
+import { useWatch } from 'react-hook-form'
 import type {
   DocumentInstallmentDto,
   InstallmentPolicyDto,
@@ -10,9 +11,8 @@ import {
   useCondicoesDePagamento,
   usePoliticaDeParcelamento,
 } from '@/data/pagamento-api'
-import { PERCENT_ESCALA, formatDateBR, formatMoneyBRL, formatPercent } from '@/lib/formatters'
+import { formatDateBR, formatMoneyBRL, formatPercent, PERCENT_ESCALA } from '@/lib/formatters'
 import type { Orcamento } from '@/mocks/orcamentos'
-import { useWatch } from 'react-hook-form'
 
 /**
  * O BLOCO PAGAMENTO do documento de venda — a aba `Pagamento` do legado
@@ -47,6 +47,37 @@ import { useWatch } from 'react-hook-form'
  */
 
 /**
+ * O valor de UMA linha de serviço, em centavos.
+ *
+ * Duas formas chegam aqui, e a diferença não é acidente:
+ *
+ * - **Linha EDITÁVEL** (a aba Serviços do orçamento): a conta é a mesma dos
+ *   itens — quantidade × unitário menos o desconto da linha. Usar o
+ *   `totalCents` que veio do servidor deixaria o rodapé mostrando o total de
+ *   ANTES enquanto o operador digita.
+ * - **Linha PASSANTE** (o pedido de venda, que ainda não tem a grade): a linha
+ *   é o DTO como o servidor o mandou, e o valor dela é o carimbo dele.
+ *
+ * O que NÃO é opção é somar zero: serviço fora do total é o número do rodapé
+ * divergindo do que o cliente paga — no legado a instalação é linha de
+ * `VendaServico`, e o contrato diz em letra que "o total do documento é a soma
+ * das DUAS coleções".
+ */
+export interface LinhaDeServico {
+  /** Presente na linha EDITÁVEL; ausente na passante. */
+  quantidade?: string | number | boolean | null
+  valorUnitarioCentavos?: string | number | boolean | null
+  descontoPercentual?: string | number | boolean | null
+  /** O carimbo do servidor, só na linha passante. */
+  totalCents?: number
+}
+
+export function totalServicoCentavos(servico: LinhaDeServico): number {
+  if (servico.quantidade !== undefined) return totalItemCentavos(servico)
+  return typeof servico.totalCents === 'number' ? servico.totalCents : 0
+}
+
+/**
  * Os totais do documento como a TELA os mostra — uma cópia só da regra.
  *
  * O desconto geral incide sobre o subtotal e o por produto já saiu na linha
@@ -54,22 +85,35 @@ import { useWatch } from 'react-hook-form'
  * itens e este bloco, que decide quais condições cabem no total. Em duas cópias,
  * o dia em que o desconto mudar de fórmula deixa o combo oferecendo parcela
  * sobre um total que a tela não mostra mais.
+ *
+ * **O subtotal soma as DUAS coleções**, produtos e serviços — ver
+ * `totalServicoCentavos`. É o que faz o parcelamento ser oferecido sobre o total
+ * que o servidor vai carimbar: um documento cuja instalação passa do mínimo para
+ * parcelar recusaria, no combo, a condição que o servidor aceitaria.
  */
 export function useTotaisDoOrcamento(): {
   subtotalCentavos: number
+  subtotalDeServicosCentavos: number
   descontoGeralCentavos: number
   totalCentavos: number
 } {
   const itens = (useWatch({ name: 'itens' }) ?? []) as Parameters<typeof totalItemCentavos>[0][]
+  const servicos = (useWatch({ name: 'servicos' }) ?? []) as LinhaDeServico[]
   const modo = useWatch({ name: 'modoDesconto' }) as Orcamento['modoDesconto']
   const percentual = (useWatch({ name: 'descontoPercentual' }) as number) ?? 0
 
-  const subtotalCentavos = itens.reduce((acc, item) => acc + totalItemCentavos(item), 0)
+  const subtotalDeProdutos = itens.reduce((acc, item) => acc + totalItemCentavos(item), 0)
+  const subtotalDeServicosCentavos = servicos.reduce(
+    (acc, servico) => acc + totalServicoCentavos(servico),
+    0,
+  )
+  const subtotalCentavos = subtotalDeProdutos + subtotalDeServicosCentavos
   const descontoGeralCentavos =
     modo === 'GERAL' ? Math.round((subtotalCentavos * percentual) / (PERCENT_ESCALA * 100)) : 0
 
   return {
     subtotalCentavos,
+    subtotalDeServicosCentavos,
     descontoGeralCentavos,
     totalCentavos: subtotalCentavos - descontoGeralCentavos,
   }
@@ -110,7 +154,15 @@ export function BlocoPagamento() {
           politica={limites}
           totalCentavos={totalCentavos}
         />
+        {/* `role="note"` porque `aria-label` em `<p>` cru é IGNORADO pela
+            espec — o rótulo não chegava a leitor de tela nenhum, e os dois
+            testes que o buscam passavam só porque o `findByLabelText` do
+            testing-library é mais permissivo que a plataforma. O `note` é um
+            role que aceita nome acessível, então a promessa passa a ser
+            verdadeira. Acusado pelo `useAriaPropsSupportedByRole`, que o
+            Biome 2 trouxe. */}
         <p
+          role="note"
           aria-label="Limites de parcelamento"
           className="pb-2 text-muted-foreground text-sm tabular-nums"
         >

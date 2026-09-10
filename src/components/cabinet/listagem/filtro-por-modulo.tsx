@@ -1,11 +1,11 @@
+import { X } from 'lucide-react'
+import { useId, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { CampoCadastro, EntidadeCadastro } from '@/features/cadastro/modulos'
 import type { FiltroDaTabela } from '@/lib/filtro-de-consulta'
 import { cn } from '@/lib/utils'
-import { X } from 'lucide-react'
-import { useId, useState } from 'react'
 import {
   ativosDoModulo,
   campoDoFiltro,

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="#16140F" stroke-linejoin="miter" stroke-linecap="butt">
+  <!-- Marca Cabinet: duas casas concêntricas (pentágono de telhado reto + corpo quadrado), sem porta, sem preenchimento.
+       Espessura é variável (mais grossa em tamanho pequeno, mais fina em display); a FORMA é fixa. -->
+  <path d="M50 7 L93 41 V93 H7 V41 Z" stroke-width="11"/>
+  <path d="M50 33 L72 50.5 V72 H28 V50.5 Z" stroke-width="9"/>
+</svg>

@@ -1,12 +1,12 @@
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it } from 'vitest'
 import {
   Accordion,
   AccordionItem,
   AccordionPanel,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
 
 function Exemplo({ allowsMultipleExpanded = false }: { allowsMultipleExpanded?: boolean }) {
   return (

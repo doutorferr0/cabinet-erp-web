@@ -85,6 +85,9 @@ describe('monograma', () => {
 
   it('não quebra com nome curto ou vazio de palavras longas', () => {
     expect(monograma('Al')).toBe('AL')
-    expect(monograma('  ')).toBe('')
+    // Travessão, e não string vazia: a caixa do monograma tem tamanho fixo, e
+    // vazia ela leria como erro de carregamento. É a resposta que a peça sempre
+    // deu; este caso é que cobrava a outra (D37).
+    expect(monograma('  ')).toBe('—')
   })
 })

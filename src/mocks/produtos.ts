@@ -1,3 +1,4 @@
+import type { ProductRelatedDto, ProductSupplierDto } from '@/api/gerado'
 import { idDeApoio } from '@/mocks/lookups'
 /**
  * Produto — campos LITERAIS da transcrição do SoftLux (§6, 5 abas).
@@ -123,6 +124,28 @@ export interface Produto {
   codigoReduzido: string
   nossaDescricao: string
   fornecedores: ProdutoFornecedor[]
+  /**
+   * As duas grades DO SERVIDOR, carregadas-não-editadas.
+   *
+   * Elas não são `fornecedores`/`gruposRelacionados`, e a diferença é o ponto: as
+   * de cima são as da transcrição, com o fornecedor digitado como TEXTO e os
+   * relacionados agrupados por nome de grupo; estas são as do contrato, onde o
+   * fornecedor é um `PartnerDto.id` e o relacionado é um par produto×produto com
+   * quantidade. Reconciliar as duas formas é a FASE C do G11 (issue `api#117`), e
+   * envolve decisão de tela — um LookupCombo de parceiro no lugar do texto livre.
+   *
+   * Até lá elas existem por um motivo estreito e suficiente: o `PUT` substitui o
+   * registro INTEIRO, e `ProductWriteRequest` agora publica as duas grades. Sem
+   * carregá-las e devolvê-las, gravar o NOME de um produto pela tela apagaria a
+   * grade de fornecedores criada por API — o mesmo defeito que os ids de
+   * Tipo/Marca/Fábrica quase causaram, e que a `cobertura-de-escrita` guarda.
+   *
+   * `undefined` quer dizer "não veio na leitura" — a LISTAGEM não traz as grades,
+   * só o detalhe — e faz o corpo OMITIR o campo, que o contrato lê como "não
+   * mexi". Omitir é diferente de mandar `[]`, que APAGA.
+   */
+  fornecedoresDoServidor?: ProductSupplierDto[]
+  relacionadosDoServidor?: ProductRelatedDto[]
   dtVigencia: string | null
   tipoProduto: string
   tipoPeca: string | null

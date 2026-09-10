@@ -409,6 +409,15 @@ export const ERROS_CANONICOS = {
     extensoes: [],
     origem: 'mock',
   },
+  // O reajuste em massa (`POST /api/price-adjustments`, G9) nasce sem handler
+  // no mock — ver `SEM_HANDLER_NO_MOCK` em `whitelist-do-contrato.test.ts`.
+  'urn:cabinet:erro:reajuste-sem-base': {
+    status: 409,
+    detail:
+      'O fornecedor não tem nenhuma tabela vigente na data do reajuste — não há base sobre a qual aplicar o percentual.',
+    extensoes: [],
+    origem: 'so-contrato',
+  },
   // `status: 0` é o do contrato, e é o ponto: não houve resposta HTTP do
   // contrato para atribuir status. Quem o sintetiza preenche o status REAL da
   // resposta que não era JSON — ver `respostaQueNaoEDaApi` em `src/api/http.ts`.

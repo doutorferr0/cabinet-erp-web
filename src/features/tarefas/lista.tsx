@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
 import { Nome } from '@/components/cabinet/nome'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -12,7 +13,6 @@ import {
 import { COLUNAS, useTarefas } from '@/data/dashboard-api'
 import { formatDateBR } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
-import { Fragment } from 'react'
 import { Prioridade } from './prioridade'
 
 /**

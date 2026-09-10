@@ -1,8 +1,8 @@
+import { screen, waitFor } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import type { CrmOpportunityDto } from '@/api/gerado'
 import { json, problema } from '@/test/servidor'
 import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
-import { screen, waitFor } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 /**
  * A conversão vista da TELA.

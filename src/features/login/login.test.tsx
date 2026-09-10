@@ -1,6 +1,6 @@
-import { type FetchStub, renderRoute, respostaSessao } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { type FetchStub, renderRoute, respostaSessao } from '@/test/utils'
 
 /**
  * Tela de login + guarda de sessão, pelo router de verdade.
@@ -74,7 +74,9 @@ describe('Login', () => {
     const { stub } = servidorDeAuth()
     renderRoute('/login', stub)
 
-    expect(await screen.findByRole('heading', { name: 'Cabinet' })).toBeInTheDocument()
+    // O h1 é a TAREFA, não a marca: a bancada à esquerda nomeia o produto, o
+    // card à direita diz o que se faz aqui (§Hierarquia — um assunto por tela).
+    expect(await screen.findByRole('heading', { level: 1, name: 'Entrar' })).toBeInTheDocument()
     expect(screen.getByLabelText('E-mail')).toBeInTheDocument()
     expect(screen.getByLabelText('Senha')).toBeInTheDocument()
     // Fora do shell: nenhuma navegação de módulo na tela.

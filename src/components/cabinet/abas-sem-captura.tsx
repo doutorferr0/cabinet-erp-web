@@ -1,5 +1,5 @@
-import { TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { ReactNode } from 'react'
+import { TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 export type Aba = readonly [value: string, label: string]
 

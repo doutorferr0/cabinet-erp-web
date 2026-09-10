@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest'
 import {
   diaDoInstante,
   diaLocalISO,
@@ -7,7 +8,6 @@ import {
   nomeDoMes,
   saudacao,
 } from '@/lib/datas'
-import { describe, expect, it } from 'vitest'
 
 describe('datas de calendário', () => {
   it('escreve o dia LOCAL, não o de UTC', () => {

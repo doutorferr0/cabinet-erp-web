@@ -1,3 +1,5 @@
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { configurarApi } from '@/api/cliente'
 import {
   authLogin,
@@ -11,11 +13,12 @@ import {
   simulateCostProfile,
   updatePriceIndex,
 } from '@/api/gerado'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { handlers } from './handlers'
 import { resetPrecos } from './precos'
-import { TENANT_MATRIZ, resetStore } from './store'
+import { resetStore, TENANT_MATRIZ } from './store'
+
+/** A vigência por linha é a do DTO de leitura reaproveitado no `PUT`; a que manda é a da requisição. */
+const HOJE = '2026-09-10'
 
 /**
  * O MOCK DE PREÇO (G9 · #379) — o que ele guarda e o que ele RECUSA.
@@ -142,7 +145,7 @@ describe('tabela de preço do fornecedor', () => {
     // `ProductSupplierDto`. Se o mock a guardasse do corpo, a tela poderia
     // gravar um código que o cadastro do produto desmente.
     await replaceVariantTablePrices(VAR_DOIS_FORNECEDORES, {
-      prices: [{ supplierId: EVOLED, tablePriceCents: 90_000 }],
+      prices: [{ supplierId: EVOLED, tablePriceCents: 90_000, effectiveFrom: HOJE }],
     })
     const resposta = await listVariantTablePrices(VAR_DOIS_FORNECEDORES)
 
@@ -153,7 +156,7 @@ describe('tabela de preço do fornecedor', () => {
     await entrar()
 
     await replaceVariantTablePrices(VAR_DOIS_FORNECEDORES, {
-      prices: [{ supplierId: EVOLED, tablePriceCents: 90_000 }],
+      prices: [{ supplierId: EVOLED, tablePriceCents: 90_000, effectiveFrom: HOJE }],
     })
     const resposta = await listVariantTablePrices(VAR_DOIS_FORNECEDORES)
 
@@ -179,8 +182,8 @@ describe('tabela de preço do fornecedor', () => {
 
     const resposta = await replaceVariantTablePrices(VAR_DOIS_FORNECEDORES, {
       prices: [
-        { supplierId: EVOLED, tablePriceCents: 10_000 },
-        { supplierId: EVOLED, tablePriceCents: 20_000 },
+        { supplierId: EVOLED, tablePriceCents: 10_000, effectiveFrom: HOJE },
+        { supplierId: EVOLED, tablePriceCents: 20_000, effectiveFrom: HOJE },
       ],
     })
 
@@ -191,7 +194,7 @@ describe('tabela de preço do fornecedor', () => {
     await entrar()
 
     const resposta = await replaceVariantTablePrices(VAR_DOIS_FORNECEDORES, {
-      prices: [{ supplierId: EVOLED, tablePriceCents: -1 }],
+      prices: [{ supplierId: EVOLED, tablePriceCents: -1, effectiveFrom: HOJE }],
     })
 
     expect(resposta.status).toBe(400)
@@ -206,7 +209,7 @@ describe('tabela de preço do fornecedor', () => {
     await entrar('tenant-filial')
 
     const resposta = await replaceVariantTablePrices(VAR_DOIS_FORNECEDORES, {
-      prices: [{ supplierId: EVOLED, tablePriceCents: 1 }],
+      prices: [{ supplierId: EVOLED, tablePriceCents: 1, effectiveFrom: HOJE }],
     })
 
     expect(resposta.status).toBe(403)

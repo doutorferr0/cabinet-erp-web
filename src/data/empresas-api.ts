@@ -1,8 +1,8 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { VinculoDeEmpresa } from '@/api/gerado'
 import { authSetActiveTenant, authTenants } from '@/api/gerado'
-import { type RespostaDaApi, dadosOuErro, respostaOk } from '@/data/api-provider'
+import { dadosOuErro, type RespostaDaApi, respostaOk } from '@/data/api-provider'
 import { useSessao } from '@/data/sessao'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 /**
  * Empresa ativa da sessão — os dois níveis de multi-tenancy do Cabinet aparecem aqui.

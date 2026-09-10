@@ -1,8 +1,8 @@
-import { instalarServidor, json } from '@/test/servidor'
-import { renderRoute } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { instalarServidor, json } from '@/test/servidor'
+import { renderRoute } from '@/test/utils'
 
 /**
  * A BUSCA DE REGISTRO vista da paleta — a tela, não a fronteira.
@@ -63,7 +63,7 @@ afterEach(() => vi.unstubAllGlobals())
 async function abrirPaleta() {
   const user = userEvent.setup()
   const resultado = renderRoute('/', fetchStub)
-  await user.click(await screen.findByRole('button', { name: 'Abrir a paleta de comandos' }))
+  await user.click(await screen.findByRole('button', { name: 'Abrir a busca' }))
   await screen.findByPlaceholderText(/nome\/número de um registro/)
   return { ...resultado, user }
 }

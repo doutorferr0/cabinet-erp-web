@@ -1,17 +1,17 @@
+import { describe, expect, it, vi } from 'vitest'
 import {
   type FamiliaDeCaminho,
+  familiaDoCaminho,
   PAPEIS,
   PAPEIS_ORDENADOS,
   PAPEL_MINIMO_POR_FAMILIA,
   type Papel,
-  familiaDoCaminho,
   papelLabel,
   podeEscrever,
   podeEscreverNoCaminho,
   usePermissoesDoPapel,
   useReadOnlyPorPapel,
 } from '@/data/papeis'
-import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/data/empresas-api', () => ({
   useEmpresasDaSessao: vi.fn(),

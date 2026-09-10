@@ -1,3 +1,5 @@
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { configurarApi } from '@/api/cliente'
 import type { PermissionCatalogDto, RoleDetailDto, RoleDto } from '@/api/gerado'
 import {
@@ -9,11 +11,9 @@ import {
   listRoles,
   updateRole,
 } from '@/api/gerado'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { resetAcesso } from './acesso'
 import { handlers } from './handlers'
-import { TENANT_FILIAL, TENANT_MATRIZ, resetStore } from './store'
+import { resetStore, TENANT_FILIAL, TENANT_MATRIZ } from './store'
 
 /**
  * O servidor falso de papéis e permissões (web#292 · api#84).

@@ -1,8 +1,8 @@
+import { screen } from '@testing-library/react'
+import { afterEach, describe, expect, it } from 'vitest'
 import { limparAvisos } from '@/lib/avisos'
 import { parceiro, servidorDeParceiros } from '@/test/parceiros'
 import { acaoNaLinha, renderRoute } from '@/test/utils'
-import { screen } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
 
 afterEach(limparAvisos)
 

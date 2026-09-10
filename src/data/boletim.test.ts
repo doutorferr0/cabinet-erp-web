@@ -1,3 +1,4 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { boletim } from '@/data/boletim'
 import { URL_COLABORADORES } from '@/data/colaboradores-api'
 import { URL_PARCEIROS } from '@/data/parceiros-api'
@@ -5,7 +6,6 @@ import { URL_PRODUTOS } from '@/data/produtos-api'
 import { orcamentos } from '@/mocks/orcamentos'
 import { ordensCompra } from '@/mocks/ordens-compra'
 import { instalarServidor, json, problema } from '@/test/servidor'
-import { afterEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * Trava o contrato do boletim, como `provider.test.ts` trava o dos providers.

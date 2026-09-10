@@ -1,16 +1,17 @@
+import { HttpResponse, http } from 'msw'
 import type { ServiceDto, ServiceWriteRequest } from '@/api/gerado'
-import { http, HttpResponse } from 'msw'
+import { paginar } from './listagem'
 import { verificarEscrita } from './permissao'
 import {
-  TIPO,
   camposInvalidos,
   conflito,
   naoEncontrado,
   problemaJson,
   semEmpresaAtiva,
   semSessao,
+  TIPO,
 } from './problema'
-import { type ServicoDaEmpresa, novoId, store } from './store'
+import { novoId, type ServicoDaEmpresa, store } from './store'
 
 /**
  * O "backend" dos SERVIÇOS no modo mock (`/api/services`, contrato S2).
@@ -99,21 +100,6 @@ function corpoInvalido(corpo: ServiceWriteRequest) {
     })
   }
   return fields.length > 0 ? camposInvalidos(fields) : undefined
-}
-
-function paginar<T>(linhas: T[], url: URL) {
-  const page = Number(url.searchParams.get('page') ?? '1')
-  const pageSize = Number(url.searchParams.get('pageSize') ?? '10')
-  if (page < 1 || pageSize < 1 || pageSize > 100) {
-    return problemaJson(
-      400,
-      'Paginação inválida: page é 1-based e pageSize vai até 100.',
-      {},
-      TIPO.paginacaoInvalida,
-    )
-  }
-  const inicio = (page - 1) * pageSize
-  return HttpResponse.json({ rows: linhas.slice(inicio, inicio + pageSize), total: linhas.length })
 }
 
 /** O corpo INTEGRAL aplicado sobre a linha guardada — `PUT` apaga o que não veio. */

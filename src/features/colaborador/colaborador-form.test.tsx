@@ -1,8 +1,8 @@
-import { ID_DO_COLABORADOR, fichaDeColaborador, stubDeColaboradores } from '@/test/colaboradores'
-import { type Rota, instalarServidor, json } from '@/test/servidor'
-import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { fichaDeColaborador, ID_DO_COLABORADOR, stubDeColaboradores } from '@/test/colaboradores'
+import { instalarServidor, json, type Rota } from '@/test/servidor'
+import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -166,11 +166,13 @@ describe('tela Colaborador', () => {
     const dialog = await screen.findByRole('dialog')
     expect(dialog).toHaveTextContent('Busca de Naturalidade')
 
-    await user.click(await within(dialog).findByText('CAMPINAS'))
+    // Campinas está além da primeira página dos 5571 municípios do IBGE: usa a busca.
+    await user.type(within(dialog).getByLabelText('Busca'), 'campinas')
+    await user.click(await within(dialog).findByText('Campinas'))
     await user.click(within(dialog).getByRole('button', { name: 'Selecionar' }))
 
-    await waitFor(() => expect(screen.getByLabelText('Naturalidade')).toHaveValue('CAMPINAS'))
-    expect(screen.getByText('354')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByLabelText('Naturalidade')).toHaveValue('Campinas'))
+    expect(screen.getByText('3509502')).toBeInTheDocument()
     expect(screen.getByText('SP')).toBeInTheDocument()
   })
   /**

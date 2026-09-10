@@ -1,7 +1,8 @@
+import { useNavigate } from '@tanstack/react-router'
 import type { QuoteDto } from '@/api/gerado'
 import { ProblemType } from '@/api/gerado'
+import { FormaDoModulo } from '@/components/cabinet/forma'
 import { Nome } from '@/components/cabinet/nome'
-import { OrnamentoDoModulo } from '@/components/cabinet/ornamento'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,7 +15,6 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useRevisarOrcamento } from '@/data/quotes-api'
 import { type FrasesDeRecusa, mensagemDaRecusa, typeDoErro } from '@/lib/erros'
-import { useNavigate } from '@tanstack/react-router'
 
 /**
  * REVISAR o orçamento — o gesto que faltava para o caso mais banal da mesa.
@@ -94,7 +94,7 @@ export function RevisarOrcamento({ orcamento, onFechar }: RevisarOrcamentoProps)
       <AlertDialogHeader>
         <div className="flex items-center gap-3">
           <AlertDialogMedia>
-            <OrnamentoDoModulo tom="modulo" tamanho={40} />
+            <FormaDoModulo tamanho={40} />
           </AlertDialogMedia>
           {/* O título acompanha a RECUSA, como no `Gerar Pedido`: continuar
               perguntando "revisar?" com o corpo dizendo que já foi revisado

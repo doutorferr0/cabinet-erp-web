@@ -1,14 +1,14 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { URL_PRODUTOS } from '@/data/produtos-api'
 import { json, problema } from '@/test/servidor'
 import {
-  type FetchStub,
   acaoNaLinha,
+  type FetchStub,
   renderRoute,
   respostaSessao,
   respostaVinculos,
 } from '@/test/utils'
-import { screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 /**
  * Tela de produtos contra o BACKEND (servidor falso no `fetch`).
@@ -181,10 +181,21 @@ describe('listagem de produtos', () => {
     renderRoute('/cadastros/produtos', servidorDeProdutos())
 
     await screen.findByText('VERTZ')
-    expect(screen.queryByRole('button', { name: /Marca/ })).toBeNull()
-    expect(screen.queryByRole('button', { name: /Fábrica/ })).toBeNull()
+    // A pergunta é sobre o CABEÇALHO DA TABELA, e por isso ela é feita dentro
+    // dele. Fora, `/Marca/` casa os botões de favoritar da sidebar
+    // (`aria-label="Marcar Dashboard"`, D4) — a busca global achava dois
+    // "Marca" e reprovava com "found multiple elements", que é o oposto do que
+    // este caso afirma. Escopo em vez de regex mais fechada: o que se quer
+    // dizer é "neste cabeçalho não há botão", não "não há esta string na tela".
+    const tabela = screen.getByRole('table')
+    // `?? tabela` em vez de `!`: se a tabela um dia perder o `<thead>`, o escopo
+    // cai para ela inteira — ainda fora da barra, que é o que este caso precisa
+    // excluir — em vez de estourar com um erro que não fala de ordenação.
+    const cabecalho = within(tabela).getAllByRole('rowgroup')[0] ?? tabela
+    expect(within(cabecalho).queryByRole('button', { name: /Marca/ })).toBeNull()
+    expect(within(cabecalho).queryByRole('button', { name: /Fábrica/ })).toBeNull()
     // Contraprova: a coluna que a whitelist ACEITA continua clicável.
-    expect(screen.getByRole('button', { name: /Nosso Código/ })).toBeInTheDocument()
+    expect(within(cabecalho).getByRole('button', { name: /Nosso Código/ })).toBeInTheDocument()
   })
 
   // A whitelist do servidor é `code`/`description`/`active`: mandar o nome em

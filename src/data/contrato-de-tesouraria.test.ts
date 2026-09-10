@@ -178,6 +178,24 @@ describe('a baixa aponta a CONTA, não só o meio', () => {
     )
   })
 
+  it('a recusa A MENOS tem URN PRÓPRIA, e não o `papel-insuficiente` genérico', () => {
+    // Fase C, e a razão é da TELA: as duas recusas são 403 e pedem coisas
+    // opostas do operador. No `papel-insuficiente` ele não resolve sozinho — a
+    // tela ESCONDE o controle. Aqui o controle é justamente o que resolve: o
+    // valor sobe até o saldo e a baixa passa. Com uma URN só para as duas, a
+    // tela teria de escolher entre esconder o campo que destrava o caso ou
+    // mostrar "peça permissão" para quem só precisa corrigir um número.
+    expect(problemType.enum).toContain('urn:cabinet:erro:quitacao-a-menor')
+    expect(problemType.description).toContain('| `urn:cabinet:erro:quitacao-a-menor` |')
+    // Citada por QUEM a emite — as duas operações de baixa, avulsa e lote.
+    for (const caminho of [
+      '/api/financial-installments/{id}/settlements',
+      '/api/financial-settlements/batch',
+    ]) {
+      expect(operacao(caminho, 'post').description).toContain('urn:cabinet:erro:quitacao-a-menor')
+    }
+  })
+
   it('quitação A MENOS é 403 (permissão), e ACIMA do saldo é 409 (engano)', () => {
     // As duas recusas parecem a mesma e não são: a de baixo depende de QUEM
     // pede — é a permissão especial nº 45 do legado —, a de cima não tem

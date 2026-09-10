@@ -1,18 +1,20 @@
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { AvisoDadosDeExemplo } from '@/components/cabinet/aviso-dados-de-exemplo'
 import {
   ErroDeCarregamento,
   EsqueletoDeCarregamento,
 } from '@/components/cabinet/estado-de-consulta'
-import { FichaDeCadastro } from '@/components/cabinet/ficha/ficha-de-cadastro'
+import { RegistroNaoEncontrado } from '@/components/cabinet/vazio-com-saida'
 import { data } from '@/data'
 import { useRotulosDeApoio } from '@/data/lookups-api'
+import { FichaDeRegistro } from '@/features/cadastro/ficha-de-registro'
 import { colaborador as esquema } from '@/features/cadastro/modulos'
 import { CoberturaDoColaborador } from '@/features/colaborador/cobertura-do-colaborador'
 import { ColaboradorForm } from '@/features/colaborador/colaborador-form'
+import { resumoDoColaborador } from '@/features/colaborador/ficha-resumo'
 import { usarColaborador } from '@/features/colaborador/usar-colaborador'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import type { Colaborador } from '@/mocks/colaboradores'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/cadastros/colaboradores/$colaboradorId')({
   component: ColaboradorEditPage,
@@ -50,7 +52,12 @@ function ColaboradorEditPage() {
   }
 
   if (!registro) {
-    return <p className="text-muted-foreground">Colaborador não encontrado.</p>
+    return (
+      <RegistroNaoEncontrado
+        titulo="Colaborador não encontrado."
+        voltar="/cadastros/colaboradores"
+      />
+    )
   }
 
   // `Consul.` mostra a FICHA, não o formulário desabilitado (issue #103): ler é
@@ -66,12 +73,21 @@ function ColaboradorEditPage() {
     return (
       <div className="flex flex-col gap-4">
         <AvisoDadosDeExemplo origem={data.colaboradores.origem} />
-        <FichaDeCadastro
+        <FichaDeRegistro
           entidade={esquema}
           {...(rotulos ? { rotulos } : {})}
           registro={registro}
-          titulo="Cadastro de Colaboradores"
-          contexto={registro.nome}
+          titulo="Colaborador"
+          nome={registro.nome}
+          {...(query.data?.jobTitle ? { meta: query.data.jobTitle } : {})}
+          ativo={registro.ativo}
+          // `PUT /api/employees/{id}` com o `active` invertido. Continua o
+          // caminho do Gravar — e continua `admin` no contrato: quem opera com
+          // `operator-full` recebe 403, e o erro sai no diálogo em vez de a
+          // tela fingir que gravou.
+          aoAlternarAtivo={() => gravar.mutate({ ...registro, ativo: !registro.ativo })}
+          alternando={gravar.isPending}
+          resumo={resumoDoColaborador(query.data)}
           aoEditar={(moduloId) =>
             void navigate({
               to: '/cadastros/colaboradores/$colaboradorId',

@@ -1,7 +1,7 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { MAPA_DE_ATALHOS, type NomeDeAtalho, SHORTCUTS } from '@/lib/shortcuts'
 import { describe, expect, it } from 'vitest'
+import { MAPA_DE_ATALHOS, type NomeDeAtalho, SHORTCUTS } from '@/lib/shortcuts'
 
 /**
  * INVARIANTE: tecla no registry é tecla NO MAPA, e o mapa é medido, não escrito.
@@ -27,10 +27,7 @@ const SRC = resolve(__dirname, '..')
  * ligá-la ou apagá-la do registry, e as duas dependem da mesma resposta —
  * por isso a linha aponta a issue, não uma PR.
  */
-const SEM_CHAMADOR: Partial<Record<NomeDeAtalho, string>> = {
-  incluir:
-    'declarado desde a origem do registry e nunca ligado; a #362 pergunta ao operador se ele fica (a busca já oferece "Novo cliente") antes de a barra de ações passar a ligá-lo',
-}
+const SEM_CHAMADOR: Partial<Record<NomeDeAtalho, string>> = {}
 
 function arquivosDe(dir: string): string[] {
   return readdirSync(dir).flatMap((nome) => {

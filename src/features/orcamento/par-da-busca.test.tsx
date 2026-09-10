@@ -1,8 +1,8 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { servidorDeOrcamentos } from '@/test/orcamentos'
 import { parceiro, stubDeParceiros } from '@/test/parceiros'
 import { type FetchStub, renderRoute } from '@/test/utils'
-import { screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 /**
  * O DIÁLOGO DE BUSCA GRAVA O PAR — id E nome (#406).

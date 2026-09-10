@@ -1,3 +1,4 @@
+import { PageHeader } from '@/components/cabinet/page-header'
 import { Painel } from '@/components/cabinet/painel'
 import {
   Table,
@@ -41,14 +42,15 @@ import { MAPA_DE_ATALHOS, SHORTCUTS, shortcutLabel } from '@/lib/shortcuts'
 export function MapaDeAtalhosTela() {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
-      <header className="flex flex-col gap-1">
-        <h1 className="font-semibold text-xl tracking-tight">Atalhos do teclado</h1>
-        <p className="max-w-prose text-muted-foreground text-sm">
-          Toda ação do Cabinet é alcançável pelo mouse — nenhum fluxo depende de tecla memorizada.
-          Os atalhos abaixo são conveniência para quem vem do sistema antigo, e a coluna da esquerda
-          mostra a tecla que fazia a mesma coisa lá.
-        </p>
-      </header>
+      <PageHeader titulo="Atalhos do teclado" />
+      {/* Prosa de tela, e não `subtitulo`: o subtítulo do cabeçalho diz o que a
+          tela TEM ("14 atalhos"), em uma linha. Isto é a regra da casa sobre
+          atalho, que precisa das três frases. */}
+      <p className="max-w-prose text-muted-foreground text-sm">
+        Toda ação do Cabinet é alcançável pelo mouse — nenhum fluxo depende de tecla memorizada. Os
+        atalhos abaixo são conveniência para quem vem do sistema antigo, e a coluna da esquerda
+        mostra a tecla que fazia a mesma coisa lá.
+      </p>
 
       <Painel titulo="Do sistema antigo para o Cabinet">
         <Table>

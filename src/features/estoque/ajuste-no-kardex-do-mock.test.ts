@@ -57,13 +57,18 @@ async function umaVarianteComDeposito() {
   const depositos = await listStockLocations({ page: 1, pageSize: 50 })
   if (depositos.status !== 200) throw new Error('sem depósitos no mock')
   const deposito = depositos.data.rows.find((linha) => linha.isDefault) ?? depositos.data.rows[0]
+  if (!deposito) throw new Error('sem depósitos no mock')
 
   const produtos = await listProducts({ page: 1, pageSize: 5 })
   if (produtos.status !== 200) throw new Error('sem produtos no mock')
-  const detalhe = await getProduct(produtos.data.rows[0].id)
+  const primeiro = produtos.data.rows[0]
+  if (!primeiro) throw new Error('sem produtos no mock')
+  const detalhe = await getProduct(primeiro.id)
   if (detalhe.status !== 200) throw new Error('produto sem detalhe')
+  const variante = detalhe.data.variants[0]
+  if (!variante) throw new Error('produto sem variante')
 
-  return { variantId: detalhe.data.variants[0].id as string, locationId: deposito.id }
+  return { variantId: variante.id as string, locationId: deposito.id }
 }
 
 describe('o ajuste do inventário no mock', () => {
@@ -89,6 +94,8 @@ describe('o ajuste do inventário no mock', () => {
     expect(kardex.status).toBe(200)
     if (kardex.status !== 200) return
     const ultimo = kardex.data.rows[0]
+    expect(ultimo).toBeDefined()
+    if (!ultimo) return
     expect(ultimo.reason).toBe('Inventário — contagem de agosto')
     expect(ultimo.delta).toBe(-3)
     expect(ultimo.balanceAfter).toBe(contado)

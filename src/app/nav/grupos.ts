@@ -4,6 +4,7 @@ import {
   CalendarClock,
   CalendarDays,
   CircleDollarSign,
+  ClipboardCheck,
   Filter,
   GanttChart,
   HandCoins,
@@ -279,6 +280,18 @@ export const GRUPOS_NAV: readonly NavGroup[] = [
         url: '/estoque/movimentacao',
         icon: ArrowLeftRight,
         descricao: 'Entrada, saída e transferência do estoque.',
+      },
+      {
+        /**
+         * INVENTÁRIO (M2, #467) — o contraponto da Movimentação: lá se lança o
+         * que se sabe que aconteceu, aqui se confere o que a prateleira tem
+         * contra o que o sistema diz. Vem depois dela porque o ajuste que ele
+         * produz É um movimento.
+         */
+        title: 'Inventário',
+        url: '/estoque/inventario',
+        icon: ClipboardCheck,
+        descricao: 'Contagem por depósito: o contado contra o sistema, e o ajuste da diferença.',
       },
       {
         title: 'Produtos',

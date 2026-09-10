@@ -328,12 +328,12 @@ describe('tela Fornecedor', () => {
     const dialog = await screen.findByRole('dialog')
     expect(dialog).toHaveTextContent('Busca de Cidade')
     await user.type(within(dialog).getByLabelText('Busca'), 'curitiba')
-    const linha = await screen.findByText('CURITIBA')
+    const linha = await screen.findByText('Curitiba')
     await user.click(linha)
     await user.click(screen.getByRole('button', { name: 'Selecionar' }))
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Cidade')).toHaveValue('CURITIBA')
+      expect(screen.getByLabelText('Cidade')).toHaveValue('Curitiba')
     })
   })
 

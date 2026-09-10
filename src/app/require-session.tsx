@@ -1,8 +1,8 @@
+import { Navigate, useRouterState } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useSessao } from '@/data/sessao'
 import { rotaDeOrigemValida } from '@/lib/rota-de-origem'
-import { Navigate, useRouterState } from '@tanstack/react-router'
 
 /**
  * Guarda de sessão: nenhuma tela do sistema renderiza sem `/auth/me`.
@@ -33,7 +33,10 @@ export function RequireSession({
    * troca de senha — laço de redirecionamento em vez de tela.
    */
   permiteSenhaProvisoria = false,
-}: { children: React.ReactNode; permiteSenhaProvisoria?: boolean }) {
+}: {
+  children: React.ReactNode
+  permiteSenhaProvisoria?: boolean
+}) {
   const sessao = useSessao()
   // A rota que o operador tentou abrir, com a busca — é o que o `/login` recebe
   // para reabrir depois de entrar. Lida do router, e não de `window.location`,

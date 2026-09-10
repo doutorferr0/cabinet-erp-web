@@ -1,13 +1,14 @@
 import { documentoDoColaborador, listaDeColaboradores } from '@/data/colaboradores-api'
 import { ordensDeCompraApi, pedidosDeCompraApi } from '@/data/compras-api'
 import { funis } from '@/data/crm-api'
+import { municipiosIbge } from '@/data/geografia/municipios'
 import { parceiros } from '@/data/parceiros-api'
 import { pedidosDeVendaApi } from '@/data/pedidos-venda-api'
 import { produtosApi } from '@/data/produtos-api'
 import { type ListProvider, type ResourceProvider, tabelaDeApoio } from '@/data/provider'
 import { orcamentosApi } from '@/data/quotes-api'
+import { servicosApi } from '@/data/servicos-api'
 import { bancos } from '@/mocks/bancos'
-import { cidades } from '@/mocks/cidades'
 import { clienteVazio } from '@/mocks/clientes'
 
 import { fornecedorVazio } from '@/mocks/fornecedores'
@@ -50,9 +51,10 @@ export const data = {
    * A família inteira já atravessava para a rede desde a #276; o que faltava era
    * esta tela CONSUMI-LA, e enquanto faltou o sistema tinha duas listas de quem
    * trabalha aqui — o combo de responsável das atividades lia o Postgres e este
-   * cadastro lia a semente. Ver `colaboradores-api.ts` para o que o contrato v1
-   * ainda não cobre (o bloco de RH, e a ESCRITA, que responde 403 ao papel da
-   * semente por decisão de permissão do api).
+   * cadastro lia a semente. **O bloco de RH deixou de ser o buraco na #403** —
+   * pessoal e trabalhista entraram no contrato, e sexo e raça/cor saíram da tela
+   * por LGPD. O que resta é a ESCRITA, que responde 403 ao papel da semente por
+   * decisão de permissão do api. Ver `colaboradores-api.ts`.
    *
    * Mesma divisão de `produtos` e `orcamentos`: a grade recebe o `EmployeeDto`
    * cru, para o `sortBy` casar com a whitelist do servidor, e o formulário
@@ -116,6 +118,17 @@ export const data = {
   pedidosVenda: pedidosDeVendaApi,
 
   /**
+   * Cadastro de SERVIÇOS — HTTP (`GET /api/services`), só listagem.
+   *
+   * Entrada de LISTA e não de recurso: o contrato publica listagem e escrita, e
+   * nenhum detalhe por id — o `ServiceDto` é plano, e a linha da listagem já é o
+   * registro inteiro. Quem a consome hoje é a aba Serviços do orçamento, que
+   * precisa escolher o que cobrar e congelar preço e percentual do eletricista
+   * na linha do documento.
+   */
+  servicos: servicosApi,
+
+  /**
    * Funil de venda (CRM). Listagem, detalhe e registro em branco são todos do
    * contrato — `GET /api/crm/pipelines` e `GET …/{id}` existem, e o `get`
    * devolve o funil COM as colunas, que é o que o formulário edita.
@@ -126,8 +139,17 @@ export const data = {
    */
   funis,
 
-  /** Tabela de apoio: só consulta, chave é `codigo` e não há "Incluir". */
-  cidades: tabelaDeApoio({ rows: cidades }),
+  /**
+   * Municípios do IBGE — tabela de apoio, só consulta, e a ÚNICA entrada do
+   * registry cuja origem é `'local'`: os 5571 municípios são dado público que
+   * mora no front (`src/data/geografia/`), carregado sob demanda.
+   *
+   * O nome da entrada continua `cidades` porque é o que a tela procura; o que
+   * mudou por baixo é o `codigo`, que era sequência inventada de três dígitos e
+   * agora é o código do IBGE — o mesmo que a NF-e vai exigir. Ver
+   * `docs/geografia-ibge.md` para por que local agora e servidor na fase fiscal.
+   */
+  cidades: municipiosIbge,
 
   /**
    * Tabela de apoio: busca de `Nº do banco` em Dados Bancários (transcrição

@@ -1,7 +1,7 @@
-import type { ProjectDto, ProjectPlanDto } from '@/api/gerado'
-import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import type { ProjectDto, ProjectPlanDto } from '@/api/gerado'
+import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 
 /**
  * O QUE ESTA BATERIA PODE PROVAR MUDOU COM A TROCA DE MOTOR — e o limite é
@@ -140,7 +140,9 @@ describe('tela Planner', () => {
     renderRoute('/planner', servidor().stub)
     await screen.findByText('Aquisição')
 
-    // `s120`, laranja #FF6B2C: quem lê a cor sabe em que parte do sistema está.
+    // A seção é `dashboard`, e a cor da barra sai do token da seção: quem lê a
+    // cor sabe em que parte do sistema está. O valor mora no token — citá-lo
+    // aqui daria uma segunda fonte para a mesma cor.
     expect(document.querySelector('[data-slot="gantt"]')?.getAttribute('data-secao')).toBe(
       'dashboard',
     )

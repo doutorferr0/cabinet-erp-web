@@ -36,8 +36,16 @@ especificação de **entrada** que o backend precisa implementar, não cópia qu
   planner nasceram assim — caminho que o front escreveu antes de existir implementação — e hoje
   respondem. No modo mock quem responde é `src/mocks/api/handlers.ts`, e a tela não sabe a
   diferença: é isso que mantém `cabinetonline.cc` de pé sem backend nenhum.
-- **Ainda mock por falta de caminho no contrato:** cidades e boletim. Seguem a regra antiga:
-  dados tipados em `src/mocks/`, campos LITERAIS de `topicos/transcricaosoftlux.md` da memória.
+- **Ainda mock por falta de caminho no contrato:** boletim. Segue a regra antiga: dados tipados
+  em `src/mocks/`, campos LITERAIS de `topicos/transcricaosoftlux.md` da memória.
+- **CIDADES SAIU DESSA LISTA, e não foi virando HTTP.** Os 5571 municípios do IBGE são dado
+  público, oficial e igual para todo tenant: viraram asset LOCAL do front
+  (`src/data/geografia/`, gerado por `scripts/gera-municipios-ibge.mjs`, carregado sob demanda),
+  com o código do IBGE no lugar da sequência inventada de três dígitos. Não há caminho no
+  contrato porque não deve haver — publicá-lo seria pedir ao backend proxy de um arquivo que não
+  muda. O registry ganhou por isso uma terceira `origem`, `'local'`: nem servidor, nem exemplo.
+  A fase fiscal é que move a fonte para o servidor, e sai barata porque o código já é o certo.
+  Ver `docs/geografia-ibge.md`.
 - **Ainda mock COM caminho no contrato — que é outra coisa:** colaborador. A família tem 8
   operações — listagem, ficha, escrita, vínculo e faixas de comissão — e a passagem as liga;
   quem não migrou foi `data.colaboradores`, e o que segura é o lado do MOCK — falta handler de
@@ -52,6 +60,14 @@ especificação de **entrada** que o backend precisa implementar, não cópia qu
   escondida: é o trilho seguinte, e enquanto durar, as telas de compras e o mock do contrato são
   dois mundos que não se falam — gravar numa não aparece na outra. Migrar mexe em `src/data/`,
   não na tela, que é a regra de acesso a dado logo abaixo.
+- **APROVAÇÕES (F12) é o caso NOVO da lista, e é mock por falta de SERVIDOR, não de caminho.** O
+  contrato publica as 5 operações de `/api/approval-requests` (fila, resumo, ficha, aprovar,
+  recusar), `src/mocks/api/aprovacoes.ts` as serve com estado de verdade e a tela
+  (`features/aprovacao/`) as consome. O que falta do outro lado não são handlers: é o GANCHO que
+  CRIA o pedido, ao gravar documento com desconto acima do teto (`cabinet-erp-api#237`, fase 1).
+  Por isso as cinco ficam em `ROTAS_NO_MOCK` mesmo depois de o api sincronizar o contrato —
+  ligá-las antes do gancho poria uma fila vazia no lugar de uma que funciona, e "não há nada
+  para aprovar" é indistinguível de "o gancho não existe". Ver `docs/integracao.md` §Fila.
 - **PROIBIDO continua:** inventar chamada HTTP, inventar shape de API sem passar pelo contrato,
   escrever à mão tipo que o contrato define. Todo tipo de servidor vem do codegen —
   `pnpm codegen` (Orval + pós-codegen), saída em `src/api/gerado/`, **commitada**, com
@@ -74,10 +90,37 @@ especificação de **entrada** que o backend precisa implementar, não cópia qu
 ## Stack (decidida — NÃO trocar sem confirmação do user)
 - **Vite + React 19 + TypeScript strict** · SPA
 - **Tailwind v4 + shadcn/ui** (copy-paste, sem runtime dep de UI kit)
-- **TanStack Query v5** (estado servidor) · **TanStack Table v8** · **TanStack Router** (adotado; rotas em `src/routes/`, árvore gerada em `src/routeTree.gen.ts`)
+- **TanStack Query v5** (estado servidor) · **TanStack Table v9** · **TanStack Router** (adotado; rotas em `src/routes/`, árvore gerada em `src/routeTree.gen.ts`)
 - **Orval** (codegen do contrato: tipos + hooks TanStack + Zod + handlers MSW) · cliente em `src/api/cliente.ts` (`fetch`, `credentials: 'include'` — a sessão é cookie opaco)
 - **react-hook-form + Zod 4**
-- **pnpm** com `minimumReleaseAge: 10080` (7d) no workspace — OBRIGATÓRIO, pós supply-chain. **Biome** (lint+format) · **vitest** + Testing Library
+- **pnpm** com `minimumReleaseAge: 10080` (7d) no workspace — OBRIGATÓRIO, pós supply-chain. **Biome 2** (lint+format) · **vitest 4** + Testing Library
+- **Node 24, e a versão tem UMA autoridade: o `.nvmrc`.** `engines.node` no `package.json` a
+  repete e os dois jobs do CI a leem por `node-version-file` — ninguém escreve o número à mão num
+  workflow. Isto foi fixado em 2026-09-07 e o motivo é medido: enquanto o CI rodava 22 num job e
+  24 no outro, sem nada declarando a versão, a suíte tinha uma janela estreita que ninguém sabia
+  que existia — em **Node 24 reprovava 1.247 testes** (o `AbortSignal` do jsdom não é o que o
+  `undici` aceita, e o `new Request(..., { signal })` do transporte lançava em todos), em 18
+  reprovava os 7 do Planner, e só o 22 passava. Quem clonasse o repo em 24 via a suíte inteira
+  vermelha. **Quem fechou a janela foi o vitest 4** (medido: com vitest 3 o defeito persiste
+  mesmo no jsdom 30; com vitest 4 some mesmo no jsdom 26). Ver `docs/relatorio-varredura-2026-09-07.md` §17.
+- **`@tanstack/react-table` está na v9** desde 07/09 (decisão do user), e a migração cabe numa
+  regra: **as features moram em `src/components/cabinet/listagem/tabela.ts`, e é de lá que as
+  telas importam `ColumnDef`.** A v9 trocou `ColumnDef<TData>` por `ColumnDef<TFeatures, TData,
+  TValue>`; aquele módulo amarra as features uma vez e reexporta o tipo com o MESMO nome, então
+  a tela continua escrevendo `ColumnDef<Cliente>` e só o caminho do import mudou — foi o que
+  manteve os 213 erros de tipo iniciais em 37 trocas de import e um arquivo de lógica.
+  **Não usar `useLegacyTable`**: o próprio guia do pacote o marca como ponte temporária, e o
+  repo não passou por ela. Feature nova (paginação, seleção, agrupamento no cliente) entra
+  naquele `tableFeatures()`, nunca numa tela: registrar de menos faz o método SUMIR da
+  instância, e o erro aparece na chamada, não no tipo. Hoje são três — visibilidade e ordem de
+  coluna, mais `rowSortingFeature` **sem** o `sortedRowModel`, porque quem ordena e pagina é o
+  servidor (era o antigo `manualSorting`/`manualPagination`). O `meta` da coluna (`numeric`,
+  `tipo`, `editavel`) deixou de ser `declare module` e virou slot `columnMeta` do mesmo objeto.
+- **`biome.json` NÃO aceita comentário `//`.** Um comentário ali faz o Biome falhar o parse, e o
+  `pnpm check` então roda **sem configuração**, reformatando o repositório inteiro com os padrões
+  de fábrica — 848 arquivos, e não se desfaz rodando o check de novo (o formatador preserva
+  quebras de objeto já feitas). Justificativa de config vem para cá; se precisar de comentário no
+  arquivo, renomeie para `biome.jsonc`.
 - **Vetos:** Redux · axios · styled-components · MUI/Antd/UI-kits de runtime · form-generator declarativo · SheetJS (`xlsx` npm) · float p/ dinheiro
 - Referência visual/estrutural: shadcn/ui docs · Kiranism next-shadcn-dashboard-starter (SÓ como referência de DataTable/layout — é Next, aqui é Vite: adaptar, não copiar rotas/SSR)
 
@@ -85,6 +128,8 @@ especificação de **entrada** que o backend precisa implementar, não cópia qu
 - **Dinheiro:** trafega em **centavos (int)**; formatar R$ só na borda de exibição (`Intl.NumberFormat('pt-BR')`). NUNCA float em estado/mock.
 - **Quantidade:** até 3 casas. **Datas:** ISO nos dados, exibição pt-BR. **CNPJ/CPF:** sem máscara no dado, máscara só no input.
 - **Atalhos — interface por clique** (decisão do user, 30/07/2026): toda ação é alcançável por mouse e nenhum fluxo depende de tecla memorizada. Navegação em formulário é a nativa do browser (Tab / Shift+Tab, Enter no controle focado). **NÃO criar atalho customizado novo.** Os que já existem em `src/lib/shortcuts.ts` (`Ctrl+K` **paleta de comandos** · `Alt+N` incluir · `Alt+P/A/T/I` nos documentos) ficam como conveniência, não como requisito — a paleta, por exemplo, abre também pelo botão de busca da appbar — não removê-los, não expandi-los, não desenhar tela que só funcione por eles. F3–F6 continuam proibidos (conflito com browser).
+  **A tecla tem UM dono (#362):** `bindShortcut` mantém uma PILHA por combo e quem ligou por último atende — antes, `Ctrl+K` disparava a paleta E a busca de cidade do cadastro de cliente ao mesmo tempo. E o mapa legado→hoje é DADO (`MAPA_DE_ATALHOS`, no próprio registry), publicado na tela `/ajuda/atalhos` e cobrado por `src/lib/mapa-de-atalhos.test.ts` — atalho novo sem linha no mapa reprova, e tecla no mapa sem chamador precisa de dívida nomeada. Conflito com o navegador é CONFERÊNCIA DOCUMENTAL de Chrome/Edge (28/08/2026: só `Ctrl+K` consta), nunca teste na máquina — quem fecha isso é `docs/atalhos-para-validacao.md`, com os operadores.
+- **A paleta `Ctrl+K` também acha REGISTRO** (#362) — cliente, fornecedor, profissional, produto, orçamento e pedido de venda, por `useBuscaDeRegistro` (`src/data/busca-de-registro.ts`). São QUATRO consultas por termo (o `q` de cada listagem, com debounce e página de 5), não uma rota nova: o `q` do backend já casa nome, código, documento e número, então isto é trabalho só de front. Se o custo apertar, o caminho é uma `/api/search` unificada — e ela troca só aquele arquivo. O motivo velho escrito em `comandos.ts` ("o contrato não tem busca global") estava vencido.
 - Componentes compartilhados moram em `src/components/cabinet/` (DataTable, LookupCombo, blocos) — telas só COMPÕEM, não reimplementam.
 - Acessibilidade mínima: label em todo campo, foco visível, dialog com focus-trap (shadcn já dá).
 
@@ -488,7 +533,7 @@ um push dispara os dois builds em paralelo, e o que os separa é só a env fixad
   true`. Origem nova (preview, domínio novo) precisa entrar na lista do `cabinet-erp-api` antes de
   conseguir logar.
 - **O `app.` mostra dado fake onde a tela ainda é mock, e isso NÃO é modo mock.** Provider de
-  `src/data/index.ts` montado sobre `src/mocks/` (colaborador, compras, cidades, boletim) não fala
+  `src/data/index.ts` montado sobre `src/mocks/` (colaborador, compras, boletim) não fala
   com a rede em modo nenhum — em `app.cabinetonline.cc` ele serve a mesma fixture, agora ao lado de
   dado do Postgres. Migrar tela para HTTP virou trabalho de produção, não de demo.
 - Push em QUALQUER outra branch → preview isolado em **cada** um dos dois projetos, com URL própria

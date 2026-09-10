@@ -1,11 +1,11 @@
-import { configurarApi } from '@/api/cliente'
-import { LookupField, LookupSelectField } from '@/components/cabinet/form-controls'
-import { Form } from '@/components/ui/form'
-import { renderWithQuery } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { useForm } from 'react-hook-form'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { configurarApi } from '@/api/cliente'
+import { LookupField, LookupSelectField } from '@/components/cabinet/form-controls'
+import { Form } from '@/components/ui/form'
+import { renderWithQuery } from '@/test/utils'
 
 /**
  * OS CAMPOS DE LOOKUP LIGADOS AO FORM, depois da migração para `value=id` (#94).

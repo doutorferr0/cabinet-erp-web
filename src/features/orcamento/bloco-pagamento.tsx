@@ -1,4 +1,9 @@
-import type { DocumentInstallmentDto, InstallmentPolicyDto } from '@/api/gerado'
+import { useWatch } from 'react-hook-form'
+import type {
+  DocumentInstallmentDto,
+  InstallmentPolicyDto,
+  LateChargePolicyDto,
+} from '@/api/gerado'
 import { totalItemCentavos } from '@/components/cabinet/documento'
 import { FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form'
 import {
@@ -6,9 +11,8 @@ import {
   useCondicoesDePagamento,
   usePoliticaDeParcelamento,
 } from '@/data/pagamento-api'
-import { PERCENT_ESCALA, formatDateBR, formatMoneyBRL } from '@/lib/formatters'
+import { formatDateBR, formatMoneyBRL, formatPercent, PERCENT_ESCALA } from '@/lib/formatters'
 import type { Orcamento } from '@/mocks/orcamentos'
-import { useWatch } from 'react-hook-form'
 
 /**
  * O BLOCO PAGAMENTO do documento de venda — a aba `Pagamento` do legado
@@ -43,6 +47,37 @@ import { useWatch } from 'react-hook-form'
  */
 
 /**
+ * O valor de UMA linha de serviço, em centavos.
+ *
+ * Duas formas chegam aqui, e a diferença não é acidente:
+ *
+ * - **Linha EDITÁVEL** (a aba Serviços do orçamento): a conta é a mesma dos
+ *   itens — quantidade × unitário menos o desconto da linha. Usar o
+ *   `totalCents` que veio do servidor deixaria o rodapé mostrando o total de
+ *   ANTES enquanto o operador digita.
+ * - **Linha PASSANTE** (o pedido de venda, que ainda não tem a grade): a linha
+ *   é o DTO como o servidor o mandou, e o valor dela é o carimbo dele.
+ *
+ * O que NÃO é opção é somar zero: serviço fora do total é o número do rodapé
+ * divergindo do que o cliente paga — no legado a instalação é linha de
+ * `VendaServico`, e o contrato diz em letra que "o total do documento é a soma
+ * das DUAS coleções".
+ */
+export interface LinhaDeServico {
+  /** Presente na linha EDITÁVEL; ausente na passante. */
+  quantidade?: string | number | boolean | null
+  valorUnitarioCentavos?: string | number | boolean | null
+  descontoPercentual?: string | number | boolean | null
+  /** O carimbo do servidor, só na linha passante. */
+  totalCents?: number
+}
+
+export function totalServicoCentavos(servico: LinhaDeServico): number {
+  if (servico.quantidade !== undefined) return totalItemCentavos(servico)
+  return typeof servico.totalCents === 'number' ? servico.totalCents : 0
+}
+
+/**
  * Os totais do documento como a TELA os mostra — uma cópia só da regra.
  *
  * O desconto geral incide sobre o subtotal e o por produto já saiu na linha
@@ -50,22 +85,35 @@ import { useWatch } from 'react-hook-form'
  * itens e este bloco, que decide quais condições cabem no total. Em duas cópias,
  * o dia em que o desconto mudar de fórmula deixa o combo oferecendo parcela
  * sobre um total que a tela não mostra mais.
+ *
+ * **O subtotal soma as DUAS coleções**, produtos e serviços — ver
+ * `totalServicoCentavos`. É o que faz o parcelamento ser oferecido sobre o total
+ * que o servidor vai carimbar: um documento cuja instalação passa do mínimo para
+ * parcelar recusaria, no combo, a condição que o servidor aceitaria.
  */
 export function useTotaisDoOrcamento(): {
   subtotalCentavos: number
+  subtotalDeServicosCentavos: number
   descontoGeralCentavos: number
   totalCentavos: number
 } {
   const itens = (useWatch({ name: 'itens' }) ?? []) as Parameters<typeof totalItemCentavos>[0][]
+  const servicos = (useWatch({ name: 'servicos' }) ?? []) as LinhaDeServico[]
   const modo = useWatch({ name: 'modoDesconto' }) as Orcamento['modoDesconto']
   const percentual = (useWatch({ name: 'descontoPercentual' }) as number) ?? 0
 
-  const subtotalCentavos = itens.reduce((acc, item) => acc + totalItemCentavos(item), 0)
+  const subtotalDeProdutos = itens.reduce((acc, item) => acc + totalItemCentavos(item), 0)
+  const subtotalDeServicosCentavos = servicos.reduce(
+    (acc, servico) => acc + totalServicoCentavos(servico),
+    0,
+  )
+  const subtotalCentavos = subtotalDeProdutos + subtotalDeServicosCentavos
   const descontoGeralCentavos =
     modo === 'GERAL' ? Math.round((subtotalCentavos * percentual) / (PERCENT_ESCALA * 100)) : 0
 
   return {
     subtotalCentavos,
+    subtotalDeServicosCentavos,
     descontoGeralCentavos,
     totalCentavos: subtotalCentavos - descontoGeralCentavos,
   }
@@ -87,6 +135,12 @@ export function BlocoPagamento() {
   const limites = carimbo ?? politicaCorrente
   const limitesSaoDoCarimbo = carimbo !== undefined
 
+  // A condição ESCOLHIDA, quando a listagem a traz. Condição inativa (ou lista
+  // que falhou) não aparece aqui, e o encargo dela some junto — de propósito:
+  // o documento não carimba encargo, então o único encargo que a tela pode
+  // afirmar é o da condição que ela acabou de ler.
+  const escolhida = condicoes.find((c) => c.id === condicaoId)
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end gap-3">
@@ -100,7 +154,15 @@ export function BlocoPagamento() {
           politica={limites}
           totalCentavos={totalCentavos}
         />
+        {/* `role="note"` porque `aria-label` em `<p>` cru é IGNORADO pela
+            espec — o rótulo não chegava a leitor de tela nenhum, e os dois
+            testes que o buscam passavam só porque o `findByLabelText` do
+            testing-library é mais permissivo que a plataforma. O `note` é um
+            role que aceita nome acessível, então a promessa passa a ser
+            verdadeira. Acusado pelo `useAriaPropsSupportedByRole`, que o
+            Biome 2 trouxe. */}
         <p
+          role="note"
           aria-label="Limites de parcelamento"
           className="pb-2 text-muted-foreground text-sm tabular-nums"
         >
@@ -111,6 +173,7 @@ export function BlocoPagamento() {
             {limitesSaoDoCarimbo ? '— vigentes na gravação' : '— vigentes hoje na empresa'}
           </span>
         </p>
+        {condicaoId !== null ? <EncargoDeAtraso condicao={escolhida} /> : null}
       </div>
 
       {erro ? (
@@ -134,6 +197,56 @@ export function BlocoPagamento() {
         <PlanoCarimbado parcelas={parcelas} />
       )}
     </div>
+  )
+}
+
+/**
+ * O ENCARGO DE ATRASO da condição escolhida — juros de mora e multa.
+ *
+ * ## Três estados, e dois deles se parecem
+ *
+ * O contrato distingue `lateCharges: null` ("ninguém configurou o atraso desta
+ * condição") de `{0, 0}` ("conferido, esta condição não cobra"), e a tela tem de
+ * distinguir junto: a primeira é pergunta em aberto para quem cadastra, a
+ * segunda é resposta. Mostrar "0%" nas duas apagaria a pergunta.
+ *
+ * ## Ele diz "hoje", e isso não é hedge
+ *
+ * O documento carimba o plano e os limites de parcelamento; o encargo de atraso
+ * ele **não** carimba — está declarado assim em `LateChargePolicyDto`. Então o
+ * que aparece aqui é a regra VIGENTE da condição, e ela pode ter mudado desde a
+ * gravação. A frase diz isso pela mesma razão que a linha de limites diz
+ * "vigentes hoje na empresa": o operador que lê um número numa tela de documento
+ * assume que ele é do documento.
+ */
+function EncargoDeAtraso({
+  condicao,
+}: {
+  condicao: { lateCharges?: LateChargePolicyDto | null } | undefined
+}) {
+  // Condição fora da listagem (inativa, ou lista que falhou): sem o dado, o
+  // silêncio é a única leitura honesta — "não cobra" seria afirmação inventada.
+  if (condicao === undefined) return null
+
+  const encargo = condicao.lateCharges ?? null
+  const texto =
+    encargo === null
+      ? 'Encargo de atraso não configurado nesta condição'
+      : encargo.interestPercentMonthly === 0 && encargo.finePercent === 0
+        ? 'Sem encargo de atraso'
+        : `Atraso: ${formatPercent(encargo.interestPercentMonthly)} % ao mês de mora · ${formatPercent(encargo.finePercent)} % de multa`
+
+  return (
+    // `role="note"`: um `<p>` sem papel não aceita `aria-label` (Biome 2,
+    // `useAriaPropsSupportedByRole`), e o rótulo é o que o teste consulta.
+    <p
+      role="note"
+      aria-label="Encargo de atraso"
+      className="pb-2 text-muted-foreground text-sm tabular-nums"
+    >
+      {texto}{' '}
+      <span className="font-[family-name:var(--font-nome)] italic">— vigente hoje na condição</span>
+    </p>
   )
 }
 

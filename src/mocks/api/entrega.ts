@@ -1,3 +1,4 @@
+import { HttpResponse, http } from 'msw'
 import type {
   AddDeliveryItemRequest,
   CloseDeliveryRequest,
@@ -8,8 +9,8 @@ import type {
   FulfillmentFactDto,
   OrderFulfillmentDto,
   OrderItemFulfillmentDto,
-  PickOrderItemRequest,
   PickingQueueItemDto,
+  PickOrderItemRequest,
   ReleaseOrderItemRequest,
 } from '@/api/gerado'
 import {
@@ -18,16 +19,16 @@ import {
   PEDIDOS_EM_SEPARACAO,
   type PedidoEmSeparacao,
 } from '@/mocks/entregas'
-import { http, HttpResponse } from 'msw'
+import { paginar } from './listagem'
 import { verificarEscrita } from './permissao'
 import {
-  TIPO,
   camposInvalidos,
   conflito,
   naoEncontrado,
   problemaJson,
   semEmpresaAtiva,
   semSessao,
+  TIPO,
 } from './problema'
 import { novoId, store } from './store'
 
@@ -357,21 +358,6 @@ function quantidadeInvalida(quantity: unknown) {
     ])
   }
   return undefined
-}
-
-function paginar<T>(linhas: T[], url: URL) {
-  const page = Number(url.searchParams.get('page') ?? '1')
-  const pageSize = Number(url.searchParams.get('pageSize') ?? '10')
-  if (page < 1 || pageSize < 1 || pageSize > 100) {
-    return problemaJson(
-      400,
-      'Paginação inválida: page é 1-based e pageSize vai até 100.',
-      {},
-      TIPO.paginacaoInvalida,
-    )
-  }
-  const inicio = (page - 1) * pageSize
-  return HttpResponse.json({ rows: linhas.slice(inicio, inicio + pageSize), total: linhas.length })
 }
 
 /**

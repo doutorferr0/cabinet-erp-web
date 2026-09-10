@@ -1,3 +1,5 @@
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useState } from 'react'
 import type { AgendaEventDto } from '@/api/gerado'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
 import { Painel } from '@/components/cabinet/painel'
@@ -7,18 +9,16 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useAgenda, useMarcarTodo, useTodos } from '@/data/dashboard-api'
 import {
   DIAS_DA_SEMANA,
-  type Mes,
   diaLocalISO,
   gradeDoMes,
   horaLocal,
   limitesDoMes,
+  type Mes,
   mesDeslocado,
   nomeDoMes,
 } from '@/lib/datas'
 import { cn } from '@/lib/utils'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useState } from 'react'
-import { MarcaDeTipo, TIPOS, TIPOS_NA_ORDEM, eventosDoDia } from './tipos-de-evento'
+import { eventosDoDia, MarcaDeTipo, TIPOS, TIPOS_NA_ORDEM } from './tipos-de-evento'
 
 /**
  * A LINHA DO "HOJE" — calendário do mês, agenda do dia e a lista A fazer.
@@ -39,7 +39,7 @@ import { MarcaDeTipo, TIPOS, TIPOS_NA_ORDEM, eventosDoDia } from './tipos-de-eve
  *
  * `A fazer` é o que quebra o padrão, e de propósito: pendência é ESTADO, não
  * assunto, então a faixa lê a zona de foco. Sem selo — amarelo é cor com dono, e
- * ornamento não usa as três cores com dono.
+ * a forma do módulo não usa as três cores com dono.
  */
 
 function Contador({ n }: { n: number }) {
@@ -195,6 +195,13 @@ function Agenda({ eventos, carregando }: { eventos: AgendaEventDto[]; carregando
             return (
               <li
                 key={evento.id}
+                // O slot nomeia a LINHA da agenda, e ele é consultado de fora:
+                // `orçamento` também é rótulo da legenda do calendário, então
+                // afirmar sobre a tag do tipo exige entrar na linha. A reescrita
+                // da D20/D34 trocou a marcação e o nome se perdeu no caminho —
+                // quem consultava passou a receber `null`, que em `closest` é
+                // silêncio (D37).
+                data-slot="agenda-linha"
                 // A linha inteira passa a levar a pastel do TIPO — antes a cor do
                 // compromisso cabia só na barrinha de 6px da esquerda, e a agenda
                 // inteira se lia como uma pilha de linhas brancas iguais. A barra
@@ -218,6 +225,14 @@ function Agenda({ eventos, carregando }: { eventos: AgendaEventDto[]; carregando
                     </span>
                   ) : null}
                 </span>
+                {/* A PALAVRA do tipo, ao lado da cor. `MarcaDeTipo` é
+                    `aria-hidden` — é barra de cor pura —, e a reescrita da
+                    D20/D34 deixou a linha distinguindo `entrega` de `orçamento`
+                    SÓ por matiz. Isso reprova WCAG 1.4.1 e some inteiro para
+                    quem não separa as duas pastéis; a legenda do calendário
+                    nomeia as cores, mas ela está noutro card. Restaurada na D37
+                    (é o que o teste da agenda sempre cobrou). */}
+                <span className="t-dado-meta ml-auto shrink-0">{tipo.rotulo}</span>
               </li>
             )
           })}

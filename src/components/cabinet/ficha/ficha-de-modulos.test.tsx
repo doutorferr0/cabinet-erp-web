@@ -1,15 +1,15 @@
+import { screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import { FichaDeModulos } from '@/components/cabinet/ficha/ficha-de-modulos'
 import { moduloVazio, textoDoCampo, valorNoCaminho } from '@/components/cabinet/ficha/valores'
 import {
-  ENTIDADES,
   cliente,
   colaborador,
+  ENTIDADES,
   fornecedor,
   profissional,
 } from '@/features/cadastro/modulos'
 import { renderWithQuery } from '@/test/utils'
-import { screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
 
 /**
  * A FICHA DE LEITURA (issue #103).

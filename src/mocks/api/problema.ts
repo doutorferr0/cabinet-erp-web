@@ -1,5 +1,5 @@
-import type { ProblemDetails, ProblemFieldError, ProblemType } from '@/api/gerado'
 import { HttpResponse } from 'msw'
+import type { ProblemDetails, ProblemFieldError, ProblemType } from '@/api/gerado'
 
 /**
  * O erro do servidor falso, num lugar só — RFC 9457 Problem Details.
@@ -98,9 +98,30 @@ export const TIPO = {
   // uma-por-vez) e "esta já acabou". Um 403 genérico em cima das duas primeiras
   // faria a recusa por falta de concessão parecer falta de permissão de papel,
   // que é o erro que este trilho existe para não deixar acontecer.
+  // A FILA DE APROVAÇÕES (F12). Duas, e não uma: "já foi decidido" manda a tela
+  // recarregar, "você foi quem pediu" manda procurar outra pessoa. Um 403
+  // genérico sobre a segunda faria o solicitante ir pedir acesso que ele já tem.
+  aprovacaoJaDecidida: 'urn:cabinet:erro:aprovacao-ja-decidida',
+  aprovacaoDoSolicitante: 'urn:cabinet:erro:aprovacao-do-solicitante',
   semConcessaoDeSuporte: 'urn:cabinet:erro:sem-concessao-de-suporte',
   suporteJaEmOrganizacao: 'urn:cabinet:erro:suporte-ja-em-organizacao',
   concessaoEncerrada: 'urn:cabinet:erro:concessao-encerrada',
+  tituloComBaixa: 'urn:cabinet:erro:titulo-com-baixa',
+  parcelaJaQuitada: 'urn:cabinet:erro:parcela-ja-quitada',
+  valorAcimaDoSaldo: 'urn:cabinet:erro:valor-acima-do-saldo',
+  /**
+   * A recusa da quitação A MENOS — 403, e URN PRÓPRIA e não `papelInsuficiente`.
+   *
+   * A diferença é a saída que a tela oferece: no `papelInsuficiente` ela ESCONDE
+   * o controle, porque a pessoa não resolve sozinha; aqui o controle é
+   * justamente o que resolve — o valor sobe até o saldo e a baixa passa.
+   * Misturar as duas tiraria da frente o campo que destrava o caso.
+   */
+  quitacaoAMenor: 'urn:cabinet:erro:quitacao-a-menor',
+  // A marca da FASE, e a única URN daqui que não descreve erro do pedido: o
+  // caminho está no contrato e ESTE servidor ainda não serve esta parte dele.
+  // 501 e nunca 404, para "não existe" continuar significando "não existe".
+  naoImplementado: 'urn:cabinet:erro:nao-implementado',
 } as const satisfies Record<string, ProblemType>
 
 /**
@@ -152,7 +173,9 @@ const TITULO_POR_TIPO: Record<Exclude<ProblemType, 'about:blank'>, string> = {
   'urn:cabinet:erro:titulo-com-baixa': 'Título com baixa',
   'urn:cabinet:erro:parcela-ja-quitada': 'Parcela já quitada',
   'urn:cabinet:erro:valor-acima-do-saldo': 'Valor acima do saldo',
+  'urn:cabinet:erro:quitacao-a-menor': 'Quitação a menor',
   'urn:cabinet:erro:movimento-ja-conciliado': 'Movimento já conciliado',
+  'urn:cabinet:erro:reajuste-sem-base': 'Reajuste sem base',
   'urn:cabinet:erro:periodo-ja-fechado': 'Período já fechado',
   'urn:cabinet:erro:origem-ja-paga': 'Origem já paga',
   'urn:cabinet:erro:participante-ja-apurado': 'Participação já apurada',
@@ -168,6 +191,11 @@ const TITULO_POR_TIPO: Record<Exclude<ProblemType, 'about:blank'>, string> = {
   'urn:cabinet:erro:entrega-fechada': 'Entrega fechada',
   'urn:cabinet:erro:entrega-vazia': 'Entrega vazia',
   'urn:cabinet:erro:entrega-de-outro-pedido': 'Entrega de outro pedido',
+  // A FILA DE APROVAÇÕES (F12) — os dois títulos saem da tabela do `ProblemType`,
+  // como os da tesouraria: título escolhido aqui faria o mesmo erro chegar com um
+  // cabeçalho no modo mock e outro contra o backend.
+  'urn:cabinet:erro:aprovacao-ja-decidida': 'Aprovação já decidida',
+  'urn:cabinet:erro:aprovacao-do-solicitante': 'Decisão do próprio solicitante',
   'urn:cabinet:erro:sem-concessao-de-suporte': 'Sem concessão de suporte',
   'urn:cabinet:erro:suporte-ja-em-organizacao': 'Suporte já está em outra organização',
   'urn:cabinet:erro:concessao-encerrada': 'Concessão já encerrada',
@@ -253,6 +281,24 @@ export const naoEncontrado = (detail: string) => problemaJson(404, detail, {}, T
  */
 export const camposInvalidos = (fields: ProblemFieldError[]) =>
   problemaJson(400, 'Confira os campos destacados.', { fields }, TIPO.camposInvalidos)
+
+/**
+ * 501 — o caminho existe no contrato e ESTE servidor não serve esta parte dele.
+ *
+ * O mock passa a poder dizê-lo, e o motivo é a formação de preço. Ele guarda o
+ * CADASTRO de preço (tabela e índice são o número que o operador digitou;
+ * guardá-lo não inventa nada) e **recusa a APURAÇÃO**: a simulação de custo tem
+ * vinte e três parcelas, quatro delas sobre a venda, e a ordem do arredondamento
+ * é dado medido do legado. Reproduzi-la aqui daria número de margem inventado
+ * com cara de apuração do servidor, que é pior do que tela vazia — é a nota que
+ * `rotas-do-backend.ts` já escrevera para não dar mock nenhum a estas rotas.
+ *
+ * A tela lê isso pelo STATUS (`ehModuloEmConstrucao`) e mostra o aviso de módulo
+ * em construção, o mesmo que o backend real acende. É o que faz o modo mock
+ * ENSINAR a recusa em vez de escondê-la.
+ */
+export const naoImplementado = (detail: string) =>
+  problemaJson(501, detail, {}, TIPO.naoImplementado)
 
 export const conflito = (
   detail: string,

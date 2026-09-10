@@ -1,3 +1,6 @@
+import { useNavigate } from '@tanstack/react-router'
+import { z } from 'zod'
+import type { ProductDto } from '@/api/gerado'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { FormBlock } from '@/components/cabinet/form-block'
@@ -7,18 +10,18 @@ import {
   LookupField,
   LookupSelectField,
   SelectField,
-  TextField,
   TextareaField,
+  TextField,
 } from '@/components/cabinet/form-controls'
 import { FormGrid } from '@/components/cabinet/form-grid'
+import { posGravar } from '@/components/cabinet/pos-gravar'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useGravarProduto } from '@/data/produtos-api'
 import { tabelas } from '@/data/tabelas'
+import { PrecoEMargem } from '@/features/produto/preco-e-margem'
 import { parseQuantidade } from '@/lib/formatters'
 import type { Produto } from '@/mocks/produtos'
-import { useNavigate } from '@tanstack/react-router'
-import { z } from 'zod'
 
 const dimensoesSchema = z.object({
   altura: z.string(),
@@ -72,6 +75,46 @@ export const produtoSchema = z.object({
   tipoProdutoId: z.string().nullable(),
   fabricaId: z.string().nullable(),
   marcaId: z.string().nullable(),
+  /**
+   * As duas grades DO CONTRATO, pelo mesmo motivo dos três ids acima — e com uma
+   * agravante.
+   *
+   * A tela desenha `fornecedores` e `gruposRelacionados`, que são as grades da
+   * TRANSCRIÇÃO: fornecedor digitado como texto, relacionados agrupados por nome
+   * de grupo. O contrato modela outra coisa — fornecedor é `PartnerDto.id`,
+   * relacionado é um par produto×produto com quantidade. As duas formas ainda não
+   * foram reconciliadas (FASE C do G11, `api#117`), então o que o servidor manda
+   * atravessa esta tela sem passar pelas grades visíveis.
+   *
+   * `.optional()` é o que preserva a distinção do contrato: ausente = "não mexi",
+   * `[]` = "apague". Declarar sem o `optional` faria o Zod exigir um valor e a
+   * desativação pela listagem — que não tem grade — mandar `[]`.
+   */
+  fornecedoresDoServidor: z
+    .array(
+      z.object({
+        id: z.string(),
+        supplierId: z.string(),
+        supplierName: z.string(),
+        supplierCode: z.string().nullable().optional(),
+        supplierDescription: z.string().nullable().optional(),
+        isDefault: z.boolean(),
+        active: z.boolean(),
+      }),
+    )
+    .optional(),
+  relacionadosDoServidor: z
+    .array(
+      z.object({
+        id: z.string(),
+        relatedProductId: z.string(),
+        relatedProductCode: z.string(),
+        relatedProductDescription: z.string(),
+        quantity: z.string().nullable().optional(),
+        sortOrder: z.number(),
+      }),
+    )
+    .optional(),
   descricaoComplementar: z.string(),
   foraDeLinha: z.boolean(),
   consultarValor: z.boolean(),
@@ -597,18 +640,31 @@ const CAMPOS_DO_CONTRATO = {
 export function ProdutoForm({
   produto,
   readOnly = false,
-  contexto,
   aviso,
 }: {
   produto: Produto
   readOnly?: boolean
-  /** Modo ou registro aberto, ao lado do título na banda. */
-  contexto?: string
-  /** Aviso da tela — vai sob o título, acima dos campos. */
+  /** Aviso da tela — vai acima dos campos. */
   aviso?: React.ReactNode
 }) {
   const navigate = useNavigate()
   const gravar = useGravarProduto()
+
+  /**
+   * As variantes COMO O SERVIDOR AS TEM — não as do formulário.
+   *
+   * A aba de preço pede `/api/table-prices/{variantId}`, e `variantId` é o id
+   * do servidor. Ler do rascunho do RHF ofereceria também a linha que o
+   * operador acabou de acrescentar e ainda não gravou, cujo `id` é `null` — a
+   * aba pediria preço para uma variante que não existe e receberia 404, com
+   * cara de erro do sistema em vez de "grave primeiro".
+   */
+  const variantesGravadas = (produto.variantes ?? [])
+    .filter((variante): variante is typeof variante & { id: string } => Boolean(variante.id))
+    .map((variante) => ({
+      id: variante.id,
+      rotulo: [variante.acabamento, variante.tamanho].filter(Boolean).join(' · ') || variante.id,
+    }))
 
   function onGravar(values: Produto) {
     // Sem tradução no meio (issue #94): o combo já escolheu por ID, e é o id
@@ -619,9 +675,22 @@ export function ProdutoForm({
     //
     // O registro COMO VEIO do servidor viaja junto: é comparando com ele que a
     // gravação decide o que da grade mudou — linha intocada não vira escrita.
+    // O DESTINO é a regra única da #405 (`components/cabinet/pos-gravar.ts`):
+    // cadastro novo abre o produto que nasceu — com o id e o código que o
+    // servidor deu —, alteração permanece na tela com o toast.
     gravar.mutate(
       { values, original: produto },
-      { onSuccess: () => void navigate({ to: '/cadastros/produtos' }) },
+      {
+        onSuccess: posGravar<ProductDto>({
+          eraNovo: !produto.id,
+          abrirDocumento: (produtoId) =>
+            void navigate({
+              to: '/cadastros/produtos/$produtoId',
+              params: { produtoId },
+              replace: true,
+            }),
+        }),
+      },
     )
   }
 
@@ -633,9 +702,13 @@ export function ProdutoForm({
       onCancelar={() => void navigate({ to: '/cadastros/produtos' })}
       readOnly={readOnly}
       gravando={gravar.isPending}
-      titulo="Cadastro de Produtos"
+      gravou={gravar.isSuccess}
+      // SEM `titulo` (D19, #487): quem diz de que registro é a tela passou a ser
+      // o `CabecalhoDoRegistro` da rota — `Produto` + o código em mono + a
+      // situação. Deixar o `PageHeader` aqui escreveria "Cadastro de Produtos"
+      // logo abaixo dele, duas respostas para a mesma pergunta e a de cima
+      // certa. Com `titulo` ausente o `CadastroForm` não monta cabeçalho nenhum.
       familia="products"
-      {...(contexto ? { contexto } : {})}
       {...(aviso ? { aviso } : {})}
     >
       {/* Falha do Gravar em destaque, ANTES das abas: o `detail` do problem+json
@@ -660,6 +733,7 @@ export function ProdutoForm({
           <TabsTrigger value="outrosDados">Outros Dados</TabsTrigger>
           <TabsTrigger value="valores">Valores\Localização do Estoque</TabsTrigger>
           <TabsTrigger value="relacionados">Produtos Relacionados</TabsTrigger>
+          <TabsTrigger value="preco">Preço e Margem</TabsTrigger>
           <TabsTrigger value="tributacao">Tributação</TabsTrigger>
         </TabsList>
         <TabsContent value="dadosPrincipais">
@@ -673,6 +747,15 @@ export function ProdutoForm({
         </TabsContent>
         <TabsContent value="relacionados">
           <AbaProdutosRelacionados />
+        </TabsContent>
+        {/* A aba de PREÇO não é um bloco de campos do formulário: ela tem
+            endpoint próprio (`/api/table-prices/{variantId}`), gravação própria
+            e papel próprio (`precos:gerenciar`). Recebe as variantes JÁ
+            GRAVADAS porque preço pende da variante — linha que o operador
+            acabou de acrescentar na grade ainda não tem id do servidor, e
+            oferecê-la aqui pediria preço para uma peça que não existe. */}
+        <TabsContent value="preco">
+          <PrecoEMargem variantes={variantesGravadas} readOnly={readOnly} />
         </TabsContent>
         <TabsContent value="tributacao">
           <AbaTributacao />

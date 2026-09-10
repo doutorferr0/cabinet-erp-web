@@ -1,15 +1,17 @@
+import { CircleDollarSign } from 'lucide-react'
+import { describe, expect, it } from 'vitest'
 import { moduloDaRota } from '@/app/modulo'
 import {
   destinoDaSecao,
   gruposVisiveis,
   itemDaRota,
+  type NavSecao,
   navGroups,
   navSecoes,
   rotaMaeDe,
   secoesVisiveis,
 } from '@/app/navigation'
 import { RECURSOS, type RecursoDaEmpresa } from '@/data/recursos-da-empresa'
-import { describe, expect, it } from 'vitest'
 
 /** `tem` de uma empresa que opera exatamente os recursos listados. */
 function empresaCom(...recursos: RecursoDaEmpresa[]) {
@@ -98,7 +100,10 @@ describe('secoesVisiveis', () => {
       'Contas a Pagar',
       'Comissões',
     ])
-    expect(titulos(Object.values(RECURSOS))).not.toContain('Contas a Pagar')
+    // `Comissões` é a que segue futura na seção — as outras duas ganharam tela
+    // na fase C do G7, e por isso passaram a aparecer também na paleta.
+    expect(titulos(Object.values(RECURSOS))).not.toContain('Comissões')
+    expect(titulos(Object.values(RECURSOS))).toContain('Contas a Pagar')
   })
 
   it('sete seções na barra, na ordem do fluxo, e Configurações fora dela', () => {
@@ -190,25 +195,26 @@ describe('itemDaRota', () => {
   })
 
   it('tela futura não casa rota — ela não está lá', () => {
-    expect(itemDaRota('/financeiro/pagar')).toBeUndefined()
+    expect(itemDaRota('/financeiro/comissoes')).toBeUndefined()
     expect(itemDaRota('/obras')).toBeUndefined()
+    // E a que DEIXOU de ser futura casa: é o outro lado da mesma regra.
+    expect(itemDaRota('/financeiro/pagar')?.title).toBe('Contas a Pagar')
   })
 })
 
 describe('aparência emprestada', () => {
-  // As quatro telas fora da tabela de shape×cor travada pelo user. O que este
-  // teste guarda é a REGRA, não a estética: só quem não tem módulo próprio
-  // empresta, e cada uma leva desenho seu — mesma cor com mesmo desenho faria a
-  // fileira da sidebar deixar de ser um mapa.
-  it('só tela sem módulo próprio empresta cor, e o desenho é dela', () => {
+  // As quatro telas fora da tabela de cor travada pelo user. O que este teste
+  // guarda é a REGRA, não a estética: só quem não tem módulo próprio empresta,
+  // e o empréstimo para no item — a folha continua sem cor de módulo.
+  it('só tela sem módulo próprio empresta cor', () => {
     const itens = navGroups.flatMap((grupo) => grupo.items)
     const comEmprestimo = itens.filter((item) => item.aparencia)
 
     expect(comEmprestimo.map((item) => [item.url, item.aparencia])).toEqual([
-      ['/dashboard', { modulo: 'boletim', shape: 'dashboard' }],
-      ['/tarefas', { modulo: 'boletim', shape: 'tarefas' }],
-      ['/planner', { modulo: 'boletim', shape: 'planner' }],
-      ['/cadastros/colaboradores', { modulo: 'clientes', shape: 'colaboradores' }],
+      ['/dashboard', { modulo: 'boletim' }],
+      ['/tarefas', { modulo: 'boletim' }],
+      ['/planner', { modulo: 'boletim' }],
+      ['/cadastros/colaboradores', { modulo: 'clientes' }],
     ])
 
     // Nenhuma delas é conhecida por `moduloDaRota`, e é o que mantém o
@@ -222,10 +228,6 @@ describe('aparência emprestada', () => {
     for (const item of itens) {
       if (moduloDaRota(item.url)) expect(item.aparencia).toBeUndefined()
     }
-
-    // Desenhos distintos entre si.
-    const shapes = comEmprestimo.map((item) => item.aparencia?.shape)
-    expect(new Set(shapes).size).toBe(shapes.length)
   })
 })
 
@@ -337,9 +339,39 @@ describe('destinoDaSecao', () => {
   })
 
   it('seção só com tela futura não inventa destino', () => {
+    // Financeiro era o caso vivo desta regra e deixou de ser (fase C do G7): o
+    // destino dele agora é a primeira tela de verdade. A garantia continua
+    // valendo e passa a ser medida sobre uma seção MONTADA aqui — se ela
+    // dependesse de uma seção vazia existir no menu, morreria em silêncio na
+    // próxima tela entregue, que é exatamente o que acabou de acontecer.
+    const soFuturo: NavSecao = {
+      id: 'so-futuro',
+      rotulo: 'Só futuro',
+      icon: CircleDollarSign,
+      grupos: [
+        {
+          title: 'Documentos',
+          url: '/nao-existe',
+          icon: CircleDollarSign,
+          items: [
+            {
+              title: 'Ainda não existe',
+              url: '/nao-existe/tela',
+              icon: CircleDollarSign,
+              descricao: 'Ainda não existe.',
+              futuro: true,
+            },
+          ],
+        },
+      ],
+    }
+    expect(destinoDaSecao(soFuturo)).toBeUndefined()
+  })
+
+  it('a seção com tela entregue leva à primeira delas', () => {
     const financeiro = porId('financeiro')
     expect(financeiro).toBeDefined()
-    expect(financeiro && destinoDaSecao(financeiro)).toBeUndefined()
+    expect(financeiro && destinoDaSecao(financeiro)).toBe('/financeiro/receber')
   })
 
   it('todo destino publicado é um item navegável de verdade', () => {

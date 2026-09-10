@@ -1,5 +1,5 @@
-import type { PartnerDto } from '@/api/gerado'
 import { describe, expect, it } from 'vitest'
+import type { PartnerDto } from '@/api/gerado'
 import { ausentesNoServidor, tipoDePessoaDoContrato, tipoDePessoaParaContrato } from './pessoa'
 
 /**

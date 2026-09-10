@@ -1,14 +1,14 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { URL_PRODUTOS } from '@/data/produtos-api'
 import { json, problema } from '@/test/servidor'
 import {
-  type FetchStub,
   acaoNaLinha,
+  type FetchStub,
   renderRoute,
   respostaSessao,
   respostaVinculos,
 } from '@/test/utils'
-import { screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 /**
  * Tela de produtos contra o BACKEND (servidor falso no `fetch`).
@@ -181,10 +181,21 @@ describe('listagem de produtos', () => {
     renderRoute('/cadastros/produtos', servidorDeProdutos())
 
     await screen.findByText('VERTZ')
-    expect(screen.queryByRole('button', { name: /Marca/ })).toBeNull()
-    expect(screen.queryByRole('button', { name: /Fábrica/ })).toBeNull()
+    // A pergunta é sobre o CABEÇALHO DA TABELA, e por isso ela é feita dentro
+    // dele. Fora, `/Marca/` casa os botões de favoritar da sidebar
+    // (`aria-label="Marcar Dashboard"`, D4) — a busca global achava dois
+    // "Marca" e reprovava com "found multiple elements", que é o oposto do que
+    // este caso afirma. Escopo em vez de regex mais fechada: o que se quer
+    // dizer é "neste cabeçalho não há botão", não "não há esta string na tela".
+    const tabela = screen.getByRole('table')
+    // `?? tabela` em vez de `!`: se a tabela um dia perder o `<thead>`, o escopo
+    // cai para ela inteira — ainda fora da barra, que é o que este caso precisa
+    // excluir — em vez de estourar com um erro que não fala de ordenação.
+    const cabecalho = within(tabela).getAllByRole('rowgroup')[0] ?? tabela
+    expect(within(cabecalho).queryByRole('button', { name: /Marca/ })).toBeNull()
+    expect(within(cabecalho).queryByRole('button', { name: /Fábrica/ })).toBeNull()
     // Contraprova: a coluna que a whitelist ACEITA continua clicável.
-    expect(screen.getByRole('button', { name: /Nosso Código/ })).toBeInTheDocument()
+    expect(within(cabecalho).getByRole('button', { name: /Nosso Código/ })).toBeInTheDocument()
   })
 
   // A whitelist do servidor é `code`/`description`/`active`: mandar o nome em
@@ -459,7 +470,52 @@ describe('formulário de produto', () => {
     })
   })
 
-  it('grava mandando POST com os campos do contrato e volta para a listagem', async () => {
+  /**
+   * O `Gravar` NÃO ESPERA A RELEITURA (issue #405).
+   *
+   * A invalidação do detalhe atinge a query ABERTA — é ela que refaz a tela com
+   * o registro novo. Enquanto o `onSuccess` da mutation DEVOLVIA essa promise
+   * (`return Promise.all([...])`), o TanStack Query segurava a conclusão da
+   * mutation até o refetch responder: medido no navegador, `PUT` respondido em
+   * 718 ms e a tela só reagindo em 1000 ms. O operador ficava com o `Gravar`
+   * desabilitado por um tempo que é o do servidor, sem nada dizendo por quê —
+   * e, do lado de fora, o pós-Gravar parecia ora uma coisa, ora outra.
+   *
+   * Aqui a releitura NUNCA responde. Se o encadeamento voltar, este teste
+   * esgota o tempo em vez de reprovar por um punhado de milissegundos.
+   */
+  it('a alteração conclui sem esperar a releitura do detalhe', async () => {
+    const escrita = servidorComEscrita(() => json(DETALHE))
+    let gravou = false
+    const pendurado = new Promise<Response>(() => {})
+
+    const { user } = renderRoute(`/cadastros/produtos/${ID}`, async (entrada) => {
+      const requisicao = entrada instanceof Request ? entrada : null
+      const metodo = (requisicao?.method ?? 'GET').toUpperCase()
+      const caminho = new URL(String(requisicao ? requisicao.url : entrada), 'http://localhost')
+        .pathname
+      if (gravou && metodo === 'GET' && caminho.startsWith(URL_PRODUTOS)) return pendurado
+      const resposta = await escrita.stub(entrada)
+      if (metodo !== 'GET') gravou = true
+      return resposta
+    })
+
+    const descricao = await screen.findByLabelText('Nossa Descrição')
+    await user.clear(descricao)
+    await user.type(descricao, 'PENDENTE ALTERADO')
+    await user.click(screen.getByRole('button', { name: /^Gravar$/ }))
+
+    await waitFor(() => expect(escrita.chamadas.some((c) => c.metodo === 'PUT')).toBe(true), {
+      timeout: 5000,
+    })
+    // A prova é o botão VOLTAR a valer: `gravando` sai de cena quando a mutation
+    // conclui, e ela só conclui quando ninguém a segura.
+    await waitFor(() => expect(screen.getByRole('button', { name: /^Gravar$/ })).toBeEnabled(), {
+      timeout: 5000,
+    })
+  }, 20_000)
+
+  it('grava mandando POST com os campos do contrato e abre o produto criado', async () => {
     const escrita = servidorComEscrita(() =>
       json({ id: ID, code: '9999', description: 'PENDENTE TESTE', active: true }, 201),
     )
@@ -469,8 +525,9 @@ describe('formulário de produto', () => {
     await user.type(screen.getByLabelText('Nossa Descrição'), 'PENDENTE TESTE')
     await user.click(screen.getByRole('button', { name: /Gravar/ }))
 
+    // A INCLUSÃO abre o produto que nasceu (#405), no id que o servidor devolveu.
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/cadastros/produtos')
+      expect(router.state.location.pathname).toBe(`/cadastros/produtos/${ID}`)
     })
     // O que a tela GRAVOU, não só para onde ela foi: sem asserir o corpo, o
     // teste passaria de novo com o Gravar sem destino que existia antes.

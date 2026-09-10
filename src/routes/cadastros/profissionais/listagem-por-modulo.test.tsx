@@ -1,7 +1,7 @@
-import { parceiro, stubDeParceiros } from '@/test/parceiros'
-import { renderRoute } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { parceiro, stubDeParceiros } from '@/test/parceiros'
+import { renderRoute } from '@/test/utils'
 
 /**
  * A #104 é sobre a TELA, não sobre o componente. `filtro-por-modulo.test.tsx`

@@ -1,0 +1,194 @@
+import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { dirname, join, relative, resolve } from 'node:path'
+import { describe, expect, it } from 'vitest'
+
+const SRC = resolve(__dirname, '..')
+const ROTAS = resolve(__dirname)
+const CABECALHO = join(SRC, 'components/cabinet/page-header.tsx')
+
+/**
+ * TODA ROTA ANUNCIA O NOME DA TELA (Reface 2.0 · D5).
+ *
+ * ## Por que uma guarda, e não confiança
+ *
+ * O nome da tela morava em três vozes: o `<h1>` do `PageHeader`, o `<h1>` de
+ * dentro da caixa preta da `BandaDeIdentidade` e o `<h1>` solto, copiado à mão
+ * em rota (`Previsão de Chegada`, `Tarefas`, `Planner`) — cada um com sua
+ * fonte, seu tamanho e sua caixa. Rota nova nascia escolhendo uma das três, e a
+ * escolha nunca era declarada: era o que estava por perto para copiar.
+ *
+ * Com uma voz só, mudar o degrau do título do sistema volta a ser uma linha em
+ * `index.css`. Sem a guarda, a segunda voz volta na primeira rota nova — foi
+ * assim que as três nasceram.
+ *
+ * ## Pelo GRAFO, e não renderizando
+ *
+ * Montar as 54 rotas para conferir um `<h1>` custaria a suíte inteira e pediria
+ * servidor falso para cada uma. O que se quer saber é estrutural: a rota
+ * ALCANÇA o cabeçalho pelos imports? Um `<h1>` inventado na tela não some por
+ * causa disto, mas o teste irmão (`nenhum título fora do cabeçalho`) pega esse.
+ */
+const SEM_CABECALHO: Record<string, string> = {
+  // Rotas de LAYOUT: renderizam `<Outlet/>` e mais nada. O cabeçalho é da
+  // tela que pousa dentro delas — pôr um aqui daria dois títulos em toda rota
+  // filha.
+  'cadastros.tsx': 'layout de módulo — só `<Outlet/>`',
+  'compras.tsx': 'layout de módulo — só `<Outlet/>`',
+  'crm.tsx': 'layout de módulo — só `<Outlet/>`',
+  'estoque.tsx': 'layout de módulo — só `<Outlet/>`',
+  'financeiro.tsx': 'layout de módulo — só `<Outlet/>`',
+  // `/financeiro` sem filha cai em Contas a Receber: o índice não é tela.
+  'financeiro/index.tsx': 'desvio para Contas a Receber — não é tela',
+  'vendas.tsx': 'layout de módulo — só `<Outlet/>`',
+  // DESVIO: `/crm/funil` sem id manda para o funil padrão e sai da frente.
+  // Cabeçalho aqui piscaria um título que ninguém pediu antes do `replace`.
+  'crm/funil/index.tsx': 'desvio para o funil padrão — não é tela',
+  // D12: viraram VIEWS da listagem de origem (calendário) — a rota só redireciona.
+  'compras/previsao.tsx': 'desvio para /compras/ordens?modo=calendario — não é tela (D12)',
+  'vendas/cargas.tsx': 'desvio para /vendas/pedidos?modo=calendario — não é tela (D12)',
+  // AUTH: fora do shell. Estas quatro rotas não têm barra, appbar nem migalha —
+  // `PaginaDeAuth` (D28) É a moldura delas, com o próprio `<h1>`. Um
+  // `PageHeader` aqui traria o `BotaoVoltar` e a gramática de "estou dentro do
+  // sistema" para telas cuja premissa é que ninguém entrou ainda. Não é dívida:
+  // é a exceção que a regra sempre teve e que ninguém tinha escrito (D37).
+  'login.tsx': 'fora do shell — PaginaDeAuth (D28) é a moldura',
+  'esqueci-senha.tsx': 'fora do shell — PaginaDeAuth (D28) é a moldura',
+  'definir-senha.tsx': 'fora do shell — PaginaDeAuth (D28) é a moldura',
+  'trocar-senha.tsx': 'fora do shell — PaginaDeAuth (D28) é a moldura',
+  // INTEGRAÇÃO 2.0 (Cowork, 2026-09-03): telas PRÓPRIAS entregues em paralelo à D5
+  // desenham o próprio título (saudação do dashboard, hub de módulo, quadro,
+  // planner, boletim).
+  //
+  // **A D37 mediu e NÃO unificou, e o motivo é de escopo.** O `PageHeader`
+  // desenha um `<h1>` em `.t-pagina` com `BotaoVoltar`; estas nove telas têm
+  // título com DESENHO próprio — a saudação em Gambarino do dashboard e o
+  // `HubDeModulo` são o que o mockup pede ali, não um descuido. Trocá-los pelo
+  // cabeçalho padrão é REDESENHO, e a D37 é "só renomeação e alinhamento, sem
+  // feature" (regime da rodada). Unificar de verdade pede ou uma variante de
+  // `PageHeader` que aceite o título desenhado, ou a decisão de que estas telas
+  // perdem o desenho — as duas com o mockup ao lado, numa issue própria.
+  'boletim.tsx': 'tela própria (D20) — título próprio; D37 mediu: unificar é redesenho',
+  'dashboard.tsx':
+    'tela própria (D20) — saudação Gambarino é o título; D37 mediu: unificar é redesenho',
+  'tarefas.tsx': 'tela própria (D21) — título próprio; D37 mediu: unificar é redesenho',
+  'planner.tsx': 'tela própria (D23) — título próprio; D37 mediu: unificar é redesenho',
+  'cadastros/index.tsx':
+    'hub de módulo (D26) — HubDeModulo tem o título; D37 mediu: unificar é redesenho',
+  'compras/index.tsx':
+    'hub de módulo (D26) — HubDeModulo tem o título; D37 mediu: unificar é redesenho',
+  'crm/index.tsx':
+    'hub de módulo (D26) — HubDeModulo tem o título; D37 mediu: unificar é redesenho',
+  'estoque/index.tsx':
+    'hub de módulo (D26) — HubDeModulo tem o título; D37 mediu: unificar é redesenho',
+  'vendas/index.tsx':
+    'hub de módulo (D26) — HubDeModulo tem o título; D37 mediu: unificar é redesenho',
+}
+
+function arquivosDe(dir: string): string[] {
+  return readdirSync(dir).flatMap((nome) => {
+    const caminho = join(dir, nome)
+    if (statSync(caminho).isDirectory()) return arquivosDe(caminho)
+    return /\.tsx?$/.test(caminho) && !caminho.includes('.test.') ? [caminho] : []
+  })
+}
+
+const TODOS = new Set(arquivosDe(SRC))
+const ESPECIFICADOR = /from\s+['"]([^'"]+)['"]/g
+
+function resolverImport(origem: string, spec: string): string | undefined {
+  const base = spec.startsWith('@/')
+    ? join(SRC, spec.slice(2))
+    : spec.startsWith('.')
+      ? resolve(dirname(origem), spec)
+      : undefined
+  if (!base) return undefined
+  for (const tentativa of [
+    `${base}.tsx`,
+    `${base}.ts`,
+    join(base, 'index.tsx'),
+    join(base, 'index.ts'),
+  ]) {
+    if (TODOS.has(tentativa)) return tentativa
+  }
+  return undefined
+}
+
+const grafo = new Map<string, string[]>()
+for (const arquivo of TODOS) {
+  const texto = readFileSync(arquivo, 'utf-8')
+  const destinos: string[] = []
+  for (const [, spec] of texto.matchAll(ESPECIFICADOR)) {
+    const alvo = resolverImport(arquivo, spec as string)
+    if (alvo) destinos.push(alvo)
+  }
+  grafo.set(arquivo, destinos)
+}
+
+function alcancaOCabecalho(inicio: string): boolean {
+  const visto = new Set<string>()
+  const pilha = [inicio]
+  while (pilha.length > 0) {
+    const atual = pilha.pop() as string
+    if (visto.has(atual)) continue
+    visto.add(atual)
+    if (atual === CABECALHO) return true
+    pilha.push(...(grafo.get(atual) ?? []))
+  }
+  return false
+}
+
+const chave = (caminho: string) => relative(ROTAS, caminho).replaceAll('\\', '/')
+
+describe('cabeçalho de página em toda rota', () => {
+  it('toda rota chega ao PageHeader — nome de tela tem uma voz só', () => {
+    const semCabecalho = arquivosDe(ROTAS)
+      .filter((rota) => !alcancaOCabecalho(rota))
+      .map(chave)
+      .filter((rota) => !(rota in SEM_CABECALHO))
+
+    expect(
+      semCabecalho,
+      `Rota sem cabeçalho de página:\n${semCabecalho.map((r) => `  src/routes/${r}`).join('\n')}\n\nMonte um <PageHeader titulo="…" /> na tela, ou declare em SEM_CABECALHO por que ela não tem um.`,
+    ).toEqual([])
+  })
+
+  it('a lista de exceções não guarda rota que já ganhou cabeçalho', () => {
+    const arquivos = new Set(arquivosDe(ROTAS).map(chave))
+    const vencidas = Object.keys(SEM_CABECALHO).filter(
+      (rota) => !arquivos.has(rota) || alcancaOCabecalho(join(ROTAS, rota)),
+    )
+    expect(
+      vencidas,
+      `exceção vencida — a rota ganhou cabeçalho ou sumiu: ${vencidas.join(', ')}`,
+    ).toEqual([])
+  })
+
+  /**
+   * O outro lado da mesma regra: o `<h1>` do sistema é o do `PageHeader`, e
+   * mais nenhum. Uma tela pode alcançar o cabeçalho pelos imports E mesmo
+   * assim escrever um `<h1>` do lado — foi assim que Tarefas e Planner
+   * tinham dois títulos.
+   */
+  it('nenhum título de nível 1 fora do cabeçalho', () => {
+    // Telas próprias (D20/D21/D23) escrevem o próprio <h1>, e a auth (D28)
+    // também: `PaginaDeAuth` é a moldura de quem ainda não entrou no sistema, e
+    // o título dela não pode vir de um cabeçalho que pressupõe o shell. Mesma
+    // exceção da lista acima, com o mesmo porquê medido na D37.
+    const H1_PROPRIO = new Set([
+      'features/dashboard/dashboard.tsx',
+      'features/login/pagina-de-auth.tsx',
+      'features/planner/planner.tsx',
+      'features/tarefas/tarefas.tsx',
+      'features/login/pagina-de-auth.tsx',
+    ])
+    const soltos = [...arquivosDe(join(SRC, 'routes')), ...arquivosDe(join(SRC, 'features'))]
+      .filter((arquivo) => /<h1[\s>]/.test(readFileSync(arquivo, 'utf-8')))
+      .map((arquivo) => relative(SRC, arquivo).replaceAll('\\', '/'))
+      .filter((arquivo) => !H1_PROPRIO.has(arquivo))
+
+    expect(
+      soltos,
+      `<h1> fora do PageHeader:\n${soltos.map((a) => `  src/${a}`).join('\n')}`,
+    ).toEqual([])
+  })
+})

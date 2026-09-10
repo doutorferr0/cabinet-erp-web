@@ -1,6 +1,3 @@
-import type { Modulo } from '@/app/modulo'
-import type { ShapeDeLugar } from '@/components/cabinet/ornamento'
-import { RECURSOS, type RecursoDaEmpresa } from '@/data/recursos-da-empresa'
 import {
   ArrowLeftRight,
   BookUser,
@@ -8,14 +5,17 @@ import {
   CalendarClock,
   CalendarDays,
   CircleDollarSign,
+  ClipboardCheck,
   Filter,
   GanttChart,
   HandCoins,
   Home,
+  Inbox,
   LayoutDashboard,
   type LucideIcon,
   Package,
   Settings,
+  ShieldCheck,
   ShoppingCart,
   SquareKanban,
   Store,
@@ -23,6 +23,8 @@ import {
   Truck,
   Users,
 } from 'lucide-react'
+import type { Modulo } from '@/app/modulo'
+import { RECURSOS, type RecursoDaEmpresa } from '@/data/recursos-da-empresa'
 
 export interface NavItem {
   title: string
@@ -84,13 +86,17 @@ export interface NavItem {
   externo?: true
 
   /**
-   * Cor e desenho de uma tela que NÃO tem módulo próprio.
+   * Cor de uma tela que NÃO tem módulo próprio.
    *
-   * O normal é a sidebar tirar os dois de `moduloDaRota(item.url)`. Três telas
+   * O normal é a sidebar tirar a cor de `moduloDaRota(item.url)`. Três telas
    * ficam de fora da tabela travada pelo user — Dashboard, Planner e
-   * Colaboradores — e apareciam com ícone lucide cinza no meio de uma fileira
-   * colorida. `mockup-dashboard-cores.html` resolveu sem inventar a nona cor:
-   * elas EMPRESTAM o par de um vizinho e se distinguem pelo desenho.
+   * Colaboradores — e apareciam cinzas no meio de uma fileira colorida.
+   * `mockup-dashboard-cores.html` resolveu sem inventar a nona cor: elas
+   * EMPRESTAM o par de um vizinho.
+   *
+   * O `shape` que acompanhava saiu na D35: o desenho do sistema é a `<Forma>`,
+   * que diz MÓDULO, e distinguir três telas do mesmo módulo é serviço do ícone
+   * lucide de cada item — não de uma peça de identidade em 18px.
    *
    * Fica na entrada do menu, e não em `moduloDaRota`, de propósito: aquela
    * função responde "de que módulo é a TELA no ar" e o shell a usa para pintar
@@ -98,7 +104,22 @@ export interface NavItem {
    * coral e faria a banda de identidade anunciar o módulo errado. O empréstimo
    * é do ITEM DE MENU, e o alcance dele para no item.
    */
-  aparencia?: { modulo: Modulo; shape: ShapeDeLugar }
+  aparencia?: { modulo: Modulo }
+
+  /**
+   * Este item carrega um CONTADOR do que espera o operador — o badge da barra.
+   *
+   * É uma MARCA, não o número: a navegação é dado estático e não pode chamar a
+   * API. Quem lê a marca é o shell, que monta o componente que sabe perguntar
+   * (`<PendentesDeAprovacao>`); a marca só diz qual contador o item tem.
+   *
+   * Um `contagem?: number` aqui obrigaria a tabela inteira a virar função e a
+   * ser recalculada a cada render de cada tela — e a navegação é lida também
+   * pela paleta de comandos e pelos testes, que não têm servidor.
+   *
+   * **Some do item `futuro`**: tela que não existe não tem o que contar.
+   */
+  contador?: 'aprovacoes-pendentes'
 
   /**
    * Tela que AINDA NÃO EXISTE — aparece na barra, apagada, com selo, e não
@@ -226,14 +247,39 @@ export const navSecoes: NavSecao[] = [
             descricao: 'O que está em curso agora: números do dia e o que pede atenção.',
             // Coral do Boletim nas três: a seção da VISÃO fala do mesmo assunto
             // que ele — o dia. Desenhos distintos é o que as separa.
-            aparencia: { modulo: 'boletim', shape: 'dashboard' },
+            aparencia: { modulo: 'boletim' },
+          },
+          {
+            /**
+             * CAIXA DE ENTRADA — o que chegou para VOCÊ hoje.
+             *
+             * Fica em `Hoje` e logo depois do Dashboard porque responde a mesma
+             * pergunta do grupo com um recorte a menos: o Dashboard mostra o dia
+             * da empresa, esta mostra o pedaço do dia que tem seu nome. Antes de
+             * D7 isto não era tela nenhuma — era um sino na appbar, e o que um
+             * sino abre não entra em menu, não tem endereço e não se acha pela
+             * paleta.
+             */
+            title: 'Caixa de entrada',
+            url: '/inbox',
+            icon: Inbox,
+            descricao:
+              'O que chegou para você: menções, atribuições e prazos, com o registro a um clique.',
+            // SEM `aparencia`, e é o mesmo blocker da Agenda mais abaixo: emprestar
+            // cor exige um `ShapeDeLugar` PRÓPRIO em
+            // `src/components/cabinet/ornamento.tsx` — componente compartilhado,
+            // fora da zona de D7, e com ritual de medição de cobertura para o
+            // desenho novo. Reusar o `dashboard` não é opção: `navigation.test.ts`
+            // exige desenhos distintos entre quem empresta, e a razão está escrita
+            // lá — mesma cor com mesmo desenho faz a fileira da sidebar deixar de
+            // ser um mapa. Fica no ícone lucide puro até haver decisão do user.
           },
           {
             title: 'Tarefas',
             url: '/tarefas',
             icon: SquareKanban,
             descricao: 'O quadro do que precisa ser feito, em colunas por andamento.',
-            aparencia: { modulo: 'boletim', shape: 'tarefas' },
+            aparencia: { modulo: 'boletim' },
           },
           {
             /**
@@ -257,10 +303,9 @@ export const navSecoes: NavSecao[] = [
             url: '/agenda',
             icon: CalendarDays,
             descricao: 'Compromissos do mês e agenda do dia, num calendário só.',
-            // Blocker: a agenda precisa de um ShapeDeLugar em
-            // src/components/cabinet/ornamento.tsx (componente compartilhado).
-            // Sem decisão do user, fica com o ícone lucide puro para não
-            // improvisar uma cor/shape (regra da issue #230).
+            // O blocker de shape que morava aqui (#230) saiu com a D35: todo
+            // item da barra usa o lucide dele, e ninguém mais precisa de
+            // decisão do user para um desenho próprio.
           },
         ],
       },
@@ -276,7 +321,7 @@ export const navSecoes: NavSecao[] = [
             icon: GanttChart,
             descricao:
               'O que ainda vai acontecer, na linha do tempo: prazos, entregas e reagendamentos.',
-            aparencia: { modulo: 'boletim', shape: 'planner' },
+            aparencia: { modulo: 'boletim' },
           },
           {
             title: 'Relatórios',
@@ -360,6 +405,22 @@ export const navSecoes: NavSecao[] = [
             url: '/vendas/reservas-tecnicas',
             icon: HandCoins,
             descricao: 'O que o profissional externo recebe pela indicação. Cancela, não apaga.',
+          },
+          {
+            /**
+             * A FILA DE APROVAÇÕES (F12) fica DEPOIS dos documentos, e não antes:
+             * ela é o que acontece por causa de um documento, não um documento.
+             *
+             * **Sem `incluir`, e a ausência é informação** — o pedido nasce no
+             * servidor, ao gravar desconto acima do teto, e a paleta de comandos
+             * lê esta propriedade para oferecer "Novo …". Inventar o caminho
+             * daria um comando que leva a uma tela sem botão.
+             */
+            title: 'Aprovações',
+            url: '/vendas/aprovacoes',
+            icon: ShieldCheck,
+            descricao: 'O desconto que passou do teto e espera alguém liberar. Recusa pede motivo.',
+            contador: 'aprovacoes-pendentes',
           },
         ],
       },
@@ -448,6 +509,20 @@ export const navSecoes: NavSecao[] = [
             url: '/estoque/movimentacao',
             icon: ArrowLeftRight,
             descricao: 'Entrada, saída e transferência do estoque.',
+          },
+          {
+            /**
+             * INVENTÁRIO — o contraponto da Movimentação: lá se lança o que se
+             * sabe que aconteceu, aqui se confere o que a prateleira tem contra
+             * o que o sistema diz. Vem depois dela porque o ajuste que ele
+             * produz É um movimento, e quem não entendeu o kardex não entende a
+             * folha de contagem.
+             */
+            title: 'Inventário',
+            url: '/estoque/inventario',
+            icon: ClipboardCheck,
+            descricao:
+              'Contagem por depósito: o contado contra o sistema, e o ajuste da diferença.',
           },
           {
             title: 'Reserva Técnica',
@@ -546,10 +621,14 @@ export const navSecoes: NavSecao[] = [
   },
   {
     /**
-     * Financeiro entra INTEIRO como futuro, e de propósito: o user decidiu que
-     * Contas a Pagar e a Receber moram juntas, e a seção existir vazia é o que
-     * mostra onde elas vão cair. Sem módulo — não há cor de financeiro na
-     * paleta travada, e inventar uma seria decisão dele, não minha.
+     * Financeiro nasceu INTEIRO como futuro — a seção existir vazia era o que
+     * mostrava onde Contas a Pagar e a Receber iam cair. **As duas existem
+     * agora** (G7 fase C): a tela é a AGENDA DE VENCIMENTOS, que é literalmente
+     * o que a descrição delas já prometia — "por vencimento". Comissões segue
+     * futura.
+     *
+     * Sem módulo — não há cor de financeiro na paleta travada, e inventar uma
+     * seria decisão do user, não minha.
      */
     id: 'financeiro',
     rotulo: 'Financeiro',
@@ -564,15 +643,17 @@ export const navSecoes: NavSecao[] = [
             title: 'Contas a Receber',
             url: '/financeiro/receber',
             icon: CircleDollarSign,
-            descricao: 'Ainda não existe. O que o cliente deve, por vencimento.',
-            futuro: true,
+            descricao: 'O que o cliente deve, por vencimento — com a quitação.',
+            // `Incluir` abre um TÍTULO, que é onde a conta nasce: o vencimento
+            // não é registro que se cria sozinho, ele é parcela de um título.
+            incluir: '/financeiro/receber/titulos/novo',
           },
           {
             title: 'Contas a Pagar',
             url: '/financeiro/pagar',
             icon: CircleDollarSign,
-            descricao: 'Ainda não existe. O que se deve ao fornecedor, por vencimento.',
-            futuro: true,
+            descricao: 'O que se deve ao fornecedor, por vencimento — com a quitação.',
+            incluir: '/financeiro/pagar/titulos/novo',
           },
           {
             title: 'Comissões',
@@ -629,7 +710,7 @@ export const navSecoes: NavSecao[] = [
             recurso: RECURSOS.employees,
             // Par de Clientes: é o cadastro de PESSOA vizinho. O desenho é que
             // separa — corpo dentro de moldura, a pessoa de dentro.
-            aparencia: { modulo: 'clientes', shape: 'colaboradores' },
+            aparencia: { modulo: 'clientes' },
           },
         ],
       },

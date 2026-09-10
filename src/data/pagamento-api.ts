@@ -1,12 +1,13 @@
+import { useQuery } from '@tanstack/react-query'
 import {
+  getInstallmentPolicy,
   type InstallmentPolicyDto,
+  listPaymentTerms,
   type PagedResultOfPaymentTermDto,
   type PaymentTermDto,
-  getInstallmentPolicy,
-  listPaymentTerms,
 } from '@/api/gerado'
-import { type RespostaDaApi, dadosOuErro } from '@/data/api-provider'
-import { useQuery } from '@tanstack/react-query'
+import { dadosOuErro, type RespostaDaApi } from '@/data/api-provider'
+import { formatMoneyBRL } from '@/lib/formatters'
 
 /**
  * A fronteira de leitura do PAGAMENTO: as condições da empresa e os três
@@ -154,13 +155,7 @@ export function motivoDeNaoCaber(
     // A frase evita as palavras "à vista" de propósito: elas são NOME de
     // condição na lista da Vertz, e um motivo que repete o nome de outra opção
     // faz a busca por rótulo (a do operador e a do teste) casar com duas linhas.
-    return `não parcela abaixo de ${reais(politica.minTotalToInstallCents)}`
+    return `não parcela abaixo de ${formatMoneyBRL(politica.minTotalToInstallCents)}`
   }
   return null
-}
-
-function reais(centavos: number): string {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
-    centavos / 100,
-  )
 }

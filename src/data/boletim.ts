@@ -2,7 +2,6 @@ import { data } from '@/data'
 import { PAGE_SIZE_MAX } from '@/data/api-provider'
 import { formatDateBR } from '@/lib/formatters'
 import type { TableQueryState } from '@/lib/table-query'
-import { colaboradores } from '@/mocks/colaboradores'
 import { type Orcamento, orcamentos } from '@/mocks/orcamentos'
 import { type OrdemCompra, ordensCompra } from '@/mocks/ordens-compra'
 import { pedidosCompra } from '@/mocks/pedidos-compra'
@@ -20,14 +19,18 @@ import { mockDelay } from '@/mocks/query'
  * não escala para o volume real — aqui só funciona porque o mock cabe na
  * memória. A assinatura `fetchBoletim(): Promise<Boletim>` fica igual.
  *
- * As linhas de CADASTROS (Clientes, Fornecedores, Profissional Externo,
- * Produtos) contam pelo MESMO `data.<recurso>.list` que a listagem de cada um
- * usa — nunca por array de `src/mocks/`. Contar por fonte diferente da
- * listagem fazia o Boletim prometer "16 clientes" e a lista mostrar 1: o link
- * é para a mesma tela, e o número tem que bater com o que ela mostra.
- * Colaboradores é a exceção que confirma a regra: sua listagem também é mock
- * sobre `src/mocks/colaboradores.ts`, então a origem já é a mesma nos dois
- * lugares — não há nada para convergir.
+ * TODAS as linhas de CADASTROS contam pelo MESMO `data.<recurso>.list` que a
+ * listagem de cada um usa — nunca por array de `src/mocks/`. Contar por fonte
+ * diferente da listagem fazia o Boletim prometer "16 clientes" e a lista
+ * mostrar 1: o link é para a mesma tela, e o número tem que bater com o que
+ * ela mostra.
+ *
+ * Colaboradores foi a última a convergir (#407). Enquanto sua listagem era
+ * mock, contar pelo array da semente dava o mesmo número dos dois lados; a
+ * tela migrou para `GET /api/employees` em 25/08 e a exceção virou defeito —
+ * com o par local de pé, o cadastro listava o Postgres e este card somava a
+ * semente. Duas listas de quem trabalha aqui, o mesmo defeito que o cabeçalho
+ * de `colaboradores-api.ts` nomeia.
  *
  * REGRA DA FASE: toda grandeza abaixo é DERIVADA de campo que a transcrição
  * captura. Nada de métrica inventada — onde o legado não registra o dado, o
@@ -178,7 +181,7 @@ async function linhaDeCadastro(
       inativosParcial: rows.length < total,
     }
   } catch {
-    // Uma lista de parceiro/produto fora do ar não pode apagar o boletim
+    // Uma lista de cadastro fora do ar não pode apagar o boletim
     // inteiro (Movimento do dia e Ordens sem envio são mock puro e
     // renderizariam bem) — só esta linha de Cadastros fica indisponível.
     return { nome, href, total: null, inativos: null, inativosParcial: false }
@@ -208,28 +211,13 @@ export async function boletim(): Promise<Boletim> {
     }))
     .sort((a, b) => b.diasParado - a.diasParado)
 
-  const [linhaClientes, linhaFornecedores, linhaProdutos, linhaProfissionais] = await Promise.all([
+  const cadastros: LinhaCadastro[] = await Promise.all([
     linhaDeCadastro('Clientes', '/cadastros/clientes', data.clientes.list),
     linhaDeCadastro('Fornecedores', '/cadastros/fornecedores', data.fornecedores.list),
     linhaDeCadastro('Produtos', '/cadastros/produtos', data.produtos.list),
+    linhaDeCadastro('Colaboradores', '/cadastros/colaboradores', data.colaboradores.list),
     linhaDeCadastro('Profissional Externo', '/cadastros/profissionais', data.profissionais.list),
   ])
-
-  const cadastros: LinhaCadastro[] = [
-    linhaClientes,
-    linhaFornecedores,
-    linhaProdutos,
-    {
-      // Colaboradores é mock nos dois lados (Boletim e listagem): não há
-      // divergência a corrigir, então continua contando pelo array direto.
-      nome: 'Colaboradores',
-      href: '/cadastros/colaboradores',
-      total: colaboradores.length,
-      inativos: colaboradores.filter((c) => !c.ativo).length,
-      inativosParcial: false,
-    },
-    linhaProfissionais,
-  ]
 
   return {
     dataReferencia: referencia,

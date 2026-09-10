@@ -42,6 +42,15 @@ Cinco frases que mudam como você lê o resto:
    uma tem um teste ou um incidente atrás. Elas valem em qualquer linguagem, e a §4 é a parte
    deste documento que existe para ser lida antes de a primeira classe ser escrita.
 
+**E há uma sexta, que chegou depois deste documento:** o contrato agora é **versionado e aditivo**.
+Você não implementa a `main` — implementa a tag **`contrato/v1.0.0`**, cujo arquivo é
+`contracts/baseline/v1.0.0.json` (205 operações, soma conferível em `.sha256` ao lado). O contrato
+vivo continua andando aqui, mas em 1.x ele só pode CRESCER: campo renomeado, tipo trocado ou campo
+que vira obrigatório reprovam a PR no job `contrato-compat` do CI. Nada do que você já compilou
+contra a tag quebra sem uma versão nova e um aviso no changelog. O que pode mudar, o que não pode,
+como uma versão nova sai e como gerar as interfaces Java a partir da tag estão em
+**[`contrato.md`](contrato.md)** — leia-o junto com a §4 daqui, antes da primeira classe.
+
 ---
 
 ## 2. Por onde começar — ordem lógica, não calendário
@@ -374,7 +383,8 @@ sobre Spring Boot vs. Spring Modulith, MapStruct, ou como vocês organizam os te
 
 | fonte | onde | serve para |
 | --- | --- | --- |
-| **O contrato** (a lei) | [`contracts/openapi-v1.json`](../../contracts/openapi-v1.json) | o que implementar. Muda só por PR **aqui** |
+| **O contrato** (a lei) | [`contracts/openapi-v1.json`](../../contracts/openapi-v1.json) | o que implementar. Muda só por PR **aqui**, e só por adição |
+| **A versão que você implementa** | tag `contrato/v1.0.0` → [`contracts/baseline/v1.0.0.json`](../../contracts/baseline/v1.0.0.json) | o alvo congelado. Regra aditiva, versão nova e consumo pelo Spring: [`contrato.md`](contrato.md) |
 | **Semânticas que o JSON Schema não escreve** | [`docs/integracao.md`](../integracao.md) | envelope de listagem, paginação, ordenação, filtro estruturado, erros |
 | **Regras do repo e do trabalho** | [`CLAUDE.md`](../../CLAUDE.md) | 501 vs 404, comandos, passagem mock↔HTTP |
 | **Implementação de referência** | [`cabinet-erp-api@ac00bb9`](https://github.com/doutorferr0/cabinet-erp-api/tree/ac00bb9) | "o que exatamente esta rota faz?" — 59 migrações SQL, 77 arquivos de teste contra Postgres real |
@@ -555,7 +565,7 @@ peça que este documento hoje só descreve:
 
 | issue | entrega | onde vai morar |
 | --- | --- | --- |
-| [E1 · #420](https://github.com/doutorferr0/cabinet-erp-web/issues/420) | baseline do contrato congelada + `pnpm contrato:delta` | `contracts/baseline-spring-2026-08.json` · `docs/spring/contrato.md` |
+| [E1 · #420](https://github.com/doutorferr0/cabinet-erp-web/issues/420) | contrato versionado aditivo: baseline `1.0.0`, `pnpm contrato:delta` e a guarda `contrato-compat` | `contracts/baseline/v1.0.0.json` · [`docs/spring/contrato.md`](contrato.md) — **entregue** |
 | [E2 · #421](https://github.com/doutorferr0/cabinet-erp-web/issues/421) | registry marca a época: `node-congelado` × `spring-pendente` | `src/mocks/rotas-do-backend.ts` |
 | [E3 · #422](https://github.com/doutorferr0/cabinet-erp-web/issues/422) | **suíte de conformidade** parametrizada por URL — a aceitação | `conformidade/` |
 | [E4 · #423](https://github.com/doutorferr0/cabinet-erp-web/issues/423) | espec de sessão e auth, derivada de comportamento medido | `docs/spring/sessao.md` |

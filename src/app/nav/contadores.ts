@@ -40,8 +40,10 @@ export interface ContadoresNav {
   caixaDeEntrada: number | undefined
   /**
    * Pedidos de desconto acima do teto que esperam ESTA sessão (F12, #417).
-   * `undefined` também para quem não decide pedido nenhum (`canDecide` falso):
-   * número ao lado de um item que a pessoa não opera seria ruído permanente.
+   * `undefined` também para quem não decide pedido nenhum (`canDecide` falso)
+   * e para a fila VAZIA — exceção deliberada ao "ausente ≠ zero" acima: aqui o
+   * número só existe quando há trabalho; `0` ao lado de um item que a pessoa
+   * abre raramente seria ruído permanente, e a tela da fila diz o vazio.
    */
   aprovacoesPendentes: number | undefined
 }
@@ -78,6 +80,9 @@ export function useContadoresNav(): ContadoresNav {
   return {
     minhasTarefas: tarefas.data?.length,
     caixaDeEntrada,
-    aprovacoesPendentes: aprovacoes.data?.canDecide ? aprovacoes.data.pendingCount : undefined,
+    aprovacoesPendentes:
+      aprovacoes.data?.canDecide && aprovacoes.data.pendingCount > 0
+        ? aprovacoes.data.pendingCount
+        : undefined,
   }
 }

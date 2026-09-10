@@ -101,16 +101,25 @@ describe('a fila mostra o que espera decisão', () => {
     expect(screen.getByText('Pendente')).toBeInTheDocument()
   })
 
+  /** O item `Aprovações` da barra 2.0 — o contador é o `[data-contador]` dele. */
+  function itemDaBarra() {
+    const barra = document.querySelector('[data-slot="sidebar-nav"]') as HTMLElement
+    return within(barra).getByRole('link', { name: /Aprovações/ })
+  }
+
   it('o contador da barra aparece com o que ESTA sessão pode decidir', async () => {
     renderRoute('/vendas/aprovacoes', servidorDaFila([pedido()], 3))
-    expect(await screen.findByLabelText('3 pedidos pendentes')).toBeInTheDocument()
+    await screen.findByText('21653')
+    await waitFor(() =>
+      expect(itemDaBarra().querySelector('[data-contador]')).toHaveTextContent('3'),
+    )
   })
 
   it('sem pendência decidível o contador SOME — badge zerado é ruído permanente', async () => {
     renderRoute('/vendas/aprovacoes', servidorDaFila([pedido()], 0))
 
     await screen.findByText('21653')
-    expect(screen.queryByLabelText(/pedidos? pendentes?/)).not.toBeInTheDocument()
+    expect(itemDaBarra().querySelector('[data-contador]')).toBeNull()
   })
 })
 

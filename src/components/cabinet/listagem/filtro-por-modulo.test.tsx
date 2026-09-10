@@ -1,5 +1,10 @@
-import { ColunasPorModulo } from '@/components/cabinet/listagem/colunas-por-modulo'
+import { screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { useState } from 'react'
+import { describe, expect, it } from 'vitest'
+import { gruposDoModulo } from '@/components/cabinet/listagem/colunas-por-modulo'
 import { FiltroPorModulo } from '@/components/cabinet/listagem/filtro-por-modulo'
+import { MenuDeColunas } from '@/components/cabinet/listagem/menu-de-colunas'
 import {
   ativosDoModulo,
   filtroDoCampo,
@@ -10,10 +15,6 @@ import { colaborador, profissional } from '@/features/cadastro/modulos'
 import type { EntidadeCadastro } from '@/features/cadastro/modulos/tipos'
 import type { FiltroDaTabela } from '@/lib/filtro-de-consulta'
 import { renderWithQuery } from '@/test/utils'
-import { screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { useState } from 'react'
-import { describe, expect, it } from 'vitest'
 
 /**
  * FILTRO E COLUNAS POR MÓDULO (#104) — a diretriz 4 do lado da listagem.
@@ -259,16 +260,46 @@ describe('FiltroPorModulo', () => {
   })
 })
 
-describe('ColunasPorModulo', () => {
+/**
+ * As colunas por módulo deixaram de ter painel próprio na Reface 2.0: elas são
+ * os GRUPOS do menu `Colunas` da barra. O que se afirma continua sendo o mesmo —
+ * agrupado por origem, fixa não desmarca, opcional liga e desliga —, porque é
+ * disso que a #104 trata; o que mudou foi onde o operador clica.
+ */
+describe('colunas por módulo, dentro do menu Colunas', () => {
   function ComColunas() {
     const [extras, setExtras] = useState<string[]>([])
-    return <ColunasPorModulo entidade={profissional} extras={extras} onChange={setExtras} />
+    return (
+      <MenuDeColunas
+        colunas={[]}
+        onAlternar={() => undefined}
+        onReordenar={() => undefined}
+        opcionais={gruposDoModulo(profissional, extras)}
+        onAlternarOpcional={(id) =>
+          setExtras((atuais) =>
+            atuais.includes(id) ? atuais.filter((x) => x !== id) : [...atuais, id],
+          )
+        }
+      />
+    )
   }
 
   /** Só o mock tem mais de um módulo com lastro — ver o teste da faixa acima. */
   function ComColunasMock() {
     const [extras, setExtras] = useState<string[]>([])
-    return <ColunasPorModulo entidade={entidadeMock} extras={extras} onChange={setExtras} />
+    return (
+      <MenuDeColunas
+        colunas={[]}
+        onAlternar={() => undefined}
+        onReordenar={() => undefined}
+        opcionais={gruposDoModulo(entidadeMock, extras)}
+        onAlternarOpcional={(id) =>
+          setExtras((atuais) =>
+            atuais.includes(id) ? atuais.filter((x) => x !== id) : [...atuais, id],
+          )
+        }
+      />
+    )
   }
 
   /**
@@ -281,9 +312,25 @@ describe('ColunasPorModulo', () => {
     renderWithQuery(<ComColunas />)
     await user.click(screen.getByRole('button', { name: 'Colunas' }))
 
-    // O nome acessível inclui `fixa`: o controle está desabilitado, e quem
-    // ouve precisa do motivo tanto quanto quem lê o rótulo ao lado.
-    const fixa = screen.getByRole('checkbox', { name: 'Nome de apresentação fixa' })
+    /**
+     * Casa pelo RÓTULO DA COLUNA, e não pelo nome acessível inteiro — porque o
+     * nome inteiro está em disputa e este teste não é quem a resolve.
+     *
+     * O que ele afirmava antes era `'Nome de apresentação fixa'`, com espaço, e
+     * isso passava por uma imprecisão da biblioteca: o `<span>fixa</span>` do
+     * `menu-de-colunas.tsx` é `aria-hidden="true"`, ou seja, o COMPONENTE diz
+     * que a palavra não entra no nome acessível. O cálculo de accname do
+     * testing-library a incluía assim mesmo, e ainda punha um espaço; ao
+     * atualizar, passou a incluí-la GRUDADA (`Nome de apresentaçãofixa`), que
+     * não é o que nenhum dos dois lados queria.
+     *
+     * Fica registrado o conflito, para quem decidir a acessibilidade da tela:
+     * ou o `aria-hidden` sai e a palavra passa a ser anunciada de propósito, ou
+     * ele fica e o comentário que prometia o contrário some. Enquanto isso, a
+     * asserção mede o que é verdade nas duas leituras — que este é o checkbox
+     * daquela coluna, marcado e desabilitado.
+     */
+    const fixa = screen.getByRole('checkbox', { name: /^Nome de apresentação/ })
     expect(fixa).toBeChecked()
     expect(fixa).toBeDisabled()
 

@@ -1,8 +1,8 @@
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
 import { data } from '@/data'
 import type { Municipio } from '@/data/geografia/municipios'
 import type { TableFetcher } from '@/lib/table-query'
-import type { ColumnDef } from '@tanstack/react-table'
 
 const cidadeColumns: ColumnDef<Municipio>[] = [
   { accessorKey: 'codigo', header: 'Código' },

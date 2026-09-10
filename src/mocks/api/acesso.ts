@@ -1,3 +1,4 @@
+import { HttpResponse, http } from 'msw'
 import type {
   EmployeeDetailDto,
   EmployeeLinkRequest,
@@ -8,11 +9,12 @@ import type {
   RoleDto,
   RoleWriteRequest,
 } from '@/api/gerado'
-import { http, HttpResponse } from 'msw'
 import { crm } from './crm'
 import { nomeDaEmpresa } from './empresas'
+import { erroCanonico } from './erros-canonicos'
+import { listar } from './listagem'
 import { verificarEscrita } from './permissao'
-import { TIPO, camposInvalidos, conflito, naoEncontrado, problemaJson, semSessao } from './problema'
+import { camposInvalidos, conflito, naoEncontrado, problemaJson, semSessao, TIPO } from './problema'
 import { novoId, store } from './store'
 
 /**
@@ -588,40 +590,7 @@ export const handlersDeAcesso = [
     // Sem recorte por empresa ativa: papel é da ORGANIZAÇÃO, e quem é por
     // empresa é a ATRIBUIÇÃO, no vínculo.
     const url = new URL(request.url)
-    const q = url.searchParams.get('q')
-    const sortBy = url.searchParams.get('sortBy')
-    const sortDesc = url.searchParams.get('sortDesc') === 'true'
-    const page = Number(url.searchParams.get('page') ?? '1')
-    const pageSize = Number(url.searchParams.get('pageSize') ?? '10')
-
-    if (page < 1 || pageSize < 1 || pageSize > 100) {
-      return problemaJson(
-        400,
-        'Paginação inválida: page é 1-based e pageSize vai até 100.',
-        {},
-        TIPO.paginacaoInvalida,
-      )
-    }
-    if (sortBy && !ORDENAVEIS_PAPEL.some((o) => o === sortBy)) {
-      return problemaJson(400, `sortBy inválido: ${sortBy}.`, {}, TIPO.ordenacaoInvalida)
-    }
-
-    let rows = papeis.map(linha)
-    if (q) {
-      const alvo = q.toLowerCase()
-      rows = rows.filter((r) => r.name.toLowerCase().includes(alvo))
-    }
-    if (sortBy) {
-      const chave = sortBy as 'name' | 'active'
-      rows.sort((a, b) => {
-        const va = String(a[chave] ?? '')
-        const vb = String(b[chave] ?? '')
-        return sortDesc ? vb.localeCompare(va) : va.localeCompare(vb)
-      })
-    }
-    const total = rows.length
-    const inicio = (page - 1) * pageSize
-    return HttpResponse.json({ rows: rows.slice(inicio, inicio + pageSize), total })
+    return listar(papeis.map(linha), url, ORDENAVEIS_PAPEL, (papel) => [papel.name])
   }),
 
   http.post('*/api/roles', async ({ request }) => {
@@ -694,8 +663,11 @@ export const handlersDeAcesso = [
     const email = corpo.email.trim().toLowerCase()
     // 409 e não 400: o pedido está bem formado — o e-mail é a credencial e ela
     // é única no produto inteiro, sem diferença de caixa (regra do contrato).
+    // Emitia `about:blank`, e o vocabulário tem a URN desde sempre: a tela via
+    // "Conflito" onde o backend real diria `E-mail já cadastrado`, e não tinha
+    // como oferecer a saída (procurar o colaborador que já usa o e-mail).
     if (email && usuarios.some((u) => u.email === email)) {
-      return conflito('Já existe um colaborador com este e-mail.')
+      return erroCanonico('urn:cabinet:erro:email-ja-cadastrado')
     }
     // O vínculo NASCE JUNTO, no papel de menor poder — igual ao servidor, que
     // vincula ao `viewer` no próprio CreateEmployee. É por isso que a tela usa
@@ -720,6 +692,11 @@ export const handlersDeAcesso = [
       jobTitle: null,
       active: novo.active,
     })
+    // A FICHA nasce junto com a linha (#402): `GET /api/employees/{id}` lê
+    // `crm.fichas`, e sem esta linha a pessoa recém-criada apareceria na
+    // listagem e daria "não encontrado" ao abrir — o mesmo defeito que a tela
+    // de colaborador teve enquanto o detalhe não tinha handler.
+    crm.fichas.push(detalheDeUsuario(novo))
     return HttpResponse.json(detalheDeUsuario(novo), { status: 201 })
   }),
 
@@ -734,7 +711,7 @@ export const handlersDeAcesso = [
     if (recusa) return recusa
     // POST cria; repetir é 409 (o contrato manda o PUT para substituir).
     if (!store.activeTenantId) return naoEncontrado('Sem empresa ativa para vincular.')
-    if (vinculoAtivo(usuario)) return conflito('Vínculo já existe — use o Alterar.')
+    if (vinculoAtivo(usuario)) return erroCanonico('urn:cabinet:erro:vinculo-ja-existe')
     usuario.vinculos[store.activeTenantId] = { roleId: corpo.roleId ?? null, active: true }
     return HttpResponse.json(detalheDeUsuario(usuario), { status: 201 })
   }),

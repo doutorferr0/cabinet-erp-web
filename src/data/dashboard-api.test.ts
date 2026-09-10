@@ -1,14 +1,10 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { DashboardSummaryDto, TaskDto } from '@/api/gerado'
 import { createTask, listTasks, patchTask, patchTodo } from '@/api/gerado'
-import { ErroDaApi, dadosOuErro } from '@/data/api-provider'
-import {
-  agruparPorColuna,
-  cargaPorPessoa,
-  progressoDoQuadro,
-  variacaoDoMes,
-} from '@/data/dashboard-api'
+import { variacao } from '@/data/agregados-api'
+import { dadosOuErro, ErroDaApi } from '@/data/api-provider'
+import { agruparPorColuna, cargaPorPessoa, progressoDoQuadro } from '@/data/dashboard-api'
 import { instalarServidor, json, problema } from '@/test/servidor'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * A fronteira do Dashboard contra SERVIDOR FALSO, nunca contra mock do módulo:
@@ -128,11 +124,11 @@ describe('regras puras do quadro', () => {
     expect(grupos.todo.map((t) => t.id)).toEqual(['y'])
   })
 
-  it('a variação do mês é derivada, e some sem base de comparação', () => {
-    expect(variacaoDoMes(RESUMO)).toBe(12)
-    expect(variacaoDoMes({ ...RESUMO, monthSalesCents: 8_000_000 })).toBe(-51)
+  it('a variação do mês usa a mesma fórmula dos outros KPIs', () => {
+    expect(variacao(RESUMO.monthSalesCents, RESUMO.previousMonthSalesCents)).toBe(12)
+    expect(variacao(8_000_000, RESUMO.previousMonthSalesCents)).toBe(-51)
     // Não existe "cresceu 100%" sobre base zero.
-    expect(variacaoDoMes({ ...RESUMO, previousMonthSalesCents: 0 })).toBeNull()
+    expect(variacao(RESUMO.monthSalesCents, 0)).toBeNull()
   })
 })
 

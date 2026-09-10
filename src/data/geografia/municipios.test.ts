@@ -1,6 +1,6 @@
+import { describe, expect, it } from 'vitest'
 import { carregarMunicipios, municipiosIbge } from '@/data/geografia/municipios'
 import { tableState } from '@/test/utils'
-import { describe, expect, it } from 'vitest'
 
 /**
  * O que estes casos guardam é o ASSET, não o código: o gerador roda à mão, e

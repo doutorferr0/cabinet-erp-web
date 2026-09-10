@@ -1,3 +1,5 @@
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { configurarApi } from '@/api/cliente'
 import {
   authLogin,
@@ -17,11 +19,9 @@ import {
   updatePurchaseRequest,
 } from '@/api/gerado'
 import { idDeApoio } from '@/mocks/lookups'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { resetCompras } from './compras'
 import { handlers } from './handlers'
-import { TENANT_FILIAL, TENANT_MATRIZ, resetStore } from './store'
+import { resetStore, TENANT_FILIAL, TENANT_MATRIZ } from './store'
 
 /**
  * O MOCK DE COMPRAS (G2) — pedido, ordem e as duas consultas.

@@ -1,4 +1,4 @@
-import { http, type RequestHandler, passthrough } from 'msw'
+import { http, passthrough, type RequestHandler } from 'msw'
 
 /**
  * AS ROTAS QUE O `cabinet-erp-api` JÁ SERVE — passthrough POR ROTA, não modo global.
@@ -17,6 +17,17 @@ import { http, type RequestHandler, passthrough } from 'msw'
  * que o `VITE_API_MODE=http` continua sem ser o caminho, e a razão mudou: já não
  * é o backend que falta, é o site público que precisa do mock. Ver a seção "O
  * dia em que as duas metades se encontraram", abaixo.
+ *
+ * ## 2026-08-28: o Node foi CONGELADO — e por isso cada lacuna diz a ÉPOCA dela
+ *
+ * O backend migra para Java Spring, big-bang (decisão do user, 28/08): o `cabinet-erp-api` em
+ * Node vira implementação de referência e **não fecha mais lacuna nenhuma**. Toda entrada de
+ * `ROTAS_NO_MOCK` passou a declarar `servidor`: `node-congelado` para a lacuna que nasceu com o
+ * Node de alvo — e cuja `natureza` (501/404) descreve o buraco, não quem vai fechá-lo —, e
+ * `spring-pendente` para a que nasceu depois, que nenhum servidor jamais conheceu. **Rota nova
+ * nasce `spring-pendente`**, e o recenseamento fechado em `rotas-do-backend.test.ts` reprova quem
+ * a declarar `node-congelado`. O console diz o número antes do relatório por família, porque sem
+ * isso o `PROXIMO_PASSO` por natureza manda escrever handler num repositório parado.
  *
  * ## 2026-08-24: o contrato andou 46 operações e a lista NÃO andou junto
  *
@@ -247,12 +258,14 @@ import { http, type RequestHandler, passthrough } from 'msw'
  *   ele saiu. **Aviso de falta que não existe mais é a mesma mentira com o sinal trocado**, e é
  *   pior que a original: ensina o operador a ignorar avisos, e o próximo será de verdade.
  *
- * - **Cadastro de colaborador — CONTINUA, e nunca foi buraco desta lista.** As seis operações de
- *   `/api/employees` passam desde antes; o que falta é do lado do MOCK, não do backend:
- *   `data.colaboradores` ainda é provider de mock, sem handler de `GET /api/employees/{id}` e com
- *   duas sementes de pessoas que são conjuntos diferentes. `cobertura-do-colaborador.tsx` diz
- *   isso ao operador e segue no lugar. Migrar a tela deixaria o cadastro sem detalhe no SITE
- *   PÚBLICO, que é 100% mock — está em curso na #276/PR #277, fora daqui.
+ * - **Cadastro de colaborador — RESOLVIDA em duas etapas, e o aviso MUDOU DE ASSUNTO.** Esta nota
+ *   dizia que faltava o lado do MOCK: sem handler de `GET /api/employees/{id}` e com duas
+ *   sementes de pessoas que eram conjuntos diferentes. A #276 uniu as sementes e a #396 pôs o
+ *   detalhe; a **#402** ligou a escrita e acrescentou `PUT /api/employees/{id}` ao mock — sem ele,
+ *   no site público (100% mock) o `Gravar` cairia no fallback da SPA e receberia `index.html` com
+ *   status 200. `data.colaboradores` é HTTP, e o `cobertura-do-colaborador.tsx` continua no lugar
+ *   falando de outra coisa: a escrita responde **403 `papel-insuficiente`** a quem não administra,
+ *   e o operador precisa ler por quê.
  *
  * ## A costura de PAPEL que esta rodada abriu, e que durou menos que a PR
  *
@@ -453,12 +466,14 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
 
   // quadro de tarefas e lista A fazer (5 operações) — módulo inteiro.
   //
-  // Convivem com um dashboard ainda mockado (`/api/dashboard/summary` e
-  // `/api/dashboard/agenda` são 501) e isso é DIFERENTE do caso do funil: os
-  // indicadores e a agenda são painéis próprios, com consulta própria, sem id
-  // em comum com a tarefa. O que se perde é a contagem do resumo bater com o
-  // quadro ao lado — dois painéis discordando, e não um quadro vazio mentindo
-  // que não há trabalho.
+  // Entraram ANTES do dashboard, e por um tempo conviveram com ele mockado: o
+  // resumo contava a ficção e o quadro ao lado contava o Postgres. Era
+  // discordância entre dois painéis, não quadro vazio mentindo que não há
+  // trabalho, e por isso a passagem pôde acontecer sem esperar. **Desde a #274
+  // não há mais o que conviver — `/api/dashboard/summary` e
+  // `/api/dashboard/agenda` estão nesta mesma lista, mais abaixo.** A frase
+  // anterior aqui dizia que os dois "são 501" e sobreviveu à própria correção,
+  // a 140 linhas das entradas que a desmentem.
   { metodo: 'get', caminho: '/api/tasks' },
   { metodo: 'post', caminho: '/api/tasks' },
   { metodo: 'patch', caminho: '/api/tasks/{taskId}' },
@@ -934,6 +949,12 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
 export type RotaNoMock = RotaDoBackend & {
   readonly motivo: string
   readonly natureza: NaturezaDaAusencia
+  /**
+   * A época em que a lacuna nasceu — e, por isso, quem vai fechá-la. Ver
+   * `EpocaDoServidor`: `natureza` diz o que o Node responde, `servidor` diz se
+   * ainda há alguém do outro lado para ouvir.
+   */
+  readonly servidor: EpocaDoServidor
 }
 
 /**
@@ -991,6 +1012,56 @@ export const PROXIMO_PASSO: Record<NaturezaDaAusencia, string> = {
 }
 
 /**
+ * A DATA DO CONGELAMENTO, uma vez só — o console a imprime e a guarda a cobra.
+ *
+ * Escrita como constante porque ela é a fronteira entre as duas épocas: lacuna
+ * declarada antes dela mediu contra um servidor que andava, depois dela mede
+ * contra um que parou.
+ */
+export const CONGELAMENTO_DO_NODE = '2026-08-28'
+
+/**
+ * A ÉPOCA DE CADA LACUNA — quem vai fechá-la, que já não é quem a mediu.
+ *
+ * `natureza` responde *"o que o api responde HOJE"*, e é medição: 501 quando o
+ * contrato de lá conhece o caminho, 404 quando não. Enquanto o Node avançava,
+ * dizer isso era o bastante — a resposta de hoje e o próximo passo eram a mesma
+ * frase, e `PROXIMO_PASSO` a imprimia.
+ *
+ * **O congelamento partiu esse par ao meio.** O Node continua respondendo 501, e
+ * o handler que o 501 pede não vai ser escrito por ninguém: o repositório está
+ * congelado como implementação de referência. Ler o console de ontem hoje manda
+ * quem lê abrir PR num repo parado — a mesma classe de defeito que fez
+ * `natureza` nascer, com a data trocada.
+ *
+ * - **`node-congelado`** — a lacuna nasceu com o Node de alvo e tem medição
+ *   contra ele. A `natureza` dela continua VÁLIDA como descrição do buraco (é o
+ *   que o `ao-vivo.test.ts` confere enquanto houver par local de pé); o que
+ *   caducou é ela como próximo passo.
+ * - **`spring-pendente`** — nasceu depois do congelamento. **Não tem medição, e
+ *   não pode ter:** o contrato de lá não sincroniza mais, então o 404 do
+ *   roteador do Node é aritmética, não sonda. Só o mock responde, e responde até
+ *   o Spring existir.
+ *
+ * A distinção não é decorativa: ela é o que separa "alguém já olhou isto de
+ * perto e o servidor disse X" de "isto nunca teve servidor". As duas metades
+ * viram trabalho do Spring, mas só a primeira chega lá com uma medição junto.
+ */
+export type EpocaDoServidor = 'node-congelado' | 'spring-pendente'
+
+/**
+ * O que cada época significa — a frase que o console imprime, uma vez, no topo.
+ *
+ * Mora aqui pela mesma razão que `PROXIMO_PASSO`: é propriedade da CLASSE, não
+ * da rota. Repetida trinta e três vezes ela divergiria na primeira correção.
+ */
+export const EPOCA_DO_SERVIDOR: Record<EpocaDoServidor, string> = {
+  'node-congelado': `o Node api foi congelado em ${CONGELAMENTO_DO_NODE} — o passo por natureza descreve o BURACO, não quem o fecha: quem fecha é o Spring`,
+  'spring-pendente':
+    'nasceu depois do congelamento — nenhum servidor conheceu este caminho, e medir contra o Node não diz nada; o mock é o servidor até o Spring',
+}
+
+/**
  * AS CINCO DA ADMINISTRAÇÃO DO GRUPO — publicadas por ESTA PR, e por isso
  * `sem-contrato`: a cópia do api não conhece caminho que nasceu aqui hoje.
  *
@@ -1045,6 +1116,13 @@ const RECEBIMENTO_SEM_PORTA =
  *
  * Sai INTEIRA quando a fase B ligar os handlers: meia família poria o documento
  * no servidor e a conferência no mock, e é a grade que faz o recebimento.
+ *
+ * **E desde 26/08 elas são MOCKADAS de verdade** (`src/mocks/api/recebimento.ts`).
+ * Até aqui a declaração era só metade: a rota ficava do lado do mock e handler
+ * nenhum a respondia, então em modo mock ela caía no fallback da SPA e voltava
+ * `index.html` com 200 — o pior caso que este arquivo descreve, e o mesmo que a
+ * entrega (G4) pagou. Agora a fila do galpão responde nos DOIS ambientes: mock
+ * puro e par local.
  */
 const RECEBIMENTO: readonly RotaNoMock[] = [
   {
@@ -1052,36 +1130,42 @@ const RECEBIMENTO: readonly RotaNoMock[] = [
     caminho: '/api/goods-receipts',
     motivo: RECEBIMENTO_SEM_PORTA,
     natureza: 'sem-handler',
+    servidor: 'node-congelado',
   },
   {
     metodo: 'post',
     caminho: '/api/goods-receipts',
     motivo: RECEBIMENTO_SEM_PORTA,
     natureza: 'sem-handler',
+    servidor: 'node-congelado',
   },
   {
     metodo: 'get',
     caminho: '/api/goods-receipts/{id}',
     motivo: RECEBIMENTO_SEM_PORTA,
     natureza: 'sem-handler',
+    servidor: 'node-congelado',
   },
   {
     metodo: 'put',
     caminho: '/api/goods-receipts/{id}',
     motivo: RECEBIMENTO_SEM_PORTA,
     natureza: 'sem-handler',
+    servidor: 'node-congelado',
   },
   {
     metodo: 'post',
     caminho: '/api/goods-receipts/{id}/check',
     motivo: RECEBIMENTO_SEM_PORTA,
     natureza: 'sem-handler',
+    servidor: 'node-congelado',
   },
   {
     metodo: 'post',
     caminho: '/api/goods-receipts/{id}/post',
     motivo: RECEBIMENTO_SEM_PORTA,
     natureza: 'sem-handler',
+    servidor: 'node-congelado',
   },
 ]
 
@@ -1121,90 +1205,105 @@ const TESOURARIA: readonly RotaNoMock[] = [
     caminho: '/api/financial-titles',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
     natureza: 'sem-handler',
+    servidor: 'node-congelado',
   },
   {
     metodo: 'post',
     caminho: '/api/financial-titles',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
     natureza: 'sem-handler',
+    servidor: 'node-congelado',
   },
   {
     metodo: 'get',
     caminho: '/api/financial-titles/{id}',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
     natureza: 'sem-handler',
+    servidor: 'node-congelado',
   },
   {
     metodo: 'put',
     caminho: '/api/financial-titles/{id}',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
     natureza: 'sem-handler',
+    servidor: 'node-congelado',
   },
   {
     metodo: 'post',
     caminho: '/api/financial-titles/{id}/cancel',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
     natureza: 'sem-handler',
+    servidor: 'node-congelado',
   },
   {
     metodo: 'get',
     caminho: '/api/financial-installments',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
     natureza: 'sem-handler',
+    servidor: 'node-congelado',
   },
   {
     metodo: 'post',
     caminho: '/api/financial-installments/{id}/settlements',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
     natureza: 'sem-handler',
+    servidor: 'node-congelado',
   },
   {
     metodo: 'post',
     caminho: '/api/financial-settlements/batch',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
     natureza: 'sem-handler',
+    servidor: 'node-congelado',
   },
   {
     metodo: 'get',
     caminho: '/api/cash-movements',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
     natureza: 'sem-handler',
+    servidor: 'node-congelado',
   },
   {
     metodo: 'post',
     caminho: '/api/cash-movements',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
     natureza: 'sem-handler',
+    servidor: 'node-congelado',
   },
   {
     metodo: 'post',
     caminho: '/api/cash-movements/{id}/reconcile',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
     natureza: 'sem-handler',
+    servidor: 'node-congelado',
   },
   {
     metodo: 'post',
     caminho: '/api/cash-transfers',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
     natureza: 'sem-handler',
+    servidor: 'node-congelado',
   },
   {
     metodo: 'get',
     caminho: '/api/bank-accounts',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
     natureza: 'sem-handler',
+    servidor: 'node-congelado',
   },
   {
     metodo: 'get',
     caminho: '/api/cash-registers',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
     natureza: 'sem-handler',
+    servidor: 'node-congelado',
   },
   {
     metodo: 'get',
     caminho: '/api/payment-modes',
     motivo: TESOURARIA_SEM_CONTRATO_LA,
     natureza: 'sem-handler',
+    servidor: 'node-congelado',
   },
 ]
 /**
@@ -1244,6 +1343,49 @@ const SUPORTE_DA_PLATAFORMA: readonly RotaNoMock[] = (
   motivo:
     '501 no api — o contrato sincronizou (api#229) e o handler do suporte da plataforma nao existe',
   natureza: 'sem-handler' as const,
+  servidor: 'node-congelado' as const,
+}))
+
+/**
+ * OS CINCO AGREGADOS DE KPI (D11, #479) — a primeira família a nascer DEPOIS do
+ * congelamento do Node, e por isso a primeira `spring-pendente` de verdade.
+ *
+ * As cinco são caminho NOVO publicado aqui hoje: `/api/purchases/orders-summary`,
+ * `/api/sales/quotes-summary`, `/api/stock/summary`,
+ * `/api/crm/opportunities-summary` e `/api/nav/counters`. A cópia do contrato do
+ * `cabinet-erp-api` não as conhece, então lá elas caem no `setNotFoundHandler` e
+ * respondem **404 `Este caminho não existe no contrato`** — `sem-contrato`, não
+ * `sem-handler`, e a diferença é o próximo passo que o console imprime.
+ *
+ * **A época, porém, não é `node-congelado`.** O `sync:contract` de lá fecharia a
+ * janela do 404, mas o handler que viria depois não vem: o Node parou em
+ * 2026-08-28 e quem serve estas cinco é o Spring. Declarar `node-congelado`
+ * mandaria alguém abrir o `servidor.ts` de um repositório que não fecha mais
+ * lacuna nenhuma — que é exatamente o erro que `EpocaDoServidor` existe para
+ * impedir, e é por isso que o recenseamento fechado de `rotas-do-backend.test.ts`
+ * reprova quem tentar.
+ *
+ * **Elas TÊM handler de mock desde o mesmo commit** (`src/mocks/api/agregados.ts`).
+ * Isso não é detalhe: rota declarada mockada sem handler cai no fallback da SPA
+ * e devolve `index.html` com **200** — o pior caso que este arquivo descreve, e
+ * o que a entrega (G4) e o recebimento (G3) já pagaram. Aqui a faixa de KPI
+ * responde nos dois ambientes desde o primeiro dia.
+ */
+const AGREGADOS_DE_KPI: readonly RotaNoMock[] = (
+  [
+    '/api/purchases/orders-summary',
+    '/api/sales/quotes-summary',
+    '/api/stock/summary',
+    '/api/crm/opportunities-summary',
+    '/api/nav/counters',
+  ] as const
+).map((caminho) => ({
+  metodo: 'get' as const,
+  caminho,
+  motivo:
+    'agregado de KPI publicado NESTE repo pela #479 (D11) — a cópia do contrato do api ainda não conhece o caminho, e quem vai servi-lo é o Spring, não o Node parado',
+  natureza: 'sem-contrato' as const,
+  servidor: 'spring-pendente' as const,
 }))
 
 /**
@@ -1269,6 +1411,41 @@ const REAGENDAR_SEM_CONTRATO_LA =
   'PATCH do item do plano publicado neste PR: a cópia do contrato do api ainda não o conhece. ' +
   'Próximo passo lá: pnpm sync:contract + pnpm codegen, e só então o handler.'
 
+/**
+ * As VIEWS SALVAS do usuário (`/api/me/views`), publicadas NESTE PR pela #481 (D13).
+ *
+ * `sem-contrato`, e sem precisar de par local para afirmá-lo — o caminho nasce
+ * aqui e a cópia do contrato do api vem da `main` deste repo. Quem vai servi-lo
+ * é o Spring: o Node foi congelado em 28/08 e não fecha mais lacuna nenhuma.
+ *
+ * **Têm handler de mock** (`src/mocks/api/views.ts`), que é a condição escrita
+ * no bloco de `cost-profiles`: sem handler, a rota cairia no fallback da SPA e
+ * devolveria `index.html` com 200 — pior que o 404 honesto.
+ *
+ * **O preço, sabido:** este é o único mock que grava em `localStorage`, porque a
+ * view precisa durar mais que a sessão. No par local isso significa que as views
+ * ficam no navegador enquanto o servidor não as conhece — e no dia em que o
+ * Spring servir a família, a lista do operador estará vazia do lado de lá. É
+ * migração de dado pessoal, não perda de registro de negócio, e o passo é o
+ * mesmo das outras: `sync:contract` + `codegen` lá, depois o handler, e então
+ * estas quatro linhas migram para `ROTAS_DO_BACKEND`.
+ */
+const VIEWS_SALVAS: readonly RotaNoMock[] = (
+  [
+    { metodo: 'get', caminho: '/api/me/views' },
+    { metodo: 'post', caminho: '/api/me/views' },
+    { metodo: 'put', caminho: '/api/me/views/{id}' },
+    { metodo: 'delete', caminho: '/api/me/views/{id}' },
+  ] as const
+).map(({ metodo, caminho }) => ({
+  metodo,
+  caminho,
+  motivo:
+    'views salvas por usuário publicadas NESTE repo pela #481 (D13) — a cópia do contrato do api ainda não conhece o caminho, e quem vai servi-lo é o Spring, não o Node parado',
+  natureza: 'sem-contrato' as const,
+  servidor: 'spring-pendente' as const,
+}))
+
 export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
   ...RECEBIMENTO,
   ...TESOURARIA,
@@ -1277,6 +1454,7 @@ export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
     caminho: '/api/employees/{id}/reset-password',
     motivo: SENHA_INICIAL_SEM_CONTRATO_LA,
     natureza: 'sem-handler',
+    servidor: 'node-congelado',
   },
   // AS QUATRO DO CICLO DA CREDENCIAL — publicadas por ESTA PR, e as quatro COM
   // handler de mock (`src/mocks/api/acesso.ts`), o que nao e detalhe: sem ele,
@@ -1291,24 +1469,28 @@ export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
     caminho: '/api/employees/{id}/invite',
     motivo: CICLO_DA_CREDENCIAL_SEM_CONTRATO_LA,
     natureza: 'sem-handler',
+    servidor: 'node-congelado',
   },
   {
     metodo: 'post',
     caminho: '/auth/forgot-password',
     motivo: CICLO_DA_CREDENCIAL_SEM_CONTRATO_LA,
     natureza: 'sem-handler',
+    servidor: 'node-congelado',
   },
   {
     metodo: 'post',
     caminho: '/auth/credential-token',
     motivo: CICLO_DA_CREDENCIAL_SEM_CONTRATO_LA,
     natureza: 'sem-handler',
+    servidor: 'node-congelado',
   },
   {
     metodo: 'post',
     caminho: '/auth/set-password',
     motivo: CICLO_DA_CREDENCIAL_SEM_CONTRATO_LA,
     natureza: 'sem-handler',
+    servidor: 'node-congelado',
   },
   ...SUPORTE_DA_PLATAFORMA,
   {
@@ -1316,36 +1498,54 @@ export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
     caminho: '/api/projects/{projectId}/plan/items/{itemId}',
     motivo: REAGENDAR_SEM_CONTRATO_LA,
     natureza: 'sem-contrato',
+    servidor: 'node-congelado',
   },
   {
     metodo: 'get',
     caminho: '/api/employees/{id}/links',
     motivo: ADMIN_DO_GRUPO_SEM_CONTRATO_LA,
     natureza: 'sem-contrato',
+    servidor: 'node-congelado',
   },
   {
     metodo: 'get',
     caminho: '/api/tenants',
     motivo: ADMIN_DO_GRUPO_SEM_CONTRATO_LA,
     natureza: 'sem-contrato',
+    servidor: 'node-congelado',
   },
   {
     metodo: 'post',
     caminho: '/api/tenants',
     motivo: ADMIN_DO_GRUPO_SEM_CONTRATO_LA,
     natureza: 'sem-contrato',
+    servidor: 'node-congelado',
   },
   {
     metodo: 'get',
     caminho: '/api/tenants/{id}',
     motivo: ADMIN_DO_GRUPO_SEM_CONTRATO_LA,
     natureza: 'sem-contrato',
+    servidor: 'node-congelado',
   },
   {
     metodo: 'put',
     caminho: '/api/tenants/{id}',
     motivo: ADMIN_DO_GRUPO_SEM_CONTRATO_LA,
     natureza: 'sem-contrato',
+    servidor: 'node-congelado',
+  },
+  ...AGREGADOS_DE_KPI,
+  ...VIEWS_SALVAS,
+  // Consulta de CEP publicada nesta frente. Nasce no mock e fica nele até que
+  // o Spring publique a consulta nacional; o Node congelado nunca a conheceu.
+  {
+    metodo: 'get',
+    caminho: '/api/postal-codes/{postalCode}',
+    motivo:
+      'consulta de CEP publicada no front — o mock é a fonte até o Spring servir a integração postal',
+    natureza: 'sem-contrato',
+    servidor: 'spring-pendente',
   },
 ]
 
@@ -1462,6 +1662,45 @@ export function avisoDeSemContrato(mockadas: readonly RotaNoMock[]): string[] {
 }
 
 /**
+ * O AVISO DA ÉPOCA — a primeira linha do relatório, e a que reenquadra o resto.
+ *
+ * RECEBE a lista pela mesma razão que `avisoDeSemContrato`: hoje as duas épocas
+ * não convivem em `ROTAS_NO_MOCK` (todas as entradas são anteriores ao
+ * congelamento), então sobre as constantes do módulo o caso do `spring-pendente`
+ * ficaria verde sem exercitar nada. Guarda que não tem como ficar vermelha não
+ * mede nada.
+ *
+ * **Vem ANTES do aviso do 404, e a ordem é o conteúdo.** `avisoDeSemContrato`
+ * manda rodar `pnpm sync:contract` no api, e `PROXIMO_PASSO` manda escrever
+ * handler lá — os dois eram o passo certo enquanto o Node avançava, e hoje
+ * apontam para um repositório congelado. Quem lê o console tem de saber disso
+ * antes de ler o passo, não depois.
+ *
+ * As `spring-pendente` saem NOMEADAS, e as `node-congelado` não: uma lacuna com
+ * medição contra o Node ainda tem o que dizer por família; uma que nasceu sem
+ * servidor nenhum não aparece em medição alguma, e o console é o único lugar
+ * onde ela existe.
+ */
+export function avisoDaEpoca(mockadas: readonly RotaNoMock[]): string[] {
+  if (!mockadas.length) return []
+  const congeladas = mockadas.filter((r) => r.servidor === 'node-congelado')
+  const doSpring = mockadas.filter((r) => r.servidor === 'spring-pendente')
+  const linhas = [
+    `[passagem] ! ${mockadas.length} rota(s) no MSW esperam o SPRING — ${congeladas.length} nasceram com o Node de alvo, ${doSpring.length} depois de ele parar.`,
+  ]
+  if (congeladas.length) linhas.push(`[passagem]   ${EPOCA_DO_SERVIDOR['node-congelado']}`)
+  if (doSpring.length) {
+    linhas.push(`[passagem]   ${EPOCA_DO_SERVIDOR['spring-pendente']}`)
+    for (const r of doSpring) {
+      linhas.push(
+        `[passagem]   sem servidor nenhum: ${r.metodo.toUpperCase().padEnd(6)} ${r.caminho}`,
+      )
+    }
+  }
+  return linhas
+}
+
+/**
  * Imprime o relatório. `imprimir` é PARÂMETRO para que o teste o leia sem
  * espionar o `console` global — e para que este módulo continue sem efeito
  * colateral no import, que é o que permite o site público importá-lo.
@@ -1488,6 +1727,12 @@ export function declararPassagem(
   imprimir(
     `[passagem] backend real em ${backendReal} — ${reais} rota(s) SAEM para a rede, ${mockadas} continuam no MSW.`,
   )
+
+  // A época vem PRIMEIRO de tudo, e é o que reenquadra as duas linhas abaixo:
+  // tanto o `sync:contract` do aviso do 404 quanto o handler do `PROXIMO_PASSO`
+  // apontam para o `cabinet-erp-api`, que está congelado desde 28/08. Lidos sem
+  // esse enquadramento, os dois mandam abrir PR num repositório parado.
+  for (const linha of avisoDaEpoca(ROTAS_NO_MOCK)) imprimir(linha)
 
   // O aviso do 404 vem ANTES das famílias, e sozinho. Espremido entre vinte
   // linhas de relatório ele seria lido como mais uma delas — e o que ele diz

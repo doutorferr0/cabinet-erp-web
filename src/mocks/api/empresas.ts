@@ -1,3 +1,4 @@
+import { HttpResponse, http } from 'msw'
 import type {
   CompanyLetterheadDto,
   CompanyLetterheadWriteRequest,
@@ -5,18 +6,17 @@ import type {
   TenantDto,
   TenantWriteRequest,
 } from '@/api/gerado'
-import { http, HttpResponse } from 'msw'
 import { verificarEscrita } from './permissao'
 import {
-  TIPO,
   camposInvalidos,
   conflito,
   naoEncontrado,
   problemaJson,
   semEmpresaAtiva,
   semSessao,
+  TIPO,
 } from './problema'
-import { TENANT_FILIAL, TENANT_MATRIZ, novoId, store } from './store'
+import { novoId, store, TENANT_FILIAL, TENANT_MATRIZ } from './store'
 
 /**
  * As EMPRESAS DO GRUPO no modo mock — `/api/tenants`.

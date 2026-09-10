@@ -252,7 +252,16 @@ const PREFIXOS_POR_FAMILIA: Record<FamiliaDeCaminho, string[]> = {
   'stock-locations': ['/api/stock-locations'],
   'payment-terms': ['/api/payment-terms'],
   'installment-policy': ['/api/installment-policy'],
-  purchases: ['/api/purchase-requests', '/api/purchase-orders', '/api/purchases'],
+  purchases: [
+    '/api/purchase-requests',
+    '/api/purchase-orders',
+    '/api/purchases',
+    // O recebimento é da família `compras` no contrato (as seis têm `tags:
+    // compras`), e cinco das seis pedem `compras:editar`. `POST /{id}/post` pede
+    // `estoque:movimentar`, que este mapa por PREFIXO não tem como distinguir —
+    // quem separa as duas é o handler, não a tabela de caminhos.
+    '/api/goods-receipts',
+  ],
   employees: ['/api/employees'],
   'catalog-lookups': ['/api/catalog-lookups'],
   projects: ['/api/projects'],

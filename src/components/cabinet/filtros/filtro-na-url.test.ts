@@ -1,10 +1,10 @@
+import { describe, expect, it } from 'vitest'
 import {
   type ConsultaNaUrl,
   consultaDaUrl,
   consultaParaUrl,
 } from '@/components/cabinet/filtros/filtro-na-url'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
-import { describe, expect, it } from 'vitest'
 
 /**
  * O ENDEREÇO é a única memória que o navegador guarda de graça e que se manda

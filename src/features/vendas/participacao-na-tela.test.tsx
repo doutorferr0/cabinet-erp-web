@@ -1,3 +1,5 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ParticipacaoDoPedido } from '@/features/vendas/participacao-do-pedido'
 import { instalarServidor, json } from '@/test/servidor'
 import {
@@ -7,8 +9,6 @@ import {
   respostaSessao,
   respostaVinculos,
 } from '@/test/utils'
-import { screen, waitFor, within } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * A PARTICIPAÇÃO NA TELA, e o `Consultor(a)` que vem dela.

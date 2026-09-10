@@ -1,7 +1,7 @@
+import { describe, expect, it } from 'vitest'
 import { data } from '@/data'
 import { createMockProvider, normalize, tabelaDeApoio } from '@/data/provider'
 import { tableState } from '@/test/utils'
-import { describe, expect, it } from 'vitest'
 
 /**
  * Contrato da camada de dados. Estes testes NÃO podem mudar quando o provider

@@ -288,11 +288,18 @@ liga; quem não migrou foi `data.colaboradores` — ver a costura abaixo) e as t
 **PUBLICADO, SERVIDO E SEM CONSUMIDOR é o terceiro estado, e é o que mais cresce.** O contrato
 andou 47 operações desde a última edição desta página, e a maior parte nasceu sem tela do lado de
 cá: obra (4) · comissões (4, mais as 4 de faixa em `employees`/`partners`) · perfis de custo (5) ·
-recebimento de mercadoria (6) · etiquetas e impressão (8) · índices e tabela de preço (5) ·
+etiquetas e impressão (8) · índices e tabela de preço (5) ·
 reservas técnicas (3) · serviços (3) · papéis e permissões (5) · relatórios (10). **Não é dívida
 escondida nem promessa:** o caminho existe, o backend responde, e o que falta é a tela — que é
 trabalho de front, não de contrato. Medir isto é `grep` do nome da função gerada fora de
 `src/api/gerado/`, e é a conta que envelhece sozinha se ninguém a refizer.
+
+**RECEBIMENTO (G3) saiu desta lista em 26/08, e por não caber nela:** o contrato publica as seis
+operações, mas o backend NÃO responde — `src/core/http/servidor.ts` não tem nenhum handler de
+`/api/goods-receipts`, e as seis são 501 (`natureza: 'sem-handler'`, a fase B é a `api#122`). Quem
+as serve é `src/mocks/api/recebimento.ts`, com estado de verdade: o vínculo por linha com a ordem
+de compra, a conferência que cobra motivo na transição e o lançamento que move o kardex e baixa a
+chegada futura. É o oposto do estado deste parágrafo — servido pelo MOCK, não pelo backend.
 
 **COMPRAS é o caso do meio, e ele merece o parágrafo:** o contrato publica as 14 operações e o
 MSW as serve com estado de verdade, mas as telas de `/compras` continuam lendo os fixtures de

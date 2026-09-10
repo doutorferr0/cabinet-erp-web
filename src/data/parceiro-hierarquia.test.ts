@@ -1,14 +1,14 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
-  URL_PARCEIROS,
   corpoDeEscrita,
   corpoDeInclusao,
   corpoDeVinculoPai,
   filhosDoParceiro,
   motivoDeRecusaDoVinculo,
+  URL_PARCEIROS,
 } from '@/data/parceiros-api'
 import { parceiro } from '@/test/parceiros'
 import { instalarServidor, json } from '@/test/servidor'
-import { afterEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * HIERARQUIA PAI/FILHO NA FRONTEIRA (issue #91).

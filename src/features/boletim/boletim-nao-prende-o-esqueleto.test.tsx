@@ -1,7 +1,7 @@
-import { ErroDaApi } from '@/data/api-provider'
-import { renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
+import { ErroDaApi } from '@/data/api-provider'
+import { renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 
 /**
  * A FOLHA DE ENTRADA NÃO PODE FICAR PRESA NO ESQUELETO.

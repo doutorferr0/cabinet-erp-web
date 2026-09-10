@@ -1,12 +1,12 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   type CatalogLookupDto,
-  type PagedResultOfCatalogLookupDto,
-  ProblemType,
   createCatalogLookup,
   listCatalogLookups,
+  type PagedResultOfCatalogLookupDto,
+  ProblemType,
 } from '@/api/gerado'
-import { type RespostaDaApi, dadosOuErro } from '@/data/api-provider'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { dadosOuErro, type RespostaDaApi } from '@/data/api-provider'
 
 /**
  * LISTAS DE APOIO — o padrão `[combo]`/`[combo +...]` da transcrição (§9 padrão 2).
@@ -281,7 +281,10 @@ export function useCadastrarItemDeApoio(kind: LookupKind) {
     mutationFn: async ({
       nome,
       opcoesCarregadas,
-    }: { nome: string; opcoesCarregadas: readonly OpcaoDeLookup[] }): Promise<CadastroDeApoio> => {
+    }: {
+      nome: string
+      opcoesCarregadas: readonly OpcaoDeLookup[]
+    }): Promise<CadastroDeApoio> => {
       const resposta: RespostaDaApi = await createCatalogLookup({
         kind: kindDoBackend,
         name: nome,

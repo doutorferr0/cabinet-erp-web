@@ -1,6 +1,6 @@
-import { type FetchStub, renderRoute, respostaSessao } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { type FetchStub, renderRoute, respostaSessao } from '@/test/utils'
 
 /**
  * Tela de troca de senha, pelo router de verdade.

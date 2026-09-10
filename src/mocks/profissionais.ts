@@ -1,4 +1,5 @@
 import { idDeApoio } from '@/mocks/lookups'
+
 interface EnderecoMock {
   cep: string
   logradouro: string

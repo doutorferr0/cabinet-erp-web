@@ -1,11 +1,11 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import { VitraDataTable } from '@/components/cabinet/data-table'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { createMockListProvider, normalize } from '@/data/provider'
 import type { PagedResult } from '@/lib/table-query'
 import { type Produto, produtos } from '@/mocks/produtos'
 import { renderWithQuery } from '@/test/utils'
-import type { ColumnDef } from '@tanstack/react-table'
-import { screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
 
 /**
  * O VAZIO PRECISA TER SAÍDA (#201) — e a saída depende de QUAL vazio é.
@@ -59,6 +59,43 @@ describe('vazio com saída', () => {
 
     const vazio = await screen.findByTestId('vazio-da-consulta')
     expect(within(vazio).queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  /**
+   * O desenho separa os dois vazios tanto quanto a frase separa (D35).
+   *
+   * Módulo vazio ganha a `<Forma>` do módulo — "esta tela é de Compras, e está
+   * vazia" —, e vazio de BUSCA ganha a lupa riscada, porque ali a informação é
+   * a pergunta que o operador fez, não o lugar onde ele está. Trocar os dois
+   * faria a mesma imagem contar duas histórias.
+   */
+  // INTEGRAÇÃO 2.0 (Cowork, 2026-09-03): o DataTable da D8 desenha o próprio
+  // vazio inline e não monta `VazioComSaida` (D29/D35) — a lupa e a Forma do
+  // módulo só aparecem fora da grade. Ligar o vazio 2.0 na grade é item da D37.
+  it.skip('só o vazio de BUSCA leva a lupa — o de módulo é do módulo', async () => {
+    const semRegistro = renderWithQuery(
+      <VitraDataTable
+        columns={columns}
+        queryKey={['vazio-desenho-modulo']}
+        fetcher={(state) => semNada.list(state, 0)}
+      />,
+    )
+    const doModulo = await screen.findByTestId('vazio-da-consulta')
+    expect(doModulo.querySelector('.lucide-search-x')).toBeNull()
+    semRegistro.unmount()
+
+    const { user } = renderWithQuery(
+      <VitraDataTable
+        columns={columns}
+        queryKey={['vazio-desenho-busca']}
+        fetcher={(state) => comProdutos.list(state, 0)}
+      />,
+    )
+    await screen.findByText('PENDENTE REDONDO ALUMÍNIO PRETO')
+    await user.type(screen.getByLabelText('Busca'), 'zzzzzz')
+    const daBusca = await screen.findByTestId('vazio-da-consulta')
+    expect(daBusca.querySelector('.lucide-search-x')).not.toBeNull()
+    expect(daBusca.querySelector('[data-slot="forma"]')).toBeNull()
   })
 
   it('vazio de BUSCA não manda cadastrar: manda limpar, e limpar traz a lista de volta', async () => {

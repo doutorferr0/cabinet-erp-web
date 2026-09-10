@@ -1,8 +1,8 @@
+import { screen, waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { PrecoEMargem } from '@/features/produto/preco-e-margem'
 import { instalarServidor, json, problema } from '@/test/servidor'
 import { renderWithQuery } from '@/test/utils'
-import { screen, waitFor } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * A ABA PREÇO E MARGEM — o que ela mostra, e o que ela se recusa a mostrar.

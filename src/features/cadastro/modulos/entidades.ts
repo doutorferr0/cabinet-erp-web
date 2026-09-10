@@ -662,10 +662,18 @@ export const colaborador: EntidadeCadastro = {
           campo: 'ativo',
           dto: 'active',
         },
-        // Do mockup, sem onde gravar hoje. Colaborador é usuário do sistema
-        // (issue #105) e o e-mail de login é o que falta para isso ser verdade.
-        { k: 'login', r: 'E-mail de login', fil: 'texto' },
-        { k: 'cel', r: 'Celular' },
+        // **DEIXARAM DE SER PENDÊNCIA em 2026-08-28 (#402).** Nasceram sem
+        // `campo:` porque o repo não tinha onde gravá-los; `EmployeeWriteRequest`
+        // publica `email` e `phone`, e o `POST /api/employees` EXIGE o primeiro
+        // (`employees.email` é NOT NULL — é por ele que a pessoa entra). Sem
+        // ligá-los, o `Incluir` desta tela mandaria `email: null` e tomaria 400
+        // em toda tentativa, e o `fields[].path = email` da recusa apontaria
+        // para um campo que a tela não tem.
+        //
+        // Sem `col`: nenhum dos dois existe no `EmployeeDto` da LISTAGEM — são
+        // do `EmployeeDetailDto`, como a admissão logo acima.
+        { k: 'login', r: 'E-mail de login', fil: 'texto', campo: 'email' },
+        { k: 'cel', r: 'Celular', campo: 'telefone' },
       ],
     },
     {

@@ -1,3 +1,4 @@
+import { HttpResponse, http } from 'msw'
 import type {
   LoginRequest,
   PartnerLinkRequest,
@@ -15,9 +16,11 @@ import type {
   TrocarEmpresaRequest,
   VariantWriteRequest,
 } from '@/api/gerado'
+import { somenteDigitos } from '@/lib/cep'
 import { diaDoInstante, diaLocalISO } from '@/lib/datas'
-import { http, HttpResponse } from 'msw'
+import { fetchCep } from '@/mocks/ceps'
 import { handlersDeAcesso } from './acesso'
+import { handlersDeAgregados } from './agregados'
 import { handlersDeAtividades } from './atividades'
 import { handlersDeCompras } from './compras'
 import { handlersDeContatos } from './contatos'
@@ -25,7 +28,9 @@ import { handlersDoCrm } from './crm'
 import { aplicarSaldo, depositoDoMovimento, handlersDeDepositos } from './depositos'
 import { handlersDeEmpresas } from './empresas'
 import { handlersDeEntrega } from './entrega'
-import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
+import { erroCanonico } from './erros-canonicos'
+import type { CamposFiltraveis } from './filtro-do-servidor'
+import { lerConsulta, listar } from './listagem'
 import { handlersDeLookups } from './lookups'
 import { handlersDeObras } from './obras'
 import { handlersDePagamento } from './pagamento'
@@ -34,19 +39,20 @@ import { verificarEscrita } from './permissao'
 import { handlersDoPlanner } from './planner'
 import { handlersDePrecos } from './precos'
 import {
-  TIPO,
   camposInvalidos,
-  conflito,
   naoEncontrado,
   problemaJson,
   semEmpresaAtiva,
   semSessao,
+  TIPO,
 } from './problema'
 import { handlersDeOrcamento } from './quotes'
+import { handlersDeRecebimento } from './recebimento'
 import { handlersDeRelatorios } from './relatorios'
 import { handlersDeServicos } from './servicos'
-import { type ParceiroDaOrg, novoId, partnerDto, store } from './store'
+import { novoId, type ParceiroDaOrg, partnerDto, store } from './store'
 import { contextoDeSuporte, handlersDeSuporte, trilhaDeSuporte } from './suporte'
+import { handlersDeViews } from './views'
 
 /**
  * Handlers do modo mock — o "backend" do `VITE_API_MODE=mock`.
@@ -68,27 +74,6 @@ import { contextoDeSuporte, handlersDeSuporte, trilhaDeSuporte } from './suporte
  * Os paths usam `*` de prefixo para casar tanto o worker do browser (URLs
  * relativas) quanto o `setupServer` dos testes (URL absoluta de mentira).
  */
-
-interface ConsultaDeLista {
-  q: string | null
-  sortBy: string | null
-  sortDesc: boolean
-  page: number
-  pageSize: number
-  /** A URL inteira: `filters`/`joinOperator` são lidos por `aplicarFiltros`. */
-  url: URL
-}
-
-function lerConsulta(url: URL): ConsultaDeLista {
-  return {
-    q: url.searchParams.get('q'),
-    sortBy: url.searchParams.get('sortBy'),
-    sortDesc: url.searchParams.get('sortDesc') === 'true',
-    page: Number(url.searchParams.get('page') ?? '1'),
-    pageSize: Number(url.searchParams.get('pageSize') ?? '10'),
-    url,
-  }
-}
 
 /**
  * O contrato de listagem, num lugar só: filtro por `q` nos campos de texto,
@@ -155,49 +140,6 @@ export const ORDENAVEIS_PARCEIRO = [
   'parentId',
 ] as const
 
-function listar<T>(
-  itens: readonly T[],
-  consulta: ConsultaDeLista,
-  ordenaveis: readonly string[],
-  textoDe: (item: T) => (string | null | undefined)[],
-  filtraveis?: CamposFiltraveis,
-) {
-  if (consulta.page < 1 || consulta.pageSize < 1 || consulta.pageSize > 100) {
-    return problemaJson(
-      400,
-      'Paginação inválida: page é 1-based e pageSize vai até 100.',
-      {},
-      TIPO.paginacaoInvalida,
-    )
-  }
-  if (consulta.sortBy && !ordenaveis.includes(consulta.sortBy)) {
-    return problemaJson(400, `sortBy inválido: ${consulta.sortBy}.`, {}, TIPO.ordenacaoInvalida)
-  }
-
-  let rows = [...itens]
-  if (consulta.q) {
-    const alvo = consulta.q.toLowerCase()
-    rows = rows.filter((item) => textoDe(item).some((texto) => texto?.toLowerCase().includes(alvo)))
-  }
-
-  const filtradas = aplicarFiltros(rows, consulta.url, filtraveis)
-  if (typeof filtradas === 'string') return problemaJson(400, filtradas, {}, TIPO.filtroInvalido)
-  rows = filtradas
-
-  if (consulta.sortBy) {
-    const chave = consulta.sortBy as keyof T
-    rows.sort((a, b) => {
-      const va = String(a[chave] ?? '')
-      const vb = String(b[chave] ?? '')
-      return consulta.sortDesc ? vb.localeCompare(va) : va.localeCompare(vb)
-    })
-  }
-
-  const total = rows.length
-  const inicio = (consulta.page - 1) * consulta.pageSize
-  return HttpResponse.json({ rows: rows.slice(inicio, inicio + consulta.pageSize), total })
-}
-
 function sessaoAtual(): SessaoAtual {
   return {
     organizationId: 'org-vertz',
@@ -238,6 +180,19 @@ function comoProductDto(produto: ProductDetailDto): ProductDto {
 const ESCRITA = ['POST', 'PUT', 'PATCH', 'DELETE']
 
 export const handlers = [
+  http.get('*/api/postal-codes/:postalCode', async ({ params }) => {
+    const cep = await fetchCep(String(params.postalCode ?? ''), 0)
+    if (!cep) return problemaJson(404, 'CEP não encontrado.', {}, TIPO.naoEncontrado)
+    return HttpResponse.json({
+      zipCode: somenteDigitos(cep.cep),
+      street: cep.logradouro,
+      number: null,
+      complement: null,
+      district: cep.bairro,
+      city: cep.cidadeNome,
+      state: cep.uf,
+    })
+  }),
   // ---------------- ensaio de expiração (#124, ponto 4) ----------------
   //
   // PRIMEIRO da lista de propósito: o MSW resolve na ordem, e um gatilho que
@@ -406,7 +361,13 @@ export const handlers = [
       ])
     }
     if (store.produtos.some((p) => p.code === corpo.code)) {
-      return conflito(`Já existe produto com o código ${corpo.code}.`, TIPO.codigoJaCadastrado)
+      // O status e a URN saem da fixture; a frase é a específica, porque ela
+      // diz QUAL código colidiu — é o caso em que o ponto de chamada sabe mais.
+      return erroCanonico(
+        'urn:cabinet:erro:codigo-ja-cadastrado',
+        {},
+        `Já existe produto com o código ${corpo.code}.`,
+      )
     }
     const produto = {
       id: novoId('prod'),
@@ -432,8 +393,16 @@ export const handlers = [
     const produto = store.produtos.find((p) => p.id === params.id)
     if (!produto) return naoEncontrado('Produto não encontrado.')
     const corpo = (await request.json()) as ProductWriteRequest
+    // A MESMA validação do POST, e agora na mesma forma. Ela recusava com
+    // `about:blank` e uma frase no topo enquanto o POST mandava
+    // `campos-invalidos` com `fields[]`: o operador que errasse o código via o
+    // erro no controle ao incluir e uma frase solta ao alterar, e o Spring leria
+    // as duas como se fossem duas regras.
     if (!corpo.code || !corpo.description) {
-      return problemaJson(400, 'Código e descrição são obrigatórios.')
+      return camposInvalidos([
+        ...(corpo.code ? [] : [{ path: 'code', message: 'Informe o código do produto.' }]),
+        ...(corpo.description ? [] : [{ path: 'description', message: 'Informe a descrição.' }]),
+      ])
     }
     // PUT substitui o registro inteiro — campo ausente APAGA, não preserva.
     produto.code = corpo.code
@@ -596,7 +565,7 @@ export const handlers = [
     if (existente) {
       // O 409 carrega o membro de extensão que a tela usa para oferecer o
       // vínculo — é a semântica do backend, não invenção do mock.
-      return conflito('Documento já cadastrado no grupo.', TIPO.documentoJaCadastrado, {
+      return erroCanonico('urn:cabinet:erro:documento-ja-cadastrado', {
         existingPartnerId: existente.id,
       })
     }
@@ -955,12 +924,28 @@ export const handlers = [
   ...handlersDeServicos,
   ...handlersDeContatos,
 
+  // ---------------- AGREGADOS DE KPI (D11, #479) ----------------
+  // Os quatro resumos por família e os contadores da navegação. Arquivo próprio
+  // e NENHUM estado próprio: cada módulo exporta o leitor do que já guarda, e
+  // `agregados.ts` só compõe. É o que impede a faixa de KPI de contar "aberto"
+  // por um critério e a grade abaixo dela por outro.
+  ...handlersDeAgregados,
+
   // ---------------- COMPRAS (G2) ----------------
   // Arquivo próprio, como CRM, orçamento e pagamento: estado que não é do store
   // das telas antigas. As 14 operações estavam no contrato desde a #316 sem
   // handler nenhum — e também FORA da passagem, porque o `cabinet-erp-api`
   // responde 501 nelas. Compras não tinha resposta em ambiente nenhum.
   ...handlersDeCompras,
+
+  // ---------------- RECEBIMENTO DE COMPRA (G3) ----------------
+  // A nota do fornecedor virando entrada no estoque. Arquivo próprio de
+  // handlers, ESTADO compartilhado com compras (`estadoDeCompras()`): a grade do
+  // recebimento confronta a linha da ordem, e `PurchaseOrderItemDto.quantityReceived`,
+  // `qtyOnOrder` e a previsão de chegada saem daqui. O que destravou o mock foi o
+  // vínculo por linha publicado na #354 — sem ele a divergência seria calculada
+  // contra número digitado, que era o motivo escrito na guarda.
+  ...handlersDeRecebimento,
 
   // ---------------- O BLOCO FÍSICO DA VENDA (G4) ----------------
   // Liberar, separar, o romaneio e a situação do pedido. As dez operações
@@ -1010,6 +995,12 @@ export const handlers = [
   // cima porque depende do `listar`/`lerConsulta` deste arquivo; as regras da
   // escrita moram no arquivo próprio — ver o cabeçalho de `lookups.ts`.
   ...handlersDeLookups,
+
+  // As VIEWS SALVAS do usuário (D13). Arquivo próprio, e ele é o único mock que
+  // grava em `localStorage`: a view existe para durar mais que a sessão, e
+  // perdê-la no F5 ensinaria que o recurso não funciona. O porquê inteiro está
+  // no cabeçalho de `views.ts`.
+  ...handlersDeViews,
 
   // ---------------- health ----------------
   // `version`/`commit` dizem QUAL BINÁRIO respondeu, e no mock a resposta

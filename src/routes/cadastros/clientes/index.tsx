@@ -1,18 +1,18 @@
+import { useQueryClient } from '@tanstack/react-query'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { CircleCheck, Hash, IdCard, User } from 'lucide-react'
+import { useState } from 'react'
 import type { PartnerDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
-import { Nome } from '@/components/cabinet/nome'
+import type { OpcaoDeAgrupamento } from '@/components/cabinet/data-table'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
 import { useReadOnlyPorPapel } from '@/data/papeis'
 import { useDesativarParceiro } from '@/data/parceiros-api'
 import { cliente as esquemaCliente } from '@/features/cadastro/modulos'
 import { type CampoFiltravel, somenteDigitos } from '@/lib/filtro-de-consulta'
-import { useQueryClient } from '@tanstack/react-query'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import type { ColumnDef } from '@tanstack/react-table'
-import { CircleCheck, Hash, IdCard, User } from 'lucide-react'
-import { useState } from 'react'
 
 export const Route = createFileRoute('/cadastros/clientes/')({
   component: ClientesPage,
@@ -31,11 +31,18 @@ const columns: ColumnDef<PartnerDto>[] = [
     accessorKey: 'code',
     header: 'Código',
     cell: ({ getValue }) => getValue<string | null>() ?? '—',
+    meta: { tipo: 'id' },
   },
   {
-    accessorKey: 'legalName',
+    id: 'legalName',
     header: 'Nome',
-    cell: ({ getValue }) => <Nome>{getValue<string>()}</Nome>,
+    // O NOME FANTASIA vira subtítulo: é como o operador chama o cliente ao
+    // telefone, e sozinho seria mais uma coluna repetindo meia razão social.
+    accessorFn: (row) => ({
+      nome: row.legalName,
+      ...(row.tradeName && row.tradeName !== row.legalName ? { subtitulo: row.tradeName } : {}),
+    }),
+    meta: { tipo: 'entidade' },
   },
   {
     accessorKey: 'active',
@@ -72,6 +79,29 @@ const camposFiltraveis: readonly CampoFiltravel[] = [
     normalizar: somenteDigitos,
   },
   { id: 'active', rotulo: 'Ativo', variante: 'boolean', icon: CircleCheck },
+]
+
+/**
+ * Cadastro DESATIVADO (padrão 8: nunca se apaga de verdade) passa a se
+ * anunciar na própria linha, em vez de depender da coluna `Ativo` no fim dela
+ * — que é onde o olho chega por último numa varredura.
+ */
+function decoracaoDoParceiro(p: PartnerDto) {
+  return p.active ? undefined : ('muted' as const)
+}
+
+/**
+ * `Situação` é o único agrupamento desta tela, e é o que responde às três
+ * consultas que o operador faz aqui — os ativos, os inativos, todos. Tinge a
+ * faixa porque é ESTADO; agrupar por nome próprio não teria cor.
+ */
+const AGRUPAMENTOS: readonly OpcaoDeAgrupamento<PartnerDto>[] = [
+  {
+    id: 'active',
+    rotulo: 'Situação',
+    valorDaLinha: (p) => (p.active ? 'Ativo' : 'Inativo'),
+    tomDoValor: (valor) => (valor === 'Ativo' ? 'done' : 'void'),
+  },
 ]
 
 function ClientesPage() {
@@ -124,6 +154,8 @@ function ClientesPage() {
       columns={columns}
       queryKey={['clientes']}
       fetcher={data.clientes.list}
+      decoracao={decoracaoDoParceiro}
+      agrupamentos={AGRUPAMENTOS}
       actions={actions}
       filtros={camposFiltraveis}
       // Filtro POR MÓDULO (#104): o mesmo schema que desenha o formulário e a

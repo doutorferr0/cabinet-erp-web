@@ -1,9 +1,9 @@
-import type { StockBalanceDto, StockLocationDto, StockMovementDto } from '@/api/gerado'
-import { saldosDoDeposito, somaDosSaldos } from '@/data/estoque-api'
-import { type Rota, instalarServidor, json, problema } from '@/test/servidor'
-import { renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { StockBalanceDto, StockLocationDto, StockMovementDto } from '@/api/gerado'
+import { saldosDoDeposito, somaDosSaldos } from '@/data/estoque-api'
+import { instalarServidor, json, problema, type Rota } from '@/test/servidor'
+import { renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 
 /**
  * A tela de estoque POR DEPÓSITO, contra servidor falso e pelo cliente gerado.
@@ -191,15 +191,26 @@ describe('estoque por depósito', () => {
     expect(within(depois).getByText('Transferência para a vitrine')).toBeInTheDocument()
   })
 
-  it('nenhuma consulta manda locationId — o contrato não publica o parâmetro', async () => {
+  it('nenhuma consulta de ESTOQUE manda locationId — as duas não publicam o parâmetro', async () => {
     const falso = servidor()
     const { user } = renderRoute('/estoque/movimentacao', falso.fetch)
     await escolherAPeca(user)
     await within(await tabelaDeSaldo()).findByText('SHOWROOM CENTRO')
     await user.selectOptions(screen.getByRole('combobox', { name: /depósito/i }), 'dep-2')
 
-    const comLocationId = falso.chamadas.filter((c) => c.url.includes('locationId'))
-    expect(comLocationId).toEqual([])
+    // A asserção é sobre as DUAS operações de estoque, e não sobre a tela
+    // inteira: `ListStockBalances` e `ListStockMovements` não publicam
+    // `locationId`, e mandá-lo daria 400 no servidor e verde no mock.
+    const deEstoque = falso.chamadas.filter((c) => c.caminho.startsWith('/api/variants/'))
+    expect(deEstoque.filter((c) => c.url.includes('locationId'))).toEqual([])
+
+    // A consulta de REPOSIÇÃO é outra história, e por isso o filtro acima não
+    // pode varrer o documento inteiro: `GetPurchaseStockReplenishment` publica
+    // `locationId`, e é dela que saem os cartões de reservado e disponível. Um
+    // teste que proibisse o parâmetro em toda chamada travaria o recorte legítimo
+    // do único número que a tela sabe recortar por depósito.
+    const reposicao = falso.em('/api/purchases/stock-replenishment')
+    expect(reposicao.some((c) => c.url.includes('locationId=dep-2'))).toBe(true)
   })
 })
 

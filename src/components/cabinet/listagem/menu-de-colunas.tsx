@@ -1,9 +1,9 @@
-import { Checkbox } from '@/components/ui/checkbox'
-import { Popover, PopoverTrigger } from '@/components/ui/popover'
-import { cn } from '@/lib/utils'
 import { ChevronDown, ChevronUp, Columns3, GripVertical } from 'lucide-react'
 import { useState } from 'react'
 import { Button as ButtonAria } from 'react-aria-components'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Popover, PopoverTrigger } from '@/components/ui/popover'
+import { cn } from '@/lib/utils'
 
 /**
  * MENU DE COLUNAS (Reface 2.0) — `Colunas · 2 ocultas`, e o resto da barra fica

@@ -1,8 +1,8 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { renderWithQuery } from '@/test/utils'
-import { screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
 
 interface Linha {
   id: string

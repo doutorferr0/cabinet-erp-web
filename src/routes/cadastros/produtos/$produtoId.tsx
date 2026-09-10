@@ -1,3 +1,5 @@
+import { useQuery } from '@tanstack/react-query'
+import { createFileRoute } from '@tanstack/react-router'
 import type { ProductDto } from '@/api/gerado'
 import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
 import { CartaoLateral } from '@/components/cabinet/cartao-lateral'
@@ -13,8 +15,6 @@ import { resumoDoProduto } from '@/features/produto/ficha-lateral'
 import { ProdutoForm } from '@/features/produto/produto-form'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import type { Produto } from '@/mocks/produtos'
-import { useQuery } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/cadastros/produtos/$produtoId')({
   component: ProdutoEditPage,

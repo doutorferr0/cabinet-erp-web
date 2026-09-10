@@ -1,5 +1,4 @@
-import { cn } from '@/lib/utils'
-import { type VariantProps, cva } from 'class-variance-authority'
+import { cva, type VariantProps } from 'class-variance-authority'
 import * as React from 'react'
 import {
   Button as ButtonPrimitive,
@@ -7,6 +6,7 @@ import {
   Link as LinkPrimitive,
   type LinkProps as LinkPrimitiveProps,
 } from 'react-aria-components'
+import { cn } from '@/lib/utils'
 
 /**
  * BOTÃO = TECLA (Reface 2.0, issue #470 · mockup `Tokens › Profundidade`).
@@ -194,4 +194,4 @@ function LinkButton({
   )
 }
 
-export { Button, LinkButton, buttonVariants }
+export { Button, buttonVariants, LinkButton }

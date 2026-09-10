@@ -1,3 +1,8 @@
+import { Link, useNavigate } from '@tanstack/react-router'
+import { Calculator, CreditCard, Hash, List, Lock, Package, Percent, User } from 'lucide-react'
+import { useState } from 'react'
+import { useFormContext, useWatch } from 'react-hook-form'
+import { z } from 'zod'
 import type { PartnerDto, QuoteDetailDto } from '@/api/gerado'
 import { AbasSemCaptura } from '@/components/cabinet/abas-sem-captura'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
@@ -10,6 +15,7 @@ import {
   SelectField,
   TextField,
 } from '@/components/cabinet/form-controls'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { Nome } from '@/components/cabinet/nome'
 import { posGravar } from '@/components/cabinet/pos-gravar'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
@@ -22,25 +28,10 @@ import { tabelas } from '@/data/tabelas'
 import { AbaServicos } from '@/features/orcamento/aba-servicos'
 import { BlocoPagamento } from '@/features/orcamento/bloco-pagamento'
 import { ItensDoOrcamento } from '@/features/orcamento/itens-do-orcamento'
+import { MenuDeExportacao } from '@/features/orcamento/menu-de-exportacao'
 import { formatPercent } from '@/lib/formatters'
 import { SHORTCUTS, shortcutLabel } from '@/lib/shortcuts'
 import type { Orcamento } from '@/mocks/orcamentos'
-import { Link, useNavigate } from '@tanstack/react-router'
-import type { ColumnDef } from '@tanstack/react-table'
-import {
-  Calculator,
-  CreditCard,
-  FileText,
-  Hash,
-  List,
-  Lock,
-  Package,
-  Percent,
-  User,
-} from 'lucide-react'
-import { useState } from 'react'
-import { useFormContext, useWatch } from 'react-hook-form'
-import { z } from 'zod'
 
 // TODO(contract): Zod do codegen substituirá este schema na integração.
 export const orcamentoSchema = z.object({
@@ -421,6 +412,10 @@ function TotaisOrcamento() {
 }
 
 function AbaPrincipal() {
+  // O menu de exportação lê o documento no CLIQUE, não no render — ver
+  // `MenuDeExportacao`. `getValues` é estável entre renders no RHF.
+  const { getValues } = useFormContext<Orcamento>()
+
   return (
     <div data-zonas className="flex flex-col gap-4">
       {/* Card agrupador (mockup `.card`): o CABEÇALHO do documento — para quem,
@@ -475,14 +470,10 @@ function AbaPrincipal() {
       </Secao>
 
       <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => console.info('[mock] Imprimir Orçamento')}
-        >
-          <FileText className="size-4" /> Orçamento
-        </Button>
+        <MenuDeExportacao
+          obterDocumento={getValues}
+          onImprimir={() => console.info('[mock] Imprimir Orçamento')}
+        />
         <Button
           type="button"
           variant="outline"
@@ -530,7 +521,10 @@ const ABAS_SEM_CAPTURA = [
 export function OrcamentoForm({
   orcamento,
   readOnly = false,
-}: { orcamento: Orcamento; readOnly?: boolean }) {
+}: {
+  orcamento: Orcamento
+  readOnly?: boolean
+}) {
   const navigate = useNavigate()
   const gravar = useGravarOrcamento()
 

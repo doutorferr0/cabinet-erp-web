@@ -279,8 +279,36 @@ com id inventado e responderia "não encontrado" para registro que existe.
 
 | Compras — pedido, ordem, previsão de chegada, reposição | `GET`/`POST` `/api/purchase-requests` · `GET`/`PUT` `…/{id}` · **`POST` `…/{id}/cancel`** · `GET`/`POST` `/api/purchase-orders` · `GET`/`PUT` `…/{id}` · **`POST` `…/{id}/send`** · **`…/{id}/reschedule`** · **`…/{id}/cancel`** · `GET` `/api/purchases/arrival-forecast` · `GET` `/api/purchases/stock-replenishment` | caminhos `Proposto`, servidos por `src/mocks/api/compras.ts` no modo mock — **a TELA ainda não fala nenhum deles** (ver abaixo) |
 
+| Financeiro — título, agenda de vencimentos e quitação | `GET`/`POST` `/api/financial-titles` · `GET`/`PUT` `…/{id}` · **`POST` `…/{id}/cancel`** · `GET` `/api/financial-installments` · **`POST` `…/{id}/settlements`** · **`POST` `/api/financial-settlements/batch`** · `GET` `/api/bank-accounts` · `GET` `/api/cash-registers` · `GET` `/api/payment-modes` | `src/data/financeiro-api.ts` — caminhos `Proposto`, servidos por `src/mocks/api/financeiro.ts` no modo mock; a api#199 (fase B) ainda responde **501**, então quem responde nos DOIS modos é o mock |
+
 **Ainda mock, por falta de caminho no contrato:** cidades · resumo do Boletim.
 
+<<<<<<< HEAD
+**FINANCEIRO — as três regras que a tela não pode contrariar** (G7 fase C):
+
+1. **O destino da baixa é obrigatório e EXCLUSIVO** — `bankAccountId` XOR `cashRegisterId`. Os dois,
+   ou nenhum, é **400**. É o destino que faz a baixa virar linha de extrato; sem ele o dinheiro fica
+   quitado no sistema e invisível no caixa. Na tela isso não é validação: é a FORMA do controle —
+   uma lista só, com contas e caixas dentro, onde o estado impossível não existe para ser validado
+   (`src/features/financeiro/destino-da-baixa.tsx`).
+2. **Quitar A MENOS é permissão, não erro** — **403 `urn:cabinet:erro:quitacao-a-menor`**, a
+   permissão especial nº 45 do legado. URN PRÓPRIA e não `papel-insuficiente`, e a diferença é a
+   saída que a tela oferece: ali ela esconde o controle, porque a pessoa não resolve sozinha; aqui o
+   controle é o que resolve — o valor sobe até o saldo e a baixa passa. **O backend ainda emite
+   `papel-insuficiente`** (api#199, `financeiro/baixa.ts`): a URN entrou no contrato pela fase C e a
+   fase B a adota ao reler o contrato. Quem já a manda é o mock.
+   **Acima do saldo é 409** e não tem alçada que libere — o troco não teria onde ser lançado.
+3. **A quitação em lote é UM ato, tudo ou nada.** Uma parcela recusada derruba a requisição inteira
+   e nenhuma baixa fica gravada. Por isso a tela **não tem laço de N requisições**: o laço falha pela
+   metade, o operador corrige e reenvia o bloco, e o que já tinha passado sai de novo. É a primeira
+   escrita em lote do contrato, e é ela que abriu a prop `emLote` da barra de seleção da
+   `VitraDataTable` — ação sem uma operação assim atrás continua morrendo com duas linhas marcadas.
+
+O `GET /api/cash-movements` (extrato), a transferência e a conciliação ficam de fora desta fase e
+**sem handler no mock**, declarados em `whitelist-do-contrato.test.ts`: a tela deles é Caixa e
+Movimentos Bancários, trilho seguinte. A baixa não precisa do extrato para lançar — a conta que
+recebeu o dinheiro está na própria baixa.
+=======
 **Ainda mock, com caminho no contrato:** colaborador (a família tem 8 operações e a passagem as
 liga; quem não migrou foi `data.colaboradores` — ver a costura abaixo) e as telas de compras
 (parágrafo seguinte).
@@ -293,6 +321,7 @@ reservas técnicas (3) · serviços (3) · papéis e permissões (5) · relatór
 escondida nem promessa:** o caminho existe, o backend responde, e o que falta é a tela — que é
 trabalho de front, não de contrato. Medir isto é `grep` do nome da função gerada fora de
 `src/api/gerado/`, e é a conta que envelhece sozinha se ninguém a refizer.
+>>>>>>> origin/main
 
 **RECEBIMENTO (G3) saiu desta lista em 26/08, e por não caber nela:** o contrato publica as seis
 operações, mas o backend NÃO responde — `src/core/http/servidor.ts` não tem nenhum handler de
@@ -908,6 +937,52 @@ e a entrada foi escrita lá, sem ninguém apagar a primeira. Coluna que o DTO n�
 tem **sai da listagem** e campo que o servidor não guarda aparece **em branco**, com o
 `AvisoDeCobertura` dizendo isso ao operador — preencher com mock daria dado de
 mentira com cara de dado do servidor.
+
+### Fila de aprovações — `/api/approval-requests` (F12, `Proposto`)
+
+Cinco operações, e nenhuma tem servidor: `GET` da fila · `GET .../summary` (o
+contador do badge) · `GET .../{id}` · `POST .../{id}/approve` · `POST
+.../{id}/reject`. `rotas-do-backend.ts` as mantém em `ROTAS_NO_MOCK` com natureza
+`sem-contrato` — a cópia do api ainda não as conhece.
+
+**O que o legado tinha, e o que mudou.** No Softlux o teto de desconto é a opção
+especial 5 de `SisOpcoesEspecial` (`MARGEM DE DESCONTO PARA O CLIENTE`), ligada a
+usuário ou grupo em `SisPermissaoEspecial`. É PERMISSÃO BINÁRIA: quem a tem digita
+o desconto que quiser, quem não a tem é barrado na tela — e **não sobra rastro
+nenhum**, nem do que se tentou, nem de quem liberou por cima. Fila não existia. O
+registro é o ganho; a tela é consequência dele.
+
+**Quatro semânticas inegociáveis:**
+
+1. **Não há criação pelo cliente.** O pedido nasce no SERVIDOR, ao gravar
+   documento cujo desconto passa do teto de quem grava (`cabinet-erp-api#237`,
+   fase 1). Publicar `POST /api/approval-requests` deixaria a tela abrir pedido
+   para desconto que ela não gravou.
+2. **O recorte da listagem é do servidor.** Quem tem a permissão de decidir vê a
+   fila inteira da empresa; quem não tem vê só os pedidos que ELE abriu. Feito no
+   cliente, o pedido do colega estaria no navegador de quem não pode vê-lo.
+3. **`canDecide` vem na LINHA, e a tela não o deduz.** `SessaoAtual` não carrega
+   permissões, e o caso mais comum de `false` não é nem de papel: é o próprio
+   solicitante, que tem o papel e mesmo assim não decide o que pediu (403
+   `urn:cabinet:erro:aprovacao-do-solicitante`, separado de `papel-insuficiente`
+   porque a saída é outra — não falta acesso, falta outra pessoa).
+4. **Decisão é TERMINAL.** Não há reabrir: 409
+   `urn:cabinet:erro:aprovacao-ja-decidida`. Mudou de ideia, o documento gera
+   pedido novo — reciclar o antigo apagaria a primeira decisão junto com o motivo.
+
+**`requestedPercent` é o `VenDesc_DescPorcUsuario` do legado**, a coluna que
+`QuoteGroupDiscountDto` declara ter deixado de fora *"só faz sentido junto com a
+regra que os separa — o teto — e essa regra é do servidor"*. A regra é esta, e o
+campo aparece no PEDIDO e não no documento: o que o usuário pediu é matéria do
+pedido. Mesma unidade do documento (4 casas escaladas, `10000` = 1%).
+
+**`limitPercent`, `requestedByName` e `subjectLabel` são congelados**, não
+junções: mudar o teto amanhã não pode reescrever a decisão de ontem. Mesma razão
+do `carrierName` do romaneio.
+
+**O que o mock NÃO finge:** aprovar não destrava documento nenhum. No servidor a
+decisão volta para o orçamento; fingir o efeito exigiria inventar no `QuoteDto`
+um estado que o contrato não publica.
 
 ## Filtro estruturado da listagem — `filters` + `joinOperator` (`Proposto`)
 

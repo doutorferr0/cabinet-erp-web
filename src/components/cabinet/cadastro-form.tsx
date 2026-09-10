@@ -1,13 +1,13 @@
-import { AlteracoesNaoSalvas } from '@/components/cabinet/alteracoes-nao-salvas'
-import { PageHeader } from '@/components/cabinet/page-header'
-import { Button } from '@/components/ui/button'
-import { Form } from '@/components/ui/form'
-import { type FamiliaDeCaminho, useReadOnlyPorPapel } from '@/data/papeis'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Check, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { type DefaultValues, type FieldValues, type Resolver, useForm } from 'react-hook-form'
 import type { z } from 'zod'
+import { AlteracoesNaoSalvas } from '@/components/cabinet/alteracoes-nao-salvas'
+import { PageHeader } from '@/components/cabinet/page-header'
+import { Button } from '@/components/ui/button'
+import { Form } from '@/components/ui/form'
+import { type FamiliaDeCaminho, useReadOnlyPorPapel } from '@/data/papeis'
 
 export interface CadastroFormProps<T extends FieldValues> {
   /** TODO(contract): o Zod do codegen substituirá estes schemas na integração. */
@@ -194,7 +194,10 @@ export function CadastroForm<T extends FieldValues>({
             desenhava duas linhas na mesma fronteira.
             Padding nos dois lados: `sticky bottom-0` sem `pb` encosta o botão na
             moldura. */}
-        <div className="sticky bottom-0 flex justify-end gap-[var(--s-2)] border-t py-[var(--s-3)] [background:var(--n-0)] [border-color:var(--n-200)]">
+        <div
+          data-slot="rodape-do-formulario"
+          className="sticky bottom-0 flex justify-end gap-[var(--s-2)] border-t py-[var(--s-3)] [background:var(--n-0)] [border-color:var(--n-200)]"
+        >
           {readOnly ? (
             <Button type="button" variant="outline" onClick={onCancelar}>
               <X />

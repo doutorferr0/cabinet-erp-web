@@ -1,3 +1,5 @@
+import { type LucideIcon, MoreHorizontal } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { BotaoVoltar } from '@/components/cabinet/botao-voltar'
 import { Button } from '@/components/ui/button'
 import {
@@ -7,8 +9,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
-import { type LucideIcon, MoreHorizontal } from 'lucide-react'
-import type { ReactNode } from 'react'
 
 /**
  * Ação do cabeçalho — a mesma forma para a fraca, a forte e a do menu `⋯`.
@@ -261,6 +261,12 @@ export function PageHeader({
         {primaria ? (
           <Button
             type="button"
+            // Título, contexto e subtítulo já se nomeavam por `data-slot`; a
+            // ação PRIMÁRIA, que é a peça mais consultada do cabeçalho, não
+            // tinha nome (D37). Dois testes a procuravam por
+            // `[data-slot="proxima-acao"]`, que era o nome dela antes de o
+            // cabeçalho de registro virar `PageHeader` — e achavam `null`.
+            data-slot="page-header-primaria"
             disabled={primaria.disabled === true}
             {...(primaria.motivo ? { title: primaria.motivo } : {})}
             onClick={() => primaria.onClick?.()}

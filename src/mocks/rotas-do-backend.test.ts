@@ -1,22 +1,22 @@
 import { readFileSync } from 'node:fs'
-import { type Server, createServer } from 'node:http'
+import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { setupServer } from 'msw/node'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { handlers } from './api/handlers'
 import { resetStore, semearSessaoAutenticada } from './api/store'
 import {
-  CONGELAMENTO_DO_NODE,
-  EPOCA_DO_SERVIDOR,
-  PROXIMO_PASSO,
-  ROTAS_DO_BACKEND,
-  ROTAS_NO_MOCK,
   avisoDaEpoca,
   avisoDeSemContrato,
+  CONGELAMENTO_DO_NODE,
   declararPassagem,
+  EPOCA_DO_SERVIDOR,
   familia,
   handlersDePassagem,
   montarRelatorio,
+  PROXIMO_PASSO,
+  ROTAS_DO_BACKEND,
+  ROTAS_NO_MOCK,
   relatorioDaPassagem,
 } from './rotas-do-backend'
 
@@ -597,9 +597,22 @@ describe('passthrough por rota', () => {
       'post /api/me/views',
       'put /api/me/views/{id}',
       'delete /api/me/views/{id}',
+      // Consulta postal publicada nesta frente: o mock a serve até a integração
+      // nacional existir no Spring, portanto também é sem-contrato por construção.
+      'get /api/postal-codes/{postalCode}',
+      // AS CINCO DA FILA DE APROVAÇÕES (F12), publicadas por esta PR. Entram
+      // pela mesma aritmética das cinco acima — não por medição —, e é por isso
+      // que o caso nomeia o motivo em vez de só contar: `sem-contrato` que
+      // sobreviva ao `sync:contract` do api vira `sem-handler`, e quem remedir
+      // precisa saber qual das duas dívidas está olhando.
+      'get /api/approval-requests',
+      'get /api/approval-requests/summary',
+      'get /api/approval-requests/{id}',
+      'post /api/approval-requests/{id}/approve',
+      'post /api/approval-requests/{id}/reject',
     ])
-    // Cabeçalho com o próximo passo + uma linha por rota = 1 + 15.
-    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(16)
+    // Cabeçalho com o próximo passo + uma linha por rota = 1 + 21.
+    expect(avisoDeSemContrato(ROTAS_NO_MOCK)).toHaveLength(22)
   })
 
   it('toda rota mockada declara NATUREZA, e o console imprime o passo dela', () => {

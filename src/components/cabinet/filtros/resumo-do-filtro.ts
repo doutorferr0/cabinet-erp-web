@@ -1,7 +1,7 @@
 import {
   type CampoFiltravel,
-  type FiltroDaTabela,
   dispensaValor,
+  type FiltroDaTabela,
   operadoresDaVariante,
 } from '@/lib/filtro-de-consulta'
 import { formatDateBR } from '@/lib/formatters'

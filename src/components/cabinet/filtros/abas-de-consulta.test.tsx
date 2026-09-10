@@ -1,3 +1,5 @@
+import { screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import {
   ABA_TODOS,
   AbasDeConsulta,
@@ -6,8 +8,6 @@ import {
 } from '@/components/cabinet/filtros/abas-de-consulta'
 import type { ConsultaSalva, FavoritoDeConsulta } from '@/lib/favoritos-de-consulta'
 import { renderWithQuery } from '@/test/utils'
-import { screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
 
 /**
  * A tira de abas é o que tirou a consulta salva (#92) de dentro de um popover.

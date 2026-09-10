@@ -1,7 +1,7 @@
-import { BlocoIdentidade } from '@/components/cabinet/ficha/bloco-identidade'
-import { monograma } from '@/components/cabinet/monograma'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { BlocoIdentidade } from '@/components/cabinet/ficha/bloco-identidade'
+import { monograma } from '@/components/cabinet/monograma'
 
 /**
  * BlocoIdentidade (D16, issue #484) — o card lateral que substituiu a
@@ -85,6 +85,9 @@ describe('monograma', () => {
 
   it('não quebra com nome curto ou vazio de palavras longas', () => {
     expect(monograma('Al')).toBe('AL')
-    expect(monograma('  ')).toBe('')
+    // Travessão, e não string vazia: a caixa do monograma tem tamanho fixo, e
+    // vazia ela leria como erro de carregamento. É a resposta que a peça sempre
+    // deu; este caso é que cobrava a outra (D37).
+    expect(monograma('  ')).toBe('—')
   })
 })

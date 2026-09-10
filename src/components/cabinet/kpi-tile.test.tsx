@@ -1,15 +1,14 @@
+import { render, screen, waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   DURACAO_DA_CONTAGEM,
   FaixaDeKpi,
   KpiTile,
   MAXIMO_DE_KPIS,
   MISTURA_DO_ROTULO,
-  NumeroHeroi,
   PESO_DO_HEROI,
 } from '@/components/cabinet/kpi-tile'
 import { TotalBox } from '@/components/cabinet/total-box'
-import { render, screen, waitFor } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * A suíte roda com `matchMedia` devolvendo `matches: false` para tudo
@@ -191,7 +190,14 @@ describe('KpiTile', () => {
       expect(saida.style.fontSize).toBe(medida)
       // Tracking fechado nos três (§6): a 40px o padrão da mono abre os grupos
       // de milhar até parecerem números separados.
-      expect(saida.style.letterSpacing).toBe('-.03em')
+      //
+      // `-0.03em` com o zero, e o componente declara `-.03em` sem ele: o CSSOM
+      // NORMALIZA o valor ao serializá-lo de volta, e é a forma normalizada que
+      // todo navegador devolve. O jsdom só passou a fazê-lo na 30 — até então a
+      // asserção lia a string crua e casava por acidente com o que o componente
+      // escreveu. O produto não mudou; a asserção é que estava medindo o texto
+      // do fonte em vez do valor computado.
+      expect(saida.style.letterSpacing).toBe('-0.03em')
       expect(saida.style.fontVariantNumeric).toBe('tabular-nums')
       unmount()
     }
@@ -567,30 +573,5 @@ describe('TotalBox', () => {
   it('o rótulo é o NOME acessível do valor, não texto solto ao lado', () => {
     render(<TotalBox label="Total geral" valorCentavos={1} />)
     expect(screen.getByLabelText('Total geral')).toHaveTextContent('0,01')
-  })
-})
-
-/**
- * SOBREVIVENTE 1.x. `NumeroHeroi` continua exportado enquanto `documento.tsx`
- * (D15) e `indicadores.tsx` (D20) o montam — apagá-lo aqui quebraria duas
- * branches em curso. Os casos que sobraram são os que ainda dizem verdade: a
- * família vem por TOKEN e as três escalas são fechadas. Os que justificavam a
- * medida pela métrica da Bebas saíram junto com a fonte.
- */
-describe('NumeroHeroi (1.x, sai em D15/D20)', () => {
-  it('fala pelo token da família, nunca pelo nome da fonte', () => {
-    render(<NumeroHeroi escala="total">1.234</NumeroHeroi>)
-    const n = screen.getByText('1.234')
-    expect(n.className).toContain('font-[family-name:var(--font-display-condensada)]')
-    // O token agora aponta para a Gambarino (D1 removeu a Bebas). Se a peça
-    // dissesse o nome da fonte, continuaria pedindo em silêncio uma que o repo
-    // não carrega mais — que é exatamente o que aconteceu com o comentário.
-    expect(n.className).not.toContain('Bebas')
-  })
-
-  it('a escala é fechada — não há tamanho livre para cada tela escolher', () => {
-    // @ts-expect-error — 'grande' não é escala do desenho.
-    render(<NumeroHeroi escala="grande">9</NumeroHeroi>)
-    expect(screen.getByText('9')).toBeInTheDocument()
   })
 })

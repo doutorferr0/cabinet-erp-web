@@ -1,16 +1,16 @@
+import { describe, expect, it } from 'vitest'
 import {
+  comandosDaPaleta,
+  destinoDoAtalho,
   GRUPO_ACOES,
   GRUPO_AJUDA,
   GRUPO_NESTA_TELA,
   GRUPO_RECENTES,
   MAXIMO_DE_RECENTES,
-  comandosDaPaleta,
-  destinoDoAtalho,
 } from '@/app/comandos'
 import { navGroups } from '@/app/navigation'
 import { RECURSOS, type RecursoDaEmpresa } from '@/data/recursos-da-empresa'
 import { SHORTCUTS } from '@/lib/shortcuts'
-import { describe, expect, it } from 'vitest'
 
 type Tem = (recurso: RecursoDaEmpresa) => boolean
 

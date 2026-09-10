@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { AvisoDadosDeExemplo } from '@/components/cabinet/aviso-dados-de-exemplo'
 import { ConfirmarCancelamento } from '@/components/cabinet/confirmar-cancelamento'
 import { ConfirmarDesativacao } from '@/components/cabinet/confirmar-desativacao'
@@ -7,6 +8,7 @@ import type {
   OpcaoDeAgrupamento,
 } from '@/components/cabinet/data-table'
 import { VitraDataTable } from '@/components/cabinet/data-table'
+import type { ColumnDef, LinhaDaTabela } from '@/components/cabinet/listagem/tabela'
 import type { AcaoDeCabecalho } from '@/components/cabinet/page-header'
 import { PageHeader } from '@/components/cabinet/page-header'
 import type { MotivoDoCancelamento } from '@/data/cancelamento-de-documento'
@@ -15,10 +17,8 @@ import type { EntidadeCadastro } from '@/features/cadastro/modulos'
 import { mensagemDoErro } from '@/lib/erros'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import type { TableFetcher } from '@/lib/table-query'
-import type { ColumnDef } from '@tanstack/react-table'
-import type { ReactNode } from 'react'
 
-export interface DesativacaoProps<T> {
+export interface DesativacaoProps<T extends LinhaDaTabela> {
   entidade: string
   /** Registro marcado para desativar; `null` fecha o diálogo. */
   registro: T | null
@@ -36,7 +36,7 @@ export interface DesativacaoProps<T> {
  * `ConfirmarCancelamento`). Uma listagem declara uma OU outra: cadastro
  * desativa, documento cancela.
  */
-export interface CancelamentoProps<T> {
+export interface CancelamentoProps<T extends LinhaDaTabela> {
   /** Nome do documento em minúscula, como entra na frase ('orçamento'). */
   documento: string
   /** Documento marcado para cancelar; `null` fecha o diálogo. */
@@ -51,7 +51,7 @@ export interface CancelamentoProps<T> {
   comMotivo?: boolean
 }
 
-export interface TelaDeListagemProps<T> {
+export interface TelaDeListagemProps<T extends LinhaDaTabela> {
   titulo: string
   /** Texto pequeno ao lado do título (ex.: "Banco Principal" em Produtos). */
   contexto?: string
@@ -129,7 +129,7 @@ const ACAO_ABRIR = 'consultar'
  * moram na barra de seleção, dentro da tabela, que é quem sabe o que está
  * marcado.
  */
-function paraCabecalho<T>(acao: DataTableAction<T>): AcaoDeCabecalho {
+function paraCabecalho<T extends LinhaDaTabela>(acao: DataTableAction<T>): AcaoDeCabecalho {
   return {
     id: acao.id,
     label: acao.label,
@@ -163,7 +163,7 @@ function paraCabecalho<T>(acao: DataTableAction<T>): AcaoDeCabecalho {
  * Sobra no `⋯` do cabeçalho o que não depende de linha nenhuma (`Imprimir`).
  * A repartição mora AQUI, e não em cada rota, porque é a mesma em dez telas.
  */
-export function TelaDeListagem<T>({
+export function TelaDeListagem<T extends LinhaDaTabela>({
   titulo,
   contexto,
   columns,
@@ -187,7 +187,7 @@ export function TelaDeListagem<T>({
   const abrir = actions.find((a) => a.id === ACAO_ABRIR)
   // Ação de registro desce para a barra de seleção; o que não depende de linha
   // fica no `⋯`. `Consul.` sai das duas: quem a faz agora é a linha.
-  const acoesDeSelecao = actions.filter(
+  const acoesDeLote = actions.filter(
     (a) => a.needsSelection === true && a.id !== ACAO_ABRIR && a.disabled !== true,
   )
   const secundarias = actions.filter(
@@ -218,7 +218,7 @@ export function TelaDeListagem<T>({
         queryKey={queryKey}
         fetcher={fetcher}
         actions={acoesDaTabela}
-        acoesDeSelecao={acoesDeSelecao}
+        acoesDeLote={acoesDeLote}
         {...(abrir?.onClick && abrir.disabled !== true
           ? // A linha abre em CONSULTA, que é o uso mais frequente de um
             // cadastro. Recurso cujo contrato ainda não publica detalhe por id

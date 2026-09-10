@@ -1,3 +1,8 @@
+import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine'
+import { draggable, dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
+import { Link } from '@tanstack/react-router'
+import { Calendar, FileText, MoreHorizontal, Plus } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import type { CrmOpportunityDto, CrmStageDto } from '@/api/gerado'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
 import { Button } from '@/components/ui/button'
@@ -12,14 +17,9 @@ import { useEstagios, useMoverOportunidade } from '@/data/crm-api'
 import { mensagemDoErro } from '@/lib/erros'
 import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
-import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine'
-import { draggable, dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
-import { Link } from '@tanstack/react-router'
-import { Calendar, FileText, MoreHorizontal, Plus } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
 import { type Apodrecimento, apodrecimentoDoCartao, diasParado } from './apodrecimento'
 import { type ColunaDoQuadro, colunasDoQuadro, quemDoCartao, somaDaColuna } from './funil-agrupa'
-import { Monograma } from './monograma'
+import { MonogramaDoFunil } from './monograma'
 import { SeloDeApodrecimento } from './selo-de-apodrecimento'
 
 /**
@@ -416,7 +416,9 @@ function Cartao({
             coluna procurando de quem é o negócio antes de ler do que ele trata.
             O nome inteiro fica logo abaixo — o monograma é reconhecimento, não
             substituição. */}
-        {quem ? <Monograma nome={quem} papel="cliente" decorativo className="mt-px" /> : null}
+        {quem ? (
+          <MonogramaDoFunil nome={quem} papel="cliente" decorativo className="mt-px" />
+        ) : null}
 
         {/* Link do router, não `onClick` na caixa: o cartão leva a uma URL
             própria, e link preserva meio-clique, "abrir em nova aba" e o
@@ -526,7 +528,7 @@ function Cartao({
             primeiro. */}
         {apodrecimento ? <SeloDeApodrecimento apodrecimento={apodrecimento} /> : null}
         {oportunidade.ownerName ? (
-          <Monograma nome={oportunidade.ownerName} papel="responsavel" className="ml-auto" />
+          <MonogramaDoFunil nome={oportunidade.ownerName} papel="responsavel" className="ml-auto" />
         ) : null}
       </div>
 

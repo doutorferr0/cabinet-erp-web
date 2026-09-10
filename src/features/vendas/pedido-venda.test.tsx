@@ -1,6 +1,6 @@
-import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 
 /**
  * A TELA DO PEDIDO DE VENDA — `/api/orders`.
@@ -213,7 +213,7 @@ describe('o Gravar não pode apagar o que a tela não edita', () => {
     await user.click(screen.getByRole('button', { name: /^Gravar$/i }))
     await waitFor(() => expect(escritas.length).toBe(1))
 
-    const servico = (escritas[0]?.corpo?.serviceItems as Record<string, unknown>[])[0]
+    const servico = (escritas[0]?.corpo?.serviceItems as Record<string, unknown>[] | undefined)?.[0]
     expect(servico?.description).toBe('INSTALAÇÃO ELÉTRICA')
     expect(servico?.electricianPercent).toBe(300000)
     // `OrderServiceItemWriteRequest` não os aceita: reenviá-los deixaria o

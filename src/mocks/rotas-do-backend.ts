@@ -1,4 +1,4 @@
-import { http, type RequestHandler, passthrough } from 'msw'
+import { http, passthrough, type RequestHandler } from 'msw'
 
 /**
  * AS ROTAS QUE O `cabinet-erp-api` JÁ SERVE — passthrough POR ROTA, não modo global.
@@ -430,6 +430,24 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
   { metodo: 'get', caminho: '/api/table-prices/{variantId}' },
   { metodo: 'put', caminho: '/api/table-prices/{variantId}' },
 
+  // reajuste em massa (2 operações) — o caminho NASCE nesta PR (26/08), e por
+  // isso **não foi medido contra par local: não havia o que medir**. A cópia do
+  // contrato do api não pode conhecer `/api/price-adjustments` antes de um
+  // `sync:contract` de lá, então o que ele responde hoje é 404 `Este caminho não
+  // existe no contrato` — a mesma `natureza: 'sem-contrato'` que as cinco de
+  // suporte carregam em `ROTAS_NO_MOCK`.
+  //
+  // **E mesmo assim o lugar delas é AQUI, não em `ROTAS_NO_MOCK`** — é a decisão
+  // que o cabeçalho deste arquivo já tomou por `cost-profiles` em 24/08, pelo
+  // mesmo raciocínio: sem handler de mock e sem tela, mover para a outra lista
+  // faria a rota cair no fallback da SPA e devolver `index.html` com **200**, que
+  // é pior que o 404 honesto. O dano hoje é ZERO porque ninguém as consome.
+  //
+  // Quem escrever a tela do reajuste remede: se o api já servir, está no lugar
+  // certo; se responder 501, o lugar passa a ser `ROTAS_NO_MOCK` COM handler.
+  { metodo: 'get', caminho: '/api/price-adjustments' },
+  { metodo: 'post', caminho: '/api/price-adjustments' },
+
   // parceiro (5 operações) — os três papéis (cliente, fornecedor, profissional)
   // são o mesmo recurso com filtro `role`, então servir a listagem e o detalhe
   // atende as três telas de uma vez.
@@ -466,12 +484,14 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
 
   // quadro de tarefas e lista A fazer (5 operações) — módulo inteiro.
   //
-  // Convivem com um dashboard ainda mockado (`/api/dashboard/summary` e
-  // `/api/dashboard/agenda` são 501) e isso é DIFERENTE do caso do funil: os
-  // indicadores e a agenda são painéis próprios, com consulta própria, sem id
-  // em comum com a tarefa. O que se perde é a contagem do resumo bater com o
-  // quadro ao lado — dois painéis discordando, e não um quadro vazio mentindo
-  // que não há trabalho.
+  // Entraram ANTES do dashboard, e por um tempo conviveram com ele mockado: o
+  // resumo contava a ficção e o quadro ao lado contava o Postgres. Era
+  // discordância entre dois painéis, não quadro vazio mentindo que não há
+  // trabalho, e por isso a passagem pôde acontecer sem esperar. **Desde a #274
+  // não há mais o que conviver — `/api/dashboard/summary` e
+  // `/api/dashboard/agenda` estão nesta mesma lista, mais abaixo.** A frase
+  // anterior aqui dizia que os dois "são 501" e sobreviveu à própria correção,
+  // a 140 linhas das entradas que a desmentem.
   { metodo: 'get', caminho: '/api/tasks' },
   { metodo: 'post', caminho: '/api/tasks' },
   { metodo: 'patch', caminho: '/api/tasks/{taskId}' },
@@ -1410,6 +1430,43 @@ const REAGENDAR_SEM_CONTRATO_LA =
   'Próximo passo lá: pnpm sync:contract + pnpm codegen, e só então o handler.'
 
 /**
+ * AS CINCO DA FILA DE APROVAÇÕES (F12) — publicadas por ESTA PR, e por isso
+ * `sem-contrato`, pela mesma ARITMÉTICA que as cinco da administração do grupo:
+ * o `check:contract` do api compara a cópia de lá byte a byte com a `main`
+ * DESTE repo, então enquanto esta PR não mergear o `openapi-v1.json` de lá não
+ * tem `/api/approval-requests` — e o glue responde o 404 do ROTEADOR, não 501,
+ * para caminho que o documento não declara.
+ *
+ * **As cinco COM handler de mock** (`src/mocks/api/aprovacoes.ts`), e isso não é
+ * detalhe: sem ele, declarar aqui faria a fila cair no fallback da SPA e devolver
+ * `index.html` com 200 — a tela leria HTML como se fosse resposta, que é
+ * exatamente o buraco que a entrega (G4) pagou.
+ *
+ * **Saem juntas, e a família aqui é maior que a lista.** O que falta do outro
+ * lado não são só handlers: é o GANCHO que cria o pedido, ao gravar documento
+ * com desconto acima do teto (`cabinet-erp-api#237`, fase 1). Ligar a leitura
+ * antes disso poria a fila do servidor — vazia, porque ninguém a alimenta — no
+ * lugar de uma que mostra as duas metades da regra, e "não há nada para aprovar"
+ * é indistinguível de "o gancho não existe".
+ */
+const FILA_DE_APROVACOES: readonly RotaNoMock[] = (
+  [
+    ['get', '/api/approval-requests'],
+    ['get', '/api/approval-requests/summary'],
+    ['get', '/api/approval-requests/{id}'],
+    ['post', '/api/approval-requests/{id}/approve'],
+    ['post', '/api/approval-requests/{id}/reject'],
+  ] as const
+).map(([metodo, caminho]) => ({
+  metodo,
+  caminho,
+  motivo:
+    'publicadas por ESTA PR — a copia do contrato no api ainda nao as conhece, e o gancho que CRIA o pedido e a fase 1 da api#237',
+  natureza: 'sem-contrato' as const,
+  servidor: 'spring-pendente' as const,
+}))
+
+/**
  * As VIEWS SALVAS do usuário (`/api/me/views`), publicadas NESTE PR pela #481 (D13).
  *
  * `sem-contrato`, e sem precisar de par local para afirmá-lo — o caminho nasce
@@ -1535,6 +1592,17 @@ export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
   },
   ...AGREGADOS_DE_KPI,
   ...VIEWS_SALVAS,
+  // Consulta de CEP publicada nesta frente. Nasce no mock e fica nele até que
+  // o Spring publique a consulta nacional; o Node congelado nunca a conheceu.
+  {
+    metodo: 'get',
+    caminho: '/api/postal-codes/{postalCode}',
+    motivo:
+      'consulta de CEP publicada no front — o mock é a fonte até o Spring servir a integração postal',
+    natureza: 'sem-contrato',
+    servidor: 'spring-pendente',
+  },
+  ...FILA_DE_APROVACOES,
 ]
 
 /**

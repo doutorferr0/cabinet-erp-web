@@ -1,7 +1,7 @@
-import { ConfirmarDesativacao } from '@/components/cabinet/confirmar-desativacao'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { ConfirmarDesativacao } from '@/components/cabinet/confirmar-desativacao'
 
 function montar(props: Partial<React.ComponentProps<typeof ConfirmarDesativacao>> = {}) {
   const onFechar = vi.fn()

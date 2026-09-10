@@ -1,3 +1,5 @@
+import { Link } from '@tanstack/react-router'
+import type { DashboardSummaryDto } from '@/api/gerado'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
 import {
   type EscalaDeKpi,
@@ -6,8 +8,8 @@ import {
   type TintDeKpi,
 } from '@/components/cabinet/kpi-tile'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useResumoDoDashboard, variacaoDoMes } from '@/data/dashboard-api'
-import { Link } from '@tanstack/react-router'
+import { variacao } from '@/data/agregados-api'
+import { useResumoDoDashboard } from '@/data/dashboard-api'
 
 /**
  * OS QUATRO KPIs DO DASHBOARD — a faixa de tinta da tela.
@@ -72,7 +74,7 @@ interface Indicador {
    * o agrupamento de milhar do `KpiTile`. Mutuamente exclusivo com
    * `valorCentavos`.
    */
-  valor?: number
+  valor?: number | string
   /** Dinheiro em CENTAVOS. */
   valorCentavos?: number
   nota: string
@@ -112,6 +114,56 @@ function Tile({ indicador }: { indicador: Indicador }) {
   )
 }
 
+/**
+ * O CARTÃO DE `Pedidos a receber` — o único que pode não mostrar número.
+ *
+ * `incomingOrders` e `incomingOrdersToday` saem **sempre `0`** do servidor, e
+ * isso está escrito no próprio backend (`src/modules/dashboard/rotas.ts`, desde
+ * 2026-08-19): o DTO declara os dois como `integer` OBRIGATÓRIO, sem `null` para
+ * dizer "sem dado", então o zero ali não significa "nenhum pedido a receber" —
+ * significa "ninguém apurou". Enquanto os dois caminhos do dashboard ficaram no
+ * mock isso não aparecia, porque o mock devolvia ficção plausível; desde que a
+ * passagem abriu (`rotas-do-backend.ts`), o zero-stub chega à tela como se fosse
+ * contagem, e é a única mentira silenciosa da fileira.
+ *
+ * **A saída é travessão e a frase, não o zero.** O operador que lê `0` num
+ * sistema que TEM ordem de compra conclui que a operação está parada; o que lê
+ * `—` procura o número onde ele existe, e o cartão segue levando para lá.
+ *
+ * **Por que a condição é `=== 0` e não uma constante `false`.** Declaração de
+ * ausência escrita à mão não tem quem a invalide: o dia em que o backend passar
+ * a apurar, um `valor: '—'` fixo continuaria escondendo a contagem, verde e
+ * calado. Lendo o zero, o cartão volta a mostrar número sozinho, no primeiro
+ * pedido que o servidor contar. O preço é ficar `—` também quando a contagem é
+ * verdadeiramente zero — dizer "não sei" onde a resposta era "nenhum" subestima,
+ * mas não mente, e é o lado certo para errar.
+ *
+ * O `KpiTile` aceita texto em `valor` justamente para o KPI que não é
+ * quantidade; o travessão entra por aí e não conta.
+ */
+function pedidosAReceber(resumo: DashboardSummaryDto): Indicador {
+  const base = {
+    rotulo: 'Pedidos a receber',
+    tint: 'sky',
+    escala: 'padrao',
+    href: '/compras/pedidos',
+  } as const
+
+  if (resumo.incomingOrders === 0) {
+    return { ...base, valor: '—', nota: 'o servidor ainda não apura' }
+  }
+
+  return {
+    ...base,
+    valor: resumo.incomingOrders,
+    // Singular e plural são frases diferentes — "1 chegam hoje" é defeito visível.
+    nota:
+      resumo.incomingOrdersToday === 1
+        ? '1 chega hoje'
+        : `${resumo.incomingOrdersToday} chegam hoje`,
+  }
+}
+
 export function Indicadores() {
   const query = useResumoDoDashboard()
 
@@ -139,7 +191,7 @@ export function Indicadores() {
   }
 
   const resumo = query.data
-  const variacao = variacaoDoMes(resumo)
+  const deltaDeVendas = variacao(resumo.monthSalesCents, resumo.previousMonthSalesCents)
   const anterior = resumo.previousMonthSalesCents
 
   /**
@@ -155,15 +207,15 @@ export function Indicadores() {
       valorCentavos: resumo.monthSalesCents,
       // Sem base de comparação a tela DIZ isso, em vez de mostrar "+0%": zero
       // por cima de zero é conta que ninguém pode conferir.
-      nota: variacao === null ? 'sem base de comparação' : 'vs. mês anterior',
-      delta: variacao,
+      nota: deltaDeVendas === null ? 'sem base de comparação' : 'vs. mês anterior',
+      delta: deltaDeVendas,
       // A sparkline do mockup, com os DOIS pontos que o DTO publica
       // (`previousMonthSalesCents` → `monthSalesCents`). São dois, que é o
       // mínimo que `Sparkline` desenha, e é a curva de verdade — não uma série
       // inventada para a linha ficar bonita. Vira curva de doze meses no dia em
       // que o DTO publicar a série; é acréscimo de campo, não rota nova.
       //
-      // Mesma guarda do `variacaoDoMes`: base zero não tem tendência, e uma
+      // Base zero não tem tendência, e uma
       // linha subindo do chão diria "cresceu infinito".
       ...(anterior === 0 ? {} : { serie: [anterior, resumo.monthSalesCents] }),
     },
@@ -178,17 +230,7 @@ export function Indicadores() {
           : `${resumo.openQuotesDueThisWeek} vencem esta semana`,
       href: '/vendas/orcamentos',
     },
-    {
-      rotulo: 'Pedidos a receber',
-      tint: 'sky',
-      escala: 'padrao',
-      valor: resumo.incomingOrders,
-      nota:
-        resumo.incomingOrdersToday === 1
-          ? '1 chega hoje'
-          : `${resumo.incomingOrdersToday} chegam hoje`,
-      href: '/compras/pedidos',
-    },
+    pedidosAReceber(resumo),
     {
       rotulo: 'Estoque crítico',
       tint: 'sand',

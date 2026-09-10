@@ -1,3 +1,4 @@
+import { HttpResponse, http } from 'msw'
 import type {
   CostProfileDto,
   CostProfileWriteRequest,
@@ -6,10 +7,9 @@ import type {
   VariantTablePriceDto,
   VariantTablePricesWriteRequest,
 } from '@/api/gerado'
-import { http, HttpResponse } from 'msw'
+import { diaLocalISO } from '@/lib/datas'
 import { verificarEscrita } from './permissao'
 import {
-  TIPO,
   camposInvalidos,
   conflito,
   naoEncontrado,
@@ -17,8 +17,9 @@ import {
   problemaJson,
   semEmpresaAtiva,
   semSessao,
+  TIPO,
 } from './problema'
-import { TENANT_MATRIZ, novoId, store } from './store'
+import { novoId, store, TENANT_MATRIZ } from './store'
 
 /**
  * O módulo PREÇO no modo mock — e ele guarda o CADASTRO e RECUSA a APURAÇÃO.
@@ -123,6 +124,7 @@ function estadoInicial(): Estado {
         supplierName: 'EVOLED ILUMINACAO LTDA',
         supplierCode: 'EV-PEND-30F',
         tablePriceCents: 74_180,
+        effectiveFrom: '2026-01-01',
       },
       {
         tenantId: TENANT_MATRIZ,
@@ -131,6 +133,7 @@ function estadoInicial(): Estado {
         supplierName: 'MISTER LED COMERCIO DE ILUMINACAO LTDA',
         supplierCode: 'ML-3001',
         tablePriceCents: 81_000,
+        effectiveFrom: '2026-01-01',
       },
       {
         tenantId: TENANT_MATRIZ,
@@ -139,6 +142,7 @@ function estadoInicial(): Estado {
         supplierName: 'EVOLED ILUMINACAO LTDA',
         supplierCode: null,
         tablePriceCents: 17_930,
+        effectiveFrom: '2026-01-01',
       },
     ],
     /**
@@ -350,6 +354,7 @@ function comoTabelaDto(linha: TabelaDaEmpresa): VariantTablePriceDto {
     supplierName: nomeDeFornecedor(linha.supplierId) ?? linha.supplierName ?? null,
     supplierCode: codigoNoFornecedor(linha.variantId, linha.supplierId),
     tablePriceCents: linha.tablePriceCents,
+    effectiveFrom: linha.effectiveFrom,
   }
 }
 
@@ -428,6 +433,11 @@ export const handlersDePrecos = [
     }
 
     const tenantId = store.activeTenantId
+    // A VIGÊNCIA é a da requisição — ausente ou nula é hoje, como o contrato
+    // define. O mock guarda UMA tabela por (variante × fornecedor), a vigente:
+    // o histórico de vigências (a `Dt de Vigência` do legado, G9) é do
+    // servidor, e aqui não se inventa passado.
+    const effectiveFrom = corpo.effectiveFrom ?? diaLocalISO()
     estado.tabelas = estado.tabelas.filter(
       (linha) => !(linha.tenantId === tenantId && linha.variantId === variantId),
     )
@@ -439,6 +449,7 @@ export const handlersDePrecos = [
         supplierName: nomeDeFornecedor(linha.supplierId),
         supplierCode: codigoNoFornecedor(variantId, linha.supplierId),
         tablePriceCents: linha.tablePriceCents,
+        effectiveFrom,
       })
     }
 

@@ -1,9 +1,9 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { TaskDto } from '@/api/gerado'
 import { colunaDoArrasto } from '@/features/tarefas/quadro'
 import { arrastarPara, arrastarSobre } from '@/test/arrastar'
 import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
-import { screen, waitFor, within } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * O QUADRO DE TAREFAS SE MOVE POR ARRASTO — sem perder o clique.

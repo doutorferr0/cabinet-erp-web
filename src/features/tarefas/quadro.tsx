@@ -1,3 +1,6 @@
+import { draggable, dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
+import { MessageSquare, MoreHorizontal, Paperclip } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import type { TaskDto, TaskDtoStatus } from '@/api/gerado'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
 import { Button } from '@/components/ui/button'
@@ -8,12 +11,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
-import { COLUNAS, agruparPorColuna, useAlterarTarefa, useTarefas } from '@/data/dashboard-api'
+import { agruparPorColuna, COLUNAS, useAlterarTarefa, useTarefas } from '@/data/dashboard-api'
 import { formatDateBR } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
-import { draggable, dropTargetForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
-import { MessageSquare, MoreHorizontal, Paperclip } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
 import { diasDeAtraso, estaAtrasada, hojeISO } from './apuracao'
 import { Prioridade } from './prioridade'
 
@@ -416,7 +416,11 @@ export function Quadro({
   busca,
   aoIncluir,
   hoje = hojeISO(),
-}: { busca: string; aoIncluir: (status: TaskDtoStatus) => void; hoje?: string }) {
+}: {
+  busca: string
+  aoIncluir: (status: TaskDtoStatus) => void
+  hoje?: string
+}) {
   const query = useTarefas(busca)
 
   if (query.isPending) {

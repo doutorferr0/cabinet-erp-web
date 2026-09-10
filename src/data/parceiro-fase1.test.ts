@@ -1,3 +1,5 @@
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { configurarApi } from '@/api/cliente'
 import { authLogin, authSetActiveTenant } from '@/api/gerado'
 import { atualizarParceiro, corpoDeEscrita, obterParceiro } from '@/data/parceiros-api'
@@ -5,10 +7,8 @@ import { papelCliente } from '@/features/parceiro/papeis/cliente'
 import { papelFornecedor } from '@/features/parceiro/papeis/fornecedor'
 import { papelProfissional } from '@/features/parceiro/papeis/profissional'
 import { handlers } from '@/mocks/api/handlers'
-import { TENANT_MATRIZ, resetStore } from '@/mocks/api/store'
+import { resetStore, TENANT_MATRIZ } from '@/mocks/api/store'
 import { idDeApoio } from '@/mocks/lookups'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 /**
  * OS CAMPOS DA FASE 1 FAZEM A VOLTA INTEIRA (#250).

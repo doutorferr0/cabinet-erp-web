@@ -3,7 +3,7 @@ import { setupServer } from 'msw/node'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { handlers } from './api/handlers'
 import { semearSessaoAutenticada } from './api/store'
-import { ROTAS_DO_BACKEND, ROTAS_NO_MOCK, handlersDePassagem } from './rotas-do-backend'
+import { handlersDePassagem, ROTAS_DO_BACKEND, ROTAS_NO_MOCK } from './rotas-do-backend'
 
 /**
  * A PROVA AO VIVO — desligada por padrão, e é o único jeito honesto.

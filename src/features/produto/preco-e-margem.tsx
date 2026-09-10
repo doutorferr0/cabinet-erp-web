@@ -1,3 +1,5 @@
+import { Calculator, Plus, Trash2 } from 'lucide-react'
+import { useState } from 'react'
 import type { CostSimulationDto, PriceIndexDto, VariantTablePriceDto } from '@/api/gerado'
 import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
 import {
@@ -10,18 +12,17 @@ import { Dialog, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
-  PARCELAS_DA_SIMULACAO,
   indiceDoFornecedor,
+  PARCELAS_DA_SIMULACAO,
   useGravarTabelas,
   useIndicesDePreco,
   useSimularMargem,
   useTabelasDaVariante,
   vendaSugeridaCents,
 } from '@/data/precos-api'
-import { PERCENT_ESCALA, formatMoneyBRL } from '@/lib/formatters'
+import { diaLocalISO } from '@/lib/datas'
+import { formatMoneyBRL, formatPercent } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
-import { Calculator, Plus, Trash2 } from 'lucide-react'
-import { useState } from 'react'
 
 /**
  * A ABA PREÇO E MARGEM — a primeira tela do módulo Preço (G9 · issue #379).
@@ -250,9 +251,13 @@ function TabelaDoFornecedor({
             onClick={() =>
               gravar.mutate(
                 {
+                  // A vigência é a da REQUISIÇÃO (`effectiveFrom` ausente = hoje,
+                  // pelo contrato); a data por linha só existe porque o `PUT`
+                  // reaproveita o DTO da leitura, e vai com o mesmo "hoje".
                   prices: linhas.map((linha) => ({
                     supplierId: linha.supplierId,
                     tablePriceCents: linha.tablePriceCents,
+                    effectiveFrom: diaLocalISO(),
                   })),
                 },
                 { onSuccess: descartar },
@@ -324,9 +329,11 @@ function LinhaDaTabela({
         {indice === undefined ? (
           <span className="text-muted-foreground">sem índice</span>
         ) : indice.active ? (
-          formatIndice(indice.indexValue)
+          formatPercent(indice.indexValue)
         ) : (
-          <span className="text-muted-foreground">{formatIndice(indice.indexValue)} (inativo)</span>
+          <span className="text-muted-foreground">
+            {formatPercent(indice.indexValue)} (inativo)
+          </span>
         )}
       </td>
       <td className="py-2 pr-3 text-right tabular-nums">
@@ -518,7 +525,7 @@ function ExtratoDoCusto({ simulacao }: { simulacao: CostSimulationDto }) {
                   {simulacao.profitPercent === null ||
                   simulacao.profitPercent === undefined ? null : (
                     <span className="ml-2 text-muted-foreground">
-                      ({formatPercentual(simulacao.profitPercent)})
+                      ({formatPercent(simulacao.profitPercent, 2)}%)
                     </span>
                   )}
                 </>
@@ -625,28 +632,6 @@ function CoberturaDoPreco() {
 }
 
 // ---------------------------------------------------------------- formatação
-
-/**
- * O índice com as QUATRO casas que ele tem — `25600` vira `2,5600`.
- *
- * Não usa `formatPercent` porque índice não é percentual: é multiplicador. Um
- * `2,56%` na coluna faria a venda sugerida parecer errada por duas ordens de
- * grandeza.
- */
-function formatIndice(indexValue: number): string {
-  return (indexValue / PERCENT_ESCALA).toLocaleString('pt-BR', {
-    minimumFractionDigits: 4,
-    maximumFractionDigits: 4,
-  })
-}
-
-/** O percentual de lucro — inteiro escalado por 10.000, como todo % do contrato. */
-function formatPercentual(valor: number): string {
-  return `${(valor / PERCENT_ESCALA).toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}%`
-}
 
 /**
  * Centavo → o texto do campo, e vice-versa.

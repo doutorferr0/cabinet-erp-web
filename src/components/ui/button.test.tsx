@@ -1,5 +1,5 @@
-import { buttonVariants } from '@/components/ui/button'
 import { describe, expect, it } from 'vitest'
+import { buttonVariants } from '@/components/ui/button'
 
 /**
  * O botão é onde a receita de PROFUNDIDADE do sistema se prova.

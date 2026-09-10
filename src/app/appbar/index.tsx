@@ -1,3 +1,6 @@
+import { Link, useRouterState } from '@tanstack/react-router'
+import { Bell, CircleHelp } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { trilhaDaRota } from '@/app/appbar/trilha'
 import { secoesVisiveis } from '@/app/navigation'
 import { ModeToggle } from '@/components/cabinet/mode-toggle'
@@ -5,9 +8,6 @@ import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipTrigger } from '@/components/ui/tooltip'
 import { useRecursosDaEmpresa } from '@/data/recursos-da-empresa'
 import { cn } from '@/lib/utils'
-import { Link, useRouterState } from '@tanstack/react-router'
-import { Bell, CircleHelp } from 'lucide-react'
-import type { ReactNode } from 'react'
 
 export { secaoDaRota, trilhaDaRota } from '@/app/appbar/trilha'
 

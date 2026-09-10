@@ -1,6 +1,6 @@
-import { SEM_PERMISSAO, papelDaSessao, verificarEscrita } from '@/mocks/api/permissao'
-import { TENANT_FILIAL, TENANT_MATRIZ, resetStore, store } from '@/mocks/api/store'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { papelDaSessao, SEM_PERMISSAO, verificarEscrita } from '@/mocks/api/permissao'
+import { resetStore, store, TENANT_FILIAL, TENANT_MATRIZ } from '@/mocks/api/store'
 
 describe('papelDaSessao', () => {
   it('devolve null quando não há empresa ativa', () => {

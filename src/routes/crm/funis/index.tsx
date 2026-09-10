@@ -1,15 +1,15 @@
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useState } from 'react'
 import type { CrmPipelineDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { CelulaAtivo } from '@/components/cabinet/celula-ativo'
 import type { OpcaoDeAgrupamento } from '@/components/cabinet/data-table'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { Nome } from '@/components/cabinet/nome'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { data } from '@/data'
 import { useDesativarFunil } from '@/data/crm-api'
 import { useReadOnlyPorPapel } from '@/data/papeis'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import type { ColumnDef } from '@tanstack/react-table'
-import { useState } from 'react'
 
 export const Route = createFileRoute('/crm/funis/')({
   component: FunisPage,

@@ -1,8 +1,9 @@
-import { listTasks } from '@/api/gerado'
-import type { TaskDto } from '@/api/gerado'
-import { type RespostaDaApi, dadosOuErro } from '@/data/api-provider'
-import { useNaoLidasDoInbox } from '@/features/inbox/estado-do-inbox'
 import { useQuery } from '@tanstack/react-query'
+import type { TaskDto } from '@/api/gerado'
+import { listTasks } from '@/api/gerado'
+import { dadosOuErro, type RespostaDaApi } from '@/data/api-provider'
+import { useResumoDeAprovacoes } from '@/data/aprovacoes-api'
+import { useNaoLidasDoInbox } from '@/features/inbox/estado-do-inbox'
 
 /**
  * OS NÚMEROS DA BARRA — quantas tarefas e quantos avisos esperam o operador.
@@ -37,6 +38,14 @@ import { useQuery } from '@tanstack/react-query'
 export interface ContadoresNav {
   minhasTarefas: number | undefined
   caixaDeEntrada: number | undefined
+  /**
+   * Pedidos de desconto acima do teto que esperam ESTA sessão (F12, #417).
+   * `undefined` também para quem não decide pedido nenhum (`canDecide` falso)
+   * e para a fila VAZIA — exceção deliberada ao "ausente ≠ zero" acima: aqui o
+   * número só existe quando há trabalho; `0` ao lado de um item que a pessoa
+   * abre raramente seria ruído permanente, e a tela da fila diz o vazio.
+   */
+  aprovacoesPendentes: number | undefined
 }
 
 /** Cinco minutos: a barra não é o quadro de tarefas, é o aviso de que ele tem algo. */
@@ -64,8 +73,16 @@ export function useContadoresNav(): ContadoresNav {
   // D7: a mesma fonte do sino — store da caixa de entrada.
   const caixaDeEntrada = useNaoLidasDoInbox()
 
+  // A fila de aprovações pergunta pelo hook da própria feature (`retry: false`
+  // lá também): é a feature que sabe perguntar, a barra só sabe onde o número vai.
+  const aprovacoes = useResumoDeAprovacoes()
+
   return {
     minhasTarefas: tarefas.data?.length,
     caixaDeEntrada,
+    aprovacoesPendentes:
+      aprovacoes.data?.canDecide && aprovacoes.data.pendingCount > 0
+        ? aprovacoes.data.pendingCount
+        : undefined,
   }
 }

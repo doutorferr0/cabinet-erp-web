@@ -1,9 +1,14 @@
+import { useNavigate } from '@tanstack/react-router'
+import { useState } from 'react'
+import { useFormContext, useWatch } from 'react-hook-form'
+import { z } from 'zod'
 import type { CrmOpportunityDto, PartnerDto } from '@/api/gerado'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { CampoComBusca } from '@/components/cabinet/campo-com-busca'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { FormBlock } from '@/components/cabinet/form-block'
 import { DateField, MoneyField, SelectIdField, TextField } from '@/components/cabinet/form-controls'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { Nome } from '@/components/cabinet/nome'
 import { posGravar } from '@/components/cabinet/pos-gravar'
 import { SearchDialog } from '@/components/cabinet/search-dialog'
@@ -17,11 +22,6 @@ import {
   useGravarOportunidade,
   useMotivosDePerda,
 } from '@/data/crm-api'
-import { useNavigate } from '@tanstack/react-router'
-import type { ColumnDef } from '@tanstack/react-table'
-import { useState } from 'react'
-import { useFormContext, useWatch } from 'react-hook-form'
-import { z } from 'zod'
 import { GerarOrcamento } from './gerar-orcamento'
 
 /**

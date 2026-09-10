@@ -1,3 +1,7 @@
+import { useNavigate } from '@tanstack/react-router'
+import { useState } from 'react'
+import { useFormContext } from 'react-hook-form'
+import { z } from 'zod'
 import { ComunicadoresBlock, EnderecoBlock, RedesSociaisBlock } from '@/components/cabinet/blocks'
 import { BuscaDeCidade } from '@/components/cabinet/busca-de-cidade'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
@@ -6,22 +10,18 @@ import {
   CheckboxField,
   LookupField,
   SelectField,
-  TextField,
   TextareaField,
+  TextField,
 } from '@/components/cabinet/form-controls'
 import { Button } from '@/components/ui/button'
 import { tabelas } from '@/data/tabelas'
 import {
-  type ModuloCadastro,
   fornecedor as entidadeFornecedor,
+  type ModuloCadastro,
   propsDoIcone,
 } from '@/features/cadastro/modulos'
 import { ProgressoObrigatorios } from '@/features/cliente/progresso-obrigatorios'
 import type { Fornecedor } from '@/mocks/fornecedores'
-import { useNavigate } from '@tanstack/react-router'
-import { useState } from 'react'
-import { useFormContext } from 'react-hook-form'
-import { z } from 'zod'
 
 const enderecoSchema = z.object({
   cep: z.string(),
@@ -102,7 +102,10 @@ function ConsultaCnpjButton() {
 function BuscaCidade({
   open,
   onOpenChange,
-}: { open: boolean; onOpenChange: (open: boolean) => void }) {
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
   const { setValue } = useFormContext<Fornecedor>()
   return (
     <BuscaDeCidade
@@ -133,7 +136,11 @@ function BlocoDoModulo({
   id,
   emFoco,
   children,
-}: { id: string; emFoco: string | undefined; children: React.ReactNode }) {
+}: {
+  id: string
+  emFoco: string | undefined
+  children: React.ReactNode
+}) {
   const m = modulo(id)
   return (
     <FormBlock

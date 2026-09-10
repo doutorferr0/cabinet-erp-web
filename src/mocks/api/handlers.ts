@@ -1,3 +1,4 @@
+import { HttpResponse, http } from 'msw'
 import type {
   LoginRequest,
   PartnerLinkRequest,
@@ -15,10 +16,12 @@ import type {
   TrocarEmpresaRequest,
   VariantWriteRequest,
 } from '@/api/gerado'
+import { somenteDigitos } from '@/lib/cep'
 import { diaDoInstante, diaLocalISO } from '@/lib/datas'
-import { http, HttpResponse } from 'msw'
+import { fetchCep } from '@/mocks/ceps'
 import { handlersDeAcesso } from './acesso'
 import { handlersDeAgregados } from './agregados'
+import { handlersDeAprovacao } from './aprovacoes'
 import { handlersDeAtividades } from './atividades'
 import { handlersDeCompras } from './compras'
 import { handlersDeContatos } from './contatos'
@@ -27,7 +30,9 @@ import { aplicarSaldo, depositoDoMovimento, handlersDeDepositos } from './deposi
 import { handlersDeEmpresas } from './empresas'
 import { handlersDeEntrega } from './entrega'
 import { erroCanonico } from './erros-canonicos'
-import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
+import type { CamposFiltraveis } from './filtro-do-servidor'
+import { handlersDeFinanceiro } from './financeiro'
+import { lerConsulta, listar } from './listagem'
 import { handlersDeLookups } from './lookups'
 import { handlersDeObras } from './obras'
 import { handlersDePagamento } from './pagamento'
@@ -36,18 +41,18 @@ import { verificarEscrita } from './permissao'
 import { handlersDoPlanner } from './planner'
 import { handlersDePrecos } from './precos'
 import {
-  TIPO,
   camposInvalidos,
   naoEncontrado,
   problemaJson,
   semEmpresaAtiva,
   semSessao,
+  TIPO,
 } from './problema'
 import { handlersDeOrcamento } from './quotes'
 import { handlersDeRecebimento } from './recebimento'
 import { handlersDeRelatorios } from './relatorios'
 import { handlersDeServicos } from './servicos'
-import { type ParceiroDaOrg, novoId, partnerDto, store } from './store'
+import { novoId, type ParceiroDaOrg, partnerDto, store } from './store'
 import { contextoDeSuporte, handlersDeSuporte, trilhaDeSuporte } from './suporte'
 import { handlersDeViews } from './views'
 
@@ -71,27 +76,6 @@ import { handlersDeViews } from './views'
  * Os paths usam `*` de prefixo para casar tanto o worker do browser (URLs
  * relativas) quanto o `setupServer` dos testes (URL absoluta de mentira).
  */
-
-interface ConsultaDeLista {
-  q: string | null
-  sortBy: string | null
-  sortDesc: boolean
-  page: number
-  pageSize: number
-  /** A URL inteira: `filters`/`joinOperator` são lidos por `aplicarFiltros`. */
-  url: URL
-}
-
-function lerConsulta(url: URL): ConsultaDeLista {
-  return {
-    q: url.searchParams.get('q'),
-    sortBy: url.searchParams.get('sortBy'),
-    sortDesc: url.searchParams.get('sortDesc') === 'true',
-    page: Number(url.searchParams.get('page') ?? '1'),
-    pageSize: Number(url.searchParams.get('pageSize') ?? '10'),
-    url,
-  }
-}
 
 /**
  * O contrato de listagem, num lugar só: filtro por `q` nos campos de texto,
@@ -158,49 +142,6 @@ export const ORDENAVEIS_PARCEIRO = [
   'parentId',
 ] as const
 
-function listar<T>(
-  itens: readonly T[],
-  consulta: ConsultaDeLista,
-  ordenaveis: readonly string[],
-  textoDe: (item: T) => (string | null | undefined)[],
-  filtraveis?: CamposFiltraveis,
-) {
-  if (consulta.page < 1 || consulta.pageSize < 1 || consulta.pageSize > 100) {
-    return problemaJson(
-      400,
-      'Paginação inválida: page é 1-based e pageSize vai até 100.',
-      {},
-      TIPO.paginacaoInvalida,
-    )
-  }
-  if (consulta.sortBy && !ordenaveis.includes(consulta.sortBy)) {
-    return problemaJson(400, `sortBy inválido: ${consulta.sortBy}.`, {}, TIPO.ordenacaoInvalida)
-  }
-
-  let rows = [...itens]
-  if (consulta.q) {
-    const alvo = consulta.q.toLowerCase()
-    rows = rows.filter((item) => textoDe(item).some((texto) => texto?.toLowerCase().includes(alvo)))
-  }
-
-  const filtradas = aplicarFiltros(rows, consulta.url, filtraveis)
-  if (typeof filtradas === 'string') return problemaJson(400, filtradas, {}, TIPO.filtroInvalido)
-  rows = filtradas
-
-  if (consulta.sortBy) {
-    const chave = consulta.sortBy as keyof T
-    rows.sort((a, b) => {
-      const va = String(a[chave] ?? '')
-      const vb = String(b[chave] ?? '')
-      return consulta.sortDesc ? vb.localeCompare(va) : va.localeCompare(vb)
-    })
-  }
-
-  const total = rows.length
-  const inicio = (consulta.page - 1) * consulta.pageSize
-  return HttpResponse.json({ rows: rows.slice(inicio, inicio + consulta.pageSize), total })
-}
-
 function sessaoAtual(): SessaoAtual {
   return {
     organizationId: 'org-vertz',
@@ -241,6 +182,19 @@ function comoProductDto(produto: ProductDetailDto): ProductDto {
 const ESCRITA = ['POST', 'PUT', 'PATCH', 'DELETE']
 
 export const handlers = [
+  http.get('*/api/postal-codes/:postalCode', async ({ params }) => {
+    const cep = await fetchCep(String(params.postalCode ?? ''), 0)
+    if (!cep) return problemaJson(404, 'CEP não encontrado.', {}, TIPO.naoEncontrado)
+    return HttpResponse.json({
+      zipCode: somenteDigitos(cep.cep),
+      street: cep.logradouro,
+      number: null,
+      complement: null,
+      district: cep.bairro,
+      city: cep.cidadeNome,
+      state: cep.uf,
+    })
+  }),
   // ---------------- ensaio de expiração (#124, ponto 4) ----------------
   //
   // PRIMEIRO da lista de propósito: o MSW resolve na ordem, e um gatilho que
@@ -1002,6 +956,16 @@ export const handlers = [
   // mas ligar a passagem é medição de par local, que é outra decisão. Sem este
   // arquivo o quadro de cargas não tinha resposta em ambiente nenhum.
   ...handlersDeEntrega,
+  // ---------------- FINANCEIRO (G7) ----------------
+  // Arquivo próprio, como compras. As 15 operações da tag `financeiro` entraram
+  // pela #340 sem handler nenhum, e a ausência estava DECLARADA com o motivo:
+  // nenhuma tela as consumia. As telas de título, agenda de vencimentos e
+  // quitação são a Fase C, e é a chegada delas que traz o mock junto — o site
+  // público é 100% mock, e sem handler Contas a Pagar abriria em branco com
+  // cara de "não há o que pagar". Ver o cabeçalho de `financeiro.ts` para o que
+  // ele reproduz e o que declara de fora (movimento de caixa, transferência,
+  // conciliação e período fechado).
+  ...handlersDeFinanceiro,
 
   // ---------------- RELATÓRIOS DE GESTÃO (#310) ----------------
   // Arquivo próprio, como compras. As dez operações estavam no contrato desde a
@@ -1012,6 +976,15 @@ export const handlers = [
   // que o mock não guarda, o envelope vem vazio em vez de somar número
   // inventado. O cabeçalho de `relatorios.ts` é onde essa linha está desenhada.
   ...handlersDeRelatorios,
+
+  // ---------------- FILA DE APROVAÇÕES (F12) ----------------
+  // Arquivo próprio, como compras e relatórios. As cinco operações nasceram
+  // NESTA PR e nenhum servidor as implementa — o gancho que CRIA o pedido é a
+  // fase 1 do `cabinet-erp-api#237`. Sem este arquivo a tela da fila cairia no
+  // fallback da SPA e receberia `index.html` com 200; com ele, a fila mostra as
+  // duas metades da regra (quem decide vê tudo, quem pediu vê o próprio) antes
+  // de o backend existir. Ver o cabeçalho de `aprovacoes.ts`.
+  ...handlersDeAprovacao,
 
   // ---------------- papéis e permissões (web#292 · api#84) ----------------
   // Arquivo próprio, como CRM e orçamento: estado que não é do store das telas

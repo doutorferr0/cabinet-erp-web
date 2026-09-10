@@ -1,3 +1,4 @@
+import { HttpResponse, http } from 'msw'
 import type {
   PurchaseArrivalRowDto,
   PurchaseOrderDto,
@@ -11,18 +12,17 @@ import type {
   PurchaseRequestWriteRequest,
 } from '@/api/gerado'
 import { diaLocalISO } from '@/lib/datas'
-import { http, HttpResponse } from 'msw'
 import { verificarEscrita } from './permissao'
 import {
-  TIPO,
   camposInvalidos,
   conflito,
   naoEncontrado,
   problemaJson,
   semEmpresaAtiva,
   semSessao,
+  TIPO,
 } from './problema'
-import { TENANT_MATRIZ, novoId, store } from './store'
+import { novoId, store, TENANT_MATRIZ } from './store'
 
 /**
  * O "backend" de COMPRAS no modo mock — pedido de compra, ordem de compra e as

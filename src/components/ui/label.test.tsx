@@ -1,7 +1,7 @@
-import { Label } from '@/components/ui/label'
-import { renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { Label } from '@/components/ui/label'
+import { renderWithQuery } from '@/test/utils'
 
 /**
  * O rótulo perdeu a caixa alta, e a razão é de leitura, não de gosto: a

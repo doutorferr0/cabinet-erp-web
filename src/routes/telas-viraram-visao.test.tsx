@@ -1,7 +1,7 @@
-import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 import { waitFor } from '@testing-library/react'
 import { HttpResponse } from 'msw'
 import { describe, expect, it } from 'vitest'
+import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 
 /**
  * TRÊS TELAS VIRARAM VISÃO (issue D12, Reface 2.0).

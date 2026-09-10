@@ -1,8 +1,8 @@
-import { Button } from '@/components/ui/button'
-import { Command, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
-import { Popover, PopoverTrigger } from '@/components/ui/popover'
 import { Layers, X } from 'lucide-react'
 import { useRef, useState } from 'react'
+import { Button as ButtonAria } from 'react-aria-components'
+import { Button } from '@/components/ui/button'
+import { Popover, PopoverTrigger } from '@/components/ui/popover'
 
 /** Campo oferecido no `Agrupar`, na forma que o chip precisa para desenhar. */
 export interface CampoDeAgrupamento {
@@ -72,7 +72,7 @@ export function ChipDeAgrupamento({ campos, valor, onChange, disabled }: ChipDeA
           // existe". Sólido é o estado APLICADO — dar ao convite a mesma caixa
           // do aplicado faria a barra parecer sempre agrupada.
           className="t-ui h-7 gap-[var(--s-2)] rounded-[var(--r-pill)] border border-[var(--hairline-2)] border-dashed bg-transparent px-2.5 font-normal"
-          aria-label="Agrupar a listagem por um campo — nenhum agrupamento aplicado"
+          aria-label="Agrupar por um campo"
         >
           <Layers aria-hidden="true" className="size-3.5" />
           Agrupar
@@ -93,7 +93,7 @@ export function ChipDeAgrupamento({ campos, valor, onChange, disabled }: ChipDeA
           variant="ghost"
           size="sm"
           className="t-ui h-full gap-[var(--s-2)] rounded-none bg-transparent pr-2 pl-2.5 font-normal"
-          aria-label={`Trocar o agrupamento — agrupado por ${campoAtivo.rotulo}`}
+          aria-label={`Agrupado por ${campoAtivo.rotulo} — trocar`}
         >
           <Layers aria-hidden="true" className="size-3.5" />
           {/* O CAMPO em 600 e o verbo em 400: dentro do Inter a hierarquia é
@@ -111,7 +111,7 @@ export function ChipDeAgrupamento({ campos, valor, onChange, disabled }: ChipDeA
         variant="ghost"
         size="icon-sm"
         className="h-full rounded-none bg-transparent pr-2.5 pl-0 text-muted-foreground"
-        aria-label={`Desagrupar — remover o agrupamento por ${campoAtivo.rotulo}`}
+        aria-label={`Desagrupar — tirar ${campoAtivo.rotulo}`}
         onClick={() => {
           onChange('')
           ligar.current?.focus()
@@ -131,28 +131,19 @@ function ListaDeCampos({
   aoEscolher: (campo: string) => void
 }) {
   return (
-    <Popover className="w-56 p-0" placement="bottom start">
-      <Command>
-        <CommandInput placeholder="Buscar campo…" />
-        <CommandList
-          renderEmptyState={() => (
-            <div className="py-6 text-center text-sm text-muted-foreground">
-              Nenhum campo encontrado.
-            </div>
-          )}
-        >
-          {campos.map((campo) => (
-            <CommandItem
-              key={campo.id}
-              id={campo.id}
-              textValue={campo.rotulo}
-              onAction={() => aoEscolher(campo.id)}
+    <Popover className="w-56 p-1" placement="bottom start">
+      <ul className="flex flex-col">
+        {campos.map((campo) => (
+          <li key={campo.id}>
+            <ButtonAria
+              className="t-ui w-full rounded-[var(--r-item)] px-2 py-1.5 text-left outline-none hover:bg-[var(--hover)] focus-visible:focus-ring"
+              onPress={() => aoEscolher(campo.id)}
             >
-              <span className="truncate">{campo.rotulo}</span>
-            </CommandItem>
-          ))}
-        </CommandList>
-      </Command>
+              {campo.rotulo}
+            </ButtonAria>
+          </li>
+        ))}
+      </ul>
     </Popover>
   )
 }

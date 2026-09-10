@@ -1,10 +1,10 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { boletim } from '@/data/boletim'
 import { URL_PARCEIROS } from '@/data/parceiros-api'
 import { URL_PRODUTOS } from '@/data/produtos-api'
 import { json } from '@/test/servidor'
 import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
-import { screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 /**
  * Escopo por compartimento. Sem isso a query pega o vizinho errado: a data de

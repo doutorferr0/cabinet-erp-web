@@ -15,11 +15,13 @@ import {
 import type { Recorte } from '@/data/relatorios-api'
 import {
   type AgrupamentoDeRelatorio,
-  type TomDeRelatorio,
   agrupar,
+  type TomDeRelatorio,
 } from '@/features/relatorios/agrupamento'
 import '@/features/relatorios/impressao.css'
 import '@/features/relatorios/relatorio.css'
+import { ArrowDown, ArrowUp, Download, Printer } from 'lucide-react'
+import type { ReactNode } from 'react'
 import {
   baixarCsv,
   imprimirRelatorio,
@@ -27,8 +29,6 @@ import {
   nomeDoArquivo,
 } from '@/features/relatorios/exportar'
 import { cn } from '@/lib/utils'
-import { ArrowDown, ArrowUp, Download, Printer } from 'lucide-react'
-import type { ReactNode } from 'react'
 
 /**
  * A MOLDURA dos relatórios — o que os três de estoque têm em comum.

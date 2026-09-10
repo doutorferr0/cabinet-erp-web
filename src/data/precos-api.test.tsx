@@ -1,7 +1,9 @@
+import { waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { PriceIndexDto } from '@/api/gerado'
 import {
-  PARCELAS_DA_SIMULACAO,
   indiceDoFornecedor,
+  PARCELAS_DA_SIMULACAO,
   useGravarTabelas,
   useIndicesDePreco,
   useSimularMargem,
@@ -10,8 +12,6 @@ import {
 } from '@/data/precos-api'
 import { instalarServidor, json, problema } from '@/test/servidor'
 import { renderWithQuery } from '@/test/utils'
-import { waitFor } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * A FRONTEIRA DE PREÇO — a fórmula e os quatro hooks.
@@ -180,7 +180,11 @@ function SondaDeGravacao() {
   return (
     <button
       type="button"
-      onClick={() => m.mutate({ prices: [{ supplierId: 'forn-1', tablePriceCents: 90_000 }] })}
+      onClick={() =>
+        m.mutate({
+          prices: [{ supplierId: 'forn-1', tablePriceCents: 90_000, effectiveFrom: '2026-09-10' }],
+        })
+      }
     >
       gravar
     </button>
@@ -197,7 +201,7 @@ describe('useGravarTabelas', () => {
     await waitFor(() => expect(servidor.chamadas).toHaveLength(1))
     expect(servidor.chamadas[0]?.metodo).toBe('PUT')
     expect(servidor.chamadas[0]?.corpo).toEqual({
-      prices: [{ supplierId: 'forn-1', tablePriceCents: 90_000 }],
+      prices: [{ supplierId: 'forn-1', tablePriceCents: 90_000, effectiveFrom: '2026-09-10' }],
     })
   })
 })

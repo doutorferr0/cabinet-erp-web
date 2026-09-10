@@ -1,7 +1,7 @@
-import { GRUPOS_NAV, GRUPO_CONFIG, GRUPO_DENTRO_DA_CONFIG, grupoDaRota } from '@/app/nav/grupos'
-import { opcoesDoRouter } from '@/app/router'
 import { createMemoryHistory, createRouter } from '@tanstack/react-router'
 import { describe, expect, it } from 'vitest'
+import { GRUPO_CONFIG, GRUPO_DENTRO_DA_CONFIG, GRUPOS_NAV, grupoDaRota } from '@/app/nav/grupos'
+import { opcoesDoRouter } from '@/app/router'
 
 /**
  * A GUARDA DE ALCANCE — nenhuma tela fica fora da barra em silêncio.
@@ -43,6 +43,10 @@ const FORA_DA_BARRA: ReadonlyArray<readonly [string, string]> = [
   [
     '/ajuda/atalhos',
     'referência que se consulta uma vez; mora no menu do operador, no rodapé da barra, e não na lista de operação',
+  ],
+  [
+    '/financeiro',
+    'pai das duas agendas (Contas a Receber em VENDAS, Contas a Pagar em COMPRAS) — sem tela própria, redireciona para Contas a Receber',
   ],
   [
     '/boletim',

@@ -1,3 +1,9 @@
+import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from '@tanstack/react-router'
+import { CalendarClock, FileText, Hash, List, Percent } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { useFormContext, useWatch } from 'react-hook-form'
+import { z } from 'zod'
 import type { PurchaseOrderDto } from '@/api/gerado'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { DocumentoBloco } from '@/components/cabinet/documento'
@@ -11,25 +17,19 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
   DESTINO_ROTULO,
+  fornecedoresComLinhaAberta,
   type ItemDaOrdemDeCompra,
+  linhasAbertasParaOrdem,
   type OrdemDeCompra,
   SITUACAO_DA_ORDEM,
-  fornecedoresComLinhaAberta,
-  linhasAbertasParaOrdem,
   useCancelarOrdemDeCompra,
   useGravarOrdemDeCompra,
   usePedidosComLinhaAberta,
   useReagendarOrdemDeCompra,
 } from '@/data/compras-api'
 import { obterParceiro } from '@/data/parceiros-api'
-import { PERCENT_ESCALA, formatDateBR, formatPercent } from '@/lib/formatters'
+import { formatDateBR, formatPercent, PERCENT_ESCALA } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
-import { useQuery } from '@tanstack/react-query'
-import { useNavigate } from '@tanstack/react-router'
-import { CalendarClock, FileText, Hash, List, Percent } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
-import { useFormContext, useWatch } from 'react-hook-form'
-import { z } from 'zod'
 import { ItensDaOrdem } from './itens-da-ordem'
 import { LateralDaOrdem } from './lateral-da-ordem'
 

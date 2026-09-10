@@ -1,3 +1,4 @@
+import { useFormContext, useWatch } from 'react-hook-form'
 import {
   CheckboxField,
   DateField,
@@ -5,14 +6,13 @@ import {
   LookupSelectField,
   MoneyField,
   RadioField,
-  TextField,
   TextareaField,
+  TextField,
 } from '@/components/cabinet/form-controls'
 import { FormRow } from '@/components/cabinet/form-grid'
 import type { LookupKind } from '@/data/lookups-api'
 import type { CampoCadastro, ModuloCadastro } from '@/features/cadastro/modulos'
 import { cn } from '@/lib/utils'
-import { useFormContext, useWatch } from 'react-hook-form'
 
 /**
  * O MÓDULO VIRA CAMPO NA TELA — o laço que fecha a diretriz 4 do
@@ -155,7 +155,10 @@ export function CampoDoModulo({ campo }: { campo: CampoCadastro }) {
 export function CamposDoModulo({
   modulo,
   omitir = [],
-}: { modulo: ModuloCadastro; omitir?: readonly string[] }) {
+}: {
+  modulo: ModuloCadastro
+  omitir?: readonly string[]
+}) {
   return (
     <FormRow colunas={3} className="items-start">
       {modulo.campos

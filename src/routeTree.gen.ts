@@ -19,6 +19,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as DefinirSenhaRouteImport } from './routes/definir-senha'
 import { Route as EsqueciSenhaRouteImport } from './routes/esqueci-senha'
 import { Route as EstoqueRouteImport } from './routes/estoque'
+import { Route as FinanceiroRouteImport } from './routes/financeiro'
 import { Route as InboxRouteImport } from './routes/inbox'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as PlannerRouteImport } from './routes/planner'
@@ -35,8 +36,11 @@ import { Route as ConfigUsuariosRouteImport } from './routes/config/usuarios'
 import { Route as CrmIndexRouteImport } from './routes/crm/index'
 import { Route as CrmMotivosRouteImport } from './routes/crm/motivos'
 import { Route as EstoqueIndexRouteImport } from './routes/estoque/index'
+import { Route as EstoqueInventarioRouteImport } from './routes/estoque/inventario'
 import { Route as EstoqueMovimentacaoRouteImport } from './routes/estoque/movimentacao'
+import { Route as FinanceiroIndexRouteImport } from './routes/financeiro/index'
 import { Route as VendasIndexRouteImport } from './routes/vendas/index'
+import { Route as VendasAprovacoesRouteImport } from './routes/vendas/aprovacoes'
 import { Route as VendasCargasRouteImport } from './routes/vendas/cargas'
 import { Route as VendasReservasTecnicasRouteImport } from './routes/vendas/reservas-tecnicas'
 import { Route as CadastrosClientesIndexRouteImport } from './routes/cadastros/clientes/index'
@@ -61,10 +65,16 @@ import { Route as CrmOportunidadesOportunidadeIdRouteImport } from './routes/crm
 import { Route as EstoqueRelatoriosOrcadoXEstoqueRouteImport } from './routes/estoque/relatorios/orcado-x-estoque'
 import { Route as EstoqueRelatoriosParadoRouteImport } from './routes/estoque/relatorios/parado'
 import { Route as EstoqueRelatoriosValorizadoRouteImport } from './routes/estoque/relatorios/valorizado'
+import { Route as FinanceiroPagarIndexRouteImport } from './routes/financeiro/pagar/index'
+import { Route as FinanceiroReceberIndexRouteImport } from './routes/financeiro/receber/index'
 import { Route as VendasOrcamentosIndexRouteImport } from './routes/vendas/orcamentos/index'
 import { Route as VendasOrcamentosOrcamentoIdRouteImport } from './routes/vendas/orcamentos/$orcamentoId'
 import { Route as VendasPedidosIndexRouteImport } from './routes/vendas/pedidos/index'
 import { Route as VendasPedidosPedidoIdRouteImport } from './routes/vendas/pedidos/$pedidoId'
+import { Route as FinanceiroPagarTitulosIndexRouteImport } from './routes/financeiro/pagar/titulos/index'
+import { Route as FinanceiroPagarTitulosTituloIdRouteImport } from './routes/financeiro/pagar/titulos/$tituloId'
+import { Route as FinanceiroReceberTitulosIndexRouteImport } from './routes/financeiro/receber/titulos/index'
+import { Route as FinanceiroReceberTitulosTituloIdRouteImport } from './routes/financeiro/receber/titulos/$tituloId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -114,6 +124,11 @@ const EsqueciSenhaRoute = EsqueciSenhaRouteImport.update({
 const EstoqueRoute = EstoqueRouteImport.update({
   id: '/estoque',
   path: '/estoque',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FinanceiroRoute = FinanceiroRouteImport.update({
+  id: '/financeiro',
+  path: '/financeiro',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InboxRoute = InboxRouteImport.update({
@@ -196,14 +211,29 @@ const EstoqueIndexRoute = EstoqueIndexRouteImport.update({
   path: '/',
   getParentRoute: () => EstoqueRoute,
 } as any)
+const EstoqueInventarioRoute = EstoqueInventarioRouteImport.update({
+  id: '/inventario',
+  path: '/inventario',
+  getParentRoute: () => EstoqueRoute,
+} as any)
 const EstoqueMovimentacaoRoute = EstoqueMovimentacaoRouteImport.update({
   id: '/movimentacao',
   path: '/movimentacao',
   getParentRoute: () => EstoqueRoute,
 } as any)
+const FinanceiroIndexRoute = FinanceiroIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => FinanceiroRoute,
+} as any)
 const VendasIndexRoute = VendasIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => VendasRoute,
+} as any)
+const VendasAprovacoesRoute = VendasAprovacoesRouteImport.update({
+  id: '/aprovacoes',
+  path: '/aprovacoes',
   getParentRoute: () => VendasRoute,
 } as any)
 const VendasCargasRoute = VendasCargasRouteImport.update({
@@ -337,6 +367,16 @@ const EstoqueRelatoriosValorizadoRoute =
     path: '/relatorios/valorizado',
     getParentRoute: () => EstoqueRoute,
   } as any)
+const FinanceiroPagarIndexRoute = FinanceiroPagarIndexRouteImport.update({
+  id: '/pagar/',
+  path: '/pagar/',
+  getParentRoute: () => FinanceiroRoute,
+} as any)
+const FinanceiroReceberIndexRoute = FinanceiroReceberIndexRouteImport.update({
+  id: '/receber/',
+  path: '/receber/',
+  getParentRoute: () => FinanceiroRoute,
+} as any)
 const VendasOrcamentosIndexRoute = VendasOrcamentosIndexRouteImport.update({
   id: '/orcamentos/',
   path: '/orcamentos/',
@@ -358,6 +398,30 @@ const VendasPedidosPedidoIdRoute = VendasPedidosPedidoIdRouteImport.update({
   path: '/pedidos/$pedidoId',
   getParentRoute: () => VendasRoute,
 } as any)
+const FinanceiroPagarTitulosIndexRoute =
+  FinanceiroPagarTitulosIndexRouteImport.update({
+    id: '/pagar/titulos/',
+    path: '/pagar/titulos/',
+    getParentRoute: () => FinanceiroRoute,
+  } as any)
+const FinanceiroPagarTitulosTituloIdRoute =
+  FinanceiroPagarTitulosTituloIdRouteImport.update({
+    id: '/pagar/titulos/$tituloId',
+    path: '/pagar/titulos/$tituloId',
+    getParentRoute: () => FinanceiroRoute,
+  } as any)
+const FinanceiroReceberTitulosIndexRoute =
+  FinanceiroReceberTitulosIndexRouteImport.update({
+    id: '/receber/titulos/',
+    path: '/receber/titulos/',
+    getParentRoute: () => FinanceiroRoute,
+  } as any)
+const FinanceiroReceberTitulosTituloIdRoute =
+  FinanceiroReceberTitulosTituloIdRouteImport.update({
+    id: '/receber/titulos/$tituloId',
+    path: '/receber/titulos/$tituloId',
+    getParentRoute: () => FinanceiroRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -370,6 +434,7 @@ export interface FileRoutesByFullPath {
   '/definir-senha': typeof DefinirSenhaRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/estoque': typeof EstoqueRouteWithChildren
+  '/financeiro': typeof FinanceiroRouteWithChildren
   '/inbox': typeof InboxRoute
   '/login': typeof LoginRoute
   '/planner': typeof PlannerRoute
@@ -381,7 +446,9 @@ export interface FileRoutesByFullPath {
   '/config/listas': typeof ConfigListasRoute
   '/config/usuarios': typeof ConfigUsuariosRoute
   '/crm/motivos': typeof CrmMotivosRoute
+  '/estoque/inventario': typeof EstoqueInventarioRoute
   '/estoque/movimentacao': typeof EstoqueMovimentacaoRoute
+  '/vendas/aprovacoes': typeof VendasAprovacoesRoute
   '/vendas/cargas': typeof VendasCargasRoute
   '/vendas/reservas-tecnicas': typeof VendasReservasTecnicasRoute
   '/cadastros/': typeof CadastrosIndexRoute
@@ -389,6 +456,7 @@ export interface FileRoutesByFullPath {
   '/config/': typeof ConfigIndexRoute
   '/crm/': typeof CrmIndexRoute
   '/estoque/': typeof EstoqueIndexRoute
+  '/financeiro/': typeof FinanceiroIndexRoute
   '/vendas/': typeof VendasIndexRoute
   '/cadastros/clientes/$clienteId': typeof CadastrosClientesClienteIdRoute
   '/cadastros/colaboradores/$colaboradorId': typeof CadastrosColaboradoresColaboradorIdRoute
@@ -414,8 +482,14 @@ export interface FileRoutesByFullPath {
   '/compras/pedidos/': typeof ComprasPedidosIndexRoute
   '/crm/funil/': typeof CrmFunilIndexRoute
   '/crm/funis/': typeof CrmFunisIndexRoute
+  '/financeiro/pagar/': typeof FinanceiroPagarIndexRoute
+  '/financeiro/receber/': typeof FinanceiroReceberIndexRoute
   '/vendas/orcamentos/': typeof VendasOrcamentosIndexRoute
   '/vendas/pedidos/': typeof VendasPedidosIndexRoute
+  '/financeiro/pagar/titulos/$tituloId': typeof FinanceiroPagarTitulosTituloIdRoute
+  '/financeiro/receber/titulos/$tituloId': typeof FinanceiroReceberTitulosTituloIdRoute
+  '/financeiro/pagar/titulos/': typeof FinanceiroPagarTitulosIndexRoute
+  '/financeiro/receber/titulos/': typeof FinanceiroReceberTitulosIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -434,7 +508,9 @@ export interface FileRoutesByTo {
   '/config/listas': typeof ConfigListasRoute
   '/config/usuarios': typeof ConfigUsuariosRoute
   '/crm/motivos': typeof CrmMotivosRoute
+  '/estoque/inventario': typeof EstoqueInventarioRoute
   '/estoque/movimentacao': typeof EstoqueMovimentacaoRoute
+  '/vendas/aprovacoes': typeof VendasAprovacoesRoute
   '/vendas/cargas': typeof VendasCargasRoute
   '/vendas/reservas-tecnicas': typeof VendasReservasTecnicasRoute
   '/cadastros': typeof CadastrosIndexRoute
@@ -442,6 +518,7 @@ export interface FileRoutesByTo {
   '/config': typeof ConfigIndexRoute
   '/crm': typeof CrmIndexRoute
   '/estoque': typeof EstoqueIndexRoute
+  '/financeiro': typeof FinanceiroIndexRoute
   '/vendas': typeof VendasIndexRoute
   '/cadastros/clientes/$clienteId': typeof CadastrosClientesClienteIdRoute
   '/cadastros/colaboradores/$colaboradorId': typeof CadastrosColaboradoresColaboradorIdRoute
@@ -467,8 +544,14 @@ export interface FileRoutesByTo {
   '/compras/pedidos': typeof ComprasPedidosIndexRoute
   '/crm/funil': typeof CrmFunilIndexRoute
   '/crm/funis': typeof CrmFunisIndexRoute
+  '/financeiro/pagar': typeof FinanceiroPagarIndexRoute
+  '/financeiro/receber': typeof FinanceiroReceberIndexRoute
   '/vendas/orcamentos': typeof VendasOrcamentosIndexRoute
   '/vendas/pedidos': typeof VendasPedidosIndexRoute
+  '/financeiro/pagar/titulos/$tituloId': typeof FinanceiroPagarTitulosTituloIdRoute
+  '/financeiro/receber/titulos/$tituloId': typeof FinanceiroReceberTitulosTituloIdRoute
+  '/financeiro/pagar/titulos': typeof FinanceiroPagarTitulosIndexRoute
+  '/financeiro/receber/titulos': typeof FinanceiroReceberTitulosIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -482,6 +565,7 @@ export interface FileRoutesById {
   '/definir-senha': typeof DefinirSenhaRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/estoque': typeof EstoqueRouteWithChildren
+  '/financeiro': typeof FinanceiroRouteWithChildren
   '/inbox': typeof InboxRoute
   '/login': typeof LoginRoute
   '/planner': typeof PlannerRoute
@@ -493,7 +577,9 @@ export interface FileRoutesById {
   '/config/listas': typeof ConfigListasRoute
   '/config/usuarios': typeof ConfigUsuariosRoute
   '/crm/motivos': typeof CrmMotivosRoute
+  '/estoque/inventario': typeof EstoqueInventarioRoute
   '/estoque/movimentacao': typeof EstoqueMovimentacaoRoute
+  '/vendas/aprovacoes': typeof VendasAprovacoesRoute
   '/vendas/cargas': typeof VendasCargasRoute
   '/vendas/reservas-tecnicas': typeof VendasReservasTecnicasRoute
   '/cadastros/': typeof CadastrosIndexRoute
@@ -501,6 +587,7 @@ export interface FileRoutesById {
   '/config/': typeof ConfigIndexRoute
   '/crm/': typeof CrmIndexRoute
   '/estoque/': typeof EstoqueIndexRoute
+  '/financeiro/': typeof FinanceiroIndexRoute
   '/vendas/': typeof VendasIndexRoute
   '/cadastros/clientes/$clienteId': typeof CadastrosClientesClienteIdRoute
   '/cadastros/colaboradores/$colaboradorId': typeof CadastrosColaboradoresColaboradorIdRoute
@@ -526,8 +613,14 @@ export interface FileRoutesById {
   '/compras/pedidos/': typeof ComprasPedidosIndexRoute
   '/crm/funil/': typeof CrmFunilIndexRoute
   '/crm/funis/': typeof CrmFunisIndexRoute
+  '/financeiro/pagar/': typeof FinanceiroPagarIndexRoute
+  '/financeiro/receber/': typeof FinanceiroReceberIndexRoute
   '/vendas/orcamentos/': typeof VendasOrcamentosIndexRoute
   '/vendas/pedidos/': typeof VendasPedidosIndexRoute
+  '/financeiro/pagar/titulos/$tituloId': typeof FinanceiroPagarTitulosTituloIdRoute
+  '/financeiro/receber/titulos/$tituloId': typeof FinanceiroReceberTitulosTituloIdRoute
+  '/financeiro/pagar/titulos/': typeof FinanceiroPagarTitulosIndexRoute
+  '/financeiro/receber/titulos/': typeof FinanceiroReceberTitulosIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -542,6 +635,7 @@ export interface FileRouteTypes {
     | '/definir-senha'
     | '/esqueci-senha'
     | '/estoque'
+    | '/financeiro'
     | '/inbox'
     | '/login'
     | '/planner'
@@ -553,7 +647,9 @@ export interface FileRouteTypes {
     | '/config/listas'
     | '/config/usuarios'
     | '/crm/motivos'
+    | '/estoque/inventario'
     | '/estoque/movimentacao'
+    | '/vendas/aprovacoes'
     | '/vendas/cargas'
     | '/vendas/reservas-tecnicas'
     | '/cadastros/'
@@ -561,6 +657,7 @@ export interface FileRouteTypes {
     | '/config/'
     | '/crm/'
     | '/estoque/'
+    | '/financeiro/'
     | '/vendas/'
     | '/cadastros/clientes/$clienteId'
     | '/cadastros/colaboradores/$colaboradorId'
@@ -586,8 +683,14 @@ export interface FileRouteTypes {
     | '/compras/pedidos/'
     | '/crm/funil/'
     | '/crm/funis/'
+    | '/financeiro/pagar/'
+    | '/financeiro/receber/'
     | '/vendas/orcamentos/'
     | '/vendas/pedidos/'
+    | '/financeiro/pagar/titulos/$tituloId'
+    | '/financeiro/receber/titulos/$tituloId'
+    | '/financeiro/pagar/titulos/'
+    | '/financeiro/receber/titulos/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -606,7 +709,9 @@ export interface FileRouteTypes {
     | '/config/listas'
     | '/config/usuarios'
     | '/crm/motivos'
+    | '/estoque/inventario'
     | '/estoque/movimentacao'
+    | '/vendas/aprovacoes'
     | '/vendas/cargas'
     | '/vendas/reservas-tecnicas'
     | '/cadastros'
@@ -614,6 +719,7 @@ export interface FileRouteTypes {
     | '/config'
     | '/crm'
     | '/estoque'
+    | '/financeiro'
     | '/vendas'
     | '/cadastros/clientes/$clienteId'
     | '/cadastros/colaboradores/$colaboradorId'
@@ -639,8 +745,14 @@ export interface FileRouteTypes {
     | '/compras/pedidos'
     | '/crm/funil'
     | '/crm/funis'
+    | '/financeiro/pagar'
+    | '/financeiro/receber'
     | '/vendas/orcamentos'
     | '/vendas/pedidos'
+    | '/financeiro/pagar/titulos/$tituloId'
+    | '/financeiro/receber/titulos/$tituloId'
+    | '/financeiro/pagar/titulos'
+    | '/financeiro/receber/titulos'
   id:
     | '__root__'
     | '/'
@@ -653,6 +765,7 @@ export interface FileRouteTypes {
     | '/definir-senha'
     | '/esqueci-senha'
     | '/estoque'
+    | '/financeiro'
     | '/inbox'
     | '/login'
     | '/planner'
@@ -664,7 +777,9 @@ export interface FileRouteTypes {
     | '/config/listas'
     | '/config/usuarios'
     | '/crm/motivos'
+    | '/estoque/inventario'
     | '/estoque/movimentacao'
+    | '/vendas/aprovacoes'
     | '/vendas/cargas'
     | '/vendas/reservas-tecnicas'
     | '/cadastros/'
@@ -672,6 +787,7 @@ export interface FileRouteTypes {
     | '/config/'
     | '/crm/'
     | '/estoque/'
+    | '/financeiro/'
     | '/vendas/'
     | '/cadastros/clientes/$clienteId'
     | '/cadastros/colaboradores/$colaboradorId'
@@ -697,8 +813,14 @@ export interface FileRouteTypes {
     | '/compras/pedidos/'
     | '/crm/funil/'
     | '/crm/funis/'
+    | '/financeiro/pagar/'
+    | '/financeiro/receber/'
     | '/vendas/orcamentos/'
     | '/vendas/pedidos/'
+    | '/financeiro/pagar/titulos/$tituloId'
+    | '/financeiro/receber/titulos/$tituloId'
+    | '/financeiro/pagar/titulos/'
+    | '/financeiro/receber/titulos/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -712,6 +834,7 @@ export interface RootRouteChildren {
   DefinirSenhaRoute: typeof DefinirSenhaRoute
   EsqueciSenhaRoute: typeof EsqueciSenhaRoute
   EstoqueRoute: typeof EstoqueRouteWithChildren
+  FinanceiroRoute: typeof FinanceiroRouteWithChildren
   InboxRoute: typeof InboxRoute
   LoginRoute: typeof LoginRoute
   PlannerRoute: typeof PlannerRoute
@@ -794,6 +917,13 @@ declare module '@tanstack/react-router' {
       path: '/estoque'
       fullPath: '/estoque'
       preLoaderRoute: typeof EstoqueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/financeiro': {
+      id: '/financeiro'
+      path: '/financeiro'
+      fullPath: '/financeiro'
+      preLoaderRoute: typeof FinanceiroRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/inbox': {
@@ -908,6 +1038,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EstoqueIndexRouteImport
       parentRoute: typeof EstoqueRoute
     }
+    '/estoque/inventario': {
+      id: '/estoque/inventario'
+      path: '/inventario'
+      fullPath: '/estoque/inventario'
+      preLoaderRoute: typeof EstoqueInventarioRouteImport
+      parentRoute: typeof EstoqueRoute
+    }
     '/estoque/movimentacao': {
       id: '/estoque/movimentacao'
       path: '/movimentacao'
@@ -915,11 +1052,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EstoqueMovimentacaoRouteImport
       parentRoute: typeof EstoqueRoute
     }
+    '/financeiro/': {
+      id: '/financeiro/'
+      path: '/'
+      fullPath: '/financeiro/'
+      preLoaderRoute: typeof FinanceiroIndexRouteImport
+      parentRoute: typeof FinanceiroRoute
+    }
     '/vendas/': {
       id: '/vendas/'
       path: '/'
       fullPath: '/vendas/'
       preLoaderRoute: typeof VendasIndexRouteImport
+      parentRoute: typeof VendasRoute
+    }
+    '/vendas/aprovacoes': {
+      id: '/vendas/aprovacoes'
+      path: '/aprovacoes'
+      fullPath: '/vendas/aprovacoes'
+      preLoaderRoute: typeof VendasAprovacoesRouteImport
       parentRoute: typeof VendasRoute
     }
     '/vendas/cargas': {
@@ -1090,6 +1241,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EstoqueRelatoriosValorizadoRouteImport
       parentRoute: typeof EstoqueRoute
     }
+    '/financeiro/pagar/': {
+      id: '/financeiro/pagar/'
+      path: '/pagar'
+      fullPath: '/financeiro/pagar/'
+      preLoaderRoute: typeof FinanceiroPagarIndexRouteImport
+      parentRoute: typeof FinanceiroRoute
+    }
+    '/financeiro/receber/': {
+      id: '/financeiro/receber/'
+      path: '/receber'
+      fullPath: '/financeiro/receber/'
+      preLoaderRoute: typeof FinanceiroReceberIndexRouteImport
+      parentRoute: typeof FinanceiroRoute
+    }
     '/vendas/orcamentos/': {
       id: '/vendas/orcamentos/'
       path: '/orcamentos'
@@ -1117,6 +1282,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/vendas/pedidos/$pedidoId'
       preLoaderRoute: typeof VendasPedidosPedidoIdRouteImport
       parentRoute: typeof VendasRoute
+    }
+    '/financeiro/pagar/titulos/': {
+      id: '/financeiro/pagar/titulos/'
+      path: '/pagar/titulos'
+      fullPath: '/financeiro/pagar/titulos/'
+      preLoaderRoute: typeof FinanceiroPagarTitulosIndexRouteImport
+      parentRoute: typeof FinanceiroRoute
+    }
+    '/financeiro/pagar/titulos/$tituloId': {
+      id: '/financeiro/pagar/titulos/$tituloId'
+      path: '/pagar/titulos/$tituloId'
+      fullPath: '/financeiro/pagar/titulos/$tituloId'
+      preLoaderRoute: typeof FinanceiroPagarTitulosTituloIdRouteImport
+      parentRoute: typeof FinanceiroRoute
+    }
+    '/financeiro/receber/titulos/': {
+      id: '/financeiro/receber/titulos/'
+      path: '/receber/titulos'
+      fullPath: '/financeiro/receber/titulos/'
+      preLoaderRoute: typeof FinanceiroReceberTitulosIndexRouteImport
+      parentRoute: typeof FinanceiroRoute
+    }
+    '/financeiro/receber/titulos/$tituloId': {
+      id: '/financeiro/receber/titulos/$tituloId'
+      path: '/receber/titulos/$tituloId'
+      fullPath: '/financeiro/receber/titulos/$tituloId'
+      preLoaderRoute: typeof FinanceiroReceberTitulosTituloIdRouteImport
+      parentRoute: typeof FinanceiroRoute
     }
   }
 }
@@ -1200,6 +1393,7 @@ const CrmRouteChildren: CrmRouteChildren = {
 const CrmRouteWithChildren = CrmRoute._addFileChildren(CrmRouteChildren)
 
 interface EstoqueRouteChildren {
+  EstoqueInventarioRoute: typeof EstoqueInventarioRoute
   EstoqueMovimentacaoRoute: typeof EstoqueMovimentacaoRoute
   EstoqueIndexRoute: typeof EstoqueIndexRoute
   EstoqueRelatoriosOrcadoXEstoqueRoute: typeof EstoqueRelatoriosOrcadoXEstoqueRoute
@@ -1208,6 +1402,7 @@ interface EstoqueRouteChildren {
 }
 
 const EstoqueRouteChildren: EstoqueRouteChildren = {
+  EstoqueInventarioRoute: EstoqueInventarioRoute,
   EstoqueMovimentacaoRoute: EstoqueMovimentacaoRoute,
   EstoqueIndexRoute: EstoqueIndexRoute,
   EstoqueRelatoriosOrcadoXEstoqueRoute: EstoqueRelatoriosOrcadoXEstoqueRoute,
@@ -1218,7 +1413,32 @@ const EstoqueRouteChildren: EstoqueRouteChildren = {
 const EstoqueRouteWithChildren =
   EstoqueRoute._addFileChildren(EstoqueRouteChildren)
 
+interface FinanceiroRouteChildren {
+  FinanceiroIndexRoute: typeof FinanceiroIndexRoute
+  FinanceiroPagarIndexRoute: typeof FinanceiroPagarIndexRoute
+  FinanceiroReceberIndexRoute: typeof FinanceiroReceberIndexRoute
+  FinanceiroPagarTitulosTituloIdRoute: typeof FinanceiroPagarTitulosTituloIdRoute
+  FinanceiroReceberTitulosTituloIdRoute: typeof FinanceiroReceberTitulosTituloIdRoute
+  FinanceiroPagarTitulosIndexRoute: typeof FinanceiroPagarTitulosIndexRoute
+  FinanceiroReceberTitulosIndexRoute: typeof FinanceiroReceberTitulosIndexRoute
+}
+
+const FinanceiroRouteChildren: FinanceiroRouteChildren = {
+  FinanceiroIndexRoute: FinanceiroIndexRoute,
+  FinanceiroPagarIndexRoute: FinanceiroPagarIndexRoute,
+  FinanceiroReceberIndexRoute: FinanceiroReceberIndexRoute,
+  FinanceiroPagarTitulosTituloIdRoute: FinanceiroPagarTitulosTituloIdRoute,
+  FinanceiroReceberTitulosTituloIdRoute: FinanceiroReceberTitulosTituloIdRoute,
+  FinanceiroPagarTitulosIndexRoute: FinanceiroPagarTitulosIndexRoute,
+  FinanceiroReceberTitulosIndexRoute: FinanceiroReceberTitulosIndexRoute,
+}
+
+const FinanceiroRouteWithChildren = FinanceiroRoute._addFileChildren(
+  FinanceiroRouteChildren,
+)
+
 interface VendasRouteChildren {
+  VendasAprovacoesRoute: typeof VendasAprovacoesRoute
   VendasCargasRoute: typeof VendasCargasRoute
   VendasReservasTecnicasRoute: typeof VendasReservasTecnicasRoute
   VendasIndexRoute: typeof VendasIndexRoute
@@ -1229,6 +1449,7 @@ interface VendasRouteChildren {
 }
 
 const VendasRouteChildren: VendasRouteChildren = {
+  VendasAprovacoesRoute: VendasAprovacoesRoute,
   VendasCargasRoute: VendasCargasRoute,
   VendasReservasTecnicasRoute: VendasReservasTecnicasRoute,
   VendasIndexRoute: VendasIndexRoute,
@@ -1252,6 +1473,7 @@ const rootRouteChildren: RootRouteChildren = {
   DefinirSenhaRoute: DefinirSenhaRoute,
   EsqueciSenhaRoute: EsqueciSenhaRoute,
   EstoqueRoute: EstoqueRouteWithChildren,
+  FinanceiroRoute: FinanceiroRouteWithChildren,
   InboxRoute: InboxRoute,
   LoginRoute: LoginRoute,
   PlannerRoute: PlannerRoute,

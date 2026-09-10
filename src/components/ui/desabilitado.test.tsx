@@ -1,11 +1,11 @@
-import { readFileSync, readdirSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { screen } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { renderWithQuery } from '@/test/utils'
-import { screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 /**
  * A GUARDA DA REGRA "desabilitado em tinta preta" (core @regras, user

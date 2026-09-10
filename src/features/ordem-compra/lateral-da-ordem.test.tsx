@@ -1,6 +1,6 @@
+import { describe, expect, it } from 'vitest'
 import type { OrdemDeCompra } from '@/data/compras-api'
 import { andamentoDaOrdem } from '@/features/ordem-compra/lateral-da-ordem'
-import { describe, expect, it } from 'vitest'
 
 /**
  * O ANDAMENTO DA ORDEM (Reface 2.0, D18) — a derivação, que é onde mora a

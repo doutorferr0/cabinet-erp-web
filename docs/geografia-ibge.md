@@ -1,0 +1,9 @@
+# Geografia — municípios do IBGE como dado local
+
+- **A escolha:** os 5571 municípios vivem no front (`src/data/geografia/municipios-ibge.json`, 140 KB / 49,6 KB gzip), carregados sob demanda por `import()`, e não num recurso do contrato. Lista pública, igual para todo tenant, sem escrita: publicar `/api/cities` seria pedir ao backend que fizesse proxy de um arquivo que não muda.
+- **O código é o do IBGE**, 7 dígitos, guardado como texto em `cidadeCodigo`. Era sequência inventada de três dígitos; passou a ser o mesmo número que a NF-e exige em `cMun` — é isso que evita reconciliar cadastro depois.
+- **O que muda na fase fiscal:** ali a geografia vira dado de documento, e a fonte passa a ser o servidor, porque o que a nota carimba tem de ser o que o servidor validou. A migração é barata exatamente porque o código guardado desde já é o certo — troca-se o provider em `src/data/index.ts`, não a tela.
+- **O asset é gerado, nunca editado à mão:** `node scripts/gera-municipios-ibge.mjs` busca a API de Localidades do IBGE e reescreve o JSON de forma determinística (uma UF por linha, ordenação estável), reprovando se vier truncado. Está no `ignore` do Biome porque o formatador o explodiria em 5571 linhas e o diff deixaria de ser legível.
+- **A origem é `'local'`** no registry — nem `'servidor'` nem `'exemplo'`. Marcar `exemplo` acusaria dado oficial de ficção e acenderia o aviso amarelo; omitir a marca o creditaria a um backend que não o serve.
+
+**Fixtures antigas não foram reescritas:** cliente, colaborador e a busca de CEP mockada gravaram códigos do esquema velho (`'354'` para Campinas). Elas são registro do que foi gravado, não consulta ao dataset — o campo é texto e a tela mostra o que está lá. Cadastro novo, e qualquer cidade escolhida pela busca, já nasce com o código do IBGE.

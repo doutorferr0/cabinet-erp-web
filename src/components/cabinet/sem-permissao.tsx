@@ -1,6 +1,6 @@
+import { Lock } from 'lucide-react'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/components/ui/empty'
 import { detalheDoErro } from '@/lib/erros'
-import { Lock } from 'lucide-react'
 
 /**
  * O que a tela mostra quando o servidor recusa por PERMISSÃO (403).

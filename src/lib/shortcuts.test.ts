@@ -1,5 +1,5 @@
-import { SHORTCUTS, bindShortcut, shortcutLabel } from '@/lib/shortcuts'
 import { describe, expect, it, vi } from 'vitest'
+import { bindShortcut, SHORTCUTS, shortcutLabel } from '@/lib/shortcuts'
 
 function tecla(init: KeyboardEventInit) {
   window.dispatchEvent(new KeyboardEvent('keydown', { ...init, cancelable: true }))

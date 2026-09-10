@@ -32,10 +32,24 @@ jobs:
       # `cache: pnpm` explícito continua valendo. O que o setup-node v6 restringiu
       # foi o cache AUTOMÁTICO por `packageManager` no package.json (que este repo
       # não declara) — a entrada explícita não mudou.
+      # Node 24 — a MESMA versão do `.nvmrc`, do `engines.node` e do job
+      # `ao-vivo`, e é isso que a unificação comprou.
+      #
+      # Enquanto este job rodava 22 e o outro 24, a suíte tinha uma janela
+      # estreita que ninguém tinha medido: em 24 ela reprovava 1.247 testes
+      # (o `AbortSignal` do jsdom não é o que o `undici` aceita, e o
+      # `new Request(..., { signal })` do transporte lança em todos), e em 18
+      # reprovava os 7 do Planner. Só o 22 passava, por acidente — o comentário
+      # que vivia aqui afirmava que "a suíte roda nos dois", e era falso desde
+      # a #409. Quem clonasse o repo com Node 24 via a suíte inteira vermelha
+      # sem nada no repositório dizendo qual versão usar.
+      #
+      # O que fechou a janela foi o vitest 4 (medido: com vitest 3 o defeito
+      # persiste mesmo no jsdom 30; com vitest 4 some mesmo no jsdom 26).
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: pnpm
 
       - name: Install dependencies
@@ -183,13 +197,13 @@ jobs:
           version: 10
           run_install: false
 
-      # Node 24, e não o 22 dos outros jobs: o api roda TypeScript direto e
-      # declara `engines.node >= 24`. O Vite 8 e a suíte deste repo rodam nos
-      # dois, então 24 é o denominador que serve aos dois checkouts.
+      # Node 24, como TODOS os jobs agora — o api roda TypeScript direto e
+      # declara `engines.node >= 24`, e este repo passou a declarar o mesmo.
+      # Lê do `.nvmrc` para não haver uma segunda autoridade sobre a versão.
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           cache: pnpm
 
       - name: Install dependencies (web)

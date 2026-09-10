@@ -1,6 +1,6 @@
+import { ChevronRight } from 'lucide-react'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { cn } from '@/lib/utils'
-import { ChevronRight } from 'lucide-react'
 
 /**
  * O DETALHE TÉCNICO DA FALHA — fechado por padrão, em mono, dentro de um

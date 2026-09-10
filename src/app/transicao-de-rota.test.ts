@@ -1,6 +1,6 @@
 import type { AnyRouter } from '@tanstack/react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { NOME_DO_TITULO, TETO_MS, ligarTransicaoDeRota, marcarTitulo } from './transicao-de-rota'
+import { ligarTransicaoDeRota, marcarTitulo, NOME_DO_TITULO, TETO_MS } from './transicao-de-rota'
 
 /**
  * A mecânica das View Transitions se testa AQUI e não montando rota, e o motivo

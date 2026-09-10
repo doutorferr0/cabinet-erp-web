@@ -1,3 +1,8 @@
+import { useNavigate } from '@tanstack/react-router'
+import { Check, ChevronsUpDown, Settings2 } from 'lucide-react'
+import { useState } from 'react'
+import { Button as ButtonAria } from 'react-aria-components'
+import { monograma } from '@/components/cabinet/monograma'
 import { Ornamento } from '@/components/cabinet/ornamento'
 import {
   AlertDialog,
@@ -12,10 +17,6 @@ import {
 import { Popover, PopoverTrigger } from '@/components/ui/popover'
 import { useEmpresasDaSessao } from '@/data/empresas-api'
 import { papelLabel } from '@/data/papeis'
-import { useNavigate } from '@tanstack/react-router'
-import { Check, ChevronsUpDown, Settings2 } from 'lucide-react'
-import { useState } from 'react'
-import { Button as ButtonAria } from 'react-aria-components'
 
 /** Rota que administra o grupo — a mesma aba Empresas de `/config/usuarios`. */
 const ROTA_DE_EMPRESAS = '/config/usuarios'
@@ -32,24 +33,6 @@ const MONOGRAMA_INATIVO = {
   background: 'var(--n-100)',
   border: '1px solid var(--n-300)',
 } as const
-
-/**
- * As duas primeiras iniciais do nome da empresa (`Vertz Iluminação` → `VI`).
- *
- * Vive aqui e não num `monograma.tsx` compartilhado porque essa peça é da
- * issue D3 desta mesma rodada, e escrevê-la fora da zona daria duas versões
- * para o mesmo desenho. Quando ela chegar, este bloco vira uma chamada.
- */
-function monograma(nome: string): string {
-  const palavras = nome.trim().split(/\s+/).filter(Boolean)
-  if (palavras.length === 0) return '—'
-  return (
-    palavras
-      .slice(0, 2)
-      .map((p) => p[0]?.toUpperCase() ?? '')
-      .join('') || '—'
-  )
-}
 
 /**
  * Seletor da empresa ativa (`activeTenantId` da sessão).
@@ -115,7 +98,13 @@ export function CompanySwitcher() {
         // que diz 'Nenhuma empresa ativa' faria o leitor de tela anunciar o
         // contrário do que está escrito nele.
         aria-label={ativa ? `Empresa ativa: ${ativa.name}` : titulo}
-        className="flex w-full items-center gap-3 rounded-card border bg-card px-3 py-2 text-left outline-none focus-visible:focus-ring desabilitado"
+        // `desabilitado`, e não `disabled:opacity-60`: a §Desabilitado (decisão
+        // do user, 2026-08-14, #106) manda o apagamento ir para o FUNDO e o
+        // TRAÇO, nunca para o conteúdo — opacidade apaga o texto junto e é o que
+        // derruba o contraste de quem mais precisa lê-lo. A utility já existia
+        // no `index.css` e a varredura de `desabilitado.test.tsx` cobra; esta
+        // linha nasceu na D6 com a receita antiga (D37).
+        className="desabilitado flex w-full items-center gap-3 rounded-card border bg-card px-3 py-2 text-left outline-none focus-visible:focus-ring"
         style={{ borderWidth: '1.5px', borderColor: 'var(--n-900)', boxShadow: 'var(--key-1)' }}
       >
         {/* MONOGRAMA chartreuse com tinta preta — o único chartreuse desta

@@ -1,12 +1,12 @@
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { ShoppingCart } from 'lucide-react'
 import { TelaDeDocumento } from '@/components/cabinet/tela-de-documento'
 import { data } from '@/data'
-import { SITUACAO_DO_PEDIDO, fornecedoresComLinhaAberta } from '@/data/compras-api'
+import { fornecedoresComLinhaAberta, SITUACAO_DO_PEDIDO } from '@/data/compras-api'
 import { LateralDoPedidoDeCompra } from '@/features/pedido-compra/ficha-lateral'
 import { PedidoCompraForm } from '@/features/pedido-compra/pedido-compra-form'
 import { formatDateBR } from '@/lib/formatters'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { ShoppingCart } from 'lucide-react'
 
 export const Route = createFileRoute('/compras/pedidos/$pedidoId')({
   component: PedidoCompraEditPage,

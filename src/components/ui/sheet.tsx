@@ -1,5 +1,3 @@
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
 import { XIcon } from 'lucide-react'
 import type * as React from 'react'
 import {
@@ -12,6 +10,8 @@ import {
   DialogTrigger as SheetTriggerPrimitive,
   type DialogTriggerProps as SheetTriggerPrimitiveProps,
 } from 'react-aria-components'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 function SheetTrigger({ ...props }: SheetTriggerPrimitiveProps) {
   return <SheetTriggerPrimitive data-slot="sheet-trigger" {...props} />
@@ -219,14 +219,14 @@ function SheetDescription({ className, ...props }: Omit<React.ComponentProps<'di
 }
 
 export {
-  type SheetPrimitiveProps,
-  type SheetTriggerPrimitiveProps,
   Sheet,
-  SheetTrigger,
   SheetClose,
   SheetContent,
-  SheetHeader,
-  SheetFooter,
-  SheetTitle,
   SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  type SheetPrimitiveProps,
+  SheetTitle,
+  SheetTrigger,
+  type SheetTriggerPrimitiveProps,
 }

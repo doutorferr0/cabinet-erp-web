@@ -1,8 +1,9 @@
-import { PrecoEMargem } from '@/features/produto/preco-e-margem'
-import { instalarServidor, json, problema } from '@/test/servidor'
-import { renderWithQuery } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { PrecoEMargem } from '@/features/produto/preco-e-margem'
+import { diaLocalISO } from '@/lib/datas'
+import { instalarServidor, json, problema } from '@/test/servidor'
+import { renderWithQuery } from '@/test/utils'
 
 /**
  * A ABA PREÇO E MARGEM — o que ela mostra, e o que ela se recusa a mostrar.
@@ -132,7 +133,10 @@ describe('a gravação é própria, e substitui a lista', () => {
     await waitFor(() => {
       const put = servidor.chamadas.find((c) => c.metodo === 'PUT')
       expect(put?.corpo).toEqual({
-        prices: [{ supplierId: 'forn-evoled', tablePriceCents: 90_000 }],
+        // A vigência por linha é "hoje": a que manda é a da requisição (ausente = hoje).
+        prices: [
+          { supplierId: 'forn-evoled', tablePriceCents: 90_000, effectiveFrom: diaLocalISO() },
+        ],
       })
     })
   })

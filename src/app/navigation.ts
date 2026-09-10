@@ -1,5 +1,3 @@
-import type { Modulo } from '@/app/modulo'
-import { RECURSOS, type RecursoDaEmpresa } from '@/data/recursos-da-empresa'
 import {
   ArrowLeftRight,
   BookUser,
@@ -7,6 +5,7 @@ import {
   CalendarClock,
   CalendarDays,
   CircleDollarSign,
+  ClipboardCheck,
   Filter,
   GanttChart,
   HandCoins,
@@ -16,6 +15,7 @@ import {
   type LucideIcon,
   Package,
   Settings,
+  ShieldCheck,
   ShoppingCart,
   SquareKanban,
   Store,
@@ -23,6 +23,8 @@ import {
   Truck,
   Users,
 } from 'lucide-react'
+import type { Modulo } from '@/app/modulo'
+import { RECURSOS, type RecursoDaEmpresa } from '@/data/recursos-da-empresa'
 
 export interface NavItem {
   title: string
@@ -103,6 +105,21 @@ export interface NavItem {
    * é do ITEM DE MENU, e o alcance dele para no item.
    */
   aparencia?: { modulo: Modulo }
+
+  /**
+   * Este item carrega um CONTADOR do que espera o operador — o badge da barra.
+   *
+   * É uma MARCA, não o número: a navegação é dado estático e não pode chamar a
+   * API. Quem lê a marca é o shell, que monta o componente que sabe perguntar
+   * (`<PendentesDeAprovacao>`); a marca só diz qual contador o item tem.
+   *
+   * Um `contagem?: number` aqui obrigaria a tabela inteira a virar função e a
+   * ser recalculada a cada render de cada tela — e a navegação é lida também
+   * pela paleta de comandos e pelos testes, que não têm servidor.
+   *
+   * **Some do item `futuro`**: tela que não existe não tem o que contar.
+   */
+  contador?: 'aprovacoes-pendentes'
 
   /**
    * Tela que AINDA NÃO EXISTE — aparece na barra, apagada, com selo, e não
@@ -389,6 +406,22 @@ export const navSecoes: NavSecao[] = [
             icon: HandCoins,
             descricao: 'O que o profissional externo recebe pela indicação. Cancela, não apaga.',
           },
+          {
+            /**
+             * A FILA DE APROVAÇÕES (F12) fica DEPOIS dos documentos, e não antes:
+             * ela é o que acontece por causa de um documento, não um documento.
+             *
+             * **Sem `incluir`, e a ausência é informação** — o pedido nasce no
+             * servidor, ao gravar desconto acima do teto, e a paleta de comandos
+             * lê esta propriedade para oferecer "Novo …". Inventar o caminho
+             * daria um comando que leva a uma tela sem botão.
+             */
+            title: 'Aprovações',
+            url: '/vendas/aprovacoes',
+            icon: ShieldCheck,
+            descricao: 'O desconto que passou do teto e espera alguém liberar. Recusa pede motivo.',
+            contador: 'aprovacoes-pendentes',
+          },
         ],
       },
     ],
@@ -476,6 +509,20 @@ export const navSecoes: NavSecao[] = [
             url: '/estoque/movimentacao',
             icon: ArrowLeftRight,
             descricao: 'Entrada, saída e transferência do estoque.',
+          },
+          {
+            /**
+             * INVENTÁRIO — o contraponto da Movimentação: lá se lança o que se
+             * sabe que aconteceu, aqui se confere o que a prateleira tem contra
+             * o que o sistema diz. Vem depois dela porque o ajuste que ele
+             * produz É um movimento, e quem não entendeu o kardex não entende a
+             * folha de contagem.
+             */
+            title: 'Inventário',
+            url: '/estoque/inventario',
+            icon: ClipboardCheck,
+            descricao:
+              'Contagem por depósito: o contado contra o sistema, e o ajuste da diferença.',
           },
           {
             title: 'Reserva Técnica',
@@ -574,10 +621,14 @@ export const navSecoes: NavSecao[] = [
   },
   {
     /**
-     * Financeiro entra INTEIRO como futuro, e de propósito: o user decidiu que
-     * Contas a Pagar e a Receber moram juntas, e a seção existir vazia é o que
-     * mostra onde elas vão cair. Sem módulo — não há cor de financeiro na
-     * paleta travada, e inventar uma seria decisão dele, não minha.
+     * Financeiro nasceu INTEIRO como futuro — a seção existir vazia era o que
+     * mostrava onde Contas a Pagar e a Receber iam cair. **As duas existem
+     * agora** (G7 fase C): a tela é a AGENDA DE VENCIMENTOS, que é literalmente
+     * o que a descrição delas já prometia — "por vencimento". Comissões segue
+     * futura.
+     *
+     * Sem módulo — não há cor de financeiro na paleta travada, e inventar uma
+     * seria decisão do user, não minha.
      */
     id: 'financeiro',
     rotulo: 'Financeiro',
@@ -592,15 +643,17 @@ export const navSecoes: NavSecao[] = [
             title: 'Contas a Receber',
             url: '/financeiro/receber',
             icon: CircleDollarSign,
-            descricao: 'Ainda não existe. O que o cliente deve, por vencimento.',
-            futuro: true,
+            descricao: 'O que o cliente deve, por vencimento — com a quitação.',
+            // `Incluir` abre um TÍTULO, que é onde a conta nasce: o vencimento
+            // não é registro que se cria sozinho, ele é parcela de um título.
+            incluir: '/financeiro/receber/titulos/novo',
           },
           {
             title: 'Contas a Pagar',
             url: '/financeiro/pagar',
             icon: CircleDollarSign,
-            descricao: 'Ainda não existe. O que se deve ao fornecedor, por vencimento.',
-            futuro: true,
+            descricao: 'O que se deve ao fornecedor, por vencimento — com a quitação.',
+            incluir: '/financeiro/pagar/titulos/novo',
           },
           {
             title: 'Comissões',

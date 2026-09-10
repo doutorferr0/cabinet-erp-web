@@ -1,7 +1,7 @@
-import { respostaPagamento } from '@/test/orcamentos'
-import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { respostaPagamento } from '@/test/orcamentos'
+import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 
 /**
  * SESSÃO VENCIDA NO MEIO DO ENVIO (#124, ponto 3) — o pior caso do trilho.
@@ -86,6 +86,13 @@ function servidor(escritas: Escrita[], logins: unknown[], statusInicial = 401) {
     // O painel de Atividades (#90) passou a montar nesta rota; sem resposta
     // aqui o `fetch` do teste devolve `undefined` e a falha aparece longe.
     if (url.includes('/api/activities')) return json({ rows: [], total: 0 })
+    // As VIEWS SALVAS entraram na barra lateral na D37: os favoritos deixaram
+    // de morar em `localStorage` e passaram a vir do contrato, então toda rota
+    // autenticada consulta esta coleção ao montar a casca. É a mesma armadilha
+    // do bloco acima — sem dublê o `fetch` devolve `undefined`, o `retry` do app
+    // insiste em silêncio e a falha aparece longe do que a causou (aqui, na
+    // contagem de escritas do orçamento).
+    if (url.includes('/api/me/views')) return json([])
 
     if (url.includes('/api/quotes')) {
       if (metodo !== 'GET') {
@@ -142,7 +149,9 @@ describe('sessão vencida no meio do envio', () => {
     // O segundo envio é o primeiro, inteiro — inclusive o que foi digitado
     // depois de a tela carregar.
     expect(escritas[1]?.corpo).toEqual(escritas[0]?.corpo)
-    expect((escritas[1]?.corpo as { folderNumber: string }).folderNumber).toBe('P-88-REV2')
+    expect((escritas[1]?.corpo as { folderNumber: string } | undefined)?.folderNumber).toBe(
+      'P-88-REV2',
+    )
   })
 
   it('recusa comum (400) segue sendo recusa: nada de pedir senha', async () => {

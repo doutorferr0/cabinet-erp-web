@@ -1,20 +1,20 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   type CompanyLetterheadDto,
   type CompanyLetterheadWriteRequest,
-  type PagedResultOfTenantDto,
-  type TenantDetailDto,
-  type TenantWriteRequest,
   createTenant,
   getCompanyLetterhead,
   getTenant,
   listTenants,
+  type PagedResultOfTenantDto,
+  type TenantDetailDto,
+  type TenantWriteRequest,
   updateCompanyLetterhead,
   updateTenant,
 } from '@/api/gerado'
-import { type RespostaDaApi, dadosOuErro } from '@/data/api-provider'
+import { dadosOuErro, type RespostaDaApi } from '@/data/api-provider'
 import { CHAVE_VINCULOS } from '@/data/empresas-api'
 import { SESSAO_KEY } from '@/data/sessao'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 /**
  * EMPRESAS DO GRUPO — a fronteira da aba Empresas de `/config/usuarios`.

@@ -1,3 +1,5 @@
+import { render, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import type { EstadoDoAutosave } from '@/components/cabinet/alteracoes-nao-salvas'
 import {
   CabecalhoDoRegistro,
@@ -7,8 +9,6 @@ import {
   LayoutDoRegistro,
 } from '@/components/cabinet/documento'
 import { renderWithQuery } from '@/test/utils'
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
 
 const OCIOSO: EstadoDoAutosave = { fase: 'ocioso', salvoEm: null, erro: null }
 
@@ -96,7 +96,7 @@ describe('CabecalhoDoRegistro', () => {
     expect(screen.getByRole('button', { name: 'Confirmar recebimento' })).toBeInTheDocument()
 
     rerender(<CabecalhoDoRegistro titulo="Ordem de compra" />)
-    expect(container.querySelector('[data-slot="proxima-acao"]')).toBeNull()
+    expect(container.querySelector('[data-slot="page-header-primaria"]')).toBeNull()
   })
 
   it('não existe Gravar no cabeçalho da ficha que grava sozinha', () => {

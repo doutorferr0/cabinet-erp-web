@@ -1,9 +1,9 @@
-import type { StockBalanceDto, StockLocationDto, StockMovementDto } from '@/api/gerado'
-import { saldosDoDeposito, somaDosSaldos } from '@/data/estoque-api'
-import { type Rota, instalarServidor, json, problema } from '@/test/servidor'
-import { renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { StockBalanceDto, StockLocationDto, StockMovementDto } from '@/api/gerado'
+import { saldosDoDeposito, somaDosSaldos } from '@/data/estoque-api'
+import { instalarServidor, json, problema, type Rota } from '@/test/servidor'
+import { renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 
 /**
  * A tela de estoque POR DEPÓSITO, contra servidor falso e pelo cliente gerado.

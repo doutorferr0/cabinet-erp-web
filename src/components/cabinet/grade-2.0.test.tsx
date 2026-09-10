@@ -1,11 +1,11 @@
-import { VitraDataTable } from '@/components/cabinet/data-table'
-import { createMockListProvider, normalize } from '@/data/provider'
-import { type Produto, produtos } from '@/mocks/produtos'
-import { renderWithQuery } from '@/test/utils'
-import type { ColumnDef } from '@tanstack/react-table'
 import { screen, waitFor, within } from '@testing-library/react'
 import { Printer } from 'lucide-react'
 import { describe, expect, it, vi } from 'vitest'
+import { VitraDataTable } from '@/components/cabinet/data-table'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
+import { createMockListProvider, normalize } from '@/data/provider'
+import { type Produto, produtos } from '@/mocks/produtos'
+import { renderWithQuery } from '@/test/utils'
 
 /**
  * A GRADE da 2.0 (#476 · D8) — o que muda de fato no desenho da listagem.
@@ -225,10 +225,10 @@ describe('grade 2.0: densidade', () => {
 })
 
 describe('grade 2.0: lote e ações de linha', () => {
-  const acoesDeSelecao = [{ id: 'excluir', label: 'Cancelar ordens' }]
+  const acoesDeLote = [{ id: 'excluir', label: 'Cancelar ordens' }]
 
   it('a barra de lote conta as selecionadas e some com `esc`', async () => {
-    const { user } = montar({ acoesDeSelecao })
+    const { user } = montar({ acoesDeLote })
     await primeiraLinha()
 
     const caixas = screen.getAllByRole('checkbox')
@@ -247,7 +247,7 @@ describe('grade 2.0: lote e ações de linha', () => {
   })
 
   it('marcar tudo pelo cabeçalho marca A PÁGINA, e desmarcar volta atrás', async () => {
-    const { user } = montar({ acoesDeSelecao })
+    const { user } = montar({ acoesDeLote })
     await primeiraLinha()
 
     const todas = screen.getByRole('checkbox', { name: 'Marcar todas as linhas desta página' })

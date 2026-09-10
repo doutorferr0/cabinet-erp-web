@@ -1,6 +1,6 @@
-import type { ProjectPlanDto } from '@/api/gerado'
-import { type Reagendamento, planoComItemReagendado } from '@/data/planner-api'
 import { describe, expect, it } from 'vitest'
+import type { ProjectPlanDto } from '@/api/gerado'
+import { planoComItemReagendado, type Reagendamento } from '@/data/planner-api'
 
 /**
  * A FOTO OTIMISTA do plano — o que a tela mostra enquanto o `PATCH` viaja.

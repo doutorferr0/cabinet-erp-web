@@ -1,11 +1,11 @@
+import { screen, waitFor } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { VitraDataTable } from '@/components/cabinet/data-table'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { createMockListProvider, normalize } from '@/data/provider'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import { type Produto, produtos } from '@/mocks/produtos'
 import { renderWithQuery } from '@/test/utils'
-import type { ColumnDef } from '@tanstack/react-table'
-import { screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * MODO PLANILHA (D33) — o teclado, que é a issue inteira.
@@ -328,7 +328,7 @@ describe('modo Planilha — a terceira densidade', () => {
 })
 
 describe('a barra de lote FLUTUA — não empurra a grade', () => {
-  const acoesDeSelecao = [{ id: 'imprimir', label: 'Imprimir' }]
+  const acoesDeLote = [{ id: 'imprimir', label: 'Imprimir' }]
 
   it('a barra nasce dentro de um ancoradouro de altura ZERO', async () => {
     const { user } = renderWithQuery(
@@ -336,7 +336,7 @@ describe('a barra de lote FLUTUA — não empurra a grade', () => {
         columns={columns}
         queryKey={['produtos-lote']}
         fetcher={(state) => produtosMock.list(state, 0)}
-        acoesDeSelecao={acoesDeSelecao}
+        acoesDeLote={acoesDeLote}
         aoAbrirLinha={() => {}}
       />,
     )
@@ -369,7 +369,7 @@ describe('a barra de lote FLUTUA — não empurra a grade', () => {
         columns={columns}
         queryKey={['produtos-lote-saida']}
         fetcher={(state) => produtosMock.list(state, 0)}
-        acoesDeSelecao={acoesDeSelecao}
+        acoesDeLote={acoesDeLote}
         aoAbrirLinha={() => {}}
       />,
     )

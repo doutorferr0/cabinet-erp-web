@@ -1,7 +1,8 @@
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
-  type FavoritoDeConsulta,
   comPadrao,
   consultaDoFavorito,
+  type FavoritoDeConsulta,
   favoritoPadrao,
   gravarFavoritos,
   idDaTela,
@@ -9,7 +10,6 @@ import {
   novoFavoritoId,
 } from '@/lib/favoritos-de-consulta'
 import type { FiltroDaTabela } from '@/lib/filtro-de-consulta'
-import { beforeEach, describe, expect, it } from 'vitest'
 
 const CHAVE = 'cabinet.consultas-favoritas.v1'
 

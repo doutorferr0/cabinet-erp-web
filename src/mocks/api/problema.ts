@@ -106,6 +106,18 @@ export const TIPO = {
   semConcessaoDeSuporte: 'urn:cabinet:erro:sem-concessao-de-suporte',
   suporteJaEmOrganizacao: 'urn:cabinet:erro:suporte-ja-em-organizacao',
   concessaoEncerrada: 'urn:cabinet:erro:concessao-encerrada',
+  tituloComBaixa: 'urn:cabinet:erro:titulo-com-baixa',
+  parcelaJaQuitada: 'urn:cabinet:erro:parcela-ja-quitada',
+  valorAcimaDoSaldo: 'urn:cabinet:erro:valor-acima-do-saldo',
+  /**
+   * A recusa da quitação A MENOS — 403, e URN PRÓPRIA e não `papelInsuficiente`.
+   *
+   * A diferença é a saída que a tela oferece: no `papelInsuficiente` ela ESCONDE
+   * o controle, porque a pessoa não resolve sozinha; aqui o controle é
+   * justamente o que resolve — o valor sobe até o saldo e a baixa passa.
+   * Misturar as duas tiraria da frente o campo que destrava o caso.
+   */
+  quitacaoAMenor: 'urn:cabinet:erro:quitacao-a-menor',
   // A marca da FASE, e a única URN daqui que não descreve erro do pedido: o
   // caminho está no contrato e ESTE servidor ainda não serve esta parte dele.
   // 501 e nunca 404, para "não existe" continuar significando "não existe".
@@ -161,6 +173,7 @@ const TITULO_POR_TIPO: Record<Exclude<ProblemType, 'about:blank'>, string> = {
   'urn:cabinet:erro:titulo-com-baixa': 'Título com baixa',
   'urn:cabinet:erro:parcela-ja-quitada': 'Parcela já quitada',
   'urn:cabinet:erro:valor-acima-do-saldo': 'Valor acima do saldo',
+  'urn:cabinet:erro:quitacao-a-menor': 'Quitação a menor',
   'urn:cabinet:erro:movimento-ja-conciliado': 'Movimento já conciliado',
   'urn:cabinet:erro:reajuste-sem-base': 'Reajuste sem base',
   'urn:cabinet:erro:periodo-ja-fechado': 'Período já fechado',

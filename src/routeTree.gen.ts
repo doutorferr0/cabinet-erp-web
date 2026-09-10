@@ -36,6 +36,7 @@ import { Route as ConfigUsuariosRouteImport } from './routes/config/usuarios'
 import { Route as CrmIndexRouteImport } from './routes/crm/index'
 import { Route as CrmMotivosRouteImport } from './routes/crm/motivos'
 import { Route as EstoqueIndexRouteImport } from './routes/estoque/index'
+import { Route as EstoqueInventarioRouteImport } from './routes/estoque/inventario'
 import { Route as EstoqueMovimentacaoRouteImport } from './routes/estoque/movimentacao'
 import { Route as FinanceiroIndexRouteImport } from './routes/financeiro/index'
 import { Route as VendasIndexRouteImport } from './routes/vendas/index'
@@ -208,6 +209,11 @@ const CrmMotivosRoute = CrmMotivosRouteImport.update({
 const EstoqueIndexRoute = EstoqueIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => EstoqueRoute,
+} as any)
+const EstoqueInventarioRoute = EstoqueInventarioRouteImport.update({
+  id: '/inventario',
+  path: '/inventario',
   getParentRoute: () => EstoqueRoute,
 } as any)
 const EstoqueMovimentacaoRoute = EstoqueMovimentacaoRouteImport.update({
@@ -440,6 +446,7 @@ export interface FileRoutesByFullPath {
   '/config/listas': typeof ConfigListasRoute
   '/config/usuarios': typeof ConfigUsuariosRoute
   '/crm/motivos': typeof CrmMotivosRoute
+  '/estoque/inventario': typeof EstoqueInventarioRoute
   '/estoque/movimentacao': typeof EstoqueMovimentacaoRoute
   '/vendas/aprovacoes': typeof VendasAprovacoesRoute
   '/vendas/cargas': typeof VendasCargasRoute
@@ -501,6 +508,7 @@ export interface FileRoutesByTo {
   '/config/listas': typeof ConfigListasRoute
   '/config/usuarios': typeof ConfigUsuariosRoute
   '/crm/motivos': typeof CrmMotivosRoute
+  '/estoque/inventario': typeof EstoqueInventarioRoute
   '/estoque/movimentacao': typeof EstoqueMovimentacaoRoute
   '/vendas/aprovacoes': typeof VendasAprovacoesRoute
   '/vendas/cargas': typeof VendasCargasRoute
@@ -569,6 +577,7 @@ export interface FileRoutesById {
   '/config/listas': typeof ConfigListasRoute
   '/config/usuarios': typeof ConfigUsuariosRoute
   '/crm/motivos': typeof CrmMotivosRoute
+  '/estoque/inventario': typeof EstoqueInventarioRoute
   '/estoque/movimentacao': typeof EstoqueMovimentacaoRoute
   '/vendas/aprovacoes': typeof VendasAprovacoesRoute
   '/vendas/cargas': typeof VendasCargasRoute
@@ -638,6 +647,7 @@ export interface FileRouteTypes {
     | '/config/listas'
     | '/config/usuarios'
     | '/crm/motivos'
+    | '/estoque/inventario'
     | '/estoque/movimentacao'
     | '/vendas/aprovacoes'
     | '/vendas/cargas'
@@ -699,6 +709,7 @@ export interface FileRouteTypes {
     | '/config/listas'
     | '/config/usuarios'
     | '/crm/motivos'
+    | '/estoque/inventario'
     | '/estoque/movimentacao'
     | '/vendas/aprovacoes'
     | '/vendas/cargas'
@@ -766,6 +777,7 @@ export interface FileRouteTypes {
     | '/config/listas'
     | '/config/usuarios'
     | '/crm/motivos'
+    | '/estoque/inventario'
     | '/estoque/movimentacao'
     | '/vendas/aprovacoes'
     | '/vendas/cargas'
@@ -1024,6 +1036,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/estoque/'
       preLoaderRoute: typeof EstoqueIndexRouteImport
+      parentRoute: typeof EstoqueRoute
+    }
+    '/estoque/inventario': {
+      id: '/estoque/inventario'
+      path: '/inventario'
+      fullPath: '/estoque/inventario'
+      preLoaderRoute: typeof EstoqueInventarioRouteImport
       parentRoute: typeof EstoqueRoute
     }
     '/estoque/movimentacao': {
@@ -1374,6 +1393,7 @@ const CrmRouteChildren: CrmRouteChildren = {
 const CrmRouteWithChildren = CrmRoute._addFileChildren(CrmRouteChildren)
 
 interface EstoqueRouteChildren {
+  EstoqueInventarioRoute: typeof EstoqueInventarioRoute
   EstoqueMovimentacaoRoute: typeof EstoqueMovimentacaoRoute
   EstoqueIndexRoute: typeof EstoqueIndexRoute
   EstoqueRelatoriosOrcadoXEstoqueRoute: typeof EstoqueRelatoriosOrcadoXEstoqueRoute
@@ -1382,6 +1402,7 @@ interface EstoqueRouteChildren {
 }
 
 const EstoqueRouteChildren: EstoqueRouteChildren = {
+  EstoqueInventarioRoute: EstoqueInventarioRoute,
   EstoqueMovimentacaoRoute: EstoqueMovimentacaoRoute,
   EstoqueIndexRoute: EstoqueIndexRoute,
   EstoqueRelatoriosOrcadoXEstoqueRoute: EstoqueRelatoriosOrcadoXEstoqueRoute,

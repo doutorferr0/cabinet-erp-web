@@ -14,7 +14,7 @@
 2. **Os nomes mudaram.** `src/components/vitra/` virou `src/components/cabinet/` (`63e3798`) e o
    `<VitraDataTable>` é o `<DataTable>`. Prompt antigo copiado ao pé da letra cria pasta morta.
 3. **O sistema visual não é mais o "Papel Funcional"** do bloco 1 do `template-prompt.md`: valem o
-   `DESIGN.md` (fase 1.6 + identidade própria) e a amostra `docs/design/amostra-fase-1.5.html`,
+   `DESIGN.md` (fase 1.6 + identidade própria) e a amostra `docs/design/historico/amostra-fase-1.5.html`,
    que vence o doc em divergência.
 
 ## O que aconteceu de verdade com a V12

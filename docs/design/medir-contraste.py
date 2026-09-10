@@ -9,6 +9,7 @@ pares que a régua §Hierarquia e a auditoria §5a prometem.
 
 Uso:  python3 docs/design/medir-contraste.py              # tabela dos dois temas
       python3 docs/design/medir-contraste.py --conferir   # sai 1 se algum par reprova
+      python3 docs/design/medir-contraste.py --escrever   # regrava as tabelas do DESIGN.md
       python3 docs/design/medir-contraste.py --par A B    # razão entre dois tokens
       python3 docs/design/medir-contraste.py --frontmatter # o YAML do DESIGN.md bate?
 
@@ -547,6 +548,52 @@ def conferir_frontmatter(claro: dict[str, str]) -> int:
 # ---------------------------------------------------------------- main
 
 
+# ------------------------------------------------------------ tabela publicada
+
+# A §Medição do DESIGN.md publica as duas tabelas, e elas moram entre marcadores
+# para poderem ser REGERADAS (#498, D30). Sem isto o doc volta a carregar número
+# digitado, que é a origem dos três valores errados que aquela página já
+# publicou: o script reprovava par ruim, mas ninguém percebia a tabela
+# envelhecendo ao lado dele.
+MARCADORES = ("contraste-claro", "contraste-escuro")
+
+
+def _publicado(doc: str, nome: str) -> str | None:
+    achado = re.search(
+        rf"<!-- tabela:{nome} -->\n(.*?)\n<!-- /tabela:{nome} -->", doc, re.S
+    )
+    return achado.group(1) if achado else None
+
+
+def escrever_tabelas(md: dict[str, str]) -> None:
+    doc = DOC.read_text(encoding="utf-8")
+    for nome, corpo in md.items():
+        doc, trocas = re.subn(
+            rf"(<!-- tabela:{nome} -->\n).*?(\n<!-- /tabela:{nome} -->)",
+            lambda m: m.group(1) + corpo + m.group(2),
+            doc,
+            flags=re.S,
+        )
+        if not trocas:
+            raise SystemExit(f"marcador tabela:{nome} ausente do DESIGN.md")
+    DOC.write_text(doc, encoding="utf-8")
+    print("tabelas escritas")
+
+
+def conferir_tabelas(md: dict[str, str]) -> int:
+    doc = DOC.read_text(encoding="utf-8")
+    divergem = 0
+    for nome, corpo in md.items():
+        atual = _publicado(doc, nome)
+        if atual is None:
+            print(f"×  tabela:{nome} — marcador ausente do DESIGN.md")
+            divergem += 1
+        elif atual.strip() != corpo.strip():
+            print(f"×  tabela:{nome} — o publicado não bate com o medido")
+            divergem += 1
+    return divergem
+
+
 def main() -> None:
     claro, escuro = tabelas()
 
@@ -567,11 +614,21 @@ def main() -> None:
     claro_md, reprovas_claro = tabela("Tema claro", claro)
     escuro_md, reprovas_escuro = tabela("Tema escuro", escuro)
 
+    publicaveis = dict(zip(MARCADORES, (claro_md, escuro_md), strict=True))
+
+    if "--escrever" in sys.argv:
+        escrever_tabelas(publicaveis)
+        return
+
     if "--conferir" in sys.argv:
         ruins = reprovas_claro + reprovas_escuro
         if ruins:
             print(claro_md if reprovas_claro else "", escuro_md if reprovas_escuro else "", sep="\n")
-        divergem = conferir_frontmatter(tabelas(com_oklch=False)[0]) + conferir_paralela()
+        divergem = (
+            conferir_frontmatter(tabelas(com_oklch=False)[0])
+            + conferir_paralela()
+            + conferir_tabelas(publicaveis)
+        )
         print(
             f"claro: {reprovas_claro} reprova(s) · escuro: {reprovas_escuro} reprova(s)"
             if ruins

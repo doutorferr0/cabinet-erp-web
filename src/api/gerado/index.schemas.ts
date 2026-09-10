@@ -523,7 +523,7 @@ export interface ProductSpecs {
  *
  * O carimbo na linha do documento continua sendo VALOR (`supplierCode`/`supplierDescription` do item): esta grade é a ORIGEM no momento da digitação, nunca a verdade retroativa. Trocar o código aqui não pode reescrever o pedido do ano passado.
  *
- * **A ESCRITA não está publicada, e a ausência é deliberada.** O `PUT` do produto substitui o registro inteiro; publicar `suppliers` em `ProductWriteRequest` antes de a aba existir faria a primeira gravação da tela de produto APAGAR uma grade que o operador nunca viu. Ela entra junto com a aba.
+ * **A ESCRITA existe desde a FASE A do G11:** `ProductWriteRequest.suppliers` leva `ProductSupplierWriteRequest`. Omitir o campo conserva a grade gravada; `[]` a apaga. A assimetria é o que permitiu publicá-la antes de toda tela desenhar a aba.
  */
 export interface ProductSupplierDto {
   /** Id da LINHA da grade — não do fornecedor. É ele que distingue duas linhas do mesmo fornecedor enquanto a tela edita. */
@@ -1288,6 +1288,47 @@ export interface ProductDetailDto {
   relatedProducts?: ProductRelatedDto[];
 }
 
+/**
+ * Proposto. Uma linha da grade de fornecedores, como a aba a grava (§6.1).
+ *
+ * Não tem `id`: a grade viaja INTEIRA e o servidor a substitui, então casar linha a linha por id não decide nada — a lista que chega É a lista que fica. Também não tem `supplierName`: o nome é do cadastro do parceiro, e aceitá-lo aqui deixaria a tela de produto renomear um fornecedor por engano, que é o mesmo motivo de `productTypeId` não aceitar `productTypeName`.
+ */
+export interface ProductSupplierWriteRequest {
+  /** O PARCEIRO de papel fornecedor (`PartnerDto.id`) — o mesmo id que `GET /api/partners?role=supplier` devolve, nunca um id de `catalog-lookups`. O mesmo fornecedor duas vezes no mesmo produto é 400: seriam duas respostas para "qual o código desta peça nele". */
+  supplierId: string;
+  /**
+     * `Cód. Prod. Fornecedor` (§6.1). `null` quando o fornecedor não tem código próprio — é o que a linha do documento de compra carimba, e vazio ali é melhor que um código inventado.
+     * @nullable
+     */
+  supplierCode?: string | null;
+  /**
+     * `Descrição Fornecedor` (§6.1) — como a peça se chama no catálogo dele.
+     * @nullable
+     */
+  supplierDescription?: string | null;
+  /** `Padrão` (§6.1). No máximo UMA linha do produto pode marcá-lo, e a segunda é 400 — o padrão é quem o documento carimba sem perguntar, e dois padrões fariam o carimbo depender da ordem do `SELECT`. Omitido = `false`. */
+  isDefault?: boolean;
+  /** `Ativo` — desativação lógica da linha (§9). Fornecedor que saiu perde o `Ativo` em vez de sumir da grade, e os documentos antigos continuam explicáveis. Omitido = `true`. */
+  active?: boolean;
+}
+
+/**
+ * Proposto. Uma linha da grade de relacionados, como a aba a grava (§6.4). Sem `id` e sem os campos de exibição (`relatedProductCode`/`relatedProductDescription`), pelo mesmo motivo de `ProductSupplierWriteRequest`: a grade viaja inteira, e código e descrição são do OUTRO produto.
+ */
+export interface ProductRelatedWriteRequest {
+  /** O OUTRO produto (`ProductDto.id`). Três recusas com 400, e todas dizem qual linha: o próprio produto (kit de si mesmo é recursão infinita), produto que não existe, e o mesmo produto duas vezes (seriam duas quantidades para o mesmo item). */
+  relatedProductId: string;
+  /**
+     * Decimal em string, até 3 casas — float perde centésimo, e num kit grande o erro aparece só no total.
+     *
+     * **É o DISCRIMINADOR:** preenchida = kit, omitida ou `null` = sugestão. Zero e negativo são 400, e o `0` é o que engana — um kit "de zero unidades" passa na tela e leva nada para o documento.
+     * @nullable
+     */
+  quantity?: string | null;
+  /** A ordem em que a grade mostra. Omitido = `0`, e aí a lista sai por descrição: sem ordem gravada, a tela precisa de ALGUMA ordem estável, senão a mesma grade abre diferente a cada consulta. */
+  sortOrder?: number;
+}
+
 export interface ProductWriteRequest {
   /** @nullable */
   code: string | null;
@@ -1340,6 +1381,22 @@ export interface ProductWriteRequest {
      * @nullable
      */
   factoryId?: string | null;
+  /**
+     * Proposto. A grade multi-fornecedor (§6.1). SUBSTITUI a grade inteira — o `PUT` deste contrato troca o registro completo, e coleção embutida segue a mesma regra (`buyingCompanies`, `groupAdjustments`).
+     *
+     * **Omitir é diferente de mandar `[]`, e essa distinção é a razão de a escrita ter esperado:** ausente quer dizer "não mexi nesta grade" e conserva o que está gravado; `[]` quer dizer "apague todas as linhas". Sem ela, a tela de produto — que já grava o cadastro e ainda NÃO liga estas grades ao servidor — apagaria em silêncio, ao salvar o nome do produto, uma grade que o operador nunca viu. É a mesma assimetria de `groupAdjustments`, e pelo mesmo motivo: o campo nasce DEPOIS das telas que já gravam o registro.
+     *
+     * Ver `ProductSupplierWriteRequest`. A leitura sai em `ProductDetailDto.suppliers`, com o nome do fornecedor resolvido.
+     */
+  suppliers?: ProductSupplierWriteRequest[];
+  /**
+     * Proposto. A grade de produtos relacionados — kit e sugestão (§6.4). SUBSTITUI a grade inteira — o `PUT` deste contrato troca o registro completo, e coleção embutida segue a mesma regra (`buyingCompanies`, `groupAdjustments`).
+     *
+     * **Omitir é diferente de mandar `[]`, e essa distinção é a razão de a escrita ter esperado:** ausente quer dizer "não mexi nesta grade" e conserva o que está gravado; `[]` quer dizer "apague todas as linhas". Sem ela, a tela de produto — que já grava o cadastro e ainda NÃO liga estas grades ao servidor — apagaria em silêncio, ao salvar o nome do produto, uma grade que o operador nunca viu. É a mesma assimetria de `groupAdjustments`, e pelo mesmo motivo: o campo nasce DEPOIS das telas que já gravam o registro.
+     *
+     * Ver `ProductRelatedWriteRequest`.
+     */
+  relatedProducts?: ProductRelatedWriteRequest[];
   /** Proposto. Ficha técnica (§6.2). `null` quando o produto não tem nenhuma medida cadastrada. */
   specs?: null | ProductSpecs;
 }

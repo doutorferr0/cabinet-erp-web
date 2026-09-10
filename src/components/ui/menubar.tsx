@@ -1,3 +1,11 @@
+import type * as React from 'react'
+import {
+  Button as ButtonPrimitive,
+  composeRenderProps,
+  MenuTrigger as MenuTriggerPrimitive,
+  Toolbar as ToolbarPrimitive,
+  type ToolbarProps as ToolbarPrimitiveProps,
+} from 'react-aria-components'
 import {
   DropdownMenu,
   DropdownMenuGroup,
@@ -10,14 +18,6 @@ import {
   DropdownMenuSubTrigger,
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
-import type * as React from 'react'
-import {
-  Button as ButtonPrimitive,
-  MenuTrigger as MenuTriggerPrimitive,
-  Toolbar as ToolbarPrimitive,
-  type ToolbarProps as ToolbarPrimitiveProps,
-  composeRenderProps,
-} from 'react-aria-components'
 
 /**
  * MENUBAR — a barra de comandos do topo, no formato que o operador de ERP
@@ -116,16 +116,16 @@ function MenubarContent({ className, ...props }: React.ComponentProps<typeof Dro
 }
 
 export {
-  Menubar,
-  MenubarMenu,
-  MenubarTrigger,
-  MenubarContent,
-  DropdownMenuItem as MenubarItem,
   DropdownMenuGroup as MenubarGroup,
+  DropdownMenuItem as MenubarItem,
   DropdownMenuLabel as MenubarLabel,
   DropdownMenuSeparator as MenubarSeparator,
   DropdownMenuShortcut as MenubarShortcut,
   DropdownMenuSub as MenubarSub,
-  DropdownMenuSubTrigger as MenubarSubTrigger,
   DropdownMenuSubContent as MenubarSubContent,
+  DropdownMenuSubTrigger as MenubarSubTrigger,
+  Menubar,
+  MenubarContent,
+  MenubarMenu,
+  MenubarTrigger,
 }

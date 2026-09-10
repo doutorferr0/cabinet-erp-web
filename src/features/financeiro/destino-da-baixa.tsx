@@ -1,6 +1,6 @@
+import { useId } from 'react'
 import { Label } from '@/components/ui/label'
 import { useCaixas, useContasBancarias, useModosDeQuitacao } from '@/data/financeiro-api'
-import { useId } from 'react'
 
 /**
  * O DESTINO do dinheiro — conta bancária **ou** caixa, nunca os dois.

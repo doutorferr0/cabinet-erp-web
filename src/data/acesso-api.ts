@@ -1,28 +1,33 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { RoleWriteRequest } from '@/api/gerado'
 import {
+  createEmployee,
+  createRole,
   type EmployeeDetailDto,
+  type EmployeeDto,
   type EmployeeLinkRequest,
   type EmployeeTenantLinkDto,
   type EmployeeWriteRequest,
-  type PagedResultOfEmployeeDto,
-  type PagedResultOfRoleDto,
-  type PermissionCatalogDto,
-  type RoleDetailDto,
-  type TemporaryPasswordDto,
-  createEmployee,
-  createRole,
   getRole,
+  type InvitationDto,
+  inviteEmployee,
+  type ListEmployeesParams,
   linkEmployee,
   listEmployeeLinks,
   listEmployees,
   listPermissions,
   listRoles,
+  type PagedResultOfEmployeeDto,
+  type PagedResultOfRoleDto,
+  type PermissionCatalogDto,
+  type RoleDetailDto,
   resetEmployeePassword,
+  type TemporaryPasswordDto,
   updateEmployeeLink,
   updateRole,
 } from '@/api/gerado'
-import type { RoleWriteRequest } from '@/api/gerado'
-import { type RespostaDaApi, dadosOuErro } from '@/data/api-provider'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { dadosOuErro, queryDaTabela, type RespostaDaApi } from '@/data/api-provider'
+import type { PagedResult, TableQueryState } from '@/lib/table-query'
 
 /**
  * ACESSO — papéis, permissões e usuários. A fronteira da tela `/config/usuarios`.
@@ -119,6 +124,55 @@ export function useUsuariosDeAcesso(q: string) {
 }
 
 /**
+ * A listagem de usuários como consulta de SERVIDOR — o fetcher da DataTable.
+ *
+ * `useUsuariosDeAcesso` continua servindo quem só precisa das linhas (o combo
+ * de vínculo). Esta é a forma que a listagem 2.0 pede: busca, ordenação e
+ * paginação viajam para `GET /api/employees` em vez de a tela cortar 100 linhas
+ * e ordenar no navegador.
+ *
+ * A whitelist de `sortBy` do contrato é `name`, `sector`, `jobTitle`, `active`.
+ * Coluna fora dela é 400 no primeiro clique do cabeçalho, e por isso a tela
+ * marca `enableSorting: false` no que não está aqui.
+ */
+export function listarUsuariosDeAcesso(state: TableQueryState): Promise<PagedResult<EmployeeDto>> {
+  return listEmployees(queryDaTabela(state) as ListEmployeesParams).then(
+    (resposta: RespostaDaApi) => {
+      const pagina = dadosOuErro<PagedResultOfEmployeeDto>(
+        resposta,
+        'Falha ao consultar os colaboradores.',
+      )
+      return { rows: pagina.rows ?? [], total: pagina.total ?? 0 }
+    },
+  )
+}
+
+/**
+ * CONVIDAR — a alternativa à senha provisória, e a `proximaAcao` da listagem.
+ *
+ * As duas cobrem a MESMA falta (a conta que `CreateEmployee` cria sem
+ * credencial utilizável) e a diferença é quem fica sabendo do segredo: na
+ * provisória o administrador lê a senha na tela e a repassa por algum canal;
+ * aqui ele não vê senha nenhuma e quem escolhe é a própria pessoa.
+ *
+ * Convidar é a primeira escolha porque o segredo não passa por terceiro — mas
+ * só quando o e-mail cadastrado é dela: o 409 do contrato é exatamente
+ * "colaborador sem e-mail, ou desativado", e é ele que manda o administrador de
+ * volta para a senha provisória. Por isso as duas ações convivem na linha.
+ *
+ * Convidar de novo INVALIDA o convite anterior — dois links vivos dobram a
+ * janela de quem interceptou um.
+ */
+export function useConvidarUsuario() {
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const resposta: RespostaDaApi = await inviteEmployee(id)
+      return dadosOuErro<InvitationDto>(resposta, 'Falha ao enviar o convite.')
+    },
+  })
+}
+
+/**
  * Criar usuário = TRÊS passos do contrato numa mutação: a pessoa
  * (`CreateEmployee`), o vínculo com papel (`LinkEmployee`) e a senha
  * provisória (`ResetEmployeePassword`). A tela pede os três juntos porque é
@@ -138,7 +192,11 @@ export function useCriarUsuario() {
       nome,
       email,
       roleId,
-    }: { nome: string; email: string; roleId: string }) => {
+    }: {
+      nome: string
+      email: string
+      roleId: string
+    }) => {
       const pessoa: EmployeeWriteRequest = {
         name: nome,
         document: null,

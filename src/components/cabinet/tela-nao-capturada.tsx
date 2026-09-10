@@ -11,17 +11,19 @@
  * e mantém a rota alcançável para o dia em que a captura chegar.
  *
  * **Não é `Empty` (`components/ui/empty.tsx`).** Aquele componente é para os
- * SEIS vazios de DADO (módulo sem registro, busca sem resultado…), cada um
- * com ornamento e shape próprios. Este é vazio de CAPTURA — uma frase, sem
- * ornamento, pelo mesmo motivo que a versão em aba não leva um: inventar um
- * shape para "tela que não existe ainda" seria decidir identidade visual sem
- * fonte, a mesma armadilha que a fonte de campo já proíbe para conteúdo.
+ * vazios de DADO (módulo sem registro, busca sem resultado…), que ganham a
+ * `<Forma>` do módulo ou o ícone da situação. Este é vazio de CAPTURA — uma
+ * frase, e desenho nenhum: a tela não pertence a módulo que a `<Forma>` saiba
+ * nomear, e escolher uma para "tela que ainda não existe" seria decidir
+ * identidade visual sem fonte, a mesma armadilha que a fonte de campo proíbe.
  */
 export function TelaNaoCapturada({ titulo, menu }: { titulo: string; menu: string }) {
   return (
     <div className="flex flex-col gap-2">
-      <h1 className="font-nome text-2xl font-bold">{titulo}</h1>
-      <p className="text-sm text-muted-foreground">
+      {/* `t-pagina`: é o título da PÁGINA, e a régua dá um Gambarino por tela —
+          esta gasta o dela aqui. `font-nome` saiu com as famílias da 1.x. */}
+      <h1 className="t-pagina">{titulo}</h1>
+      <p className="t-meta">
         Tela do menu <strong>{menu}</strong> do SoftLux, listada mas sem transcrição de campo
         (transcricaosoftlux.md §10) — aguardando nova rodada de prints antes de modelar.
       </p>

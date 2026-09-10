@@ -1,5 +1,5 @@
-import { AgendaDeVencimentos } from '@/features/financeiro/agenda-de-vencimentos'
 import { createFileRoute } from '@tanstack/react-router'
+import { AgendaDeVencimentos } from '@/features/financeiro/agenda-de-vencimentos'
 
 export const Route = createFileRoute('/financeiro/pagar/')({
   component: ContasAPagarPage,

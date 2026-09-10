@@ -1,7 +1,7 @@
-import { respostaPagamento } from '@/test/orcamentos'
-import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { respostaPagamento } from '@/test/orcamentos'
+import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 
 /**
  * O PAINEL DE ATIVIDADES CHEGA AO ORÇAMENTO (#90).

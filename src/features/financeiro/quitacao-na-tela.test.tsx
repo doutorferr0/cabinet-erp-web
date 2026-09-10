@@ -1,7 +1,7 @@
-import { instalarServidor, json } from '@/test/servidor'
-import { renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { instalarServidor, json } from '@/test/servidor'
+import { renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 
 /**
  * A QUITAÇÃO NA TELA — o que o operador consegue fazer, e o que a recusa diz.

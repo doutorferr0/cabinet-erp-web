@@ -1,3 +1,6 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it } from 'vitest'
 import { URL_PARCEIROS } from '@/data/parceiros-api'
 import { parceiro } from '@/test/parceiros'
 import { json } from '@/test/servidor'
@@ -8,9 +11,6 @@ import {
   respostaSessao,
   respostaVinculos,
 } from '@/test/utils'
-import { screen, waitFor, within } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
 
 /**
  * A HIERARQUIA NA TELA (issue #91) — pela rota de verdade, não pelo componente

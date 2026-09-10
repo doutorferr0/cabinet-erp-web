@@ -1,14 +1,14 @@
-import type { FinancialInstallmentDto } from '@/api/gerado'
-import { cadastroActions } from '@/components/cabinet/cadastro-actions'
-import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
-import { Button } from '@/components/ui/button'
-import { type Direcao, type RecorteDaAgenda, parcelasFinanceiras } from '@/data/financeiro-api'
-import { DialogoDeQuitacao } from '@/features/financeiro/quitar'
-import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
 import { useNavigate } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 import { HandCoins } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import type { FinancialInstallmentDto } from '@/api/gerado'
+import { cadastroActions } from '@/components/cabinet/cadastro-actions'
+import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
+import { Button } from '@/components/ui/button'
+import { type Direcao, parcelasFinanceiras, type RecorteDaAgenda } from '@/data/financeiro-api'
+import { DialogoDeQuitacao } from '@/features/financeiro/quitar'
+import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
 
 /**
  * A AGENDA DE VENCIMENTOS — a tela do dia a dia do financeiro.

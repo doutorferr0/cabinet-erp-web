@@ -1,3 +1,5 @@
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { configurarApi } from '@/api/cliente'
 import {
   authLogin,
@@ -14,13 +16,11 @@ import {
   transferOrderProfessional,
   updateOrder,
 } from '@/api/gerado'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { handlers } from './handlers'
 import { resetObras } from './obras'
 import { resetPedidos } from './pedidos'
 import { resetQuotes } from './quotes'
-import { TENANT_MATRIZ, resetStore, store } from './store'
+import { resetStore, store, TENANT_MATRIZ } from './store'
 
 /**
  * O PEDIDO DE VENDA no servidor falso — o módulo que faltava inteiro.

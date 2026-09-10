@@ -1,7 +1,7 @@
-import { parceiro, servidorDeParceiros, stubDeParceiros } from '@/test/parceiros'
-import { renderRoute } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { parceiro, servidorDeParceiros, stubDeParceiros } from '@/test/parceiros'
+import { renderRoute } from '@/test/utils'
 
 describe('tela Profissional Externo', () => {
   it('listagem mostra os profissionais do servidor, pedindo só o papel da tela', async () => {
@@ -34,10 +34,10 @@ describe('tela Profissional Externo', () => {
 
     await user.click(screen.getByRole('button', { name: /Gravar/ }))
 
+    // A INCLUSÃO abre o registro que nasceu (#405) — o id é o que o servidor
+    // devolveu, e é ele que prova que a tela foi para o registro certo.
     await waitFor(
-      () => {
-        expect(router.state.location.pathname).toBe('/cadastros/profissionais')
-      },
+      () => expect(router.state.location.pathname).toMatch(/^\/cadastros\/profissionais\/./),
       { timeout: 5000 },
     )
 
@@ -71,10 +71,10 @@ describe('tela Profissional Externo', () => {
 
     await user.click(screen.getByRole('button', { name: /Gravar/ }))
 
+    // A INCLUSÃO abre o registro que nasceu (#405) — o id é o que o servidor
+    // devolveu, e é ele que prova que a tela foi para o registro certo.
     await waitFor(
-      () => {
-        expect(router.state.location.pathname).toBe('/cadastros/profissionais')
-      },
+      () => expect(router.state.location.pathname).toMatch(/^\/cadastros\/profissionais\/./),
       { timeout: 5000 },
     )
 

@@ -1,3 +1,5 @@
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { configurarApi } from '@/api/cliente'
 import type { FinancialInstallmentDto, FinancialTitleDto, ProblemDetails } from '@/api/gerado'
 import {
@@ -13,11 +15,9 @@ import {
   settleInstallment,
   updateFinancialTitle,
 } from '@/api/gerado'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { resetFinanceiro } from './financeiro'
 import { handlers } from './handlers'
-import { TENANT_MATRIZ, resetStore, store } from './store'
+import { resetStore, store, TENANT_MATRIZ } from './store'
 
 /**
  * O MOCK DO FINANCEIRO (G7) — título, parcela e quitação.

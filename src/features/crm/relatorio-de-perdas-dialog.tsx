@@ -1,3 +1,4 @@
+import { useId, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -5,7 +6,6 @@ import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useRelatorioDePerdas } from '@/data/crm-api'
 import { mensagemDoErro } from '@/lib/erros'
-import { useId, useState } from 'react'
 
 /**
  * POR QUE PERDEMOS, somado no período.

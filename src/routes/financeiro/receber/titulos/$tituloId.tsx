@@ -1,13 +1,13 @@
+import { createFileRoute } from '@tanstack/react-router'
 import { TelaDeDocumento } from '@/components/cabinet/tela-de-documento'
 import { carregarTitulo } from '@/data/financeiro-api'
 import {
+  paraEdicao,
   type TituloEmEdicao,
   TituloForm,
-  paraEdicao,
   tituloVazio,
 } from '@/features/financeiro/titulo-form'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
-import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/financeiro/receber/titulos/$tituloId')({
   component: TituloAReceberPage,

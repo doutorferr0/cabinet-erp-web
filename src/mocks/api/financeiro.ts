@@ -1,3 +1,4 @@
+import { HttpResponse, http } from 'msw'
 import type {
   BankAccountDto,
   CashRegisterDto,
@@ -11,18 +12,17 @@ import type {
   SettlementWriteRequest,
 } from '@/api/gerado'
 import { diaLocalISO } from '@/lib/datas'
-import { http, HttpResponse } from 'msw'
 import { papelDaSessao } from './permissao'
 import {
-  TIPO,
   camposInvalidos,
   conflito,
   naoEncontrado,
   problemaJson,
   semEmpresaAtiva,
   semSessao,
+  TIPO,
 } from './problema'
-import { TENANT_MATRIZ, novoId, store } from './store'
+import { novoId, store, TENANT_MATRIZ } from './store'
 
 /**
  * O "backend" do FINANCEIRO no modo mock — título, parcela e quitação.

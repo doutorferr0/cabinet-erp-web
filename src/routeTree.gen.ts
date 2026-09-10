@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AgendaRouteImport } from './routes/agenda'
+import { Route as BoletimRouteImport } from './routes/boletim'
 import { Route as CadastrosRouteImport } from './routes/cadastros'
 import { Route as ComprasRouteImport } from './routes/compras'
 import { Route as CrmRouteImport } from './routes/crm'
@@ -19,17 +20,20 @@ import { Route as DefinirSenhaRouteImport } from './routes/definir-senha'
 import { Route as EsqueciSenhaRouteImport } from './routes/esqueci-senha'
 import { Route as EstoqueRouteImport } from './routes/estoque'
 import { Route as FinanceiroRouteImport } from './routes/financeiro'
+import { Route as InboxRouteImport } from './routes/inbox'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as PlannerRouteImport } from './routes/planner'
 import { Route as TarefasRouteImport } from './routes/tarefas'
 import { Route as TrocarSenhaRouteImport } from './routes/trocar-senha'
 import { Route as VendasRouteImport } from './routes/vendas'
+import { Route as AjudaAtalhosRouteImport } from './routes/ajuda/atalhos'
 import { Route as CadastrosIndexRouteImport } from './routes/cadastros/index'
 import { Route as ComprasIndexRouteImport } from './routes/compras/index'
 import { Route as ComprasPrevisaoRouteImport } from './routes/compras/previsao'
 import { Route as ConfigIndexRouteImport } from './routes/config/index'
 import { Route as ConfigListasRouteImport } from './routes/config/listas'
 import { Route as ConfigUsuariosRouteImport } from './routes/config/usuarios'
+import { Route as CrmIndexRouteImport } from './routes/crm/index'
 import { Route as CrmMotivosRouteImport } from './routes/crm/motivos'
 import { Route as EstoqueIndexRouteImport } from './routes/estoque/index'
 import { Route as EstoqueMovimentacaoRouteImport } from './routes/estoque/movimentacao'
@@ -80,6 +84,11 @@ const AgendaRoute = AgendaRouteImport.update({
   path: '/agenda',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BoletimRoute = BoletimRouteImport.update({
+  id: '/boletim',
+  path: '/boletim',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CadastrosRoute = CadastrosRouteImport.update({
   id: '/cadastros',
   path: '/cadastros',
@@ -120,6 +129,11 @@ const FinanceiroRoute = FinanceiroRouteImport.update({
   path: '/financeiro',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InboxRoute = InboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -143,6 +157,11 @@ const TrocarSenhaRoute = TrocarSenhaRouteImport.update({
 const VendasRoute = VendasRouteImport.update({
   id: '/vendas',
   path: '/vendas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AjudaAtalhosRoute = AjudaAtalhosRouteImport.update({
+  id: '/ajuda/atalhos',
+  path: '/ajuda/atalhos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CadastrosIndexRoute = CadastrosIndexRouteImport.update({
@@ -174,6 +193,11 @@ const ConfigUsuariosRoute = ConfigUsuariosRouteImport.update({
   id: '/config/usuarios',
   path: '/config/usuarios',
   getParentRoute: () => rootRouteImport,
+} as any)
+const CrmIndexRoute = CrmIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CrmRoute,
 } as any)
 const CrmMotivosRoute = CrmMotivosRouteImport.update({
   id: '/motivos',
@@ -390,6 +414,7 @@ const FinanceiroReceberTitulosTituloIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/agenda': typeof AgendaRoute
+  '/boletim': typeof BoletimRoute
   '/cadastros': typeof CadastrosRouteWithChildren
   '/compras': typeof ComprasRouteWithChildren
   '/crm': typeof CrmRouteWithChildren
@@ -398,11 +423,13 @@ export interface FileRoutesByFullPath {
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/estoque': typeof EstoqueRouteWithChildren
   '/financeiro': typeof FinanceiroRouteWithChildren
+  '/inbox': typeof InboxRoute
   '/login': typeof LoginRoute
   '/planner': typeof PlannerRoute
   '/tarefas': typeof TarefasRoute
   '/trocar-senha': typeof TrocarSenhaRoute
   '/vendas': typeof VendasRouteWithChildren
+  '/ajuda/atalhos': typeof AjudaAtalhosRoute
   '/compras/previsao': typeof ComprasPrevisaoRoute
   '/config/listas': typeof ConfigListasRoute
   '/config/usuarios': typeof ConfigUsuariosRoute
@@ -413,6 +440,7 @@ export interface FileRoutesByFullPath {
   '/cadastros/': typeof CadastrosIndexRoute
   '/compras/': typeof ComprasIndexRoute
   '/config/': typeof ConfigIndexRoute
+  '/crm/': typeof CrmIndexRoute
   '/estoque/': typeof EstoqueIndexRoute
   '/financeiro/': typeof FinanceiroIndexRoute
   '/vendas/': typeof VendasIndexRoute
@@ -452,14 +480,16 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/agenda': typeof AgendaRoute
-  '/crm': typeof CrmRouteWithChildren
+  '/boletim': typeof BoletimRoute
   '/dashboard': typeof DashboardRoute
   '/definir-senha': typeof DefinirSenhaRoute
   '/esqueci-senha': typeof EsqueciSenhaRoute
+  '/inbox': typeof InboxRoute
   '/login': typeof LoginRoute
   '/planner': typeof PlannerRoute
   '/tarefas': typeof TarefasRoute
   '/trocar-senha': typeof TrocarSenhaRoute
+  '/ajuda/atalhos': typeof AjudaAtalhosRoute
   '/compras/previsao': typeof ComprasPrevisaoRoute
   '/config/listas': typeof ConfigListasRoute
   '/config/usuarios': typeof ConfigUsuariosRoute
@@ -470,6 +500,7 @@ export interface FileRoutesByTo {
   '/cadastros': typeof CadastrosIndexRoute
   '/compras': typeof ComprasIndexRoute
   '/config': typeof ConfigIndexRoute
+  '/crm': typeof CrmIndexRoute
   '/estoque': typeof EstoqueIndexRoute
   '/financeiro': typeof FinanceiroIndexRoute
   '/vendas': typeof VendasIndexRoute
@@ -510,6 +541,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/agenda': typeof AgendaRoute
+  '/boletim': typeof BoletimRoute
   '/cadastros': typeof CadastrosRouteWithChildren
   '/compras': typeof ComprasRouteWithChildren
   '/crm': typeof CrmRouteWithChildren
@@ -518,11 +550,13 @@ export interface FileRoutesById {
   '/esqueci-senha': typeof EsqueciSenhaRoute
   '/estoque': typeof EstoqueRouteWithChildren
   '/financeiro': typeof FinanceiroRouteWithChildren
+  '/inbox': typeof InboxRoute
   '/login': typeof LoginRoute
   '/planner': typeof PlannerRoute
   '/tarefas': typeof TarefasRoute
   '/trocar-senha': typeof TrocarSenhaRoute
   '/vendas': typeof VendasRouteWithChildren
+  '/ajuda/atalhos': typeof AjudaAtalhosRoute
   '/compras/previsao': typeof ComprasPrevisaoRoute
   '/config/listas': typeof ConfigListasRoute
   '/config/usuarios': typeof ConfigUsuariosRoute
@@ -533,6 +567,7 @@ export interface FileRoutesById {
   '/cadastros/': typeof CadastrosIndexRoute
   '/compras/': typeof ComprasIndexRoute
   '/config/': typeof ConfigIndexRoute
+  '/crm/': typeof CrmIndexRoute
   '/estoque/': typeof EstoqueIndexRoute
   '/financeiro/': typeof FinanceiroIndexRoute
   '/vendas/': typeof VendasIndexRoute
@@ -574,6 +609,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/agenda'
+    | '/boletim'
     | '/cadastros'
     | '/compras'
     | '/crm'
@@ -582,11 +618,13 @@ export interface FileRouteTypes {
     | '/esqueci-senha'
     | '/estoque'
     | '/financeiro'
+    | '/inbox'
     | '/login'
     | '/planner'
     | '/tarefas'
     | '/trocar-senha'
     | '/vendas'
+    | '/ajuda/atalhos'
     | '/compras/previsao'
     | '/config/listas'
     | '/config/usuarios'
@@ -597,6 +635,7 @@ export interface FileRouteTypes {
     | '/cadastros/'
     | '/compras/'
     | '/config/'
+    | '/crm/'
     | '/estoque/'
     | '/financeiro/'
     | '/vendas/'
@@ -636,14 +675,16 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/agenda'
-    | '/crm'
+    | '/boletim'
     | '/dashboard'
     | '/definir-senha'
     | '/esqueci-senha'
+    | '/inbox'
     | '/login'
     | '/planner'
     | '/tarefas'
     | '/trocar-senha'
+    | '/ajuda/atalhos'
     | '/compras/previsao'
     | '/config/listas'
     | '/config/usuarios'
@@ -654,6 +695,7 @@ export interface FileRouteTypes {
     | '/cadastros'
     | '/compras'
     | '/config'
+    | '/crm'
     | '/estoque'
     | '/financeiro'
     | '/vendas'
@@ -693,6 +735,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/agenda'
+    | '/boletim'
     | '/cadastros'
     | '/compras'
     | '/crm'
@@ -701,11 +744,13 @@ export interface FileRouteTypes {
     | '/esqueci-senha'
     | '/estoque'
     | '/financeiro'
+    | '/inbox'
     | '/login'
     | '/planner'
     | '/tarefas'
     | '/trocar-senha'
     | '/vendas'
+    | '/ajuda/atalhos'
     | '/compras/previsao'
     | '/config/listas'
     | '/config/usuarios'
@@ -716,6 +761,7 @@ export interface FileRouteTypes {
     | '/cadastros/'
     | '/compras/'
     | '/config/'
+    | '/crm/'
     | '/estoque/'
     | '/financeiro/'
     | '/vendas/'
@@ -756,6 +802,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AgendaRoute: typeof AgendaRoute
+  BoletimRoute: typeof BoletimRoute
   CadastrosRoute: typeof CadastrosRouteWithChildren
   ComprasRoute: typeof ComprasRouteWithChildren
   CrmRoute: typeof CrmRouteWithChildren
@@ -764,11 +811,13 @@ export interface RootRouteChildren {
   EsqueciSenhaRoute: typeof EsqueciSenhaRoute
   EstoqueRoute: typeof EstoqueRouteWithChildren
   FinanceiroRoute: typeof FinanceiroRouteWithChildren
+  InboxRoute: typeof InboxRoute
   LoginRoute: typeof LoginRoute
   PlannerRoute: typeof PlannerRoute
   TarefasRoute: typeof TarefasRoute
   TrocarSenhaRoute: typeof TrocarSenhaRoute
   VendasRoute: typeof VendasRouteWithChildren
+  AjudaAtalhosRoute: typeof AjudaAtalhosRoute
   ConfigListasRoute: typeof ConfigListasRoute
   ConfigUsuariosRoute: typeof ConfigUsuariosRoute
   ConfigIndexRoute: typeof ConfigIndexRoute
@@ -788,6 +837,13 @@ declare module '@tanstack/react-router' {
       path: '/agenda'
       fullPath: '/agenda'
       preLoaderRoute: typeof AgendaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/boletim': {
+      id: '/boletim'
+      path: '/boletim'
+      fullPath: '/boletim'
+      preLoaderRoute: typeof BoletimRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cadastros': {
@@ -846,6 +902,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FinanceiroRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/inbox': {
+      id: '/inbox'
+      path: '/inbox'
+      fullPath: '/inbox'
+      preLoaderRoute: typeof InboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -879,6 +942,13 @@ declare module '@tanstack/react-router' {
       path: '/vendas'
       fullPath: '/vendas'
       preLoaderRoute: typeof VendasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ajuda/atalhos': {
+      id: '/ajuda/atalhos'
+      path: '/ajuda/atalhos'
+      fullPath: '/ajuda/atalhos'
+      preLoaderRoute: typeof AjudaAtalhosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cadastros/': {
@@ -922,6 +992,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/config/usuarios'
       preLoaderRoute: typeof ConfigUsuariosRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/crm/': {
+      id: '/crm/'
+      path: '/'
+      fullPath: '/crm/'
+      preLoaderRoute: typeof CrmIndexRouteImport
+      parentRoute: typeof CrmRoute
     }
     '/crm/motivos': {
       id: '/crm/motivos'
@@ -1257,6 +1334,7 @@ const ComprasRouteWithChildren =
 
 interface CrmRouteChildren {
   CrmMotivosRoute: typeof CrmMotivosRoute
+  CrmIndexRoute: typeof CrmIndexRoute
   CrmFunilFunilIdRoute: typeof CrmFunilFunilIdRoute
   CrmFunisFunilIdRoute: typeof CrmFunisFunilIdRoute
   CrmOportunidadesOportunidadeIdRoute: typeof CrmOportunidadesOportunidadeIdRoute
@@ -1266,6 +1344,7 @@ interface CrmRouteChildren {
 
 const CrmRouteChildren: CrmRouteChildren = {
   CrmMotivosRoute: CrmMotivosRoute,
+  CrmIndexRoute: CrmIndexRoute,
   CrmFunilFunilIdRoute: CrmFunilFunilIdRoute,
   CrmFunisFunilIdRoute: CrmFunisFunilIdRoute,
   CrmOportunidadesOportunidadeIdRoute: CrmOportunidadesOportunidadeIdRoute,
@@ -1344,6 +1423,7 @@ const VendasRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgendaRoute: AgendaRoute,
+  BoletimRoute: BoletimRoute,
   CadastrosRoute: CadastrosRouteWithChildren,
   ComprasRoute: ComprasRouteWithChildren,
   CrmRoute: CrmRouteWithChildren,
@@ -1352,11 +1432,13 @@ const rootRouteChildren: RootRouteChildren = {
   EsqueciSenhaRoute: EsqueciSenhaRoute,
   EstoqueRoute: EstoqueRouteWithChildren,
   FinanceiroRoute: FinanceiroRouteWithChildren,
+  InboxRoute: InboxRoute,
   LoginRoute: LoginRoute,
   PlannerRoute: PlannerRoute,
   TarefasRoute: TarefasRoute,
   TrocarSenhaRoute: TrocarSenhaRoute,
   VendasRoute: VendasRouteWithChildren,
+  AjudaAtalhosRoute: AjudaAtalhosRoute,
   ConfigListasRoute: ConfigListasRoute,
   ConfigUsuariosRoute: ConfigUsuariosRoute,
   ConfigIndexRoute: ConfigIndexRoute,

@@ -1,3 +1,9 @@
+import { useNavigate } from '@tanstack/react-router'
+import type { ColumnDef } from '@tanstack/react-table'
+import { CalendarDays, Hash, User } from 'lucide-react'
+import { useState } from 'react'
+import { useFormContext, useWatch } from 'react-hook-form'
+import { z } from 'zod'
 import type { FinancialTitleDto, PartnerDto } from '@/api/gerado'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { CampoComBusca } from '@/components/cabinet/campo-com-busca'
@@ -12,12 +18,6 @@ import { data } from '@/data'
 import { type Direcao, useGravarTitulo } from '@/data/financeiro-api'
 import { diaLocalISO } from '@/lib/datas'
 import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
-import { useNavigate } from '@tanstack/react-router'
-import type { ColumnDef } from '@tanstack/react-table'
-import { CalendarDays, Hash, User } from 'lucide-react'
-import { useState } from 'react'
-import { useFormContext, useWatch } from 'react-hook-form'
-import { z } from 'zod'
 
 /**
  * O FORMULÁRIO DO TÍTULO — a conta a pagar ou a receber, com as parcelas.
@@ -332,7 +332,10 @@ function BaixasDoTitulo({ baixas }: { baixas: TituloEmEdicao['baixas'] }) {
 export function TituloForm({
   titulo,
   readOnly = false,
-}: { titulo: TituloEmEdicao; readOnly?: boolean }) {
+}: {
+  titulo: TituloEmEdicao
+  readOnly?: boolean
+}) {
   const navigate = useNavigate()
   const gravar = useGravarTitulo()
   const raiz = titulo.direction === 'payable' ? '/financeiro/pagar' : '/financeiro/receber'

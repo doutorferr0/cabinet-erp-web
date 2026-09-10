@@ -1,11 +1,11 @@
+import { useNavigate } from '@tanstack/react-router'
+import type { ColumnDef } from '@tanstack/react-table'
+import { useMemo, useState } from 'react'
 import type { FinancialTitleDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { type Direcao, titulosFinanceiros, useCancelarTitulo } from '@/data/financeiro-api'
 import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
-import { useNavigate } from '@tanstack/react-router'
-import type { ColumnDef } from '@tanstack/react-table'
-import { useMemo, useState } from 'react'
 
 /**
  * A LISTAGEM DE TÍTULOS — `GET /api/financial-titles`.

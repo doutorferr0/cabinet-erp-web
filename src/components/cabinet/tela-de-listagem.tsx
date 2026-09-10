@@ -1,8 +1,14 @@
+import type { ReactNode } from 'react'
 import { AvisoDadosDeExemplo } from '@/components/cabinet/aviso-dados-de-exemplo'
 import { ConfirmarCancelamento } from '@/components/cabinet/confirmar-cancelamento'
 import { ConfirmarDesativacao } from '@/components/cabinet/confirmar-desativacao'
-import type { DataTableAction } from '@/components/cabinet/data-table'
+import type {
+  DataTableAction,
+  DecoracaoDaLinha,
+  OpcaoDeAgrupamento,
+} from '@/components/cabinet/data-table'
 import { VitraDataTable } from '@/components/cabinet/data-table'
+import type { ColumnDef, LinhaDaTabela } from '@/components/cabinet/listagem/tabela'
 import type { AcaoDeCabecalho } from '@/components/cabinet/page-header'
 import { PageHeader } from '@/components/cabinet/page-header'
 import type { MotivoDoCancelamento } from '@/data/cancelamento-de-documento'
@@ -11,10 +17,8 @@ import type { EntidadeCadastro } from '@/features/cadastro/modulos'
 import { mensagemDoErro } from '@/lib/erros'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import type { TableFetcher } from '@/lib/table-query'
-import type { ColumnDef } from '@tanstack/react-table'
-import type { ReactNode } from 'react'
 
-export interface DesativacaoProps<T> {
+export interface DesativacaoProps<T extends LinhaDaTabela> {
   entidade: string
   /** Registro marcado para desativar; `null` fecha o diálogo. */
   registro: T | null
@@ -32,7 +36,7 @@ export interface DesativacaoProps<T> {
  * `ConfirmarCancelamento`). Uma listagem declara uma OU outra: cadastro
  * desativa, documento cancela.
  */
-export interface CancelamentoProps<T> {
+export interface CancelamentoProps<T extends LinhaDaTabela> {
   /** Nome do documento em minúscula, como entra na frase ('orçamento'). */
   documento: string
   /** Documento marcado para cancelar; `null` fecha o diálogo. */
@@ -47,7 +51,7 @@ export interface CancelamentoProps<T> {
   comMotivo?: boolean
 }
 
-export interface TelaDeListagemProps<T> {
+export interface TelaDeListagemProps<T extends LinhaDaTabela> {
   titulo: string
   /** Texto pequeno ao lado do título (ex.: "Banco Principal" em Produtos). */
   contexto?: string
@@ -80,6 +84,35 @@ export interface TelaDeListagemProps<T> {
    * mentindo de novo.
    */
   origem?: OrigemDosDados | undefined
+  /**
+   * O ESTADO que a linha anuncia sozinha (D10): faixa lateral e tint.
+   *
+   * Sobe até aqui em vez de ficar em cada rota porque a pergunta que ela
+   * responde é a mesma nas onze listagens — "o que nesta lista pede atenção
+   * hoje, e o que já saiu do jogo" —, e porque quem decide o que é atraso é a
+   * TELA: a tabela não conhece prazo nem situação. `undefined` para a linha
+   * comum, que é a maioria; listagem que decora tudo não decora nada.
+   */
+  decoracao?: (linha: T) => DecoracaoDaLinha | undefined
+  /** Campos oferecidos no chip `Agrupar` (D10). */
+  agrupamentos?: readonly OpcaoDeAgrupamento<T>[]
+  /**
+   * O que cada linha soma no subtotal do grupo, em CENTAVOS INTEIROS.
+   *
+   * Só as listagens de documento a declaram — cadastro agrupado dá contagem, e
+   * um `R$ 0,00` com a forma de total conferido seria pior que a ausência.
+   */
+  subtotalDoGrupo?: (linha: T) => number
+  /**
+   * A faixa de KPIs, entre o cabeçalho e a grade (mockup §Listagem).
+   *
+   * Chega montada pela ROTA, e não como uma lista de números: quem sabe de que
+   * agregado o resumo vem, o que cada tile qualifica e qual deles é problema é
+   * a tela, não o esqueleto. Só as listagens cujo recurso publica `/resumo` a
+   * declaram — faixa de zeros enquanto o contrato não soma seria um total com
+   * a forma de total conferido.
+   */
+  resumo?: ReactNode
 }
 
 /** Id da ação que ABRE o filtro — fica na tabela, com colunas e consultas salvas. */
@@ -96,7 +129,7 @@ const ACAO_ABRIR = 'consultar'
  * moram na barra de seleção, dentro da tabela, que é quem sabe o que está
  * marcado.
  */
-function paraCabecalho<T>(acao: DataTableAction<T>): AcaoDeCabecalho {
+function paraCabecalho<T extends LinhaDaTabela>(acao: DataTableAction<T>): AcaoDeCabecalho {
   return {
     id: acao.id,
     label: acao.label,
@@ -130,7 +163,7 @@ function paraCabecalho<T>(acao: DataTableAction<T>): AcaoDeCabecalho {
  * Sobra no `⋯` do cabeçalho o que não depende de linha nenhuma (`Imprimir`).
  * A repartição mora AQUI, e não em cada rota, porque é a mesma em dez telas.
  */
-export function TelaDeListagem<T>({
+export function TelaDeListagem<T extends LinhaDaTabela>({
   titulo,
   contexto,
   columns,
@@ -144,6 +177,10 @@ export function TelaDeListagem<T>({
   modoDeFiltro,
   entidadeDoSchema,
   origem,
+  decoracao,
+  agrupamentos,
+  subtotalDoGrupo,
+  resumo,
 }: TelaDeListagemProps<T>) {
   const acoesDaTabela = actions.filter((a) => a.id === ACAO_FILTRO)
   const primaria = actions.find((a) => a.id === ACAO_PRIMARIA)
@@ -162,13 +199,17 @@ export function TelaDeListagem<T>({
   )
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       <PageHeader
         titulo={titulo}
         {...(contexto ? { contexto } : {})}
         {...(primaria ? { primaria: paraCabecalho(primaria) } : {})}
         secundarias={secundarias.map(paraCabecalho)}
       />
+      {/* Resumo antes do detalhe (mockup §Listagem): a faixa responde antes de
+          o operador filtrar, e some da leitura assim que ele começa a varrer a
+          grade. Fronteira com o resto = espaço, sem linha (§Hierarquia). */}
+      {resumo}
       {/* Entre o cabeçalho e a tabela: depois do título, que diz de que tela se
           trata, e antes da primeira linha de dado, que é o que ele desmente. */}
       <AvisoDadosDeExemplo origem={origem} />
@@ -206,6 +247,9 @@ export function TelaDeListagem<T>({
         consultaNoEndereco
         {...(modoDeFiltro ? { modoDeFiltro } : {})}
         {...(entidadeDoSchema ? { entidade: entidadeDoSchema } : {})}
+        {...(decoracao ? { decoracao } : {})}
+        {...(agrupamentos ? { agrupamentos } : {})}
+        {...(subtotalDoGrupo ? { subtotalDoGrupo } : {})}
       />
       {rodape}
       {cancelamento?.registro ? (

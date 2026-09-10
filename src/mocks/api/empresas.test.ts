@@ -1,3 +1,5 @@
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { configurarApi } from '@/api/cliente'
 import type {
   CompanyLetterheadDto,
@@ -20,12 +22,10 @@ import {
   updateEmployeeLink,
   updateTenant,
 } from '@/api/gerado'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { resetAcesso } from './acesso'
 import { resetEmpresas } from './empresas'
 import { handlers } from './handlers'
-import { TENANT_FILIAL, TENANT_MATRIZ, resetStore, store } from './store'
+import { resetStore, store, TENANT_FILIAL, TENANT_MATRIZ } from './store'
 
 /**
  * O servidor falso das EMPRESAS DO GRUPO (`/api/tenants`) e da leitura de

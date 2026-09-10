@@ -1,3 +1,4 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
   BankAccountDto,
   CashRegisterDto,
@@ -25,18 +26,17 @@ import {
   updateFinancialTitle,
 } from '@/api/gerado'
 import {
-  ErroDaApi,
-  PAGE_SIZE_MAX,
-  type RespostaDaApi,
   createApiListProvider,
   dadosOuErro,
+  ErroDaApi,
   itemOuNulo,
+  PAGE_SIZE_MAX,
+  type RespostaDaApi,
   repetirSeValeAPena,
 } from '@/data/api-provider'
 import type { ListProvider } from '@/data/provider'
 import { avisar } from '@/lib/avisos'
 import { formatMoneyBRL } from '@/lib/formatters'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 /**
  * FRONTEIRA DO FINANCEIRO — `/api/financial-titles`, `/api/financial-installments`
@@ -259,7 +259,10 @@ export function useQuitarParcela() {
     mutationFn: async ({
       installmentId,
       corpo,
-    }: { installmentId: string; corpo: SettlementWriteRequest }) => {
+    }: {
+      installmentId: string
+      corpo: SettlementWriteRequest
+    }) => {
       const resposta: RespostaDaApi = await settleInstallment(installmentId, corpo)
       return dadosOuErro<FinancialSettlementDto>(resposta, 'Falha ao quitar a parcela.')
     },

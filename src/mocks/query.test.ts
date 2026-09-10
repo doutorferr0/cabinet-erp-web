@@ -1,6 +1,6 @@
+import { describe, expect, it } from 'vitest'
 import type { TableQueryState } from '@/lib/table-query'
 import { mockDelay, normalize, pagedMock } from '@/mocks/query'
-import { describe, expect, it } from 'vitest'
 
 interface Linha {
   id: number

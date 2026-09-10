@@ -1,15 +1,15 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ActivityDto } from '@/api/gerado'
 import { completeActivity, createActivity, listActivities, updateActivity } from '@/api/gerado'
-import { ErroDaApi, dadosOuErro } from '@/data/api-provider'
+import { dadosOuErro, ErroDaApi } from '@/data/api-provider'
 import {
-  ORDENAVEIS_ATIVIDADE,
   atividadeAtrasada,
   atividadeDoContrato,
   atividadeParaContrato,
   atividadeVazia,
+  ORDENAVEIS_ATIVIDADE,
 } from '@/data/atividades-api'
 import { instalarServidor, json, problema } from '@/test/servidor'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import contrato from '../../contracts/openapi-v1.json'
 
 /**

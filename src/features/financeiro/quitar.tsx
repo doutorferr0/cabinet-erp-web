@@ -1,3 +1,4 @@
+import { useEffect, useId, useState } from 'react'
 import type { FinancialInstallmentDto } from '@/api/gerado'
 import { Button } from '@/components/ui/button'
 import {
@@ -19,7 +20,6 @@ import {
 import { diaLocalISO } from '@/lib/datas'
 import { mensagemDoErro } from '@/lib/erros'
 import { formatDateBR, formatMoneyBRL } from '@/lib/formatters'
-import { useEffect, useId, useState } from 'react'
 
 /**
  * O DIÁLOGO DA QUITAÇÃO — um só, para a baixa avulsa e para o lote.

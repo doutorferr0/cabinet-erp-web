@@ -19,4 +19,4 @@ function CollapsibleContent({ ...props }: DisclosurePanelProps) {
   return <CollapsibleContentPrimitive data-slot="collapsible-content" {...props} />
 }
 
-export { Collapsible, CollapsibleTrigger, CollapsibleContent }
+export { Collapsible, CollapsibleContent, CollapsibleTrigger }

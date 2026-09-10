@@ -1,7 +1,7 @@
-import { instalarServidor, json } from '@/test/servidor'
-import { renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { instalarServidor, json } from '@/test/servidor'
+import { renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 
 /**
  * O FORMULÁRIO DO TÍTULO — o que sai daqui quando o operador grava.

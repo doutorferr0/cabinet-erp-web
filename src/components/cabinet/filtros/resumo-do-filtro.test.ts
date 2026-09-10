@@ -1,6 +1,6 @@
+import { describe, expect, it } from 'vitest'
 import { resumoDoFiltro } from '@/components/cabinet/filtros/resumo-do-filtro'
 import type { CampoFiltravel, FiltroDaTabela, VarianteDeFiltro } from '@/lib/filtro-de-consulta'
-import { describe, expect, it } from 'vitest'
 
 /**
  * A frase da pílula é o que o operador lê para saber por que a lista encolheu.

@@ -1,5 +1,5 @@
-import { ListagemDeTitulos } from '@/features/financeiro/listagem-de-titulos'
 import { createFileRoute } from '@tanstack/react-router'
+import { ListagemDeTitulos } from '@/features/financeiro/listagem-de-titulos'
 
 export const Route = createFileRoute('/financeiro/receber/titulos/')({
   component: TitulosAReceberPage,

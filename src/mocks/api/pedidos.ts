@@ -1,3 +1,4 @@
+import { HttpResponse, http } from 'msw'
 import type {
   CancelDocumentRequest,
   OrderDetailDto,
@@ -15,18 +16,18 @@ import { colaboradores, idDeColaborador } from '@/mocks/colaboradores'
 import { idDeApoio, nomeDeApoio } from '@/mocks/lookups'
 import type { AmbienteDoOrcamento, OrcamentoItem } from '@/mocks/orcamentos'
 import { orcamentos } from '@/mocks/orcamentos'
-import { http, HttpResponse } from 'msw'
-import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
+import type { CamposFiltraveis } from './filtro-do-servidor'
+import { listar } from './listagem'
 import { obras } from './obras'
 import { condicaoAtiva, planoDoDocumento, politicaDaEmpresa } from './pagamento'
 import { verificarEscrita } from './permissao'
 import {
-  TIPO,
   camposInvalidos,
   naoEncontrado,
   problemaJson,
   semEmpresaAtiva,
   semSessao,
+  TIPO,
 } from './problema'
 import { orcamentoPorId, servicosDoOrcamento } from './quotes'
 import { servicoDoCadastro } from './servicos'
@@ -894,50 +895,15 @@ export const handlersDePedidoDeVenda = [
     if (!store.activeTenantId) return HttpResponse.json({ rows: [], total: 0 })
 
     const url = new URL(request.url)
-    const q = url.searchParams.get('q')
-    const sortBy = url.searchParams.get('sortBy')
-    const sortDesc = url.searchParams.get('sortDesc') === 'true'
-    const page = Number(url.searchParams.get('page') ?? '1')
-    const pageSize = Number(url.searchParams.get('pageSize') ?? '10')
-
-    if (page < 1 || pageSize < 1 || pageSize > 100) {
-      return problemaJson(
-        400,
-        'Paginação inválida: page é 1-based e pageSize vai até 100.',
-        {},
-        TIPO.paginacaoInvalida,
-      )
-    }
-    if (sortBy && !ORDENAVEIS_PEDIDO.includes(sortBy)) {
-      return problemaJson(400, `sortBy inválido: ${sortBy}.`, {}, TIPO.ordenacaoInvalida)
-    }
-
     const recusaDeVocabulario = recusaDeEnum(url)
     if (recusaDeVocabulario) return recusaDeVocabulario
-
-    let linhas = estado.linhas.map(resumoDto)
-    if (q) {
-      const alvo = q.toLowerCase()
-      linhas = linhas.filter((p) =>
-        [p.number, p.customerName, p.projectName].some((t) => t?.toLowerCase().includes(alvo)),
-      )
-    }
-    const filtradas = aplicarFiltros(linhas, url, FILTRAVEIS_PEDIDO)
-    if (typeof filtradas === 'string') return problemaJson(400, filtradas, {}, TIPO.filtroInvalido)
-    linhas = filtradas
-
-    if (sortBy) {
-      const chave = sortBy as keyof OrderDto
-      linhas.sort((a, b) => {
-        const va = String(a[chave] ?? '')
-        const vb = String(b[chave] ?? '')
-        return sortDesc ? vb.localeCompare(va) : va.localeCompare(vb)
-      })
-    }
-
-    const total = linhas.length
-    const inicio = (page - 1) * pageSize
-    return HttpResponse.json({ rows: linhas.slice(inicio, inicio + pageSize), total })
+    return listar(
+      estado.linhas.map(resumoDto),
+      url,
+      ORDENAVEIS_PEDIDO,
+      (pedido) => [pedido.number, pedido.customerName, pedido.projectName],
+      FILTRAVEIS_PEDIDO,
+    )
   }),
 
   http.get('*/api/orders/:id', ({ params }) => {
@@ -1328,4 +1294,17 @@ function recusaDeEnum(url: URL) {
     }
   }
   return null
+}
+
+// ------------------------------------------------- leitura para os agregados
+
+/**
+ * Pedidos de venda ABERTOS — o contador que a navegação mostra (#479).
+ *
+ * Contagem, e não o documento: a nav não publica valor nenhum, e devolver a
+ * lista daqui convidaria o próximo a somar dinheiro no badge. `active` é a
+ * única situação aberta; `concluded` e `cancelled` saíram da fila.
+ */
+export function pedidosAbertos(): number {
+  return estado.linhas.filter((p) => p.situacao === 'active').length
 }

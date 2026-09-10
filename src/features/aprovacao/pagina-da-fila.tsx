@@ -1,7 +1,7 @@
-import type { ColumnDef } from '@tanstack/react-table'
 import { useState } from 'react'
 import type { ApprovalRequestDto, ApprovalRequestStatus } from '@/api/gerado'
 import { VitraDataTable } from '@/components/cabinet/data-table'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { PageHeader } from '@/components/cabinet/page-header'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CHAVES_APROVACOES, filaDeAprovacoes, useResumoDeAprovacoes } from '@/data/aprovacoes-api'

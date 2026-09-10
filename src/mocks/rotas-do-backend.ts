@@ -999,6 +999,8 @@ export const PASSAGEM_ADIANTADA: readonly RotaNoMock[] = [
     caminho,
     motivo: '501 no api — sem handler em servidor.ts, e sem handler de mock que a substitua',
     natureza: 'sem-handler' as const,
+    // O Node foi congelado em 28/08 sem estas cinco; quem as serve é o Spring.
+    servidor: 'spring-pendente' as const,
   })),
 ]
 

@@ -237,7 +237,13 @@ function EncargoDeAtraso({
         : `Atraso: ${formatPercent(encargo.interestPercentMonthly)} % ao mês de mora · ${formatPercent(encargo.finePercent)} % de multa`
 
   return (
-    <p aria-label="Encargo de atraso" className="pb-2 text-muted-foreground text-sm tabular-nums">
+    // `role="note"`: um `<p>` sem papel não aceita `aria-label` (Biome 2,
+    // `useAriaPropsSupportedByRole`), e o rótulo é o que o teste consulta.
+    <p
+      role="note"
+      aria-label="Encargo de atraso"
+      className="pb-2 text-muted-foreground text-sm tabular-nums"
+    >
       {texto}{' '}
       <span className="font-[family-name:var(--font-nome)] italic">— vigente hoje na condição</span>
     </p>

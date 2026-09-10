@@ -1,0 +1,984 @@
+{
+  "versao": "2.0",
+  "commit": "b7d3ea0",
+  "gerado": "2026-09-04T20:18:19.605Z",
+  "viewport": "1440×900",
+  "grid": true,
+  "rotas": [
+    {
+      "rota": "/",
+      "url": "/",
+      "apelido": "raiz",
+      "capturas": {
+        "claro": {
+          "arquivo": "raiz.claro.png",
+          "bytes": 129109
+        },
+        "claro-grid": {
+          "arquivo": "raiz.claro.grid.png",
+          "bytes": 209058
+        },
+        "escuro": {
+          "arquivo": "raiz.escuro.png",
+          "bytes": 121199
+        }
+      }
+    },
+    {
+      "rota": "/agenda",
+      "url": "/agenda",
+      "apelido": "agenda",
+      "capturas": {
+        "claro": {
+          "arquivo": "agenda.claro.png",
+          "bytes": 86781
+        },
+        "claro-grid": {
+          "arquivo": "agenda.claro.grid.png",
+          "bytes": 138374
+        },
+        "escuro": {
+          "arquivo": "agenda.escuro.png",
+          "bytes": 78440
+        }
+      }
+    },
+    {
+      "rota": "/ajuda/atalhos",
+      "url": "/ajuda/atalhos",
+      "apelido": "ajuda-atalhos",
+      "capturas": {
+        "claro": {
+          "arquivo": "ajuda-atalhos.claro.png",
+          "bytes": 124970
+        },
+        "claro-grid": {
+          "arquivo": "ajuda-atalhos.claro.grid.png",
+          "bytes": 200934
+        },
+        "escuro": {
+          "arquivo": "ajuda-atalhos.escuro.png",
+          "bytes": 116283
+        }
+      }
+    },
+    {
+      "rota": "/boletim",
+      "url": "/boletim",
+      "apelido": "boletim",
+      "aviso": "a guarda desviou para `/` — a imagem é daquela tela · o `?grid` não sobreviveu ao router — esta captura não tem a grade",
+      "capturas": {
+        "claro": {
+          "arquivo": "boletim.claro.png",
+          "bytes": 128816
+        },
+        "claro-grid": {
+          "arquivo": "boletim.claro.grid.png",
+          "bytes": 128816
+        },
+        "escuro": {
+          "arquivo": "boletim.escuro.png",
+          "bytes": 121199
+        }
+      }
+    },
+    {
+      "rota": "/cadastros",
+      "url": "/cadastros",
+      "apelido": "cadastros",
+      "aviso": "a guarda desviou para `/vendas` — a imagem é daquela tela · o `?grid` não sobreviveu ao router — esta captura não tem a grade",
+      "capturas": {
+        "claro": {
+          "arquivo": "cadastros.claro.png",
+          "bytes": 126547
+        },
+        "claro-grid": {
+          "arquivo": "cadastros.claro.grid.png",
+          "bytes": 126547
+        },
+        "escuro": {
+          "arquivo": "cadastros.escuro.png",
+          "bytes": 122332
+        }
+      }
+    },
+    {
+      "rota": "/cadastros/clientes",
+      "url": "/cadastros/clientes",
+      "apelido": "cadastros-clientes",
+      "capturas": {
+        "claro": {
+          "arquivo": "cadastros-clientes.claro.png",
+          "bytes": 84401
+        },
+        "claro-grid": {
+          "arquivo": "cadastros-clientes.claro.grid.png",
+          "bytes": 134633
+        },
+        "escuro": {
+          "arquivo": "cadastros-clientes.escuro.png",
+          "bytes": 81687
+        }
+      }
+    },
+    {
+      "rota": "/cadastros/clientes/$clienteId",
+      "url": "/cadastros/clientes/parc-0002",
+      "apelido": "cadastros-clientes-clienteId",
+      "capturas": {
+        "claro": {
+          "arquivo": "cadastros-clientes-clienteId.claro.png",
+          "bytes": 124643
+        },
+        "claro-grid": {
+          "arquivo": "cadastros-clientes-clienteId.claro.grid.png",
+          "bytes": 201557
+        },
+        "escuro": {
+          "arquivo": "cadastros-clientes-clienteId.escuro.png",
+          "bytes": 126599
+        }
+      }
+    },
+    {
+      "rota": "/cadastros/colaboradores",
+      "url": "/cadastros/colaboradores",
+      "apelido": "cadastros-colaboradores",
+      "capturas": {
+        "claro": {
+          "arquivo": "cadastros-colaboradores.claro.png",
+          "bytes": 144913
+        },
+        "claro-grid": {
+          "arquivo": "cadastros-colaboradores.claro.grid.png",
+          "bytes": 220162
+        },
+        "escuro": {
+          "arquivo": "cadastros-colaboradores.escuro.png",
+          "bytes": 140701
+        }
+      }
+    },
+    {
+      "rota": "/cadastros/colaboradores/$colaboradorId",
+      "url": "/cadastros/colaboradores/emp-0001",
+      "apelido": "cadastros-colaboradores-colaboradorId",
+      "capturas": {
+        "claro": {
+          "arquivo": "cadastros-colaboradores-colaboradorId.claro.png",
+          "bytes": 135707
+        },
+        "claro-grid": {
+          "arquivo": "cadastros-colaboradores-colaboradorId.claro.grid.png",
+          "bytes": 214158
+        },
+        "escuro": {
+          "arquivo": "cadastros-colaboradores-colaboradorId.escuro.png",
+          "bytes": 135874
+        }
+      }
+    },
+    {
+      "rota": "/cadastros/fornecedores",
+      "url": "/cadastros/fornecedores",
+      "apelido": "cadastros-fornecedores",
+      "capturas": {
+        "claro": {
+          "arquivo": "cadastros-fornecedores.claro.png",
+          "bytes": 96698
+        },
+        "claro-grid": {
+          "arquivo": "cadastros-fornecedores.claro.grid.png",
+          "bytes": 153342
+        },
+        "escuro": {
+          "arquivo": "cadastros-fornecedores.escuro.png",
+          "bytes": 95110
+        }
+      }
+    },
+    {
+      "rota": "/cadastros/fornecedores/$fornecedorId",
+      "url": "/cadastros/fornecedores/parc-0001",
+      "apelido": "cadastros-fornecedores-fornecedorId",
+      "capturas": {
+        "claro": {
+          "arquivo": "cadastros-fornecedores-fornecedorId.claro.png",
+          "bytes": 125067
+        },
+        "claro-grid": {
+          "arquivo": "cadastros-fornecedores-fornecedorId.claro.grid.png",
+          "bytes": 200295
+        },
+        "escuro": {
+          "arquivo": "cadastros-fornecedores-fornecedorId.escuro.png",
+          "bytes": 126825
+        }
+      }
+    },
+    {
+      "rota": "/cadastros/produtos",
+      "url": "/cadastros/produtos",
+      "apelido": "cadastros-produtos",
+      "capturas": {
+        "claro": {
+          "arquivo": "cadastros-produtos.claro.png",
+          "bytes": 124907
+        },
+        "claro-grid": {
+          "arquivo": "cadastros-produtos.claro.grid.png",
+          "bytes": 192223
+        },
+        "escuro": {
+          "arquivo": "cadastros-produtos.escuro.png",
+          "bytes": 122827
+        }
+      }
+    },
+    {
+      "rota": "/cadastros/produtos/$produtoId",
+      "url": "/cadastros/produtos/prod-0001",
+      "apelido": "cadastros-produtos-produtoId",
+      "capturas": {
+        "claro": {
+          "arquivo": "cadastros-produtos-produtoId.claro.png",
+          "bytes": 160909
+        },
+        "claro-grid": {
+          "arquivo": "cadastros-produtos-produtoId.claro.grid.png",
+          "bytes": 262363
+        },
+        "escuro": {
+          "arquivo": "cadastros-produtos-produtoId.escuro.png",
+          "bytes": 163491
+        }
+      }
+    },
+    {
+      "rota": "/cadastros/profissionais",
+      "url": "/cadastros/profissionais",
+      "apelido": "cadastros-profissionais",
+      "capturas": {
+        "claro": {
+          "arquivo": "cadastros-profissionais.claro.png",
+          "bytes": 99449
+        },
+        "claro-grid": {
+          "arquivo": "cadastros-profissionais.claro.grid.png",
+          "bytes": 160321
+        },
+        "escuro": {
+          "arquivo": "cadastros-profissionais.escuro.png",
+          "bytes": 99951
+        }
+      }
+    },
+    {
+      "rota": "/cadastros/profissionais/$profissionalId",
+      "url": "/cadastros/profissionais/parc-0002",
+      "apelido": "cadastros-profissionais-profissionalId",
+      "capturas": {
+        "claro": {
+          "arquivo": "cadastros-profissionais-profissionalId.claro.png",
+          "bytes": 128813
+        },
+        "claro-grid": {
+          "arquivo": "cadastros-profissionais-profissionalId.claro.grid.png",
+          "bytes": 206235
+        },
+        "escuro": {
+          "arquivo": "cadastros-profissionais-profissionalId.escuro.png",
+          "bytes": 130761
+        }
+      }
+    },
+    {
+      "rota": "/compras",
+      "url": "/compras",
+      "apelido": "compras",
+      "capturas": {
+        "claro": {
+          "arquivo": "compras.claro.png",
+          "bytes": 111146
+        },
+        "claro-grid": {
+          "arquivo": "compras.claro.grid.png",
+          "bytes": 180941
+        },
+        "escuro": {
+          "arquivo": "compras.escuro.png",
+          "bytes": 109475
+        }
+      }
+    },
+    {
+      "rota": "/compras/ordens",
+      "url": "/compras/ordens",
+      "apelido": "compras-ordens",
+      "capturas": {
+        "claro": {
+          "arquivo": "compras-ordens.claro.png",
+          "bytes": 128956
+        },
+        "claro-grid": {
+          "arquivo": "compras-ordens.claro.grid.png",
+          "bytes": 198864
+        },
+        "escuro": {
+          "arquivo": "compras-ordens.escuro.png",
+          "bytes": 127737
+        }
+      }
+    },
+    {
+      "rota": "/compras/ordens/$ordemId",
+      "url": "/compras/ordens/oc-0001",
+      "apelido": "compras-ordens-ordemId",
+      "capturas": {
+        "claro": {
+          "arquivo": "compras-ordens-ordemId.claro.png",
+          "bytes": 150978
+        },
+        "claro-grid": {
+          "arquivo": "compras-ordens-ordemId.claro.grid.png",
+          "bytes": 238173
+        },
+        "escuro": {
+          "arquivo": "compras-ordens-ordemId.escuro.png",
+          "bytes": 152601
+        }
+      }
+    },
+    {
+      "rota": "/compras/pedidos",
+      "url": "/compras/pedidos",
+      "apelido": "compras-pedidos",
+      "capturas": {
+        "claro": {
+          "arquivo": "compras-pedidos.claro.png",
+          "bytes": 99544
+        },
+        "claro-grid": {
+          "arquivo": "compras-pedidos.claro.grid.png",
+          "bytes": 155066
+        },
+        "escuro": {
+          "arquivo": "compras-pedidos.escuro.png",
+          "bytes": 99392
+        }
+      }
+    },
+    {
+      "rota": "/compras/pedidos/$pedidoId",
+      "url": "/compras/pedidos/pc-0001",
+      "apelido": "compras-pedidos-pedidoId",
+      "capturas": {
+        "claro": {
+          "arquivo": "compras-pedidos-pedidoId.claro.png",
+          "bytes": 149884
+        },
+        "claro-grid": {
+          "arquivo": "compras-pedidos-pedidoId.claro.grid.png",
+          "bytes": 238544
+        },
+        "escuro": {
+          "arquivo": "compras-pedidos-pedidoId.escuro.png",
+          "bytes": 151403
+        }
+      }
+    },
+    {
+      "rota": "/compras/previsao",
+      "url": "/compras/previsao",
+      "apelido": "compras-previsao",
+      "aviso": "a guarda desviou para `/compras/ordens` — a imagem é daquela tela · o `?grid` não sobreviveu ao router — esta captura não tem a grade",
+      "capturas": {
+        "claro": {
+          "arquivo": "compras-previsao.claro.png",
+          "bytes": 129270
+        },
+        "claro-grid": {
+          "arquivo": "compras-previsao.claro.grid.png",
+          "bytes": 129222
+        },
+        "escuro": {
+          "arquivo": "compras-previsao.escuro.png",
+          "bytes": 127973
+        }
+      }
+    },
+    {
+      "rota": "/config",
+      "url": "/config",
+      "apelido": "config",
+      "capturas": {
+        "claro": {
+          "arquivo": "config.claro.png",
+          "bytes": 70126
+        },
+        "claro-grid": {
+          "arquivo": "config.claro.grid.png",
+          "bytes": 113948
+        },
+        "escuro": {
+          "arquivo": "config.escuro.png",
+          "bytes": 70712
+        }
+      }
+    },
+    {
+      "rota": "/config/listas",
+      "url": "/config/listas",
+      "apelido": "config-listas",
+      "capturas": {
+        "claro": {
+          "arquivo": "config-listas.claro.png",
+          "bytes": 88605
+        },
+        "claro-grid": {
+          "arquivo": "config-listas.claro.grid.png",
+          "bytes": 136570
+        },
+        "escuro": {
+          "arquivo": "config-listas.escuro.png",
+          "bytes": 88722
+        }
+      }
+    },
+    {
+      "rota": "/config/usuarios",
+      "url": "/config/usuarios",
+      "apelido": "config-usuarios",
+      "capturas": {
+        "claro": {
+          "arquivo": "config-usuarios.claro.png",
+          "bytes": 158769
+        },
+        "claro-grid": {
+          "arquivo": "config-usuarios.claro.grid.png",
+          "bytes": 235253
+        },
+        "escuro": {
+          "arquivo": "config-usuarios.escuro.png",
+          "bytes": 158734
+        }
+      }
+    },
+    {
+      "rota": "/crm",
+      "url": "/crm",
+      "apelido": "crm",
+      "capturas": {
+        "claro": {
+          "arquivo": "crm.claro.png",
+          "bytes": 112283
+        },
+        "claro-grid": {
+          "arquivo": "crm.claro.grid.png",
+          "bytes": 178935
+        },
+        "escuro": {
+          "arquivo": "crm.escuro.png",
+          "bytes": 110249
+        }
+      }
+    },
+    {
+      "rota": "/crm/funil",
+      "url": "/crm/funil",
+      "apelido": "crm-funil",
+      "aviso": "a guarda desviou para `/crm/funil/funil-projeto` — a imagem é daquela tela · o `?grid` não sobreviveu ao router — esta captura não tem a grade",
+      "capturas": {
+        "claro": {
+          "arquivo": "crm-funil.claro.png",
+          "bytes": 131682
+        },
+        "claro-grid": {
+          "arquivo": "crm-funil.claro.grid.png",
+          "bytes": 131731
+        },
+        "escuro": {
+          "arquivo": "crm-funil.escuro.png",
+          "bytes": 132457
+        }
+      }
+    },
+    {
+      "rota": "/crm/funil/$funilId",
+      "url": "/crm/funil/funil-projeto",
+      "apelido": "crm-funil-funilId",
+      "capturas": {
+        "claro": {
+          "arquivo": "crm-funil-funilId.claro.png",
+          "bytes": 131768
+        },
+        "claro-grid": {
+          "arquivo": "crm-funil-funilId.claro.grid.png",
+          "bytes": 216091
+        },
+        "escuro": {
+          "arquivo": "crm-funil-funilId.escuro.png",
+          "bytes": 132493
+        }
+      }
+    },
+    {
+      "rota": "/crm/funis",
+      "url": "/crm/funis",
+      "apelido": "crm-funis",
+      "capturas": {
+        "claro": {
+          "arquivo": "crm-funis.claro.png",
+          "bytes": 78520
+        },
+        "claro-grid": {
+          "arquivo": "crm-funis.claro.grid.png",
+          "bytes": 123803
+        },
+        "escuro": {
+          "arquivo": "crm-funis.escuro.png",
+          "bytes": 78465
+        }
+      }
+    },
+    {
+      "rota": "/crm/funis/$funilId",
+      "url": "/crm/funis/funil-projeto",
+      "apelido": "crm-funis-funilId",
+      "capturas": {
+        "claro": {
+          "arquivo": "crm-funis-funilId.claro.png",
+          "bytes": 103850
+        },
+        "claro-grid": {
+          "arquivo": "crm-funis-funilId.claro.grid.png",
+          "bytes": 177985
+        },
+        "escuro": {
+          "arquivo": "crm-funis-funilId.escuro.png",
+          "bytes": 104857
+        }
+      }
+    },
+    {
+      "rota": "/crm/motivos",
+      "url": "/crm/motivos",
+      "apelido": "crm-motivos",
+      "capturas": {
+        "claro": {
+          "arquivo": "crm-motivos.claro.png",
+          "bytes": 83751
+        },
+        "claro-grid": {
+          "arquivo": "crm-motivos.claro.grid.png",
+          "bytes": 131462
+        },
+        "escuro": {
+          "arquivo": "crm-motivos.escuro.png",
+          "bytes": 83594
+        }
+      }
+    },
+    {
+      "rota": "/crm/oportunidades/$oportunidadeId",
+      "url": "/crm/oportunidades/op-0001",
+      "apelido": "crm-oportunidades-oportunidadeId",
+      "capturas": {
+        "claro": {
+          "arquivo": "crm-oportunidades-oportunidadeId.claro.png",
+          "bytes": 114436
+        },
+        "claro-grid": {
+          "arquivo": "crm-oportunidades-oportunidadeId.claro.grid.png",
+          "bytes": 183826
+        },
+        "escuro": {
+          "arquivo": "crm-oportunidades-oportunidadeId.escuro.png",
+          "bytes": 116095
+        }
+      }
+    },
+    {
+      "rota": "/dashboard",
+      "url": "/dashboard",
+      "apelido": "dashboard",
+      "capturas": {
+        "claro": {
+          "arquivo": "dashboard.claro.png",
+          "bytes": 149810
+        },
+        "claro-grid": {
+          "arquivo": "dashboard.claro.grid.png",
+          "bytes": 229048
+        },
+        "escuro": {
+          "arquivo": "dashboard.escuro.png",
+          "bytes": 148161
+        }
+      }
+    },
+    {
+      "rota": "/estoque",
+      "url": "/estoque",
+      "apelido": "estoque",
+      "capturas": {
+        "claro": {
+          "arquivo": "estoque.claro.png",
+          "bytes": 115817
+        },
+        "claro-grid": {
+          "arquivo": "estoque.claro.grid.png",
+          "bytes": 187092
+        },
+        "escuro": {
+          "arquivo": "estoque.escuro.png",
+          "bytes": 113474
+        }
+      }
+    },
+    {
+      "rota": "/estoque/movimentacao",
+      "url": "/estoque/movimentacao",
+      "apelido": "estoque-movimentacao",
+      "capturas": {
+        "claro": {
+          "arquivo": "estoque-movimentacao.claro.png",
+          "bytes": 83328
+        },
+        "claro-grid": {
+          "arquivo": "estoque-movimentacao.claro.grid.png",
+          "bytes": 132601
+        },
+        "escuro": {
+          "arquivo": "estoque-movimentacao.escuro.png",
+          "bytes": 83553
+        }
+      }
+    },
+    {
+      "rota": "/estoque/relatorios/orcado-x-estoque",
+      "url": "/estoque/relatorios/orcado-x-estoque",
+      "apelido": "estoque-relatorios-orcado-x-estoque",
+      "capturas": {
+        "claro": {
+          "arquivo": "estoque-relatorios-orcado-x-estoque.claro.png",
+          "bytes": 97479
+        },
+        "claro-grid": {
+          "arquivo": "estoque-relatorios-orcado-x-estoque.claro.grid.png",
+          "bytes": 157482
+        },
+        "escuro": {
+          "arquivo": "estoque-relatorios-orcado-x-estoque.escuro.png",
+          "bytes": 97516
+        }
+      }
+    },
+    {
+      "rota": "/estoque/relatorios/parado",
+      "url": "/estoque/relatorios/parado",
+      "apelido": "estoque-relatorios-parado",
+      "capturas": {
+        "claro": {
+          "arquivo": "estoque-relatorios-parado.claro.png",
+          "bytes": 129328
+        },
+        "claro-grid": {
+          "arquivo": "estoque-relatorios-parado.claro.grid.png",
+          "bytes": 206010
+        },
+        "escuro": {
+          "arquivo": "estoque-relatorios-parado.escuro.png",
+          "bytes": 129914
+        }
+      }
+    },
+    {
+      "rota": "/estoque/relatorios/valorizado",
+      "url": "/estoque/relatorios/valorizado",
+      "apelido": "estoque-relatorios-valorizado",
+      "capturas": {
+        "claro": {
+          "arquivo": "estoque-relatorios-valorizado.claro.png",
+          "bytes": 125508
+        },
+        "claro-grid": {
+          "arquivo": "estoque-relatorios-valorizado.claro.grid.png",
+          "bytes": 203014
+        },
+        "escuro": {
+          "arquivo": "estoque-relatorios-valorizado.escuro.png",
+          "bytes": 126630
+        }
+      }
+    },
+    {
+      "rota": "/inbox",
+      "url": "/inbox",
+      "apelido": "inbox",
+      "capturas": {
+        "claro": {
+          "arquivo": "inbox.claro.png",
+          "bytes": 88654
+        },
+        "claro-grid": {
+          "arquivo": "inbox.claro.grid.png",
+          "bytes": 133863
+        },
+        "escuro": {
+          "arquivo": "inbox.escuro.png",
+          "bytes": 88066
+        }
+      }
+    },
+    {
+      "rota": "/planner",
+      "url": "/planner",
+      "apelido": "planner",
+      "capturas": {
+        "claro": {
+          "arquivo": "planner.claro.png",
+          "bytes": 100187
+        },
+        "claro-grid": {
+          "arquivo": "planner.claro.grid.png",
+          "bytes": 160939
+        },
+        "escuro": {
+          "arquivo": "planner.escuro.png",
+          "bytes": 100437
+        }
+      }
+    },
+    {
+      "rota": "/tarefas",
+      "url": "/tarefas",
+      "apelido": "tarefas",
+      "capturas": {
+        "claro": {
+          "arquivo": "tarefas.claro.png",
+          "bytes": 160017
+        },
+        "claro-grid": {
+          "arquivo": "tarefas.claro.grid.png",
+          "bytes": 247902
+        },
+        "escuro": {
+          "arquivo": "tarefas.escuro.png",
+          "bytes": 158674
+        }
+      }
+    },
+    {
+      "rota": "/vendas",
+      "url": "/vendas",
+      "apelido": "vendas",
+      "capturas": {
+        "claro": {
+          "arquivo": "vendas.claro.png",
+          "bytes": 116238
+        },
+        "claro-grid": {
+          "arquivo": "vendas.claro.grid.png",
+          "bytes": 185836
+        },
+        "escuro": {
+          "arquivo": "vendas.escuro.png",
+          "bytes": 113958
+        }
+      }
+    },
+    {
+      "rota": "/vendas/cargas",
+      "url": "/vendas/cargas",
+      "apelido": "vendas-cargas",
+      "aviso": "a guarda desviou para `/vendas/pedidos` — a imagem é daquela tela · o `?grid` não sobreviveu ao router — esta captura não tem a grade",
+      "capturas": {
+        "claro": {
+          "arquivo": "vendas-cargas.claro.png",
+          "bytes": 127758
+        },
+        "claro-grid": {
+          "arquivo": "vendas-cargas.claro.grid.png",
+          "bytes": 127758
+        },
+        "escuro": {
+          "arquivo": "vendas-cargas.escuro.png",
+          "bytes": 128310
+        }
+      }
+    },
+    {
+      "rota": "/vendas/orcamentos",
+      "url": "/vendas/orcamentos",
+      "apelido": "vendas-orcamentos",
+      "capturas": {
+        "claro": {
+          "arquivo": "vendas-orcamentos.claro.png",
+          "bytes": 164820
+        },
+        "claro-grid": {
+          "arquivo": "vendas-orcamentos.claro.grid.png",
+          "bytes": 253055
+        },
+        "escuro": {
+          "arquivo": "vendas-orcamentos.escuro.png",
+          "bytes": 162510
+        }
+      }
+    },
+    {
+      "rota": "/vendas/orcamentos/$orcamentoId",
+      "url": "/vendas/orcamentos/orc-0001",
+      "apelido": "vendas-orcamentos-orcamentoId",
+      "capturas": {
+        "claro": {
+          "arquivo": "vendas-orcamentos-orcamentoId.claro.png",
+          "bytes": 142914
+        },
+        "claro-grid": {
+          "arquivo": "vendas-orcamentos-orcamentoId.claro.grid.png",
+          "bytes": 224720
+        },
+        "escuro": {
+          "arquivo": "vendas-orcamentos-orcamentoId.escuro.png",
+          "bytes": 145333
+        }
+      }
+    },
+    {
+      "rota": "/vendas/pedidos",
+      "url": "/vendas/pedidos",
+      "apelido": "vendas-pedidos",
+      "capturas": {
+        "claro": {
+          "arquivo": "vendas-pedidos.claro.png",
+          "bytes": 128078
+        },
+        "claro-grid": {
+          "arquivo": "vendas-pedidos.claro.grid.png",
+          "bytes": 193647
+        },
+        "escuro": {
+          "arquivo": "vendas-pedidos.escuro.png",
+          "bytes": 128699
+        }
+      }
+    },
+    {
+      "rota": "/vendas/pedidos/$pedidoId",
+      "url": "/vendas/pedidos/ped-21606",
+      "apelido": "vendas-pedidos-pedidoId",
+      "capturas": {
+        "claro": {
+          "arquivo": "vendas-pedidos-pedidoId.claro.png",
+          "bytes": 149301
+        },
+        "claro-grid": {
+          "arquivo": "vendas-pedidos-pedidoId.claro.grid.png",
+          "bytes": 233950
+        },
+        "escuro": {
+          "arquivo": "vendas-pedidos-pedidoId.escuro.png",
+          "bytes": 151521
+        }
+      }
+    },
+    {
+      "rota": "/vendas/reservas-tecnicas",
+      "url": "/vendas/reservas-tecnicas",
+      "apelido": "vendas-reservas-tecnicas",
+      "capturas": {
+        "claro": {
+          "arquivo": "vendas-reservas-tecnicas.claro.png",
+          "bytes": 109978
+        },
+        "claro-grid": {
+          "arquivo": "vendas-reservas-tecnicas.claro.grid.png",
+          "bytes": 174462
+        },
+        "escuro": {
+          "arquivo": "vendas-reservas-tecnicas.escuro.png",
+          "bytes": 110662
+        }
+      }
+    },
+    {
+      "rota": "/definir-senha",
+      "url": "/definir-senha",
+      "apelido": "definir-senha",
+      "capturas": {
+        "claro": {
+          "arquivo": "definir-senha.claro.png",
+          "bytes": 46202
+        },
+        "claro-grid": {
+          "arquivo": "definir-senha.claro.grid.png",
+          "bytes": 87560
+        },
+        "escuro": {
+          "arquivo": "definir-senha.escuro.png",
+          "bytes": 45853
+        }
+      }
+    },
+    {
+      "rota": "/esqueci-senha",
+      "url": "/esqueci-senha",
+      "apelido": "esqueci-senha",
+      "capturas": {
+        "claro": {
+          "arquivo": "esqueci-senha.claro.png",
+          "bytes": 49862
+        },
+        "claro-grid": {
+          "arquivo": "esqueci-senha.claro.grid.png",
+          "bytes": 94788
+        },
+        "escuro": {
+          "arquivo": "esqueci-senha.escuro.png",
+          "bytes": 49653
+        }
+      }
+    },
+    {
+      "rota": "/login",
+      "url": "/login",
+      "apelido": "login",
+      "capturas": {
+        "claro": {
+          "arquivo": "login.claro.png",
+          "bytes": 47735
+        },
+        "claro-grid": {
+          "arquivo": "login.claro.grid.png",
+          "bytes": 90820
+        },
+        "escuro": {
+          "arquivo": "login.escuro.png",
+          "bytes": 47261
+        }
+      }
+    },
+    {
+      "rota": "/trocar-senha",
+      "url": "/trocar-senha",
+      "apelido": "trocar-senha",
+      "aviso": "a guarda desviou para `/login` — a imagem é daquela tela · o `?grid` não sobreviveu ao router — esta captura não tem a grade",
+      "capturas": {
+        "claro": {
+          "arquivo": "trocar-senha.claro.png",
+          "bytes": 47735
+        },
+        "claro-grid": {
+          "arquivo": "trocar-senha.claro.grid.png",
+          "bytes": 47735
+        },
+        "escuro": {
+          "arquivo": "trocar-senha.escuro.png",
+          "bytes": 47261
+        }
+      }
+    }
+  ]
+}

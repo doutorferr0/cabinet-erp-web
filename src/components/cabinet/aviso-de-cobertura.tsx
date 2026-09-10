@@ -1,5 +1,5 @@
-import { cn } from '@/lib/utils'
 import { TriangleAlert } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 /**
  * AVISO DE COBERTURA — o que a tela mostra mas o servidor ainda não guarda.

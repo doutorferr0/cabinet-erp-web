@@ -1,7 +1,7 @@
+import { Moon, Sun } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useTheme } from '@/hooks/use-theme'
 import { cn } from '@/lib/utils'
-import { Moon, Sun } from 'lucide-react'
 
 /**
  * ALTERNADOR DE TEMA — uma das quatro ações globais da appbar (Reface 2.0 · D5).

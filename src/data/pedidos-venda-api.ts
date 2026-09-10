@@ -1,3 +1,4 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
   DocumentInstallmentDto,
   InstallmentPolicyDto,
@@ -22,16 +23,15 @@ import {
   updateOrder,
 } from '@/api/gerado'
 import {
-  PAGE_SIZE_MAX,
-  type RespostaDaApi,
   createApiListProvider,
   dadosOuErro,
   itemOuNulo,
+  PAGE_SIZE_MAX,
+  type RespostaDaApi,
 } from '@/data/api-provider'
-import { type MotivoDoCancelamento, corpoDoCancelamento } from '@/data/cancelamento-de-documento'
+import { corpoDoCancelamento, type MotivoDoCancelamento } from '@/data/cancelamento-de-documento'
 import type { DocumentoProvider, ListProvider } from '@/data/provider'
 import { avisar } from '@/lib/avisos'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 /**
  * FRONTEIRA DO PEDIDO DE VENDA — `/api/orders`.
@@ -122,8 +122,8 @@ export const CHAVES_PEDIDO_VENDA = {
    * `GET` do documento, e pendurá-la em `['pedido-venda', id, …]` faria toda
    * gravação do formulário derrubar uma lista que a gravação não muda.
    *
-   * Quem a invalida é a TRANSFERÊNCIA, e só ela — é a única operação desta
-   * fronteira que mexe na grade (troca o profissional principal).
+   * Transferência e gravação da grade a invalidam: as duas mudam a mesma
+   * participação por portas diferentes.
    */
   participacao: ['pedido-venda-participantes'] as const,
   participacaoDe: (id: string) => ['pedido-venda-participantes', id] as const,
@@ -577,7 +577,11 @@ export function useTransferirProfissional() {
       id,
       profissionalId,
       observacao,
-    }: { id: string; profissionalId: string; observacao?: string }) => {
+    }: {
+      id: string
+      profissionalId: string
+      observacao?: string
+    }) => {
       const resposta: RespostaDaApi = await transferOrderProfessional(id, {
         professionalId: profissionalId,
         note: observacao?.trim() ? observacao.trim() : null,
@@ -591,7 +595,7 @@ export function useTransferirProfissional() {
       // aberto na tela mostrando o estado de antes da troca que acabou de sair.
       void cliente.invalidateQueries({ queryKey: CHAVES_PEDIDO_VENDA.historico, exact: false })
       // A PARTICIPAÇÃO também: a transferência troca o profissional PRINCIPAL
-      // da grade, e é a única operação desta fronteira que mexe nela. Sem esta
+      // da grade. Sem esta
       // linha o painel continuaria mostrando quem saiu, ao lado de um cabeçalho
       // já atualizado — a divergência que o contrato chama de "trilha que mente".
       void cliente.invalidateQueries({ queryKey: CHAVES_PEDIDO_VENDA.participacao, exact: false })

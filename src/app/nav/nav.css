@@ -203,3 +203,69 @@
     transition: none !important;
   }
 }
+
+/*
+ * RODADA 2.5 (user, 2026-09-04: "cada elemento tem que se diferenciar na tela",
+ * "mais diferenças nas divisões"). A barra ganha ZONAS visíveis:
+ * - topo e rodapé em superfície própria (um degrau abaixo da bancada);
+ * - grupo × grupo: hairline + espaço, com o rótulo do grupo sublinhado pelo
+ *   matiz do módulo (o quadradinho vira traço);
+ * - contador vira etiqueta (pílula mono), não número solto;
+ * - item de módulo ganha o matiz no ícone quando ativo/hover.
+ */
+.cabinet-nav [data-faixa] {
+  background: color-mix(in oklab, var(--n-900) 3.5%, var(--bancada));
+}
+.cabinet-nav [data-grupo] + [data-grupo] {
+  border-top: 1px solid var(--hairline);
+  padding-top: var(--s-3);
+  margin-top: calc(-1 * var(--s-2));
+}
+.cabinet-nav [data-grupo] > button {
+  position: relative;
+}
+.cabinet-nav [data-grupo] > button:hover {
+  background: var(--hover);
+}
+.cabinet-nav [data-grupo] > button .t-rotulo {
+  color: var(--ink);
+  letter-spacing: 0.14em;
+}
+.cabinet-nav [data-quadradinho] {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--cor-do-modulo, var(--n-400)) 40%, transparent);
+}
+.cabinet-nav [data-contador] {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  text-align: center;
+  background: color-mix(in oklab, var(--n-900) 8%, transparent);
+  color: var(--ink);
+  font-weight: 600;
+  line-height: 18px;
+}
+.cabinet-nav [data-item][data-ativo="true"] [data-contador] {
+  background: var(--ink);
+  color: var(--n-0);
+}
+.cabinet-nav [data-grupo] [data-item]:hover svg,
+.cabinet-nav [data-grupo] [data-item][data-ativo="true"] svg {
+  color: var(--cor-do-modulo, var(--ink));
+}
+.cabinet-nav [data-item] {
+  transition:
+    background var(--dur-1, 120ms),
+    color var(--dur-1, 120ms),
+    transform var(--dur-1, 120ms) var(--ease, ease),
+    box-shadow var(--dur-1, 120ms);
+}
+.cabinet-nav [data-item][data-ativo="true"] {
+  font-weight: 600;
+}
+/* etiquetas (⌘K, [, futuro): fundo leve, não só traço */
+.cabinet-nav [data-etiqueta] {
+  background: color-mix(in oklab, var(--n-900) 4%, transparent);
+}

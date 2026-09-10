@@ -1,10 +1,10 @@
+import { cva, type VariantProps } from 'class-variance-authority'
+import type * as React from 'react'
+import { Group, type GroupProps } from 'react-aria-components'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
-import { type VariantProps, cva } from 'class-variance-authority'
-import type * as React from 'react'
-import { Group, type GroupProps } from 'react-aria-components'
 
 /**
  * Grupo campo+adorno: o SULCO fica no grupo, o campo interno é cru.
@@ -60,6 +60,12 @@ function InputGroupAddon({
   ...props
 }: React.ComponentProps<'div'> & VariantProps<typeof inputGroupAddonVariants>) {
   return (
+    // `fieldset` traria margem, borda e regras de layout próprias que o addon não
+    // quer — e este arquivo é copy-paste do shadcn, que o repo mantém alinhado ao
+    // upstream. O `onClick` não é ação: é o repasse do foco para o `<input>` irmão
+    // quando se clica na moldura, e quem navega por teclado chega ao input pelo Tab.
+    // biome-ignore lint/a11y/useSemanticElements: ver acima
+    // biome-ignore lint/a11y/useKeyWithClickEvents: ver acima
     <div
       role="group"
       data-slot="input-group-addon"
@@ -147,7 +153,7 @@ export {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
-  InputGroupText,
   InputGroupInput,
+  InputGroupText,
   InputGroupTextarea,
 }

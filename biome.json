@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.11/schema.json",
   "vcs": {
     "enabled": false,
     "clientKind": "git",
@@ -8,19 +8,22 @@
   "files": {
     "ignoreUnknown": false,
     "maxSize": 4194304,
-    "ignore": [
-      "node_modules",
-      "dist",
-      ".claude",
-      "src/routeTree.gen.ts",
-      "src/api/gerado",
-      "tsconfig.json",
-      "tsconfig.app.json",
-      "tsconfig.node.json",
-      "public",
-      "test-results",
-      "playwright-report",
-      "blob-report"
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/.claude",
+      "!**/src/routeTree.gen.ts",
+      "!**/src/api/gerado",
+      "!**/src/assets",
+      "!**/docs/**/*.html",
+      "!**/tsconfig.json",
+      "!**/tsconfig.app.json",
+      "!**/tsconfig.node.json",
+      "!**/public",
+      "!**/test-results",
+      "!**/playwright-report",
+      "!**/blob-report"
     ]
   },
   "formatter": {
@@ -29,19 +32,30 @@
     "indentWidth": 2,
     "lineWidth": 100
   },
-  "organizeImports": {
-    "enabled": true
-  },
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "suspicious": {
-        "noExplicitAny": "warn"
+        "noExplicitAny": "warn",
+        "noDocumentCookie": "off"
       },
       "style": {
-        "noNonNullAssertion": "warn"
+        "noNonNullAssertion": "warn",
+        "noDescendingSpecificity": "off"
+      },
+      "complexity": {
+        "noImportantStyles": "off"
+      },
+      "correctness": {
+        "useHookAtTopLevel": "off"
       }
+    }
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
     }
   },
   "javascript": {

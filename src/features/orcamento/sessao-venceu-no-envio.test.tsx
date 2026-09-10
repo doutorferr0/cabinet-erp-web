@@ -1,7 +1,7 @@
-import { respostaPagamento } from '@/test/orcamentos'
-import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { respostaPagamento } from '@/test/orcamentos'
+import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 
 /**
  * SESSÃO VENCIDA NO MEIO DO ENVIO (#124, ponto 3) — o pior caso do trilho.
@@ -149,7 +149,9 @@ describe('sessão vencida no meio do envio', () => {
     // O segundo envio é o primeiro, inteiro — inclusive o que foi digitado
     // depois de a tela carregar.
     expect(escritas[1]?.corpo).toEqual(escritas[0]?.corpo)
-    expect((escritas[1]?.corpo as { folderNumber: string }).folderNumber).toBe('P-88-REV2')
+    expect((escritas[1]?.corpo as { folderNumber: string } | undefined)?.folderNumber).toBe(
+      'P-88-REV2',
+    )
   })
 
   it('recusa comum (400) segue sendo recusa: nada de pedir senha', async () => {

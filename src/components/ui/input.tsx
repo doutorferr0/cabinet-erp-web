@@ -1,6 +1,6 @@
-import { cn } from '@/lib/utils'
 import type * as React from 'react'
-import { Input as InputPrimitive, composeRenderProps } from 'react-aria-components'
+import { composeRenderProps, Input as InputPrimitive } from 'react-aria-components'
+import { cn } from '@/lib/utils'
 
 /**
  * CAMPO REBAIXADO (Reface 2.0, issue #470 · mockup `Formulário`).

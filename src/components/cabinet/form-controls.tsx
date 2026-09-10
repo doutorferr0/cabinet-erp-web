@@ -1,3 +1,4 @@
+import { useFormContext } from 'react-hook-form'
 import { EspecificadorCombo, LookupCombo } from '@/components/cabinet/lookup-combo'
 import { VOZ_DE_NOME } from '@/components/cabinet/nome'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -17,7 +18,6 @@ import { Segmented, SegmentedItem } from '@/components/ui/segmented'
 import { Textarea } from '@/components/ui/textarea'
 import { type LookupKind, useLookupOptions } from '@/data/lookups-api'
 import { cn } from '@/lib/utils'
-import { useFormContext } from 'react-hook-form'
 
 /**
  * Controles de formulário ligados ao RHF via useFormContext.

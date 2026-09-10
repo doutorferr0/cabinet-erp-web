@@ -218,11 +218,11 @@
      Peso e família continuam vindo de `--font-*`, que já são token. Os valores
      abaixo repetem o que está na shorthand, e `identidade-visual.test.ts` confere
      que as duas formas não divergem — a mesma disciplina da pilha de fontes. */
-  --t-display-size: 30px;
-  --t-pagina-size: 28px;
-  --t-registro-size: 24px;
+  --t-display-size: 36px;
+  --t-pagina-size: 32px;
+  --t-registro-size: 26px;
   --t-secao-size: 20px;
-  --t-bloco-size: 13.5px;
+  --t-bloco-size: 15px;
   --t-corpo-size: 13.5px;
   --t-ui-size: 13px;
   --t-meta-size: 12px;
@@ -230,11 +230,11 @@
   --t-dado-size: 12.5px;
   --t-dado-meta-size: 11px;
 
-  --t-display: 400 30px / 1.05 var(--font-display);
-  --t-pagina: 400 28px / 1.1 var(--font-display);
-  --t-registro: 400 24px / 1.1 var(--font-display);
+  --t-display: 400 36px / 1.05 var(--font-display);
+  --t-pagina: 400 32px / 1.1 var(--font-display);
+  --t-registro: 400 26px / 1.1 var(--font-display);
   --t-secao: 400 20px / 1.2 var(--font-display);
-  --t-bloco: 600 13.5px / 1.3 var(--font-sans);
+  --t-bloco: 600 15px / 1.3 var(--font-sans);
   --t-corpo: 400 13.5px / 1.45 var(--font-sans);
   --t-ui: 500 13px / 1.3 var(--font-sans);
   --t-meta: 400 12px / 1.35 var(--font-sans);
@@ -465,7 +465,7 @@
 .t-display {
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: 30px;
+  font-size: 36px;
   line-height: 1.05;
   color: var(--n-900);
   text-wrap: balance;
@@ -473,7 +473,7 @@
 .t-pagina {
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: 28px;
+  font-size: 32px;
   line-height: 1.1;
   color: var(--n-900);
   text-wrap: balance;
@@ -481,7 +481,7 @@
 .t-registro {
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: 24px;
+  font-size: 26px;
   line-height: 1.1;
   color: var(--n-900);
 }
@@ -495,7 +495,7 @@
 .t-bloco {
   font-family: var(--font-sans);
   font-weight: 600;
-  font-size: 13.5px;
+  font-size: 15px;
   line-height: 1.3;
   color: var(--n-900);
 }
@@ -525,7 +525,7 @@
   font-weight: 600;
   font-size: 10.5px;
   line-height: 1.2;
-  letter-spacing: .12em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--n-500);
 }
@@ -535,7 +535,7 @@
   font-size: 12.5px;
   line-height: 1.3;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -.01em;
+  letter-spacing: -0.01em;
   color: var(--n-900);
 }
 .t-dado-meta {
@@ -700,7 +700,6 @@ main.bg-paper-grid > * {
    Suprimir aqui é mais honesto que trocar por `prefers-reduced-motion`: quem
    pede menos transparência está pedindo exatamente isto — a textura por cima
    do fundo —, e movimento não tem nada com o assunto. */
-/* biome-ignore lint/correctness/noUnknownMediaFeatureName: Media Queries 5, ainda ausente da lista do biome */
 @media (prefers-reduced-transparency: reduce) {
   main.bg-paper-grid::before {
     display: none;
@@ -758,4 +757,492 @@ main.bg-paper-grid > * {
   ::view-transition-new(*) {
     animation: none !important;
   }
+}
+
+/* =====================================================================
+   PROFUNDIDADE E HOVER (user, 2026-09-04: "mais animações de hover e mais
+   profundidade nos itens"). Camada por data-slot, por cima das utilities:
+   - toda peça que é OBJETO (card, KPI, tarefa, cartão lateral, bloco de form,
+     item de nav, aba, chip, linha da grade, monograma) tem repouso com relevo e
+     um hover que RESPONDE — levanta, aprofunda a sombra, acende o fundo.
+   - física de papel: sombra dura + ambiente no matiz; nunca blur solto.
+   - reduced-motion: tudo continua, sem transição.
+   ===================================================================== */
+:where(
+  [data-slot="kpi-tile"],
+  [data-slot="dcard"],
+  [data-slot="painel"],
+  [data-slot="cartao-lateral"],
+  [data-slot="form-block"],
+  [data-slot="tarefa"],
+  [data-slot="carga-por-responsavel"]
+) {
+  transition:
+    transform var(--dur-1, 120ms) var(--ease, ease),
+    box-shadow var(--dur-1, 120ms) var(--ease, ease),
+    border-color var(--dur-1, 120ms) var(--ease, ease);
+}
+/* `!important`: o DCard (dcard/painel) declara borda e sombra por style inline —
+   sem isso a camada não chegava nele (medido 2026-09-04).
+   cards quietos: relevo de repouso mais fundo (n-300 3px + ambiente) e hover que levanta */
+:where(
+  [data-slot="dcard"],
+  [data-slot="painel"],
+  [data-slot="cartao-lateral"],
+  [data-slot="form-block"],
+  [data-slot="carga-por-responsavel"]
+) {
+  border-color: var(--n-400) !important;
+  box-shadow:
+    3px 3px 0 0 var(--n-300),
+    0 12px 24px -16px color-mix(in oklab, var(--n-900) 45%, transparent) !important;
+}
+:where(
+  [data-slot="dcard"],
+  [data-slot="painel"],
+  [data-slot="cartao-lateral"],
+  [data-slot="form-block"],
+  [data-slot="carga-por-responsavel"]
+):hover {
+  transform: translate(-1px, -1px);
+  border-color: var(--n-900) !important;
+  box-shadow:
+    4px 4px 0 0 var(--n-300),
+    0 16px 28px -16px color-mix(in oklab, var(--n-900) 55%, transparent) !important;
+}
+/* KPI: já tem hard-1 + ambiente; o hover sobe um degrau */
+[data-slot="kpi-tile"]:hover {
+  transform: translate(-1px, -1px);
+  box-shadow:
+    3px 3px 0 0 var(--n-900),
+    0 18px 32px -14px color-mix(in oklab, var(--kc, var(--n-900)) 55%, transparent);
+}
+/* tarefa do quadro: tecla de papel */
+[data-slot="tarefa"] {
+  box-shadow: var(--hard-soft);
+}
+[data-slot="tarefa"]:hover {
+  transform: translate(-1px, -1px);
+  border-color: var(--n-900);
+  box-shadow:
+    var(--hard-1),
+    0 12px 24px -12px color-mix(in oklab, var(--cc, var(--n-900)) 40%, transparent);
+}
+[data-slot="tarefa"]:active {
+  transform: scale(0.985);
+  transition-duration: 60ms;
+}
+
+/* linha da grade: acende com o matiz do acento e ganha faixa à esquerda no hover */
+[data-slot="grade"] tbody tr:not([data-grupo]):hover > td {
+  background: color-mix(in oklab, var(--lime-400) 9%, var(--n-0));
+}
+[data-slot="grade"] tbody tr:not([data-grupo]):hover > td:first-child {
+  box-shadow: inset 3px 0 0 var(--lime-400);
+}
+[data-slot="grade"] tbody tr > td {
+  transition: background var(--dur-1, 120ms) var(--ease, ease);
+}
+
+/* item de navegação: desliza 2px e acende; ativo não se move */
+[data-slot="sidebar-nav"] a,
+[data-slot="sidebar-nav"] button {
+  transition:
+    background var(--dur-1, 120ms),
+    color var(--dur-1, 120ms),
+    transform var(--dur-1, 120ms) var(--ease, ease),
+    box-shadow var(--dur-1, 120ms);
+}
+[data-slot="sidebar-nav"] a:not([aria-current]):hover {
+  transform: translateX(2px);
+}
+[data-slot="sidebar-nav"] a[aria-current] {
+  box-shadow: var(--hard-soft);
+}
+
+/* monograma e badge: relevo de adesivo, e o monograma vira "botão" no hover da linha */
+[data-slot="celula-entidade"] > :first-child,
+[data-slot="monograma"] {
+  box-shadow: 0 1px 0 0 var(--n-300);
+  transition:
+    transform var(--dur-1, 120ms) var(--ease, ease),
+    box-shadow var(--dur-1, 120ms);
+}
+tr:hover [data-slot="celula-entidade"] > :first-child,
+tr:hover [data-slot="monograma"] {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 0 0 var(--n-900);
+}
+[data-slot="badge"] {
+  box-shadow: 0 1px 0 0 color-mix(in oklab, currentColor 30%, transparent);
+}
+
+/* abas de visão e chips de filtro: fundo que acende, sem pular */
+[role="tab"] {
+  transition:
+    background var(--dur-1, 120ms),
+    color var(--dur-1, 120ms);
+}
+[role="tab"]:hover {
+  background: color-mix(in oklab, var(--n-900) 6%, transparent);
+}
+[data-slot="barra-de-filtros"] button:hover,
+[data-slot="barra-de-filtros"] label:hover {
+  background: color-mix(in oklab, var(--n-900) 6%, transparent);
+}
+
+/* seletor de empresa e botão de recolher: tecla que levanta */
+/* (o seletor da D6 declara a tecla por style inline — o seletor casa nele) */
+[data-slot="sidebar-nav"] button[style*="key-1"]:hover,
+[data-slot="sidebar-nav"] button[aria-label^="Empresa"]:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 0 0 var(--n-900);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where([data-slot]),
+  [data-slot="grade"] tbody tr > td,
+  [role="tab"] {
+    transition: none !important;
+  }
+  :where([data-slot]):hover {
+    transform: none !important;
+  }
+}
+
+/* =====================================================================
+   CAIXAS DA FICHA, DO PAINEL E DO CABEÇALHO (user, 2026-09-04: "não consigo
+   enxergar as divisões… mais parecido com o antigo, com mais profundidade,
+   diferenças nas divisões e tamanhos de fontes e caixas"). A mesma receita da
+   listagem (#543): toda caixa tem ZONAS — uma faixa de título com fundo
+   próprio e hairline embaixo, um corpo, e a borda da caixa mais escura que o
+   fundo da página. Camada por data-slot, por cima das utilities.
+   ===================================================================== */
+
+/* --- bloco de formulário: caixa com faixa de título --- */
+[data-slot="form-block"] {
+  overflow: clip;
+  border-color: var(--n-400);
+  /* fieldset nasce com min-inline-size:min-content — uma grade larga dentro
+     dele empurrava o bloco por cima da coluna vizinha (medido na ficha de
+     Produto, 1440px: a tabela de fornecedores invadia a coluna da imagem). */
+  min-inline-size: 0;
+}
+[data-slot="form-block"]:has(> [data-slot="form-block-cabecalho"]) {
+  padding-top: 0;
+}
+[data-slot="form-block"] > [data-slot="form-block-cabecalho"] {
+  margin: 0 calc(-1 * var(--s-4));
+  padding: var(--s-2) var(--s-4);
+  min-height: 40px;
+  /* untinted: a faixa é o tint do módulo; tintado: escurece o próprio fundo */
+  background: color-mix(in oklab, var(--modulo-02, var(--n-100)) 80%, var(--n-0));
+  border-bottom: 1px solid color-mix(in oklab, var(--n-900) 14%, transparent);
+}
+[data-slot="form-block"][class*="tint-"] > [data-slot="form-block-cabecalho"] {
+  background: color-mix(in oklab, var(--n-900) 6%, transparent);
+}
+[data-slot="form-block"] > [data-slot="form-block-cabecalho"] .t-bloco {
+  letter-spacing: -0.005em;
+}
+[data-slot="form-block"] > [data-slot="form-block-cabecalho"] svg:first-child {
+  color: var(--modulo-01, var(--n-700));
+}
+/* corpo: respiro maior que o hairline pede */
+[data-slot="form-block"] > [data-slot="form-block-cabecalho"] + div {
+  margin-top: var(--s-4);
+}
+/* campos: caixa visível dentro da caixa (n-400) e relevo inset */
+[data-slot="form-block"] :is(input, select, textarea):not([type="checkbox"], [type="radio"]) {
+  border-color: var(--n-400);
+}
+[data-slot="form-block"]
+  :is(input, select, textarea):not([type="checkbox"], [type="radio"]):hover:not(
+    :focus-visible,
+    :disabled,
+    :read-only
+  ) {
+  border-color: var(--n-700);
+}
+[data-slot="form-block"] label {
+  color: var(--n-700);
+}
+
+/* --- cartão lateral: mesma faixa, borda que se vê --- */
+[data-slot="cartao-lateral"] {
+  overflow: clip;
+  padding-top: 0;
+  border-color: color-mix(in oklab, var(--n-900) 24%, var(--n-0));
+}
+[data-slot="cartao-lateral"] > h3 {
+  margin: 0 calc(-1 * 1rem);
+  padding: var(--s-2) 1rem;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  background: color-mix(in oklab, var(--n-900) 6%, transparent);
+  border-bottom: 1px solid color-mix(in oklab, var(--n-900) 14%, transparent);
+}
+[data-slot="cartao-lateral"] dt {
+  color: var(--n-500);
+}
+[data-slot="cartao-lateral"] dd {
+  font-weight: 500;
+}
+
+/* --- card do painel (dashboard) e seção do documento: faixa de título --- */
+/* o DCard troca o próprio slot (painel, secao, dcard) — o cabeçalho é o gancho estável */
+[data-slot="dcard-cabecalho"] {
+  min-height: 40px;
+  background: color-mix(in oklab, var(--cc, var(--n-900)) 7%, var(--n-0));
+  border-bottom: 1px solid color-mix(in oklab, var(--cc, var(--n-900)) 22%, transparent);
+}
+
+/* --- documento (OC, pedido, orçamento): o DocumentoBloco era uma moldura
+   hairline em volta de um card com borda própria = duas caixas para um bloco.
+   A moldura some e a SEÇÃO vira a caixa: borda n-400, relevo, faixa de título. --- */
+[data-slot="documento-bloco"] {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+}
+[data-slot="secao"] {
+  border-color: var(--n-400) !important;
+  box-shadow:
+    3px 3px 0 0 var(--n-300),
+    0 12px 24px -16px color-mix(in oklab, var(--n-900) 45%, transparent) !important;
+  transition:
+    transform var(--dur-1, 120ms) var(--ease, ease),
+    box-shadow var(--dur-1, 120ms) var(--ease, ease),
+    border-color var(--dur-1, 120ms) var(--ease, ease);
+}
+[data-slot="secao"]:hover {
+  transform: translate(-1px, -1px);
+  border-color: var(--n-900) !important;
+  box-shadow:
+    4px 4px 0 0 var(--n-300),
+    0 16px 28px -16px color-mix(in oklab, var(--n-900) 55%, transparent) !important;
+}
+[data-slot="secao"] > [data-slot="dcard-cabecalho"] .t-dado-meta {
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--n-900);
+  color: var(--n-0);
+  font-weight: 600;
+}
+[data-slot="secao"] :is(input, select, textarea):not([type="checkbox"], [type="radio"]) {
+  border-color: var(--n-400);
+}
+[data-slot="secao"] label {
+  color: var(--n-700);
+}
+
+/* --- cabeçalho de página: separado do conteúdo por hairline, não só por ar --- */
+[data-slot="page-header"] {
+  padding-bottom: var(--s-3);
+  border-bottom: 1px solid var(--n-200);
+}
+[data-slot="page-header"] [data-slot="page-header-contexto"] {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: color-mix(in oklab, var(--modulo-02, var(--n-100)) 90%, var(--n-0));
+  color: var(--n-700);
+}
+[data-slot="registro-id"] {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--n-100);
+  box-shadow: inset 0 0 0 1px var(--n-200);
+}
+
+/* --- índice da ficha de cadastro: caixa, não lista solta --- */
+[data-slot="indice-de-modulos"] {
+  border: 1px solid var(--n-300);
+  border-radius: var(--r-panel);
+  background: var(--n-0);
+  padding: var(--s-3);
+  box-shadow: 2px 2px 0 0 var(--n-200);
+}
+
+.dark [data-slot="form-block"] > [data-slot="form-block-cabecalho"],
+[data-theme="dark"] [data-slot="form-block"] > [data-slot="form-block-cabecalho"] {
+  background: color-mix(in oklab, var(--modulo-02, var(--n-100)) 35%, var(--n-50));
+}
+
+/* --- abas de formulário (Dados Principais · Outros Dados …): o conteúdo da aba
+   era campo solto no fundo da página. Vira PASTA: tira de abas com fundo do
+   módulo, aba ativa em folha que se funde ao painel, painel com borda n-400 e
+   relevo. Só dentro de FORMULÁRIO/FICHA: a caixa de entrada e outras telas usam a mesma
+   peça como filtro solto, ao lado de botões — lá a pasta sem corpo colado ficava
+   órfã (medido em captura). --- */
+:is(form, [data-slot="ficha-de-cadastro"]) [data-slot="tabs"][data-orientation="horizontal"] {
+  gap: 0;
+}
+:is(form, [data-slot="ficha-de-cadastro"])
+  [data-slot="tabs"][data-orientation="horizontal"]
+  > [data-slot="tabs-list"] {
+  gap: 2px;
+  padding: var(--s-2) var(--s-2) 0;
+  background: color-mix(in oklab, var(--modulo-02, var(--n-100)) 60%, var(--n-50));
+  border: 1px solid var(--n-400);
+  border-radius: var(--r-panel) var(--r-panel) 0 0;
+}
+:is(form, [data-slot="ficha-de-cadastro"])
+  [data-slot="tabs"][data-orientation="horizontal"]
+  > [data-slot="tabs-list"]
+  > [data-slot="tabs-trigger"] {
+  margin-bottom: -1px;
+  padding: 8px 12px 9px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: var(--r-ctrl) var(--r-ctrl) 0 0;
+  transition:
+    background var(--dur-1, 120ms),
+    color var(--dur-1, 120ms);
+}
+:is(form, [data-slot="ficha-de-cadastro"])
+  [data-slot="tabs"][data-orientation="horizontal"]
+  > [data-slot="tabs-list"]
+  > [data-slot="tabs-trigger"]:hover {
+  background: color-mix(in oklab, var(--n-900) 6%, transparent);
+  color: var(--n-900) !important;
+}
+:is(form, [data-slot="ficha-de-cadastro"])
+  [data-slot="tabs"][data-orientation="horizontal"]
+  > [data-slot="tabs-list"]
+  > [data-slot="tabs-trigger"][aria-selected="true"] {
+  background: var(--n-0);
+  border-color: var(--n-400);
+  color: var(--n-900) !important;
+  font-weight: 600;
+  box-shadow:
+    0 1px 0 0 var(--n-0),
+    inset 0 2px 0 0 var(--lime-400);
+}
+:is(form, [data-slot="ficha-de-cadastro"])
+  [data-slot="tabs"][data-orientation="horizontal"]
+  > [data-slot="tabs-content"] {
+  padding: var(--s-4);
+  background: var(--n-0);
+  border: 1px solid var(--n-400);
+  border-top: 0;
+  border-radius: 0 0 var(--r-panel) var(--r-panel);
+  box-shadow:
+    3px 3px 0 0 var(--n-300),
+    0 12px 24px -16px color-mix(in oklab, var(--n-900) 45%, transparent);
+}
+/* dentro da pasta, o bloco de formulário é a segunda caixa (teto: 2) — sem relevo próprio */
+[data-slot="tabs-content"] [data-slot="form-block"] {
+  box-shadow: none !important;
+}
+[data-slot="tabs-content"] [data-slot="form-block"]:hover {
+  transform: none;
+  box-shadow: none !important;
+}
+
+/* --- aviso de cobertura (dados de exemplo): faixa lateral no matiz, não bloco chapado --- */
+[data-slot="aviso-de-cobertura"] {
+  border-left: 3px solid var(--warn);
+  border-radius: 0 var(--r-ctrl) var(--r-ctrl) 0;
+}
+
+/* --- appbar: faixa distinta do conteúdo (fundo + hairline + sombra de 1px) --- */
+[data-slot="appbar"] {
+  background: color-mix(in oklab, var(--n-900) 3.5%, var(--n-50));
+  border-bottom: 1px solid var(--n-300);
+  box-shadow:
+    0 1px 0 0 color-mix(in oklab, var(--n-0) 60%, transparent),
+    0 4px 12px -10px color-mix(in oklab, var(--n-900) 35%, transparent);
+}
+[data-slot="appbar-trilha"] li:last-child > * {
+  color: var(--n-900) !important;
+  font-weight: 600;
+}
+[data-slot="appbar"] button:hover {
+  background: color-mix(in oklab, var(--n-900) 7%, transparent);
+}
+
+/* --- grade dentro de bloco de formulário: rola na horizontal em vez de ser cortada --- */
+[data-slot="form-block"] > [data-slot="form-block-cabecalho"] + div:has(table) {
+  overflow-x: auto;
+  padding: 2px;
+  margin: calc(var(--s-4) - 2px) -2px -2px;
+}
+
+/* --- rodapé fixo do formulário: faixa que se destaca do painel que passa por baixo --- */
+[data-slot="rodape-do-formulario"] {
+  margin: 0 calc(-1 * var(--s-2));
+  padding-inline: var(--s-2);
+  background: color-mix(in oklab, var(--n-900) 3%, var(--n-50)) !important;
+  border-top: 1px solid var(--n-300) !important;
+  box-shadow: 0 -8px 16px -12px color-mix(in oklab, var(--n-900) 45%, transparent);
+  z-index: 5;
+}
+
+/* --- recentes: o item que coincide com a rota não repete a caixa lime do menu --- */
+.cabinet-nav [aria-label="Recentes"] [data-item][data-ativo="true"] {
+  background: color-mix(in oklab, var(--n-900) 5%, transparent);
+  border-color: transparent;
+  box-shadow: none;
+}
+.cabinet-nav [aria-label="Recentes"] [data-item][data-ativo="true"]::before {
+  display: none;
+}
+
+/* --- abas de formulário: compactas para caber numa linha --- */
+:is(form, [data-slot="ficha-de-cadastro"])
+  [data-slot="tabs"][data-orientation="horizontal"]
+  > [data-slot="tabs-list"]
+  > [data-slot="tabs-trigger"] {
+  padding-inline: 10px;
+}
+
+/* --- calendário (modo-calendario, agenda e visão de calendário das listagens):
+   a grade era chapada no fundo da página. Vira caixa: borda n-400, relevo,
+   cabeçalho dos dias em faixa, célula com altura e hover. --- */
+[data-slot="modo-calendario"] > div:first-child {
+  padding: var(--s-2) var(--s-3);
+  background: color-mix(in oklab, var(--n-900) 3.5%, var(--n-50));
+  border: 1px solid var(--n-300);
+  border-radius: var(--r-ctrl);
+}
+[data-slot="modo-calendario"] > div.grid {
+  border: 1px solid var(--n-400);
+  border-radius: var(--r-panel);
+  background: var(--n-300);
+  box-shadow:
+    3px 3px 0 0 var(--n-300),
+    0 12px 24px -16px color-mix(in oklab, var(--n-900) 45%, transparent);
+}
+[data-slot="modo-calendario"] > div.grid > .t-rotulo {
+  padding: 8px 8px;
+  background: var(--n-100);
+  color: var(--n-700);
+}
+[data-slot="modo-calendario"] [data-slot="dia"] {
+  min-height: 96px;
+  transition: background var(--dur-1, 120ms);
+}
+[data-slot="modo-calendario"] [data-slot="dia"]:hover {
+  background: color-mix(in oklab, var(--lime-400) 8%, var(--n-0));
+}
+
+/* --- configurações: cada tela é uma LINHA do painel (hairline entre irmãs,
+   hover que acende), não um card dentro do card. --- */
+[data-slot="linha-de-config"] {
+  border: 0 !important;
+  border-radius: 0;
+  padding: 10px 14px;
+  transition: background var(--dur-1, 120ms);
+}
+[data-slot="linha-de-config"] + [data-slot="linha-de-config"] {
+  border-top: 1px solid var(--n-200) !important;
+}
+a[data-slot="linha-de-config"]:hover {
+  background: color-mix(in oklab, var(--modulo-02, var(--n-100)) 70%, var(--n-0));
+}
+a[data-slot="linha-de-config"]:hover .t-bloco {
+  color: var(--modulo-01, var(--n-900));
 }

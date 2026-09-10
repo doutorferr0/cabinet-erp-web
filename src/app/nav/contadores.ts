@@ -1,8 +1,8 @@
-import { listTasks } from '@/api/gerado'
-import type { TaskDto } from '@/api/gerado'
-import { type RespostaDaApi, dadosOuErro } from '@/data/api-provider'
-import { useNaoLidasDoInbox } from '@/features/inbox/estado-do-inbox'
 import { useQuery } from '@tanstack/react-query'
+import type { TaskDto } from '@/api/gerado'
+import { listTasks } from '@/api/gerado'
+import { dadosOuErro, type RespostaDaApi } from '@/data/api-provider'
+import { useNaoLidasDoInbox } from '@/features/inbox/estado-do-inbox'
 
 /**
  * OS NÚMEROS DA BARRA — quantas tarefas e quantos avisos esperam o operador.

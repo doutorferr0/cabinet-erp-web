@@ -1,3 +1,25 @@
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useRouter } from '@tanstack/react-router'
+import { flexRender, type Row, useTable } from '@tanstack/react-table'
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  type LucideIcon,
+  Rows3,
+} from 'lucide-react'
+import {
+  Fragment,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { AbasDeConsulta } from '@/components/cabinet/filtros/abas-de-consulta'
 import { interpretarBusca } from '@/components/cabinet/filtros/busca-com-prefixo'
 import { consultaDaUrl } from '@/components/cabinet/filtros/filtro-na-url'
@@ -6,19 +28,18 @@ import { ListaDeFiltros } from '@/components/cabinet/lista-de-filtros'
 import { type AcaoDeLinha, AcoesDeLinha } from '@/components/cabinet/listagem/acoes-de-linha'
 import { BarraDeFiltros } from '@/components/cabinet/listagem/barra-de-filtros'
 import {
-  IconeDeTipo,
-  LARGURA_DO_TIPO,
-  type TipoDeColuna,
   classeDoTipo,
   ehTipoComposto,
+  IconeDeTipo,
+  LARGURA_DO_TIPO,
   renderTipo,
   tomDoValor,
 } from '@/components/cabinet/listagem/celulas-tipadas'
 import {
-  PontoDoModulo,
   colunasDaGrade,
   idsDeclarados,
   moduloDaColuna,
+  PontoDoModulo,
 } from '@/components/cabinet/listagem/colunas-da-grade'
 import { gruposDoModulo } from '@/components/cabinet/listagem/colunas-por-modulo'
 import { FiltroPorModulo } from '@/components/cabinet/listagem/filtro-por-modulo'
@@ -28,6 +49,17 @@ import {
   EditorDaCelula,
   useModoPlanilha,
 } from '@/components/cabinet/listagem/modo-planilha'
+import {
+  type ColumnDef,
+  type FeaturesDaTabela,
+  featuresDaTabela,
+  type LinhaDaTabela,
+} from '@/components/cabinet/listagem/tabela'
+import {
+  consultaDaView,
+  useViewsDaTela,
+  type ViewsDaTela,
+} from '@/components/cabinet/listagem/views'
 import { ModuloEmConstrucao } from '@/components/cabinet/modulo-em-construcao'
 import { Ornamento, OrnamentoDoModulo } from '@/components/cabinet/ornamento'
 import { Stamp, type StampTom } from '@/components/cabinet/stamp'
@@ -60,9 +92,9 @@ import type { EntidadeCadastro } from '@/features/cadastro/modulos'
 import { mensagemDoErro } from '@/lib/erros'
 import {
   type ConsultaSalva,
-  type FavoritoDeConsulta,
   comPadrao,
   consultaDoFavorito,
+  type FavoritoDeConsulta,
   favoritoPadrao,
   gravarFavoritos,
   idDaTela,
@@ -72,65 +104,18 @@ import {
 import {
   type CampoFiltravel,
   type FiltroDaTabela,
-  type Juncao,
   filtrosNormalizados,
   filtrosValidos,
+  type Juncao,
 } from '@/lib/filtro-de-consulta'
 import { formatMoneyBRL } from '@/lib/formatters'
 import type { TableFetcher, TableQueryState, TableSort } from '@/lib/table-query'
 import { cn } from '@/lib/utils'
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { useRouter } from '@tanstack/react-router'
-import {
-  type ColumnDef,
-  type Row,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-} from '@tanstack/react-table'
-import {
-  ArrowDown,
-  ArrowUp,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  type LucideIcon,
-  Rows3,
-} from 'lucide-react'
-import {
-  Fragment,
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-} from 'react'
 
-declare module '@tanstack/react-table' {
-  interface ColumnMeta<TData, TValue> {
-    /** Coluna de valor: numerais tabulares alinhados à direita (DESIGN.md, Regra do Número Tabular). */
-    numeric?: boolean
-    /**
-     * O QUE aquele valor é — id, entidade, data, dinheiro, situação, progresso
-     * ou texto. Decide a moldura da célula (mono, alinhamento, truncagem), o
-     * ícone do cabeçalho e, na situação, se a linha inteira fica apagada.
-     * Ver `listagem/celulas-tipadas.tsx`.
-     */
-    tipo?: TipoDeColuna
-    /**
-     * A célula aceita edição inline no modo Planilha (D33).
-     *
-     * Sem isto, Enter na célula ABRE o registro — que é o que nove em cada dez
-     * colunas de uma listagem de ERP querem, porque listagem confere e o
-     * formulário é que grava. Ligar exige a tela passar `aoEditarCelula`: a
-     * coluna diz que ACEITA, a tela diz o que FAZER com o valor, e uma sem a
-     * outra abriria um editor cujo Enter não grava em lugar nenhum.
-     */
-    editavel?: boolean
-  }
-}
+// O `meta` da coluna (`numeric`, `tipo`, `editavel`) saiu daqui: era um
+// `declare module '@tanstack/react-table'`, e a v9 pede que ele seja um SLOT do
+// conjunto de features. Mora em `listagem/tabela.ts`, ao lado das features que
+// o governam — ver `MetaDaColuna` lá.
 
 /** Ação da barra padrão das listagens (transcrição §9, padrão 4). */
 export interface DataTableAction<T> {
@@ -317,7 +302,7 @@ function densidadeLida(valor: unknown): Densidade | null {
   return null
 }
 
-export interface VitraDataTableProps<T> {
+export interface VitraDataTableProps<T extends LinhaDaTabela> {
   columns: ColumnDef<T>[]
   /** Prefixo da query key do TanStack Query (o estado da tabela é anexado). */
   queryKey: readonly unknown[]
@@ -421,6 +406,11 @@ export interface VitraDataTableProps<T> {
    * Quem liga é a `TelaDeListagem`, que é a tela inteira.
    */
   consultaNoEndereco?: boolean
+  /**
+   * Endereço canônico das views salvas. Nas telas, vem do router; a prop serve
+   * para a tabela montada fora dele (janela de busca e teste de componente).
+   */
+  rotaDaView?: string
   /**
    * ABRE a linha — e ligar esta prop muda o gesto da listagem inteira
    * (IndexTable, #198).
@@ -712,7 +702,7 @@ function VazioDaConsulta({
  * motivo. Prometer massa e agir na primeira linha seria a promessa errada no
  * botão mais caro da tela.
  */
-function BarraDeSelecao<T>({
+function BarraDeSelecao<T extends LinhaDaTabela>({
   quantidade,
   acoes,
   linhas,
@@ -826,7 +816,54 @@ function BarraDeSelecao<T>({
   )
 }
 
-export function VitraDataTable<T>({
+type FonteDasViews = {
+  router: ReturnType<typeof useRouter>
+  rotaDaViewEfetiva: string
+  viewsDaTela: ViewsDaTela
+}
+
+const VIEWS_LOCAIS: ViewsDaTela = {
+  views: [],
+  carregando: false,
+  salvar: () => undefined,
+  renomear: () => undefined,
+  favoritar: () => undefined,
+  excluir: () => undefined,
+  gravando: false,
+  falhou: false,
+}
+
+/** Só monta a consulta HTTP quando há uma rota canônica para filtrá-la. */
+function VitraDataTableComViews<T extends LinhaDaTabela>({
+  router,
+  rotaDaViewEfetiva,
+  ...props
+}: VitraDataTableProps<T> & Pick<FonteDasViews, 'router' | 'rotaDaViewEfetiva'>) {
+  const viewsDaTela = useViewsDaTela(rotaDaViewEfetiva)
+  return <VitraDataTableInterna {...props} {...{ router, rotaDaViewEfetiva, viewsDaTela }} />
+}
+
+export function VitraDataTable<T extends LinhaDaTabela>(props: VitraDataTableProps<T>) {
+  const router = useRouter({ warn: false })
+  const rotaDaViewEfetiva = props.rotaDaView ?? router?.state.location.pathname ?? ''
+
+  if (rotaDaViewEfetiva) {
+    return (
+      <VitraDataTableComViews {...props} router={router} rotaDaViewEfetiva={rotaDaViewEfetiva} />
+    )
+  }
+
+  return (
+    <VitraDataTableInterna
+      {...props}
+      router={router}
+      rotaDaViewEfetiva=""
+      viewsDaTela={VIEWS_LOCAIS}
+    />
+  )
+}
+
+function VitraDataTableInterna<T extends LinhaDaTabela>({
   columns,
   queryKey,
   fetcher,
@@ -849,7 +886,10 @@ export function VitraDataTable<T>({
   acoesDeLinha,
   acaoDoVazio,
   aoEditarCelula,
-}: VitraDataTableProps<T>) {
+  router,
+  rotaDaViewEfetiva,
+  viewsDaTela,
+}: VitraDataTableProps<T> & FonteDasViews) {
   /**
    * O ENDEREÇO É O PONTO DE PARTIDA da consulta (#199).
    *
@@ -858,10 +898,6 @@ export function VitraDataTable<T>({
    * a tela e só então refazer a consulta filtrada, com o operador vendo os dois.
    * Fora do modo (`consultaNoEndereco` desligado) devolve o vazio de sempre.
    */
-  // `warn: false` porque a MESMA tabela também roda fora do router (janela de
-  // busca, teste de componente): ali não há endereço, e avisar no console a
-  // cada render seria ruído sobre um caso que é de projeto.
-  const router = useRouter({ warn: false })
   const [daUrl] = useState(() =>
     consultaNoEndereco && router
       ? consultaDaUrl(
@@ -884,38 +920,16 @@ export function VitraDataTable<T>({
    * primeira marcada" porque a barra de AÇÕES antiga (janela de busca, funil)
    * age sobre uma linha só — quem tem uma tem a primeira.
    */
-  const [selecionadas, setSelecionadas] = useState<readonly T[]>([])
-  const selected = selecionadas[0] ?? null
+  const [idsSelecionados, setIdsSelecionados] = useState<readonly string[]>([])
   /** Modo IndexTable: a linha abre, o checkbox marca. Ver `aoAbrirLinha`. */
   const linhaAbre = aoAbrirLinha !== undefined
   const marcavel = (acoesDeLote?.length ?? 0) > 0
 
-  function alternarLinha(linha: T) {
-    setSelecionadas((atuais) =>
-      atuais.includes(linha) ? atuais.filter((l) => l !== linha) : [...atuais, linha],
+  function alternarLinha(id: string) {
+    setIdsSelecionados((atuais) =>
+      atuais.includes(id) ? atuais.filter((atual) => atual !== id) : [...atuais, id],
     )
   }
-
-  /**
-   * `esc` desfaz a seleção — e a barra de lote DIZ isso, em vez de escondê-lo.
-   *
-   * Não é atalho novo no sentido que o CLAUDE.md proíbe: a mesma saída existe
-   * como botão na barra, e nenhum fluxo depende da tecla. É o gesto que quem
-   * usa lista já tem no dedo, e o custo de não tê-lo é o operador com trinta
-   * linhas marcadas por engano procurando onde desfazer.
-   *
-   * Só escuta enquanto HÁ seleção: fora disso a tecla é de quem estiver por
-   * cima (dialog, popover), e um ouvinte permanente no documento roubaria o
-   * `esc` de todos eles.
-   */
-  useEffect(() => {
-    if (selecionadas.length === 0) return
-    function aoTeclar(e: KeyboardEvent) {
-      if (e.key === 'Escape') setSelecionadas([])
-    }
-    document.addEventListener('keydown', aoTeclar)
-    return () => document.removeEventListener('keydown', aoTeclar)
-  }, [selecionadas.length])
   // Rascunho do filtro, como `qInput` é o rascunho da busca: o painel responde
   // à tecla na hora e só a frase COMPLETA vira consulta, depois do debounce.
   // Sem isso, cada letra digitada num valor viraria uma ida ao servidor.
@@ -1009,6 +1023,41 @@ export function VitraDataTable<T>({
   // armazenamento a cada render seria I/O síncrono por tecla digitada.
   const telaId = useMemo(() => idDaTela(queryKey), [queryKey])
   const [favoritos, setFavoritos] = useState<FavoritoDeConsulta[]>(() => lerFavoritos(telaId))
+  // A fonte normal é o servidor. O localStorage é contingência para a falha
+  // explícita da fronteira, e continua atendendo tabela sem rota (dialogs e
+  // testes isolados), que não identifica uma tela no contrato.
+  // Resposta vazia não apaga, sem aviso, consultas que já vivem no navegador.
+  // A primeira view salva também sobe ao servidor; quando ela volta na leitura,
+  // a fonte remota assume a tira.
+  const usandoViewsPersistidas =
+    rotaDaViewEfetiva !== '' && !viewsDaTela.falhou && viewsDaTela.views.length > 0
+  const favoritosPersistidos = useMemo(
+    () =>
+      viewsDaTela.views.map((view) => {
+        const consulta = consultaDaView(view, camposFiltraveis ?? [])
+        return {
+          id: view.id,
+          nome: view.name,
+          filtros: consulta.filtros,
+          juncao: consulta.juncao,
+          sort: consulta.sort,
+          visao: consulta.visao,
+          agruparPor: consulta.agruparPor,
+          densidade: '',
+          padrao: false,
+        } satisfies FavoritoDeConsulta
+      }),
+    [camposFiltraveis, viewsDaTela.views],
+  )
+  const favoritosDaTira = usandoViewsPersistidas ? favoritosPersistidos : favoritos
+  const idsDasViewsPersistidas = useMemo(
+    () => new Set(viewsDaTela.views.map((view) => view.id)),
+    [viewsDaTela.views],
+  )
+  const idsDasViewsFavoritas = useMemo(
+    () => new Set(viewsDaTela.views.filter((view) => view.favorite).map((view) => view.id)),
+    [viewsDaTela.views],
+  )
 
   // O aviso sai de UM lugar, e por efeito: a seleção se perde em seis pontos
   // diferentes (clique na linha, troca de página, busca, filtro, visão,
@@ -1017,7 +1066,7 @@ export function VitraDataTable<T>({
   // alguém acrescentasse o sétimo.
   // Toda mudança de estado de consulta limpa a seleção.
   function updateState(updater: (s: TableQueryState) => TableQueryState) {
-    setSelecionadas([])
+    setIdsSelecionados([])
     setState(updater)
   }
 
@@ -1045,7 +1094,7 @@ export function VitraDataTable<T>({
         const mesmoFiltro =
           assinaturaDoFiltro(s.filtros, s.juncao ?? 'and') === assinaturaDoFiltro(validos, juncao)
         if (s.q === daBusca.q && mesmoFiltro) return s
-        setSelecionadas([])
+        setIdsSelecionados([])
         return { ...s, q: daBusca.q, filtros: validos, juncao, page: 1 }
       })
     }, SEARCH_DEBOUNCE_MS)
@@ -1067,22 +1116,35 @@ export function VitraDataTable<T>({
   }, [qInput])
 
   /** Aplica uma consulta salva: filtros, junção, ordenação, visão e agrupamento. */
-  const aplicarConsulta = useCallback((favorito: FavoritoDeConsulta) => {
-    const consulta = consultaDoFavorito(favorito)
-    setFiltrosInput(consulta.filtros)
-    setJuncao(consulta.juncao)
-    setSelecionadas([])
-    // Vazio = o favorito não fala de visão (foi gravado antes dos view modes).
-    // Tratá-lo como "volte ao padrão" mudaria o desenho da tela sem ninguém ter
-    // pedido, e o operador atribuiria o salto ao filtro que acabou de aplicar.
-    if (consulta.visao) setVisaoId(consulta.visao)
-    if (consulta.agruparPor) setAgruparPor(consulta.agruparPor)
-    const gravada = densidadeLida(consulta.densidade)
-    if (gravada) setDensidade(gravada)
-    // A ordenação NÃO passa pelo debounce dos filtros: ela não é digitada, e
-    // esperar 300ms por ela faria a tabela reordenar depois de já ter mudado.
-    setState((s) => ({ ...s, sort: consulta.sort, page: 1 }))
-  }, [])
+  const aplicarConsulta = useCallback(
+    (favorito: FavoritoDeConsulta) => {
+      const viewPersistida = viewsDaTela.views.find((view) => view.id === favorito.id)
+      const consulta = viewPersistida
+        ? consultaDaView(viewPersistida, camposFiltraveis ?? [])
+        : consultaDoFavorito(favorito)
+      setFiltrosInput(consulta.filtros)
+      setJuncao(consulta.juncao)
+      setIdsSelecionados([])
+      // Vazio = o favorito não fala de visão (foi gravado antes dos view modes).
+      // Tratá-lo como "volte ao padrão" mudaria o desenho da tela sem ninguém ter
+      // pedido, e o operador atribuiria o salto ao filtro que acabou de aplicar.
+      if (consulta.visao) setVisaoId(consulta.visao)
+      if (consulta.agruparPor) setAgruparPor(consulta.agruparPor)
+      if ('densidade' in consulta) {
+        const gravada = densidadeLida(consulta.densidade)
+        if (gravada) setDensidade(gravada)
+      }
+      if ('colunas' in consulta && consulta.colunas.length > 0) {
+        const idsDeclaradosNaTela = idsDeclarados(columns)
+        setOrdemDasColunas(consulta.colunas)
+        setColunasOcultas(idsDeclaradosNaTela.filter((id) => !consulta.colunas.includes(id)))
+      }
+      // A ordenação NÃO passa pelo debounce dos filtros: ela não é digitada, e
+      // esperar 300ms por ela faria a tabela reordenar depois de já ter mudado.
+      setState((s) => ({ ...s, sort: consulta.sort, page: 1 }))
+    },
+    [camposFiltraveis, columns, viewsDaTela.views],
+  )
 
   // O favorito PADRÃO abre a tela: é a consulta que se repete todo dia, e
   // obrigar dois cliques nela seria cobrar pelo caso mais frequente. Roda uma
@@ -1093,10 +1155,10 @@ export function VitraDataTable<T>({
   // consulta — e o defeito seria invisível para quem mandou o link.
   const veioDoEndereco = daUrl.q !== '' || daUrl.filtros.length > 0
   useEffect(() => {
-    if (veioDoEndereco) return
+    if (veioDoEndereco || usandoViewsPersistidas) return
     const padrao = favoritoPadrao(lerFavoritos(telaId))
     if (padrao) aplicarConsulta(padrao)
-  }, [telaId, aplicarConsulta, veioDoEndereco])
+  }, [telaId, aplicarConsulta, veioDoEndereco, usandoViewsPersistidas])
 
   function atualizarFavoritos(proximos: FavoritoDeConsulta[]) {
     setFavoritos(proximos)
@@ -1185,12 +1247,20 @@ export function VitraDataTable<T>({
     [columns, entidade, colunasExtras, declaradas],
   )
 
-  const table = useReactTable({
+  const table = useTable({
+    // As features vêm de `listagem/tabela.ts`, declaradas uma vez para o repo
+    // inteiro. Na v8 este objeto trazia `getCoreRowModel()`, `manualSorting` e
+    // `manualPagination`; na v9 o row model do core é automático, e "a
+    // ordenação e a paginação são do servidor" se diz NÃO registrando as
+    // features — ver a nota lá.
+    features: featuresDaTabela,
     data: rows,
     columns: colunasDaTabela,
-    getCoreRowModel: getCoreRowModel(),
-    manualSorting: true,
-    manualPagination: true,
+    getRowId: (linha, indice, pai) => {
+      const id = 'id' in linha ? linha.id : undefined
+      if (typeof id === 'string' || typeof id === 'number') return String(id)
+      return pai ? `${pai.id}.${indice}` : String(indice)
+    },
     // Visibilidade e ordem CONTROLADAS: quem guarda as duas é o estado acima,
     // porque as duas entram na consulta favorita e no que o menu mostra. Deixar
     // a tabela guardá-las internamente daria duas verdades sobre a mesma grade.
@@ -1199,6 +1269,25 @@ export function VitraDataTable<T>({
       ...(ordemDasColunas.length > 0 ? { columnOrder: ordemDasColunas } : {}),
     },
   })
+
+  // A seleção guarda a IDENTIDADE, nunca o objeto que chegou numa resposta.
+  // Refetch cria novas referências para a mesma linha; remapear pelos ids traz
+  // as ações de lote para os dados atuais e mantém os checkboxes coerentes.
+  const selecionadas = table
+    .getRowModel()
+    .rows.filter((row) => idsSelecionados.includes(row.id))
+    .map((row) => row.original)
+  const selected = selecionadas[0] ?? null
+
+  /** `esc` limpa uma seleção existente sem roubar a tecla de dialogs/popovers. */
+  useEffect(() => {
+    if (idsSelecionados.length === 0) return
+    function aoTeclar(e: KeyboardEvent) {
+      if (e.key === 'Escape') setIdsSelecionados([])
+    }
+    document.addEventListener('keydown', aoTeclar)
+    return () => document.removeEventListener('keydown', aoTeclar)
+  }, [idsSelecionados.length])
 
   /**
    * As colunas como o menu as lê: rótulo, visível e a primeira travada.
@@ -1386,9 +1475,10 @@ export function VitraDataTable<T>({
    * Duas cópias divergiriam na primeira mudança de comportamento, e a que
    * fica dentro do grupo é a que ninguém lembraria de atualizar.
    */
-  function renderLinha(row: Row<T>, linhaVisual: number) {
-    const isSelected = selecionadas.includes(row.original)
+  function renderLinha(row: Row<FeaturesDaTabela, T>, linhaVisual: number) {
+    const isSelected = idsSelecionados.includes(row.id)
     const tomDaLinha = decoracao?.(row.original)
+    const celulas = row.getVisibleCells()
     /**
      * Linha CONCLUÍDA ou CANCELADA fica apagada, e quem sabe
      * disso é a coluna de situação — não uma prop que cada tela
@@ -1396,13 +1486,11 @@ export function VitraDataTable<T>({
      * legíveis e param de disputar o olho com as que ainda pedem
      * alguma coisa, que é o trabalho de quem abre a listagem.
      */
-    const apagada = row
-      .getVisibleCells()
-      .some(
-        (cell) =>
-          cell.column.columnDef.meta?.tipo === 'status' &&
-          (tomDoValor(cell.getValue()) === 'done' || tomDoValor(cell.getValue()) === 'void'),
-      )
+    const apagada = celulas.some((cell) => {
+      if (cell.column.columnDef.meta?.tipo !== 'status') return false
+      const tom = tomDoValor(cell.getValue())
+      return tom === 'done' || tom === 'void'
+    })
     return (
       // Seleção = `--primary-soft` com FAIXA de 3px em chartreuse
       // na borda esquerda (mockup 2.0, supersede o violeta cheio
@@ -1470,7 +1558,7 @@ export function VitraDataTable<T>({
         onClick={() => {
           if (planilha) return
           if (linhaAbre) aoAbrirLinha(row.original)
-          else alternarLinha(row.original)
+          else alternarLinha(row.id)
         }}
         onKeyDown={(e) => {
           if (planilha) return
@@ -1479,7 +1567,7 @@ export function VitraDataTable<T>({
           // controle não deve chegar aqui duas vezes.
           e.preventDefault()
           if (linhaAbre && e.key === 'Enter') aoAbrirLinha(row.original)
-          else alternarLinha(row.original)
+          else alternarLinha(row.id)
         }}
       >
         {marcavel ? (
@@ -1508,7 +1596,7 @@ export function VitraDataTable<T>({
           >
             <Checkbox
               isSelected={isSelected}
-              onChange={() => alternarLinha(row.original)}
+              onChange={() => alternarLinha(row.id)}
               aria-label={`Marcar linha ${(state.page - 1) * state.pageSize + row.index + 1}`}
             />
           </TableCell>
@@ -1519,7 +1607,7 @@ export function VitraDataTable<T>({
             {(state.page - 1) * state.pageSize + row.index + 1}
           </TableCell>
         ) : null}
-        {row.getVisibleCells().map((cell, indiceDaColuna) => {
+        {celulas.map((cell, indiceDaColuna) => {
           const tipo = cell.column.columnDef.meta?.tipo
           // Coluna que declara `cell` próprio manda no CONTEÚDO;
           // o tipo só lhe dá a moldura. É o caso que existe hoje
@@ -1714,7 +1802,14 @@ export function VitraDataTable<T>({
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    // O PAINEL da listagem (mockup, aba Listagem): UMA caixa de tinta com sombra
+    // dura, e dentro dela as zonas — visões (tint do módulo), barra de filtro,
+    // grade, rodapé — separadas por régua n-300. Decisão do user (2026-09-04):
+    // "não enxergo as divisões"; a caixa era n-300 sobre n-300 e sumia.
+    <div
+      data-slot="painel-da-listagem"
+      className="flex flex-col overflow-clip rounded-panel border-[1.5px] border-[var(--n-900)] bg-card shadow-[var(--hard-2)]"
+    >
       {/* Não desenha nada: só mantém o endereço contando a mesma história que a
           barra. Fica sob `consultaNoEndereco` porque a janela de busca monta a
           MESMA tabela sobre a tela de trás. */}
@@ -1728,12 +1823,22 @@ export function VitraDataTable<T>({
           manteve a #92 a dois cliques de distância de quem precisava dela. */}
       {camposFiltraveis && camposFiltraveis.length > 0 ? (
         <AbasDeConsulta
-          favoritos={favoritos}
+          favoritos={favoritosDaTira}
           atual={consultaAtual}
           temConsulta={temConsulta}
+          idsPersistidos={usandoViewsPersistidas ? idsDasViewsPersistidas : undefined}
+          idsFavoritos={usandoViewsPersistidas ? idsDasViewsFavoritas : undefined}
           onAplicar={aplicarConsulta}
           onLimpar={limparConsulta}
-          onSalvar={(nome) =>
+          onSalvar={(nome) => {
+            const consultaPersistida = {
+              ...consultaAtual,
+              colunas: colunasDoMenu.filter((coluna) => coluna.visivel).map((coluna) => coluna.id),
+            }
+            if (usandoViewsPersistidas) {
+              viewsDaTela.salvar(nome, consultaPersistida)
+              return
+            }
             atualizarFavoritos([
               ...favoritos,
               {
@@ -1748,11 +1853,22 @@ export function VitraDataTable<T>({
                 padrao: false,
               },
             ])
-          }
-          onRenomear={(id, nome) =>
-            atualizarFavoritos(favoritos.map((f) => (f.id === id ? { ...f, nome } : f)))
-          }
-          onExcluir={(id) => atualizarFavoritos(favoritos.filter((f) => f.id !== id))}
+            if (rotaDaViewEfetiva) viewsDaTela.salvar(nome, consultaPersistida)
+          }}
+          onRenomear={(id, nome) => {
+            const view = viewsDaTela.views.find((item) => item.id === id)
+            if (view) viewsDaTela.renomear(view, nome)
+            else atualizarFavoritos(favoritos.map((f) => (f.id === id ? { ...f, nome } : f)))
+          }}
+          onExcluir={(id) => {
+            const view = viewsDaTela.views.find((item) => item.id === id)
+            if (view) viewsDaTela.excluir(view)
+            else atualizarFavoritos(favoritos.filter((f) => f.id !== id))
+          }}
+          onAlternarFavorito={(id) => {
+            const view = viewsDaTela.views.find((item) => item.id === id)
+            if (view) viewsDaTela.favoritar(view)
+          }}
           onTornarPadrao={(id) => atualizarFavoritos(comPadrao(favoritos, id))}
         />
       ) : null}
@@ -1891,7 +2007,7 @@ export function VitraDataTable<T>({
                             // marcada, e voltar com a seleção velha apontaria
                             // para uma linha que a consulta pode nem ter
                             // trazido de novo.
-                            setSelecionadas([])
+                            setIdsSelecionados([])
                             setVisaoId(visao.id)
                           }}
                         />
@@ -1919,11 +2035,11 @@ export function VitraDataTable<T>({
               ))}
             </div>
           ) : query.isError ? (
-            <div className="rounded-data border border-input bg-card py-8 shadow-macia">
+            <div className="bg-card py-10">
               <FalhaDaConsulta erro={query.error} aoTentar={() => query.refetch()} />
             </div>
           ) : rows.length === 0 ? (
-            <div className="rounded-data border border-input bg-card py-8 shadow-macia">
+            <div className="bg-card py-10">
               <VazioDaConsulta
                 q={state.q}
                 temFiltro={temFiltro}
@@ -1949,11 +2065,7 @@ export function VitraDataTable<T>({
            caixa que não rola, ou seja, parado. `clip` recorta igual e não cria
            scrollport, então a fixação passa a valer contra a rolagem da PÁGINA,
            que é onde a listagem rola de verdade. */
-        <div
-          data-slot="grade"
-          data-densidade={densidade}
-          className="overflow-clip rounded-data border border-input bg-card shadow-macia"
-        >
+        <div data-slot="grade" data-densidade={densidade} className="overflow-clip bg-card">
           {/* `tabular-nums` na TABELA inteira, e não coluna a coluna.
               Medido em `docs/design/medir-tabular.py`: no Inter do corpo o `1`
               avança 833/2048 de em e o `4`, 1323 — numa coluna de valores isso
@@ -2011,7 +2123,7 @@ export function VitraDataTable<T>({
                 tint separa, então não há borda por baixo dele. O mockup desenha
                 as duas (tint + hairline); a régua da rodada é explícita
                 ("header separado por tint n-50, não por borda") e vence. */}
-            <TableHeader className="sticky top-0 z-10 bg-surface-sunken">
+            <TableHeader className="sticky top-0 z-10 bg-[var(--n-100)] [&_th]:h-10 [&_th]:border-b [&_th]:border-input [&_th]:text-[var(--n-700)]">
               {table.getHeaderGroups().map((headerGroup, hgIndex, headerGroups) => (
                 // Cabeçalho agrupado: fileira de grupo separada das sub-colunas
                 // por Fio (a sublinha forte fica na fileira das folhas).
@@ -2029,7 +2141,11 @@ export function VitraDataTable<T>({
                         aria-label="Marcar todas as linhas desta página"
                         isSelected={todasMarcadas}
                         isIndeterminate={algumaMarcada && !todasMarcadas}
-                        onChange={() => setSelecionadas(todasMarcadas ? [] : rows)}
+                        onChange={() =>
+                          setIdsSelecionados(
+                            todasMarcadas ? [] : table.getRowModel().rows.map((row) => row.id),
+                          )
+                        }
                       />
                     </TableHead>
                   ) : null}
@@ -2340,7 +2456,7 @@ export function VitraDataTable<T>({
                   quantidade={algumaMarcada ? selecionadas.length : ultimaQuantidade.current}
                   acoes={acoesDeLote ?? []}
                   linhas={selecionadas}
-                  aoLimpar={() => setSelecionadas([])}
+                  aoLimpar={() => setIdsSelecionados([])}
                   saindo={barraSaindo}
                 />
               </div>
@@ -2349,7 +2465,7 @@ export function VitraDataTable<T>({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 border-t border-input bg-[var(--n-50)] px-[var(--s-3)] py-2">
         {/* O rodapé responde DUAS perguntas, e por isso tem dois lados: à
             esquerda "o que estou vendo e quanto isso soma"; à direita "como
             ando por dentro disso". Antes havia só a contagem, e a soma da

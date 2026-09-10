@@ -1,3 +1,5 @@
+import { Link, useRouterState } from '@tanstack/react-router'
+import { Building2 } from 'lucide-react'
 import { itemDaRota } from '@/app/navigation'
 import { buttonVariants } from '@/components/ui/button'
 import {
@@ -11,8 +13,6 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { useEmpresasDaSessao } from '@/data/empresas-api'
 import { useRecursosDaEmpresa } from '@/data/recursos-da-empresa'
-import { Link, useRouterState } from '@tanstack/react-router'
-import { Building2 } from 'lucide-react'
 
 /**
  * Guarda de RECURSO: tela de módulo que a empresa ativa não opera não renderiza.

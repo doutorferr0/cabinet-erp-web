@@ -1,9 +1,9 @@
-import { FormGrid, FormRow } from '@/components/cabinet/form-grid'
-import { Form } from '@/components/ui/form'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useForm } from 'react-hook-form'
 import { describe, expect, it } from 'vitest'
+import { FormGrid, FormRow } from '@/components/cabinet/form-grid'
+import { Form } from '@/components/ui/form'
 
 /**
  * Faixa de seção (DESIGN.md §FormGrid): linha cuja chave `sectionKey` tem
@@ -356,7 +356,9 @@ describe('FormGrid — voz da coluna', () => {
   it('produto e nome falam nas vozes próprias, e o resto continua em UI', () => {
     render(<HarnessDeVoz />)
 
-    expect(screen.getByLabelText(/Descrição do Produto/).className).toContain('font-display')
+    // O QUÊ é Inter 500 (dado), não display — decisão do user de 2026-09-04.
+    expect(screen.getByLabelText(/Descrição do Produto/).className).toContain('font-sans')
+    expect(screen.getByLabelText(/Descrição do Produto/).className).toContain('font-medium')
     expect(screen.getByLabelText(/Fornecedor/).className).toContain('font-nome')
     // Sem `voz`, a célula é dado neutro: nenhuma das duas famílias entra.
     const neutro = screen.getByLabelText(/Tamanho/).className

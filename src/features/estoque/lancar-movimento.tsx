@@ -1,3 +1,8 @@
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useQueryClient } from '@tanstack/react-query'
+import type { ReactNode } from 'react'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
 import type { StockLocationDto } from '@/api/gerado'
 import { RadioField, SelectIdField, TextField } from '@/components/cabinet/form-controls'
 import { Button } from '@/components/ui/button'
@@ -12,11 +17,6 @@ import {
 import { CHAVES_COMPRAS } from '@/data/compras-api'
 import { useLancarMovimento } from '@/data/estoque-api'
 import { mensagemDoErro } from '@/lib/erros'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useQueryClient } from '@tanstack/react-query'
-import type { ReactNode } from 'react'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
 
 /**
  * LANÇAR MOVIMENTO — entrada, saída e ajuste, sobre a MESMA operação.

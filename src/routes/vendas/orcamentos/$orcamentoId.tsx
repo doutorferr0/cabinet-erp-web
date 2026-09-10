@@ -1,3 +1,6 @@
+import { createFileRoute } from '@tanstack/react-router'
+import { FileCheck } from 'lucide-react'
+import { useState } from 'react'
 import { TelaDeDocumento } from '@/components/cabinet/tela-de-documento'
 import { data } from '@/data'
 import { LateralDoOrcamento } from '@/features/orcamento/ficha-lateral'
@@ -5,9 +8,6 @@ import { OrcamentoForm } from '@/features/orcamento/orcamento-form'
 import { PainelDeAtividades } from '@/features/tarefas/painel-atividades'
 import { GerarPedido, type OrcamentoParaConverter } from '@/features/vendas/gerar-pedido'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
-import { createFileRoute } from '@tanstack/react-router'
-import { FileCheck } from 'lucide-react'
-import { useState } from 'react'
 
 export const Route = createFileRoute('/vendas/orcamentos/$orcamentoId')({
   component: OrcamentoEditPage,

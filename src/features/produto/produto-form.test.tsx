@@ -1,14 +1,14 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { URL_PRODUTOS } from '@/data/produtos-api'
 import { json, problema } from '@/test/servidor'
 import {
-  type FetchStub,
   acaoNaLinha,
+  type FetchStub,
   renderRoute,
   respostaSessao,
   respostaVinculos,
 } from '@/test/utils'
-import { screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 /**
  * Tela de produtos contra o BACKEND (servidor falso no `fetch`).

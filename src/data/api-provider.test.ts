@@ -1,9 +1,9 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { configurarApi } from '@/api/cliente'
 import { ListFilterJoin, ListFilterOperator } from '@/api/gerado'
-import { ErroDaApi, PAGE_SIZE_MAX, createApiListProvider, queryDaTabela } from '@/data/api-provider'
+import { createApiListProvider, ErroDaApi, PAGE_SIZE_MAX, queryDaTabela } from '@/data/api-provider'
 import { type FiltroDaTabela, JUNCOES, OPERADORES } from '@/lib/filtro-de-consulta'
 import { tableState } from '@/test/utils'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * Trava a tradução entre o contrato da UI e a convenção do backend.

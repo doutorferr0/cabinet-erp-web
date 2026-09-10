@@ -1,3 +1,5 @@
+import { createFileRoute } from '@tanstack/react-router'
+import { Send } from 'lucide-react'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { TelaDeDocumento } from '@/components/cabinet/tela-de-documento'
 import { data } from '@/data'
@@ -5,8 +7,6 @@ import { SITUACAO_DA_ORDEM, useEnviarOrdemDeCompra } from '@/data/compras-api'
 import { OrdemCompraForm } from '@/features/ordem-compra/ordem-compra-form'
 import { formatDateBR } from '@/lib/formatters'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
-import { createFileRoute } from '@tanstack/react-router'
-import { Send } from 'lucide-react'
 
 /**
  * `dePedido` + `fornecedor`: de onde a ordem NOVA veio.

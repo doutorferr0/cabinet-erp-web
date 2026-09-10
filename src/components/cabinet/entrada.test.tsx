@@ -1,6 +1,6 @@
-import { Entrada } from '@/components/cabinet/entrada'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { Entrada } from '@/components/cabinet/entrada'
 
 /**
  * Entrada, depois da D16 — o componente ficou, a animação saiu.

@@ -1,7 +1,7 @@
-import { BlocoIdentidade } from '@/components/cabinet/ficha/bloco-identidade'
-import { monograma } from '@/components/cabinet/monograma'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { BlocoIdentidade } from '@/components/cabinet/ficha/bloco-identidade'
+import { monograma } from '@/components/cabinet/monograma'
 
 /**
  * BlocoIdentidade (D16, issue #484) — o card lateral que substituiu a

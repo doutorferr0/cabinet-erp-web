@@ -1,6 +1,6 @@
-import { Monograma, iniciaisDe, tintDe } from '@/components/cabinet/monograma'
 import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { iniciaisDe, Monograma, tintDe } from '@/components/cabinet/monograma'
 
 /**
  * MONOGRAMA — duas letras numa caixa de tint (#471, D3).

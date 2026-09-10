@@ -1,9 +1,8 @@
-import { RELEVO_DE_FOLHA, TRACO_DE_FOLHA } from '@/components/ui/popover'
-import { cn } from '@/lib/utils'
 import { cva } from 'class-variance-authority'
 import { CheckIcon, ChevronRightIcon } from 'lucide-react'
 import type * as React from 'react'
 import {
+  composeRenderProps,
   Header as HeaderPrimitive,
   MenuItem as MenuItemPrimitive,
   type MenuItemProps as MenuItemPrimitiveProps,
@@ -14,8 +13,9 @@ import {
   Popover as PopoverPrimitive,
   Separator as SeparatorPrimitive,
   SubmenuTrigger as SubmenuTriggerPrimitive,
-  composeRenderProps,
 } from 'react-aria-components'
+import { RELEVO_DE_FOLHA, TRACO_DE_FOLHA } from '@/components/ui/popover'
+import { cn } from '@/lib/utils'
 
 function DropdownMenuTrigger({ ...props }: React.ComponentProps<typeof MenuTriggerPrimitive>) {
   return <MenuTriggerPrimitive data-slot="dropdown-menu-trigger" {...props} />
@@ -252,14 +252,14 @@ function DropdownMenuShortcut({ className, ...props }: React.ComponentProps<'spa
 }
 
 export {
-  DropdownMenuTrigger,
   DropdownMenu,
   DropdownMenuGroup,
-  DropdownMenuLabel,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuSub,
-  DropdownMenuSubTrigger,
   DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
 }

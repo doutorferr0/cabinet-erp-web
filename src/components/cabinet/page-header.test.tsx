@@ -1,8 +1,8 @@
-import { PageHeader } from '@/components/cabinet/page-header'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Pencil, Plus, Printer } from 'lucide-react'
 import { describe, expect, it, vi } from 'vitest'
+import { PageHeader } from '@/components/cabinet/page-header'
 
 /**
  * O que estes testes travam é a PROMESSA do padrão, não o desenho: uma ação

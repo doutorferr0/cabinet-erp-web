@@ -1,10 +1,10 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import { beforeEach, describe, expect, it } from 'vitest'
 import type { CrmOpportunityDto, CrmStageDto } from '@/api/gerado'
 import { URL_FUNIS, URL_OPORTUNIDADES } from '@/data/crm-api'
 import { colunasDoQuadro } from '@/features/crm/funil-agrupa'
 import { json } from '@/test/servidor'
 import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
-import { screen, waitFor, within } from '@testing-library/react'
-import { beforeEach, describe, expect, it } from 'vitest'
 
 /**
  * VIEW MODES do funil (#86): a mesma listagem, dois desenhos.

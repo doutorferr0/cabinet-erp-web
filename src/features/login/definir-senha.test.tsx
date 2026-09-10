@@ -1,6 +1,6 @@
-import { type FetchStub, renderRoute } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { type FetchStub, renderRoute } from '@/test/utils'
 
 /**
  * DEFINIR SENHA pelo link, e PEDIR o link — pelo router de verdade.

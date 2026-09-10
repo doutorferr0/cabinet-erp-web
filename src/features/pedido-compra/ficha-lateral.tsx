@@ -1,10 +1,10 @@
+import { useNavigate } from '@tanstack/react-router'
+import { FileText } from 'lucide-react'
 import { Andamento, type EventoDeAndamento } from '@/components/cabinet/andamento'
 import { CartaoLateral } from '@/components/cabinet/cartao-lateral'
 import { Button } from '@/components/ui/button'
 import { type PedidoDeCompra, SITUACAO_DO_PEDIDO } from '@/data/compras-api'
 import { formatDateBR } from '@/lib/formatters'
-import { useNavigate } from '@tanstack/react-router'
-import { FileText } from 'lucide-react'
 
 /**
  * A LATERAL do pedido de compra (D19, #487) — de onde a necessidade veio e em

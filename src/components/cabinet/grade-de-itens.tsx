@@ -1,15 +1,15 @@
+import { Plus, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Controller, useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import { VitraDataTable } from '@/components/cabinet/data-table'
 import { totalItemCentavos } from '@/components/cabinet/documento'
+import type { ColumnDef, LinhaDaTabela } from '@/components/cabinet/listagem/tabela'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { formatMoneyBRL, formatPercent } from '@/lib/formatters'
 import { bindShortcut } from '@/lib/shortcuts'
 import type { TableFetcher } from '@/lib/table-query'
 import { cn } from '@/lib/utils'
-import type { ColumnDef } from '@tanstack/react-table'
-import { Plus, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
-import { Controller, useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 
 /**
  * GRADE DE ITENS do documento — Reface 2.0, D17 (issue #485).
@@ -209,7 +209,7 @@ export interface GradeDeItensProps {
  * escolha de item é repetida (o operador traz cinco produtos seguidos) e o
  * diálogo modal centralizado cobre justamente a grade que ele está enchendo.
  */
-export function FonteEmFolha<T>({
+export function FonteEmFolha<T extends LinhaDaTabela>({
   rotulo,
   titulo,
   descricao,

@@ -1,5 +1,5 @@
-import { cn } from '@/lib/utils'
 import { LabelContext, Label as LabelPrimitive, type LabelProps } from 'react-aria-components'
+import { cn } from '@/lib/utils'
 
 /**
  * RÓTULO SEM CAIXA E SEM CAIXA ALTA (Reface 2.0, issue #470).

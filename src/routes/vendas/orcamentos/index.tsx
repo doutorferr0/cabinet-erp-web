@@ -1,7 +1,11 @@
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { CalendarDays, CopyPlus, FileOutput, HardHat, Hash, User } from 'lucide-react'
+import { useState } from 'react'
 import type { QuoteDto } from '@/api/gerado'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import type { OpcaoDeAgrupamento } from '@/components/cabinet/data-table'
 import { FaixaDeKpi, KpiTile } from '@/components/cabinet/kpi-tile'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { TelaDeListagem } from '@/components/cabinet/tela-de-listagem'
 import { Button } from '@/components/ui/button'
 import { data } from '@/data'
@@ -12,10 +16,6 @@ import { RevisarOrcamento } from '@/features/orcamento/revisar-orcamento'
 import { GerarPedido } from '@/features/vendas/gerar-pedido'
 import type { CampoFiltravel } from '@/lib/filtro-de-consulta'
 import { formatDateBR } from '@/lib/formatters'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import type { ColumnDef } from '@tanstack/react-table'
-import { CalendarDays, CopyPlus, FileOutput, HardHat, Hash, User } from 'lucide-react'
-import { useState } from 'react'
 
 export const Route = createFileRoute('/vendas/orcamentos/')({
   component: OrcamentosPage,

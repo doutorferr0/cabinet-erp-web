@@ -1,5 +1,5 @@
-import { cn } from '@/lib/utils'
 import { Separator as SeparatorPrimitive } from 'react-aria-components'
+import { cn } from '@/lib/utils'
 
 /**
  * HAIRLINE — a segunda das quatro ferramentas de separação do §Hierarquia, e a

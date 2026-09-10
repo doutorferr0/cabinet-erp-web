@@ -1,7 +1,9 @@
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import {
   ErroDeCarregamento,
   EsqueletoDeCarregamento,
 } from '@/components/cabinet/estado-de-consulta'
+import { RegistroNaoEncontrado } from '@/components/cabinet/vazio-com-saida'
 import { useRotulosDeApoio } from '@/data/lookups-api'
 import { FichaDeRegistro } from '@/features/cadastro/ficha-de-registro'
 import { camposDoContrato, cliente as esquema } from '@/features/cadastro/modulos'
@@ -16,7 +18,6 @@ import { usarParceiro } from '@/features/parceiro/usar-parceiro'
 import { PainelDeAtividades } from '@/features/tarefas/painel-atividades'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
 import type { Cliente } from '@/mocks/clientes'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/cadastros/clientes/$clienteId')({
   component: ClienteEditPage,
@@ -51,7 +52,7 @@ function ClienteEditPage() {
   }
 
   if (!registro) {
-    return <p className="text-muted-foreground">Cliente não encontrado.</p>
+    return <RegistroNaoEncontrado titulo="Cliente não encontrado." voltar="/cadastros/clientes" />
   }
 
   // O vínculo pai/filho vale para a tela inteira e não pertence a aba nenhuma:

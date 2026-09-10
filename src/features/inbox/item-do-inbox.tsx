@@ -1,8 +1,8 @@
+import { Link } from '@tanstack/react-router'
+import { Check, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { ItemDoInbox } from '@/mocks/inbox'
-import { Link } from '@tanstack/react-router'
-import { Check, RotateCcw } from 'lucide-react'
 import { monogramaDe, tempoCurto, tempoPorExtenso } from './views'
 
 /**

@@ -1,13 +1,13 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   type CatalogLookupDto,
-  type PagedResultOfCatalogLookupDto,
   createCatalogLookup,
   listCatalogLookups,
+  type PagedResultOfCatalogLookupDto,
   updateCatalogLookup,
 } from '@/api/gerado'
-import { type RespostaDaApi, dadosOuErro } from '@/data/api-provider'
-import { type LookupKind, kindDoBackend } from '@/data/lookups-api'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { dadosOuErro, type RespostaDaApi } from '@/data/api-provider'
+import { kindDoBackend, type LookupKind } from '@/data/lookups-api'
 
 /**
  * GESTÃO DAS LISTAS DE APOIO — a fronteira da tela `/config/listas`.

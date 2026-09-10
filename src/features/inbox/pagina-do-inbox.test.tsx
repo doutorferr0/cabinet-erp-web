@@ -1,7 +1,7 @@
-import { redefinirInbox } from '@/features/inbox/estado-do-inbox'
-import { renderRoute } from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { redefinirInbox } from '@/features/inbox/estado-do-inbox'
+import { renderRoute } from '@/test/utils'
 
 /**
  * O store da caixa é de MÓDULO (ver `estado-do-inbox.ts`): sobrevive à

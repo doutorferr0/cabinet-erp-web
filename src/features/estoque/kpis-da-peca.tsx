@@ -1,9 +1,9 @@
+import { useQuery } from '@tanstack/react-query'
 import type { StockMovementDto } from '@/api/gerado'
 import { FaixaDeKpi, KpiTile } from '@/components/cabinet/kpi-tile'
 import { useReposicaoDeEstoque } from '@/data/compras-api'
 import { CHAVES_ESTOQUE, fetcherDoKardex } from '@/data/estoque-api'
 import { formatInstanteBR, formatQuantidade } from '@/lib/formatters'
-import { useQuery } from '@tanstack/react-query'
 
 /**
  * OS QUATRO NÚMEROS DA PEÇA — saldo, reservado, disponível e último movimento.

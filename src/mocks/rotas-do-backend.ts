@@ -1,4 +1,4 @@
-import { http, type RequestHandler, passthrough } from 'msw'
+import { http, passthrough, type RequestHandler } from 'msw'
 
 /**
  * AS ROTAS QUE O `cabinet-erp-api` JÁ SERVE — passthrough POR ROTA, não modo global.
@@ -1535,6 +1535,16 @@ export const ROTAS_NO_MOCK: readonly RotaNoMock[] = [
   },
   ...AGREGADOS_DE_KPI,
   ...VIEWS_SALVAS,
+  // Consulta de CEP publicada nesta frente. Nasce no mock e fica nele até que
+  // o Spring publique a consulta nacional; o Node congelado nunca a conheceu.
+  {
+    metodo: 'get',
+    caminho: '/api/postal-codes/{postalCode}',
+    motivo:
+      'consulta de CEP publicada no front — o mock é a fonte até o Spring servir a integração postal',
+    natureza: 'sem-contrato',
+    servidor: 'spring-pendente',
+  },
 ]
 
 /**

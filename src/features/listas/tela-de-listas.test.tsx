@@ -1,7 +1,7 @@
-import { json } from '@/test/servidor'
-import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { json } from '@/test/servidor'
+import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 
 /**
  * A tela de GESTÃO DAS LISTAS DE APOIO contra servidor falso.
@@ -149,7 +149,7 @@ describe('tela de listas de apoio', () => {
     expect(escritas[0]?.corpo).toMatchObject({ name: 'PHILIPS', active: true })
     // O kind viaja no CORPO (a tabela é uma só, discriminada por ele) e é o do
     // backend, em MAIÚSCULA.
-    expect((escritas[0]?.corpo as { kind: string }).kind).toMatch(/^[A-Z_]+$/)
+    expect((escritas[0]?.corpo as { kind: string } | undefined)?.kind).toMatch(/^[A-Z_]+$/)
     // E o campo esvazia para o próximo: quem povoa uma lista digita vários
     // seguidos, e isso é o que torna a série um gesto só.
     await waitFor(() => expect(campo).toHaveValue(''))

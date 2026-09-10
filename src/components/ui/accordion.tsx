@@ -1,8 +1,8 @@
-import { cn } from '@/lib/utils'
 import { ChevronDownIcon } from 'lucide-react'
 import type * as React from 'react'
 import {
   Button as ButtonPrimitive,
+  composeRenderProps,
   DisclosureGroup as DisclosureGroupPrimitive,
   type DisclosureGroupProps as DisclosureGroupPrimitiveProps,
   DisclosurePanel as DisclosurePanelPrimitive,
@@ -10,8 +10,8 @@ import {
   Disclosure as DisclosurePrimitive,
   type DisclosureProps as DisclosurePrimitiveProps,
   Heading,
-  composeRenderProps,
 } from 'react-aria-components'
+import { cn } from '@/lib/utils'
 
 /**
  * ACORDEÃO — seção que abre e fecha.
@@ -140,4 +140,4 @@ function AccordionPanel({
   )
 }
 
-export { Accordion, AccordionItem, AccordionTrigger, AccordionPanel }
+export { Accordion, AccordionItem, AccordionPanel, AccordionTrigger }

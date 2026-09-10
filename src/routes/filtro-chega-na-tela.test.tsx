@@ -1,10 +1,10 @@
+import { screen } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { URL_PRODUTOS } from '@/data/produtos-api'
 import { servidorDeOrcamentos } from '@/test/orcamentos'
 import { stubDeParceiros } from '@/test/parceiros'
 import { json } from '@/test/servidor'
 import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
-import { screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 /**
  * GUARDA de uma CLASSE de falha, não de um caso.

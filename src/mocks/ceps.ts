@@ -38,18 +38,11 @@ const CEPS: Record<string, CepResult> = {
   },
 }
 
-export function onlyDigits(s: string): string {
-  return s.replace(/\D/g, '')
-}
-
-export function maskCep(s: string): string {
-  const d = onlyDigits(s).slice(0, 8)
-  return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d
-}
-
 /** Retorna null quando o CEP não está na base (o legado deixaria o usuário digitar). */
 export function fetchCep(cep: string, delayMs = 200): Promise<CepResult | null> {
   return new Promise((resolve) => {
-    setTimeout(() => resolve(CEPS[onlyDigits(cep)] ?? null), delayMs)
+    setTimeout(() => resolve(CEPS[somenteDigitos(cep)] ?? null), delayMs)
   })
 }
+
+import { somenteDigitos } from '@/lib/cep'

@@ -1,9 +1,9 @@
 import { VitraDataTable } from '@/components/cabinet/data-table'
+import type { ColumnDef, LinhaDaTabela } from '@/components/cabinet/listagem/tabela'
 import { Dialog, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import type { TableFetcher } from '@/lib/table-query'
-import type { ColumnDef } from '@tanstack/react-table'
 
-export interface SearchDialogProps<T> {
+export interface SearchDialogProps<T extends LinhaDaTabela> {
   open: boolean
   onOpenChange: (open: boolean) => void
   title: string
@@ -18,7 +18,7 @@ export interface SearchDialogProps<T> {
  * Janela auxiliar de busca — transcrição §9 padrão 5 (`[busca +...]`).
  * Reutiliza a MESMA VitraDataTable das listagens, com seleção e retorno.
  */
-export function SearchDialog<T>({
+export function SearchDialog<T extends LinhaDaTabela>({
   open,
   onOpenChange,
   title,

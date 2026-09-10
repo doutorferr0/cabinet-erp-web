@@ -1,9 +1,9 @@
+import { createRootRoute, Outlet, useRouter, useRouterState } from '@tanstack/react-router'
+import { useEffect } from 'react'
 import { RequireSession } from '@/app/require-session'
 import { RequireTenant } from '@/app/require-tenant'
 import { AppShell } from '@/app/shell'
 import { ligarTransicaoDeRota } from '@/app/transicao-de-rota'
-import { Outlet, createRootRoute, useRouter, useRouterState } from '@tanstack/react-router'
-import { useEffect } from 'react'
 
 export const Route = createRootRoute({
   component: RootComponent,

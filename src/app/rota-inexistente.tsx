@@ -1,7 +1,7 @@
+import { Link } from '@tanstack/react-router'
 import { Forma } from '@/components/cabinet/forma'
 import { buttonVariants } from '@/components/ui/button'
 import { Empty, EmptyContent, EmptyDescription, EmptyMedia } from '@/components/ui/empty'
-import { Link } from '@tanstack/react-router'
 
 /**
  * ROTA INEXISTENTE (404).
@@ -32,7 +32,7 @@ export function RotaInexistente() {
   return (
     <Empty className="py-16">
       <EmptyMedia className="[&_svg]:size-auto">
-        <Forma tipo="casa" tamanho={120} tint="--rose-400" className="text-foreground" />
+        <Forma tipo="casa" tamanho={120} className="text-foreground" />
       </EmptyMedia>
       <div className="flex max-w-sm flex-col items-center gap-1.5">
         <h1 className="t-pagina">Este endereço não existe</h1>

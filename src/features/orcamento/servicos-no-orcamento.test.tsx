@@ -1,6 +1,6 @@
-import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 
 /**
  * A ABA SERVIÇOS DO ORÇAMENTO (F7 — web#381).
@@ -153,7 +153,11 @@ function servidor({
   escritas = [],
   detalhe = DETALHE,
   servicos = SERVICOS,
-}: { escritas?: Escrita[]; detalhe?: Record<string, unknown>; servicos?: unknown[] } = {}) {
+}: {
+  escritas?: Escrita[]
+  detalhe?: Record<string, unknown>
+  servicos?: unknown[]
+} = {}) {
   return async (entrada: RequestInfo | URL) => {
     const req = entrada instanceof Request ? entrada : null
     const url = String(req ? req.url : entrada)
@@ -250,7 +254,8 @@ describe('o Gravar não pode apagar a aba Serviços', () => {
     await user.click(screen.getByRole('button', { name: /^Gravar$/i }))
     await waitFor(() => expect(escritas.length).toBe(1))
 
-    const linha = (escritas[0]?.corpo?.serviceItems as Record<string, unknown>[])[0] ?? {}
+    const linha =
+      (escritas[0]?.corpo?.serviceItems as Record<string, unknown>[] | undefined)?.[0] ?? {}
     // `QuoteServiceItemWriteRequest` não tem os dois: quem os calcula é o
     // servidor, e o `electricianAmountCents` vira pagamento de instalador.
     expect(linha).not.toHaveProperty('totalCents')

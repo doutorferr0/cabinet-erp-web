@@ -1,3 +1,5 @@
+import { Pencil } from 'lucide-react'
+import { type ReactNode, useState } from 'react'
 import { CartaoLateral, type ParDoCartao } from '@/components/cabinet/cartao-lateral'
 import { ConfirmarDesativacao } from '@/components/cabinet/confirmar-desativacao'
 import { CabecalhoDoRegistro, LayoutDoRegistro } from '@/components/cabinet/documento'
@@ -6,8 +8,6 @@ import { FichaDeModulos } from '@/components/cabinet/ficha/ficha-de-modulos'
 import { IndiceDeModulos } from '@/components/cabinet/ficha/indice-de-modulos'
 import { textoDoCampo } from '@/components/cabinet/ficha/valores'
 import type { EntidadeCadastro } from '@/features/cadastro/modulos/tipos'
-import { Pencil } from 'lucide-react'
-import { type ReactNode, useState } from 'react'
 
 /**
  * A FICHA DE CADASTRO no esqueleto 2.0 (D19, #487).

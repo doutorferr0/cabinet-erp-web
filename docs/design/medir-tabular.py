@@ -54,6 +54,7 @@ from pathlib import Path
 FAMILIAS = [
     ("Inter", "interface (--font-sans)", "inter"),
     ("JetBrains Mono", "dado (--font-mono)", "jetbrains-mono"),
+    ("Newsreader", "nome próprio (--font-nome)", "newsreader"),
 ]
 
 RAIZ = Path(__file__).resolve().parents[2]

@@ -1,7 +1,10 @@
+import { Link, useRouter } from '@tanstack/react-router'
+import { ArrowLeft, FileQuestion, SearchX, Unplug } from 'lucide-react'
+import type React from 'react'
 import { DetalheTecnico } from '@/components/cabinet/detalhe-tecnico'
 import { FormaDoModulo } from '@/components/cabinet/forma'
 import { ModuloEmConstrucao } from '@/components/cabinet/modulo-em-construcao'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import {
   Empty,
   EmptyContent,
@@ -12,7 +15,6 @@ import {
 } from '@/components/ui/empty'
 import { ehModuloEmConstrucao } from '@/data/modulos-em-construcao'
 import { detalheDoErro } from '@/lib/erros'
-import { SearchX, Unplug } from 'lucide-react'
 
 /**
  * O QUE A LISTAGEM MOSTRA NO LUGAR DAS LINHAS — vazio e falha.
@@ -148,5 +150,79 @@ export function VazioDaConsulta({
         ) : null}
       </EmptyContent>
     </Empty>
+  )
+}
+
+/**
+ * REGISTRO QUE NÃO EXISTE — a ficha aberta por um id que o servidor não conhece.
+ *
+ * Era um `<p>` cinza solto no canto da folha ("Cliente não encontrado."), sem
+ * cabeçalho e sem saída: a única peça do sistema em que o operador ficava numa
+ * tela vazia sem um botão para sair dela. Vira a mesma gramática dos outros
+ * vazios (forma do módulo, título, orientação) e ganha o caminho de volta para
+ * a lista — que é o que se faz depois de errar um id.
+ */
+export function RegistroNaoEncontrado({
+  titulo,
+  voltar,
+  rotuloDaLista = 'Voltar à lista',
+}: {
+  /** "Cliente não encontrado." — vai como veio: as rotas e os testes já o escrevem. */
+  titulo: string
+  /** A rota da listagem de onde este registro viria. */
+  voltar: string
+  rotuloDaLista?: string
+}) {
+  return (
+    <Empty data-slot="registro-nao-encontrado">
+      <EmptyMedia>
+        <FileQuestion />
+      </EmptyMedia>
+      <EmptyHeader>
+        <EmptyTitle>{titulo}</EmptyTitle>
+        <EmptyDescription>
+          O endereço aponta para um registro que não existe ou que foi removido. Confira o código ou
+          volte para a lista.
+        </EmptyDescription>
+      </EmptyHeader>
+      <EmptyContent>
+        {/* `Link` do roteador com as classes do botão (mesmo desvio de
+            `rota-inexistente.tsx`): o `LinkButton` da RAC usa `href` cru e
+            recarregaria a página. */}
+        <LinkDeSaida to={voltar} className={buttonVariants({ size: 'sm' })}>
+          <ArrowLeft aria-hidden="true" />
+          {rotuloDaLista}
+        </LinkDeSaida>
+      </EmptyContent>
+    </Empty>
+  )
+}
+
+/**
+ * `Link` do roteador quando há roteador; âncora quando não há. A `TelaDeDocumento`
+ * é testada isolada (`renderWithQuery`, sem `RouterProvider`), e o `Link` do
+ * TanStack lê o contexto sem guarda — o vazio não pode ser a peça que derruba a
+ * tela por causa do ambiente em que está montada.
+ */
+function LinkDeSaida({
+  to,
+  className,
+  children,
+}: {
+  to: string
+  className: string
+  children: React.ReactNode
+}) {
+  // `useRouter` não lança sem provider: devolve o contexto vazio (e avisa, se
+  // deixar). O que lança é o `Link`, ao ler `isServer` dele.
+  const comRoteador = Boolean(useRouter({ warn: false }))
+  return comRoteador ? (
+    <Link to={to as never} className={className}>
+      {children}
+    </Link>
+  ) : (
+    <a href={to} className={className}>
+      {children}
+    </a>
   )
 }

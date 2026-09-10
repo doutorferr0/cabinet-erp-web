@@ -1,3 +1,4 @@
+import { TriangleAlert } from 'lucide-react'
 import { Nome } from '@/components/cabinet/nome'
 import {
   AlertDialog,
@@ -9,7 +10,6 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { TriangleAlert } from 'lucide-react'
 
 /**
  * Confirmação do `Excluir` das listagens de cadastro.

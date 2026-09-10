@@ -1,5 +1,5 @@
-import markCompacta from '@/assets/marca/cabinet-mark-compact.svg?raw'
 import markCheia from '@/assets/marca/cabinet-mark.svg?raw'
+import markCompacta from '@/assets/marca/cabinet-mark-compact.svg?raw'
 import wordmark from '@/assets/marca/cabinet-wordmark.svg?raw'
 import { cn } from '@/lib/utils'
 

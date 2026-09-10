@@ -1,5 +1,5 @@
-import { cn } from '@/lib/utils'
 import * as React from 'react'
+import { cn } from '@/lib/utils'
 
 /**
  * Tabela brut, ainda em HTML puro: a versão RAC (grid navegável do spike)
@@ -43,7 +43,7 @@ const TableBody = React.forwardRef<
   // a caixa é do contêiner, uma vez só.
   <tbody
     ref={ref}
-    className={cn('[&_tr:last-child]:border-0 [&_tr]:border-b [&_tr]:border-rule-hair', className)}
+    className={cn('[&_tr:last-child]:border-0 [&_tr]:border-b [&_tr]:border-input', className)}
     {...props}
   />
 ))

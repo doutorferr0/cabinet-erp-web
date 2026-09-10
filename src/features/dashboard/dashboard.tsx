@@ -1,8 +1,8 @@
+import { Link } from '@tanstack/react-router'
 import { buttonVariants } from '@/components/ui/button'
 import { useEmpresasDaSessao } from '@/data/empresas-api'
 import { useSessao } from '@/data/sessao'
 import { dataPorExtenso, saudacao } from '@/lib/datas'
-import { Link } from '@tanstack/react-router'
 import { LinhaDeHoje } from './hoje'
 import { Indicadores } from './indicadores'
 

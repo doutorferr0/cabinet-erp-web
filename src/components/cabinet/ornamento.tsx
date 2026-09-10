@@ -1,6 +1,6 @@
+import { useRouter, useRouterState } from '@tanstack/react-router'
 import { type Modulo, moduloDaRota } from '@/app/modulo'
 import { cn } from '@/lib/utils'
-import { useRouter, useRouterState } from '@tanstack/react-router'
 
 /**
  * ORNAMENTO — UMA forma só, parametrizada (Reface 2.0, D28). O 1.x montava 16 desenhos

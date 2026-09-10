@@ -1,7 +1,7 @@
-import { GRUPOS_NAV, GRUPO_CONFIG, GRUPO_DENTRO_DA_CONFIG, grupoDaRota } from '@/app/nav/grupos'
-import { opcoesDoRouter } from '@/app/router'
 import { createMemoryHistory, createRouter } from '@tanstack/react-router'
 import { describe, expect, it } from 'vitest'
+import { GRUPO_CONFIG, GRUPO_DENTRO_DA_CONFIG, GRUPOS_NAV, grupoDaRota } from '@/app/nav/grupos'
+import { opcoesDoRouter } from '@/app/router'
 
 /**
  * A GUARDA DE ALCANCE — nenhuma tela fica fora da barra em silêncio.

@@ -1,7 +1,7 @@
-import { PaginaDeAuth } from '@/features/login/pagina-de-auth'
-import { renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { PaginaDeAuth } from '@/features/login/pagina-de-auth'
+import { renderWithQuery } from '@/test/utils'
 
 describe('PaginaDeAuth', () => {
   afterEach(() => vi.unstubAllEnvs())

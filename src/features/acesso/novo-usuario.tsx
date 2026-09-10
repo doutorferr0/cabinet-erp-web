@@ -1,10 +1,10 @@
+import { useEffect, useState } from 'react'
 import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useCriarUsuario, usePapeis } from '@/data/acesso-api'
-import { useEffect, useState } from 'react'
 
 /**
  * NOVO USUÁRIO — nome, e-mail (a credencial) e papel, num diálogo.

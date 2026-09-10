@@ -1,5 +1,5 @@
-import { cn } from '@/lib/utils'
 import type * as React from 'react'
+import { cn } from '@/lib/utils'
 
 /**
  * ESTADO VAZIO — a peça que fala quando não há o que mostrar.
@@ -119,4 +119,4 @@ function EmptyContent({ className, ...props }: React.ComponentProps<'div'>) {
   )
 }
 
-export { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent, EmptyMedia }
+export { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle }

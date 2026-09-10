@@ -1,11 +1,11 @@
+import { screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import { cadastroActions } from '@/components/cabinet/cadastro-actions'
 import { VitraDataTable } from '@/components/cabinet/data-table'
+import type { ColumnDef } from '@/components/cabinet/listagem/tabela'
 import { createMockListProvider, normalize } from '@/data/provider'
 import { type Produto, produtos } from '@/mocks/produtos'
 import { renderWithQuery } from '@/test/utils'
-import type { ColumnDef } from '@tanstack/react-table'
-import { screen } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
 
 /** Material de teste local — o registry (`data.produtos`) fala HTTP; ver data-table.test.tsx. */
 const produtosMock = createMockListProvider<Produto>({

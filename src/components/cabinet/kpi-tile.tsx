@@ -1,6 +1,6 @@
+import { Children, createContext, useContext, useEffect, useRef, useState } from 'react'
 import { formatMoneyBRL } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
-import { Children, createContext, useContext, useEffect, useRef, useState } from 'react'
 
 /**
  * FAIXA DE KPI (Reface 2.0, D11 · #479 · rodada 5 em D34 · #529) — resumo antes
@@ -153,9 +153,9 @@ const MATIZ: Record<TintDeKpi, string> = {
 export type EscalaDeKpi = 'padrao' | 'destaque' | 'heroi'
 
 const ESCALA: Record<EscalaDeKpi, { size: string; lh: string }> = {
-  padrao: { size: 'var(--t-kpi-valor, 26px)', lh: 'var(--t-kpi-valor-lh, 1)' },
-  destaque: { size: 'var(--t-kpi-valor-big, 32px)', lh: 'var(--t-kpi-valor-big-lh, 1)' },
-  heroi: { size: 'var(--t-kpi-valor-heroi, 40px)', lh: 'var(--t-kpi-valor-heroi-lh, 1)' },
+  padrao: { size: 'var(--t-kpi-valor, 30px)', lh: 'var(--t-kpi-valor-lh, 1)' },
+  destaque: { size: 'var(--t-kpi-valor-big, 36px)', lh: 'var(--t-kpi-valor-big-lh, 1)' },
+  heroi: { size: 'var(--t-kpi-valor-heroi, 44px)', lh: 'var(--t-kpi-valor-heroi-lh, 1)' },
 }
 
 /**
@@ -436,9 +436,13 @@ export function KpiTile({
       : typeof valor === 'number'
         ? Math.trunc(Math.abs(valor))
         : null
-  const contando = useContagemNaEntrada(
-    naFaixa && Number.isFinite(alvoDaContagem) ? alvoDaContagem : null,
-  )
+  // COUNT-UP DESLIGADO (user, 2026-09-04): "não precisa de números se
+  // movimentando rápido". O número nasce pronto; o hook fica para a decisão
+  // voltar com um flag, sem reescrever. `alvoDaContagem` segue calculado para
+  // não mexer na leitura do dinheiro abaixo.
+  void naFaixa
+  void alvoDaContagem
+  const contando = useContagemNaEntrada(null)
 
   /** O texto autoritativo da contagem, quando ela não é dinheiro. */
   const contagemFinal = typeof valor === 'number' ? AGRUPADOR.format(valor) : null
@@ -498,7 +502,7 @@ export function KpiTile({
     >
       <span
         data-slot="kpi-rotulo"
-        className="t-rotulo truncate"
+        className="t-rotulo truncate text-[var(--n-700)]"
         // O rótulo carrega o matiz do assunto sem virar cor decorativa — o
         // mesmo papel do quadradinho de grupo na barra lateral.
         //

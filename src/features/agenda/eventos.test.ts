@@ -1,6 +1,6 @@
+import { describe, expect, it } from 'vitest'
 import { AgendaEventDtoKind } from '@/api/gerado'
 import { COLUNAS_POR_TIPO, ROTULOS_DO_TIPO, TOM_DO_TIPO } from '@/features/agenda/eventos'
-import { describe, expect, it } from 'vitest'
 
 /**
  * O contrato é quem manda nos tipos de compromisso.

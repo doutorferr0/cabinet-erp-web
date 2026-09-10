@@ -1,8 +1,8 @@
-import { ErroDoServidor } from '@/components/cabinet/erro-do-servidor'
-import { ErroDaApi } from '@/data/api-provider'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { ErroDoServidor } from '@/components/cabinet/erro-do-servidor'
+import { ErroDaApi } from '@/data/api-provider'
 
 /**
  * O componente único de erro do servidor.

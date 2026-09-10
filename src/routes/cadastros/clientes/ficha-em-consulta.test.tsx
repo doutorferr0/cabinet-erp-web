@@ -1,7 +1,7 @@
-import { parceiro, stubDeParceiros } from '@/test/parceiros'
-import { renderRoute } from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { parceiro, stubDeParceiros } from '@/test/parceiros'
+import { renderRoute } from '@/test/utils'
 
 /**
  * CONSULTA ABRE A FICHA, NÃO O FORMULÁRIO APAGADO (issue #103).

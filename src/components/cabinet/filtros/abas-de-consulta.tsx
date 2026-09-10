@@ -1,3 +1,6 @@
+import { MoreHorizontal, Plus, Star } from 'lucide-react'
+import { useId, useState } from 'react'
+import { Button as ButtonAria } from 'react-aria-components'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
@@ -10,9 +13,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { ConsultaSalva, FavoritoDeConsulta } from '@/lib/favoritos-de-consulta'
 import { cn } from '@/lib/utils'
-import { MoreHorizontal, Plus, Star } from 'lucide-react'
-import { useId, useState } from 'react'
-import { Button as ButtonAria } from 'react-aria-components'
 
 /**
  * A TIRA DE VISÕES (#199, fecha a #92; redesenhada na Reface 2.0) — a consulta
@@ -66,6 +66,10 @@ import { Button as ButtonAria } from 'react-aria-components'
 
 export interface AbasDeConsultaProps {
   favoritos: readonly FavoritoDeConsulta[]
+  /** Ids de views remotas: elas não têm o conceito local de "abrir por padrão". */
+  idsPersistidos?: ReadonlySet<string> | undefined
+  /** Views fixadas no grupo FAVORITOS da barra lateral. */
+  idsFavoritos?: ReadonlySet<string> | undefined
   /** O que está montado na tela agora — é com isto que cada aba se compara. */
   atual: ConsultaSalva
   /** Há algo montado? `false` acende a aba `Todos`. */
@@ -87,6 +91,7 @@ export interface AbasDeConsultaProps {
   onRenomear: (id: string, nome: string) => void
   onExcluir: (id: string) => void
   onTornarPadrao: (id: string) => void
+  onAlternarFavorito?: ((id: string) => void) | undefined
 }
 
 /** `''` no favorito é curinga: ele não fala daquilo, então não desempata nada. */
@@ -215,6 +220,9 @@ function Aba({
         'after:absolute after:inset-x-[var(--s-3)] after:-bottom-px after:h-0.5',
         'after:origin-left after:scale-x-0 after:bg-[var(--vc)] after:transition-transform',
         'aria-selected:after:scale-x-100',
+        // 2026-09-04 (user: "cada elemento tem que se diferenciar"): a aba ativa
+        // também ganha peso e fundo de folha — a linha sozinha sumia no tint.
+        'aria-selected:rounded-t-control aria-selected:bg-card aria-selected:font-semibold',
       )}
       onClick={onClick}
     >
@@ -252,6 +260,9 @@ export function AbasDeConsulta({
   onRenomear,
   onExcluir,
   onTornarPadrao,
+  idsPersistidos,
+  idsFavoritos,
+  onAlternarFavorito,
 }: AbasDeConsultaProps) {
   const [salvando, setSalvando] = useState(false)
   const [renomeando, setRenomeando] = useState<FavoritoDeConsulta | null>(null)
@@ -296,7 +307,7 @@ export function AbasDeConsulta({
       {/* Hairline, não a régua de 2px: a tira e a barra de filtro são regiões do
           MESMO card, e duas linhas grossas empilhadas fariam a barra parecer um
           card dentro do card (§Hierarquia, separação 2). */}
-      <div className="flex flex-wrap items-center gap-0.5 border-rule-hair border-b px-2.5 pt-[var(--s-2)]">
+      <div className="flex flex-wrap items-center gap-0.5 border-input border-b bg-[var(--modulo-02,var(--n-50))] px-[var(--s-3)] pt-[var(--s-2)]">
         <div role="tablist" aria-label="Visões salvas" className="flex flex-wrap items-center">
           <Aba
             ativa={abaAtiva === ABA_TODOS}
@@ -319,6 +330,9 @@ export function AbasDeConsulta({
             >
               {favorito.padrao ? (
                 <Star aria-label="Abre por padrão" className="size-3.5 fill-current" />
+              ) : null}
+              {idsFavoritos?.has(favorito.id) ? (
+                <Star aria-hidden="true" className="size-3.5 fill-current text-warn" />
               ) : null}
               <span className="max-w-40 truncate">{favorito.nome}</span>
             </Aba>
@@ -368,12 +382,23 @@ export function AbasDeConsulta({
                 <DropdownMenuItem textValue="Renomear" onAction={() => abrirRenomear(casada)}>
                   Renomear…
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  textValue="Abrir por padrão"
-                  onAction={() => onTornarPadrao(casada.id)}
-                >
-                  {casada.padrao ? 'Não abrir por padrão' : 'Abrir por padrão'}
-                </DropdownMenuItem>
+                {idsPersistidos?.has(casada.id) ? (
+                  <DropdownMenuItem
+                    textValue={
+                      idsFavoritos?.has(casada.id) ? 'Tirar dos favoritos' : 'Fixar nos favoritos'
+                    }
+                    onAction={() => onAlternarFavorito?.(casada.id)}
+                  >
+                    {idsFavoritos?.has(casada.id) ? 'Tirar dos favoritos' : 'Fixar nos favoritos'}
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem
+                    textValue="Abrir por padrão"
+                    onAction={() => onTornarPadrao(casada.id)}
+                  >
+                    {casada.padrao ? 'Não abrir por padrão' : 'Abrir por padrão'}
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem textValue="Excluir" onAction={() => onExcluir(casada.id)}>
                   Excluir visão

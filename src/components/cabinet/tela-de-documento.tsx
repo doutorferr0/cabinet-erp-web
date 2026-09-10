@@ -1,3 +1,5 @@
+import { useQuery } from '@tanstack/react-query'
+import { createContext, type ReactNode, useContext } from 'react'
 import {
   type FilaDeAutosave,
   GuardaDeAutosave,
@@ -11,9 +13,8 @@ import {
   EsqueletoDeCarregamento,
 } from '@/components/cabinet/estado-de-consulta'
 import type { AcaoDeCabecalho } from '@/components/cabinet/page-header'
+import { RegistroNaoEncontrado } from '@/components/cabinet/vazio-com-saida'
 import type { DocumentoProvider } from '@/data/provider'
-import { useQuery } from '@tanstack/react-query'
-import { type ReactNode, createContext, useContext } from 'react'
 
 /**
  * O que o cabeçalho mostra sobre ESTE registro, neste estado.
@@ -188,7 +189,13 @@ export function TelaDeDocumento<T>({
   }
 
   if (!query.data) {
-    return <p className="t-corpo text-muted-foreground">{naoEncontrado}</p>
+    return (
+      <RegistroNaoEncontrado
+        titulo={naoEncontrado}
+        // A lista é a rota pai: `/compras/ordens/123` → `/compras/ordens`.
+        voltar={window.location.pathname.replace(/\/[^/]+\/?$/, '')}
+      />
+    )
   }
 
   const doc = query.data

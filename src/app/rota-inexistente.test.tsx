@@ -1,6 +1,6 @@
-import { renderRoute } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { renderRoute } from '@/test/utils'
 
 describe('rota inexistente', () => {
   it('endereço errado explica em PT-BR, não em vocabulário de roteador', async () => {

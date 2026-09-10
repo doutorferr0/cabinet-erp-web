@@ -1,7 +1,7 @@
-import type { ProjectDto, ProjectPlanDto } from '@/api/gerado'
-import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import type { ProjectDto, ProjectPlanDto } from '@/api/gerado'
+import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
 
 /**
  * O QUE ESTA BATERIA PODE PROVAR MUDOU COM A TROCA DE MOTOR — e o limite é

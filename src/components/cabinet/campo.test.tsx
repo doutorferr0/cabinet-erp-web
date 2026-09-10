@@ -1,6 +1,6 @@
-import { Campo } from '@/components/cabinet/campo'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { Campo } from '@/components/cabinet/campo'
 
 /**
  * Campo (D16, issue #484) — rótulo sem caixa, ajuda e erro na mesma linha.

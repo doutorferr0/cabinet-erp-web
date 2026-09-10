@@ -1,7 +1,7 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { SavedViewDto, SavedViewWriteRequest } from '@/api/gerado'
 import { createMyView, deleteMyView, listMyViews, updateMyView } from '@/api/gerado'
-import { type RespostaDaApi, dadosOuErro, respostaOk } from '@/data/api-provider'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { dadosOuErro, type RespostaDaApi, respostaOk } from '@/data/api-provider'
 
 /**
  * FRONTEIRA DAS VIEWS SALVAS — `/api/me/views` (D13).
@@ -103,9 +103,10 @@ export function corpoDaView(
  * o benefício. Sem repetição, e a falha vira lista vazia: a barra fica sem o
  * grupo de favoritos e o resto da tela não sabe que houve pergunta.
  */
-export function useViews() {
+export function useViews(habilitada = true) {
   return useQuery({
     queryKey: CHAVE_VIEWS,
+    enabled: habilitada,
     retry: false,
     queryFn: async () => {
       try {

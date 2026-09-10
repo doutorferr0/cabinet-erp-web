@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
 import {
   type EscalaDeKpi,
@@ -6,8 +7,8 @@ import {
   type TintDeKpi,
 } from '@/components/cabinet/kpi-tile'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useResumoDoDashboard, variacaoDoMes } from '@/data/dashboard-api'
-import { Link } from '@tanstack/react-router'
+import { variacao } from '@/data/agregados-api'
+import { useResumoDoDashboard } from '@/data/dashboard-api'
 
 /**
  * OS QUATRO KPIs DO DASHBOARD — a faixa de tinta da tela.
@@ -139,7 +140,7 @@ export function Indicadores() {
   }
 
   const resumo = query.data
-  const variacao = variacaoDoMes(resumo)
+  const deltaDeVendas = variacao(resumo.monthSalesCents, resumo.previousMonthSalesCents)
   const anterior = resumo.previousMonthSalesCents
 
   /**
@@ -155,15 +156,15 @@ export function Indicadores() {
       valorCentavos: resumo.monthSalesCents,
       // Sem base de comparação a tela DIZ isso, em vez de mostrar "+0%": zero
       // por cima de zero é conta que ninguém pode conferir.
-      nota: variacao === null ? 'sem base de comparação' : 'vs. mês anterior',
-      delta: variacao,
+      nota: deltaDeVendas === null ? 'sem base de comparação' : 'vs. mês anterior',
+      delta: deltaDeVendas,
       // A sparkline do mockup, com os DOIS pontos que o DTO publica
       // (`previousMonthSalesCents` → `monthSalesCents`). São dois, que é o
       // mínimo que `Sparkline` desenha, e é a curva de verdade — não uma série
       // inventada para a linha ficar bonita. Vira curva de doze meses no dia em
       // que o DTO publicar a série; é acréscimo de campo, não rota nova.
       //
-      // Mesma guarda do `variacaoDoMes`: base zero não tem tendência, e uma
+      // Base zero não tem tendência, e uma
       // linha subindo do chão diria "cresceu infinito".
       ...(anterior === 0 ? {} : { serie: [anterior, resumo.monthSalesCents] }),
     },

@@ -1,11 +1,11 @@
+import { useQuery } from '@tanstack/react-query'
 import type {
   QuoteVsStockReportDto,
   StockAgingReportDto,
   StockValuationReportDto,
 } from '@/api/gerado'
 import { getQuoteVsStockReport, getStockAgingReport, getStockValuationReport } from '@/api/gerado'
-import { type RespostaDaApi, dadosOuErro, repetirSeValeAPena } from '@/data/api-provider'
-import { useQuery } from '@tanstack/react-query'
+import { dadosOuErro, type RespostaDaApi, repetirSeValeAPena } from '@/data/api-provider'
 
 /**
  * FRONTEIRA DOS RELATÓRIOS DE ESTOQUE — os três da web#352.

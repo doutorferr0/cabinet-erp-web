@@ -1,8 +1,8 @@
+import { screen, waitFor, within } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ActivityDto, AgendaEventDto, DashboardSummaryDto, TodoDto } from '@/api/gerado'
 import { diaLocalISO } from '@/lib/datas'
 import { type FetchStub, renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
-import { screen, waitFor, within } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const RESUMO: DashboardSummaryDto = {
   openQuotes: 14,

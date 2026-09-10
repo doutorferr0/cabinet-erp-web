@@ -1,19 +1,19 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { type NavigateOptions, useNavigate } from '@tanstack/react-router'
 import type { PartnerDto } from '@/api/gerado'
 import { posGravar } from '@/components/cabinet/pos-gravar'
 import {
-  type CamposEditaveis,
-  type PapelDeParceiro,
   atualizarParceiro,
+  type CamposEditaveis,
   corpoDeEscrita,
   corpoDeInclusao,
   idDoParceiroExistente,
   incluirParceiro,
   obterParceiro,
+  type PapelDeParceiro,
   vincularParceiro,
 } from '@/data/parceiros-api'
 import { avisar } from '@/lib/avisos'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { type NavigateOptions, useNavigate } from '@tanstack/react-router'
 
 /** As três listagens de parceiro — a única coisa que `navigate({ to })` aceita aqui. */
 export type RotaDeParceiro =

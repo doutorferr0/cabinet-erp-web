@@ -1,7 +1,7 @@
-import { MapaDeAtalhosTela } from '@/features/ajuda/mapa-de-atalhos'
-import { renderWithQuery } from '@/test/utils'
 import { screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { MapaDeAtalhosTela } from '@/features/ajuda/mapa-de-atalhos'
+import { renderWithQuery } from '@/test/utils'
 
 /**
  * A tela do mapa — o que ela tem de DIZER, não como desenha.

@@ -1,3 +1,7 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { act, renderHook, waitFor } from '@testing-library/react'
+import { createElement, type ReactNode } from 'react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   MINIMO_DE_LETRAS,
   POR_ALVO,
@@ -6,10 +10,6 @@ import {
 } from '@/data/busca-de-registro'
 import { instalarServidor, json, problema } from '@/test/servidor'
 import { respostaSessao, respostaVinculos } from '@/test/utils'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { act, renderHook, waitFor } from '@testing-library/react'
-import { type ReactNode, createElement } from 'react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * A BUSCA DE REGISTRO contra servidor falso — a fronteira, não a paleta.

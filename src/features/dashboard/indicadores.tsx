@@ -1,4 +1,5 @@
 import { Link } from '@tanstack/react-router'
+import type { DashboardSummaryDto } from '@/api/gerado'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
 import {
   type EscalaDeKpi,
@@ -73,7 +74,7 @@ interface Indicador {
    * o agrupamento de milhar do `KpiTile`. Mutuamente exclusivo com
    * `valorCentavos`.
    */
-  valor?: number
+  valor?: number | string
   /** Dinheiro em CENTAVOS. */
   valorCentavos?: number
   nota: string
@@ -111,6 +112,56 @@ function Tile({ indicador }: { indicador: Indicador }) {
       <span className="flex min-w-0 flex-1 flex-col">{tile}</span>
     </Link>
   )
+}
+
+/**
+ * O CARTÃO DE `Pedidos a receber` — o único que pode não mostrar número.
+ *
+ * `incomingOrders` e `incomingOrdersToday` saem **sempre `0`** do servidor, e
+ * isso está escrito no próprio backend (`src/modules/dashboard/rotas.ts`, desde
+ * 2026-08-19): o DTO declara os dois como `integer` OBRIGATÓRIO, sem `null` para
+ * dizer "sem dado", então o zero ali não significa "nenhum pedido a receber" —
+ * significa "ninguém apurou". Enquanto os dois caminhos do dashboard ficaram no
+ * mock isso não aparecia, porque o mock devolvia ficção plausível; desde que a
+ * passagem abriu (`rotas-do-backend.ts`), o zero-stub chega à tela como se fosse
+ * contagem, e é a única mentira silenciosa da fileira.
+ *
+ * **A saída é travessão e a frase, não o zero.** O operador que lê `0` num
+ * sistema que TEM ordem de compra conclui que a operação está parada; o que lê
+ * `—` procura o número onde ele existe, e o cartão segue levando para lá.
+ *
+ * **Por que a condição é `=== 0` e não uma constante `false`.** Declaração de
+ * ausência escrita à mão não tem quem a invalide: o dia em que o backend passar
+ * a apurar, um `valor: '—'` fixo continuaria escondendo a contagem, verde e
+ * calado. Lendo o zero, o cartão volta a mostrar número sozinho, no primeiro
+ * pedido que o servidor contar. O preço é ficar `—` também quando a contagem é
+ * verdadeiramente zero — dizer "não sei" onde a resposta era "nenhum" subestima,
+ * mas não mente, e é o lado certo para errar.
+ *
+ * O `KpiTile` aceita texto em `valor` justamente para o KPI que não é
+ * quantidade; o travessão entra por aí e não conta.
+ */
+function pedidosAReceber(resumo: DashboardSummaryDto): Indicador {
+  const base = {
+    rotulo: 'Pedidos a receber',
+    tint: 'sky',
+    escala: 'padrao',
+    href: '/compras/pedidos',
+  } as const
+
+  if (resumo.incomingOrders === 0) {
+    return { ...base, valor: '—', nota: 'o servidor ainda não apura' }
+  }
+
+  return {
+    ...base,
+    valor: resumo.incomingOrders,
+    // Singular e plural são frases diferentes — "1 chegam hoje" é defeito visível.
+    nota:
+      resumo.incomingOrdersToday === 1
+        ? '1 chega hoje'
+        : `${resumo.incomingOrdersToday} chegam hoje`,
+  }
 }
 
 export function Indicadores() {
@@ -179,17 +230,7 @@ export function Indicadores() {
           : `${resumo.openQuotesDueThisWeek} vencem esta semana`,
       href: '/vendas/orcamentos',
     },
-    {
-      rotulo: 'Pedidos a receber',
-      tint: 'sky',
-      escala: 'padrao',
-      valor: resumo.incomingOrders,
-      nota:
-        resumo.incomingOrdersToday === 1
-          ? '1 chega hoje'
-          : `${resumo.incomingOrdersToday} chegam hoje`,
-      href: '/compras/pedidos',
-    },
+    pedidosAReceber(resumo),
     {
       rotulo: 'Estoque crítico',
       tint: 'sand',

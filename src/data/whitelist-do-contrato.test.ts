@@ -229,6 +229,8 @@ const SEM_LISTA_NO_FRONT: Record<string, string> = {
     'o perfil de custo não é listado pela tela — ele chega pelo `costProfileId` do índice; a whitelist existe no mock, e é lá que é conferida',
   ListPriceIndexes:
     'a aba de preço lê o índice para derivar o preço sugerido, sem cabeçalho ordenável — a whitelist existe no mock, e é lá que é conferida',
+  ListPriceAdjustments:
+    'o reajuste em massa (G9) é o terceiro do mesmo trilho, e a tela dele NASCE depois do servidor: um reajuste listado é a consequência de tabelas que o mock não guarda, e a lista inventada mostraria "12% em 214 peças" sobre um catálogo que não existe. Sai daqui com a tela, e com `ORDENAVEIS` próprio',
   // OS DEZ RELATÓRIOS (#310) — a seção Relatórios é a Fase C deste mesmo trilho,
   // e nasce depois do servidor por decisão: tela de relatório sobre dado mockado
   // mostra número inventado com cara de apuração, que é pior do que não mostrar
@@ -514,6 +516,8 @@ const SEM_HANDLER_NO_MOCK: Record<string, string> = {
   // foi paga aqui: o handler do orçamento não foi tocado, e o item de lá segue
   // com o preço que já tinha. Preço sugerido é da aba do produto; congelar
   // preço em documento é do documento.
+  ListPriceAdjustments:
+    'o reajuste PENDE da tabela de preço, que o mock não guarda — listar reajuste sem as vigências que ele criou é mostrar o efeito sem a causa, e `lineCount` seria um número escolhido a dedo. Sai junto com o índice, no dia em que o mock guardar tabela e vigência',
   // TESOURARIA (G7 fase A) NASCE SEM MOCK, e a escolha diverge do precedente
   // recente — compras e relatórios nasceram COM. A razão é o que o mock teria
   // de ensinar, e aqui ele ensinaria sozinho:

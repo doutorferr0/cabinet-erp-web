@@ -407,7 +407,7 @@ describe('tela Cliente', () => {
     await user.type(within(dialog).getByLabelText('Busca'), 'curitiba')
 
     // seleciona linha CURITIBA e confirma
-    const linha = await screen.findByText('CURITIBA')
+    const linha = await screen.findByText('Curitiba')
     await user.click(linha)
     await user.click(screen.getByRole('button', { name: 'Selecionar' }))
 
@@ -417,10 +417,10 @@ describe('tela Cliente', () => {
     // no endereço que o operador abriu, não em um dos outros dois.
     const endereco = within(screen.getByRole('group', { name: /^Endereço$/ }))
     await waitFor(() => {
-      expect(endereco.getByLabelText('Cidade')).toHaveValue('CURITIBA')
+      expect(endereco.getByLabelText('Cidade')).toHaveValue('Curitiba')
     })
     // código da cidade aparece ao lado do campo; UF (PR) no rótulo derivado
-    expect(screen.getByText('355')).toBeInTheDocument()
+    expect(screen.getByText('4106902')).toBeInTheDocument()
   })
 
   /**

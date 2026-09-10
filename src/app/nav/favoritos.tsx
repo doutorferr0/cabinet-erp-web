@@ -1,8 +1,8 @@
+import { Link } from '@tanstack/react-router'
+import { useCallback } from 'react'
 import type { SavedViewColor, SavedViewDto } from '@/api/gerado'
 import { EstrelaDeView } from '@/components/cabinet/listagem/views'
 import { corpoDaView, useEscritaDeView, useViews, viewsFavoritas } from '@/data/views-api'
-import { Link } from '@tanstack/react-router'
-import { useCallback } from 'react'
 
 /**
  * O grupo FAVORITOS da barra lateral (D13), montado na barra da D4 (D37).

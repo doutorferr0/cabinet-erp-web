@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { renderWithQuery } from '@/test/utils'
-import { MonogramaDoFunil, iniciaisDoFunil } from './monograma'
+import { iniciaisDoFunil, MonogramaDoFunil } from './monograma'
 import { realceDosDias } from './quadro-do-funil'
 
 /**

@@ -4,9 +4,10 @@
 // CASCA da D4 com a FONTE da D13: `GrupoFavoritos` monta na barra e
 // `useFavoritosDaTela` move a ★ do item de nav para o contrato. O
 // `localStorage` de favoritos saiu do `estado.ts`.
-import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
+
 import { screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 
 /**
  * O grupo FAVORITOS da barra lateral (D13).

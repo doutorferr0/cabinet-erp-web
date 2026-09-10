@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="pt-BR" data-tema="claro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cabinet 2.0 — Controles (D2 · #470)</title>
+
+<!--
+  ESPELHO DAS RECEITAS, não uma segunda fonte.
+
+  Esta página existe para ver as variantes lado a lado nos dois temas sem subir
+  o app inteiro — é o DoD da issue #470. O CSS abaixo REPETE o que os
+  componentes de `src/components/ui/` escrevem em classe Tailwind; os tokens
+  vêm do arquivo de verdade (`src/styles/tokens-2.0.css`, linkado logo abaixo),
+  então cor, sombra, raio e espaço não podem divergir.
+
+  O que PODE divergir é a receita de cada peça, e é por isso que ela não é
+  autoridade: quem manda é o componente. Mudou o componente, mude aqui na mesma
+  PR — como o §Hierarquia manda para o DESIGN.md.
+
+  POR QUE HÁ `font-size` LITERAL AQUI, se a §Hierarquia o proíbe. A proibição é
+  para COMPONENTE, que consome a classe `.t-*`. Esta página é estática e abre por
+  `file://`, sem Tailwind: para mostrar os degraus ela tem de escrevê-los. Os sete
+  tamanhos usados — 10.5 · 11 · 12 · 12.5 · 13 · 13.5 · 28 — são subconjunto exato
+  dos dez de `tokens-2.0.css`; conferir com
+  `grep -o 'font-size: *[0-9.]*px' src/styles/tokens-2.0.css | sort -u`.
+
+  O hook do `impeccable` acusa os sete como "fora da rampa", e está medindo contra
+  o `DESIGN.md`, cujo corpo continua sendo o 1.7 até a D30 (é o que o CLAUDE.md
+  diz). São falsos positivos de régua vencida, não dívida: quando a D30 copiar a
+  §Hierarquia para o DESIGN.md, eles somem sozinhos. Não silenciar com
+  `ignore-value --shared` — a config é compartilhada e apagaria o aviso para as
+  outras 29 issues da rodada, onde `font-size` literal em componente É defeito.
+
+  Abrir direto do disco (file://) funciona; `?grid` liga o overlay de 8px.
+
+  ARMADILHA DE PÁGINA DE DOIS TEMAS LADO A LADO — vale para a `hierarquia.html`
+  da D1, que tem este mesmo formato.
+
+  Mostrar claro e escuro na MESMA página obriga a pôr `data-theme="dark"` num
+  DESCENDENTE, e aí os APELIDOS de `tokens-2.0.css` (`--folha`, `--bancada`,
+  `--ink*`, `--hairline*`, `--hover`, `--money`, `--tint-*`) param de inverter.
+  Eles são declarados no `:root` como `var(--n-X)`, e `var()` é substituído no
+  elemento onde a variável é DECLARADA — o bloco `.dark` redefine os `--n-*` no
+  descendente, mas `--folha` já foi herdado do `:root` resolvido com a cor
+  clara. A primeira versão desta página usava os apelidos: a coluna escura saiu
+  com fundo CLARO e texto quase invisível.
+
+  **Isto NÃO é defeito da fundação.** Medido nas três situações: com o tema na
+  RAIZ — que é como o app faz, o `mode-toggle` põe a classe no `<html>` — os
+  dois blocos declaram no mesmo elemento e o apelido inverte certo
+  (`--folha` → `#171613`, `--hover` → tinta clara, `--money` → mint-400). Os
+  componentes podem usar apelido à vontade; quem não pode é uma página como
+  esta.
+
+  Por isso, aqui: degrau direto (`var(--n-0)`) e `color` explícito nas seções —
+  a HERANÇA de `color` do `body` tem o mesmo problema, e sem isso os títulos dos
+  cards somem no escuro.
+-->
+<link rel="stylesheet" href="../../src/styles/tokens-2.0.css">
+<link rel="stylesheet" href="./grid.css">
+
+<style>
+  /* ---------- casca da página ---------- */
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: var(--s-6);
+    background: var(--n-100);
+    color: var(--n-900);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-family: var(--font-display); font-weight: 400; font-size: 28px; line-height: 1.1; margin: 0 0 var(--s-2); }
+  .sub { font-size: 12px; color: var(--n-500); margin: 0 0 var(--s-5); max-width: 70ch; line-height: 1.45; }
+  .temas { display: grid; gap: var(--s-5); grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); align-items: start; }
+  /* `color` explícito: a herança do `body` traz a tinta JÁ resolvida no tema
+     claro, e sem isto os títulos dos cards somem na coluna escura. */
+  .tema { background: var(--n-100); color: var(--n-900); border-radius: var(--r-panel); padding: var(--s-4); }
+  .tema > h2 {
+    font-family: var(--font-sans); font-weight: 600; font-size: 10.5px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--n-500); margin: 0 0 var(--s-4);
+  }
+  .card {
+    background: var(--n-0); border: 1px solid var(--n-300); border-radius: var(--r-card);
+    box-shadow: var(--hard-soft); padding: var(--s-4); margin-bottom: var(--s-4);
+  }
+  .card > h3 { font-family: var(--font-sans); font-weight: 600; font-size: 13.5px; line-height: 1.3; color: var(--n-900); margin: 0 0 var(--s-3); }
+  .linha { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
+  .linha + .linha { margin-top: var(--s-3); }
+  .nota { font-size: 12px; color: var(--n-500); margin: var(--s-2) 0 0; line-height: 1.35; }
+
+  /* ---------- degraus da §Hierarquia (espelho de tokens-2.0.css) ---------- */
+  .t-ui { font-family: var(--font-sans); font-weight: 500; font-size: 13px; line-height: 1.3; color: var(--n-900); }
+  .t-corpo { font-family: var(--font-sans); font-weight: 400; font-size: 13.5px; line-height: 1.45; color: var(--n-900); }
+  .t-meta { font-family: var(--font-sans); font-weight: 400; font-size: 12px; line-height: 1.35; color: var(--n-500); }
+  .t-dado-meta { font-family: var(--font-mono); font-weight: 400; font-size: 11px; line-height: 1.3; font-variant-numeric: tabular-nums; color: var(--n-500); }
+  .t-dado { font-family: var(--font-mono); font-weight: 500; font-size: 12.5px; line-height: 1.3; font-variant-numeric: tabular-nums; color: var(--n-900); }
+
+  /* ---------- BOTÃO = TECLA (espelho de ui/button.tsx) ---------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    height: 34px; padding: 0 13px; border-radius: var(--r-ctrl);
+    font-family: var(--font-sans); font-weight: 500; font-size: 13px; line-height: 1.3;
+    white-space: nowrap; cursor: pointer; user-select: none; background: none; color: var(--n-900);
+    border: 1.5px solid transparent;
+    transition: transform var(--dur-1) var(--ease), box-shadow var(--dur-1) var(--ease),
+                background-color var(--dur-1) var(--ease), border-color var(--dur-1) var(--ease);
+  }
+  .btn svg { width: 15px; height: 15px; flex: none; }
+  .btn.sm { height: 28px; padding: 0 10px; }
+  .btn.lg { height: 40px; padding: 0 20px; }
+  .btn.ic { width: 34px; height: 34px; padding: 0; }
+
+  .btn.pri { background: var(--main); color: var(--main-fg); border-color: var(--n-900); font-weight: 600; box-shadow: var(--key-2); }
+  .btn.pri:hover { background: var(--main-hover); transform: translateY(-1px); box-shadow: 0 4px 0 0 var(--n-900); }
+  .btn.pri:active { transform: translateY(3px); box-shadow: none; }
+
+  .btn.sec { background: var(--n-0); border-color: var(--n-900); box-shadow: var(--key-1); }
+  .btn.sec:hover { transform: translateY(-1px); box-shadow: 0 3px 0 0 var(--n-900); }
+  .btn.sec:active { transform: translateY(2px); box-shadow: none; }
+
+  .btn.icone { background: var(--n-0); border: 1px solid var(--n-300); box-shadow: var(--hard-soft); }
+  .btn.icone:hover { background: color-mix(in oklab, var(--n-900) 5%, transparent); }
+  .btn.icone:active { transform: translateY(2px); box-shadow: none; }
+
+  .btn.ghost { color: var(--n-700); }
+  .btn.ghost:hover { border-color: var(--n-300); background: color-mix(in oklab, var(--n-900) 5%, transparent); }
+
+  .btn.danger { background: var(--bad-bg); color: var(--bad); border-color: var(--bad); box-shadow: 0 2px 0 0 var(--bad); }
+  .btn.danger:hover { transform: translateY(-1px); box-shadow: 0 3px 0 0 var(--bad); }
+  .btn.danger:active { transform: translateY(2px); box-shadow: none; }
+
+  .btn.link { color: var(--main-text); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+
+  /* Morto: o apagamento vai para fundo e traço (§Desabilitado), a tinta fica
+     cheia — e a tecla perde o relevo, ficando rente ao papel. */
+  .btn[disabled] {
+    cursor: not-allowed; background: var(--n-100); border-color: var(--n-400);
+    color: var(--n-900); box-shadow: none; transform: none;
+  }
+
+  .btn:focus-visible { outline: 3px solid var(--ring); outline-offset: 0; box-shadow: 0 0 0 4px var(--n-900); transform: none; }
+
+  /* ---------- CAMPO REBAIXADO (espelho de ui/input.tsx) ---------- */
+  .campo { display: flex; flex-direction: column; gap: 5px; min-width: 0; flex: 1 1 180px; }
+  .campo > label { font-family: var(--font-sans); font-weight: 500; font-size: 12px; line-height: 1.35; color: var(--n-700); display: inline-flex; gap: 4px; width: fit-content; }
+  .campo > label .req { color: var(--bad); }
+  .campo > label .hint { font-weight: 400; color: var(--n-500); }
+  .in {
+    height: 34px; width: 100%; border: 1px solid var(--n-300); border-radius: var(--r-ctrl);
+    background: var(--n-0); padding: 0 10px; box-shadow: var(--inset);
+    font-family: var(--font-sans); font-size: 13.5px; color: var(--n-900);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .in::placeholder, .in .ph { color: var(--n-400); }
+  .in.foco { border-color: var(--n-900); outline: 3px solid var(--ring); box-shadow: 0 0 0 4px var(--n-900); }
+  .in.ro { background: var(--n-50); box-shadow: none; color: var(--n-700); }
+  .in.bad { border-color: var(--bad); }
+  .in.num { font-family: var(--font-mono); font-weight: 500; font-size: 12.5px; font-variant-numeric: tabular-nums; justify-content: flex-end; }
+  .in.ta { height: auto; min-height: 70px; padding: 8px 10px; align-items: flex-start; }
+  .in .pre { font-family: var(--font-mono); font-size: 11px; color: var(--n-500); }
+  .in[disabled], .in.off { background: var(--n-100); border-color: var(--n-400); box-shadow: none; color: var(--n-900); }
+
+  /* ---------- MARCA (checkbox / radio) ---------- */
+  .marca { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-sans); font-size: 13.5px; color: var(--n-900); }
+  .cb { width: 15px; height: 15px; flex: none; border: 1.5px solid var(--n-300); border-radius: var(--r-data); background: var(--n-0); display: grid; place-content: center; }
+  .cb.on { background: var(--n-900); border-color: var(--n-900); }
+  .cb.on::after { content: ""; width: 4px; height: 8px; border: solid var(--n-0); border-width: 0 2.5px 2.5px 0; transform: rotate(45deg) translate(-1px, -1px); }
+  .cb.meio { background: var(--n-900); border-color: var(--n-900); }
+  .cb.meio::after { content: ""; width: 7px; height: 2.5px; background: var(--n-0); }
+  .rd { width: 15px; height: 15px; flex: none; border: 1.5px solid var(--n-300); border-radius: 999px; background: var(--n-0); display: grid; place-content: center; }
+  .rd.on { border-color: var(--n-900); }
+  .rd.on::after { content: ""; width: 8px; height: 8px; border-radius: 999px; background: var(--n-900); }
+
+  /* ---------- ABAS (espelho de ui/tabs.tsx) ---------- */
+  .abas { display: flex; align-items: center; gap: 2px; border-bottom: 1px solid var(--n-200); padding: 8px 10px 0; }
+  .abas button {
+    display: inline-flex; align-items: center; gap: 7px; margin-bottom: -1px;
+    padding: 8px 12px 10px; border: 0; border-bottom: 2px solid transparent; background: none; cursor: pointer;
+    font-family: var(--font-sans); font-weight: 500; font-size: 13px; line-height: 1.3; color: var(--n-500);
+  }
+  .abas button:hover { color: var(--n-900); }
+  .abas button[aria-selected="true"] { color: var(--n-900); font-weight: 600; border-bottom-color: var(--n-900); }
+  .abas .c { font-family: var(--font-mono); font-weight: 400; font-size: 11px; font-variant-numeric: tabular-nums; color: var(--n-500); background: var(--n-50); border-radius: var(--r-chip); padding: 1px 6px; }
+  .abas button[aria-selected="true"] .c { background: var(--n-900); color: var(--n-0); }
+
+  /* ---------- SEGMENTED (espelho de ui/segmented.tsx) ---------- */
+  .seg { display: inline-flex; width: fit-content; overflow: hidden; border: 1px solid var(--n-300); border-radius: var(--r-ctrl); background: var(--n-0); }
+  .seg button {
+    height: 28px; padding: 0 10px; border: 0; background: none; cursor: pointer; white-space: nowrap;
+    font-family: var(--font-sans); font-weight: 500; font-size: 13px; color: var(--n-500);
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .seg button + button { border-left: 1px solid var(--n-300); }
+  .seg button:hover { background: color-mix(in oklab, var(--n-900) 5%, transparent); }
+  .seg button[aria-checked="true"] { background: var(--n-900); color: var(--n-0); }
+
+  /* ---------- SEPARADOR ---------- */
+  .hr { height: 1px; width: 100%; background: var(--n-200); border: 0; margin: var(--s-3) 0; }
+</style>
+</head>
+<body>
+
+<h1>Controles 2.0</h1>
+<p class="sub">
+  Issue <strong>#470 (D2)</strong>. Botão vira tecla (borda de tinta 1.5px + borda inferior, afunda no
+  clique), campo é rebaixado com <code>--inset</code>, aba vira linha inferior e rótulo perde a caixa alta.
+  As duas colunas são o MESMO markup: a da direita só carrega <code>data-theme="dark"</code>, para se ver que
+  nenhuma cor foi escrita à mão. Acrescente <code>?grid</code> à URL para o overlay de 8px.
+</p>
+
+<div class="temas">
+  <section class="tema" id="claro"><h2>Tema claro</h2></section>
+  <section class="tema" data-theme="dark" id="escuro"><h2>Tema escuro</h2></section>
+</div>
+
+<template id="amostra">
+  <div class="card">
+    <h3>Botão — tecla</h3>
+    <div class="linha">
+      <button class="btn pri">Gravar</button>
+      <button class="btn sec">Cancelar</button>
+      <button class="btn icone ic" aria-label="Imprimir">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+      </button>
+      <button class="btn ghost">Filtro</button>
+      <button class="btn danger">Excluir</button>
+      <button class="btn link">Salvar consulta</button>
+    </div>
+    <div class="linha">
+      <button class="btn sec sm">28 · sm</button>
+      <button class="btn sec">34 · md</button>
+      <button class="btn sec lg">40 · lg</button>
+      <button class="btn sec" disabled title="Selecione uma linha">Alterar</button>
+      <button class="btn pri" disabled>Gravar</button>
+    </div>
+    <p class="nota">
+      Morto perde o relevo e fica rente ao papel; a tinta do rótulo NÃO clareia (§Desabilitado) — o motivo
+      continua no <code>title</code>, que <code>pointer-events:none</code> mataria.
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>Campo — rebaixado</h3>
+    <div class="linha" style="align-items:flex-end">
+      <div class="campo">
+        <label>Razão social <span class="req">*</span></label>
+        <div class="in"><span class="ph">Digite o nome</span></div>
+      </div>
+      <div class="campo">
+        <label>CNPJ <span class="hint">sem máscara</span></label>
+        <div class="in foco">12345678000190</div>
+      </div>
+    </div>
+    <div class="linha" style="align-items:flex-end">
+      <div class="campo">
+        <label>Código</label>
+        <div class="in ro">PRD-0042</div>
+      </div>
+      <div class="campo">
+        <label>Quantidade</label>
+        <div class="in num">1.250,000</div>
+      </div>
+      <div class="campo">
+        <label>Valor</label>
+        <div class="in"><span class="pre">R$</span><span style="margin-left:auto;font-family:var(--font-mono);font-size:12.5px;font-variant-numeric:tabular-nums">2.480,00</span></div>
+      </div>
+    </div>
+    <div class="linha" style="align-items:flex-end">
+      <div class="campo">
+        <label>Inscrição estadual</label>
+        <div class="in bad">ISENTO?</div>
+      </div>
+      <div class="campo">
+        <label>Observação</label>
+        <div class="in ta"><span class="ph">Anotação interna…</span></div>
+      </div>
+      <div class="campo">
+        <label>Situação</label>
+        <div class="in off">Bloqueado</div>
+      </div>
+    </div>
+    <p class="nota">
+      Somente leitura sobe ao plano do papel (folha-2, sem sulco); inválido troca só a borda; numérico é mono
+      tabular à direita. Foco = borda de tinta + o anel único do repo.
+    </p>
+  </div>
+
+  <div class="card">
+    <h3>Marca — checkbox e radio</h3>
+    <div class="linha" style="gap:20px">
+      <span class="marca"><span class="cb"></span> Ativo</span>
+      <span class="marca"><span class="cb on"></span> Ativo</span>
+      <span class="marca"><span class="cb meio"></span> Alguns</span>
+      <span class="marca"><span class="rd"></span> Física</span>
+      <span class="marca"><span class="rd on"></span> Jurídica</span>
+    </div>
+    <p class="nota">
+      Marcado é TINTA com o sinal em folha, não chartreuse: o acento é fill de ação, e um quadradinho amarelo
+      por linha pintaria a coluna de seleção inteira. Indeterminado tem traço próprio.
+    </p>
+  </div>
+
+  <div class="card" style="padding:0">
+    <div class="abas" role="tablist">
+      <button role="tab" aria-selected="true">Geral</button>
+      <button role="tab" aria-selected="false">Fiscal <span class="c">3</span></button>
+      <button role="tab" aria-selected="false">Endereços <span class="c">12</span></button>
+      <button role="tab" aria-selected="false">Anexos</button>
+    </div>
+    <div style="padding:var(--s-4)">
+      <p class="nota" style="margin:0">
+        Uma hairline embaixo, e a aba ativa come essa linha com um traço de 2px em tinta — uma ferramenta de
+        separação por fronteira. A contagem é chip mono SEM borda, que inverte junto com a aba.
+      </p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Segmented — escolha de modo</h3>
+    <div class="linha" style="gap:16px">
+      <div class="seg" role="radiogroup" aria-label="Modo de exibição">
+        <button role="radio" aria-checked="true">Lista</button>
+        <button role="radio" aria-checked="false">Kanban</button>
+        <button role="radio" aria-checked="false">Calendário</button>
+      </div>
+      <div class="seg" role="radiogroup" aria-label="Densidade">
+        <button role="radio" aria-checked="true">Compacta</button>
+        <button role="radio" aria-checked="false">Confortável</button>
+      </div>
+    </div>
+    <hr class="hr">
+    <p class="nota" style="margin:0">
+      Separador = hairline n-200, a segunda das quatro ferramentas do §Hierarquia. Uma borda no grupo, nenhuma
+      no item: a divisão interna é hairline entre irmãos.
+    </p>
+  </div>
+</template>
+
+<script>
+  // Uma amostra, dois temas: o markup é clonado, e a única diferença é o
+  // `data-theme` da seção. Se alguma cor tivesse sido escrita à mão em vez de
+  // sair de token, ela apareceria igual nos dois lados.
+  const molde = document.getElementById('amostra').content
+  for (const id of ['claro', 'escuro']) {
+    document.getElementById(id).append(molde.cloneNode(true))
+  }
+  if (new URLSearchParams(location.search).has('grid')) {
+    document.documentElement.dataset.grid = ''
+  }
+</script>
+
+</body>
+</html>

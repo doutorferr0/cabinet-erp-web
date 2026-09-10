@@ -1,5 +1,5 @@
 import { AutoForm } from '@autoform/react'
-import { ZodProvider, fieldConfig } from '@autoform/zod'
+import { fieldConfig, ZodProvider } from '@autoform/zod'
 import { z } from 'zod'
 
 /**

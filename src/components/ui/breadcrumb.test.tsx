@@ -1,3 +1,5 @@
+import { render, screen } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -5,8 +7,6 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
 } from '@/components/ui/breadcrumb'
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 function Exemplo() {
   return (

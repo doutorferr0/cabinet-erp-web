@@ -1,11 +1,11 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
   PagedResultOfPartnerContactDto,
   PartnerContactDto,
   PartnerContactWriteRequest,
 } from '@/api/gerado'
 import { createPartnerContact, listPartnerContacts, updatePartnerContact } from '@/api/gerado'
-import { ErroDaApi, PAGE_SIZE_MAX, dadosOuErro } from '@/data/api-provider'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { dadosOuErro, ErroDaApi, PAGE_SIZE_MAX } from '@/data/api-provider'
 
 /**
  * FRONTEIRA DOS CONTATOS DO PARCEIRO — `/api/partners/{partnerId}/contacts`.
@@ -240,8 +240,10 @@ export function useGravarContatos(partnerId: string) {
     mutationFn: ({
       original,
       atual,
-    }: { original: readonly ContatoDaGrade[]; atual: readonly ContatoDaGrade[] }) =>
-      sincronizarContatos(partnerId, original, atual),
+    }: {
+      original: readonly ContatoDaGrade[]
+      atual: readonly ContatoDaGrade[]
+    }) => sincronizarContatos(partnerId, original, atual),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: chaveDosContatos(partnerId) }),
   })
 }

@@ -1,5 +1,10 @@
-import { ColunasPorModulo } from '@/components/cabinet/listagem/colunas-por-modulo'
+import { screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { useState } from 'react'
+import { describe, expect, it } from 'vitest'
+import { gruposDoModulo } from '@/components/cabinet/listagem/colunas-por-modulo'
 import { FiltroPorModulo } from '@/components/cabinet/listagem/filtro-por-modulo'
+import { MenuDeColunas } from '@/components/cabinet/listagem/menu-de-colunas'
 import {
   ativosDoModulo,
   filtroDoCampo,
@@ -7,12 +12,9 @@ import {
   modulosFiltraveis,
 } from '@/components/cabinet/listagem/modulos-da-consulta'
 import { colaborador, profissional } from '@/features/cadastro/modulos'
+import type { EntidadeCadastro } from '@/features/cadastro/modulos/tipos'
 import type { FiltroDaTabela } from '@/lib/filtro-de-consulta'
 import { renderWithQuery } from '@/test/utils'
-import { screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { useState } from 'react'
-import { describe, expect, it } from 'vitest'
 
 /**
  * FILTRO E COLUNAS POR MÓDULO (#104) — a diretriz 4 do lado da listagem.
@@ -22,16 +24,64 @@ import { describe, expect, it } from 'vitest'
  * remover uma pill limpa exatamente um filtro.
  */
 
+/**
+ * A ENTIDADE `mock` DE MENTIRA — e ela existe porque não sobrou nenhuma de
+ * verdade.
+ *
+ * `colaborador` era o último recurso de cadastro servido por fixture, e em
+ * 2026-08-25 migrou para `GET /api/employees`: as quatro entidades do schema são
+ * `http` hoje. As regras do lado `mock` continuam no código (`idDoFiltro`
+ * devolve `campo`, `temLastroDeConsulta` dispensa a whitelist) e passariam a não
+ * ter NENHUM caso — verde eterno sobre caminho que ninguém exercita.
+ *
+ * Fabricada aqui, e não devolvida ao schema: entidade `mock` de verdade seria
+ * uma tela lendo ficção, que é justamente o que a migração desfez. É o mesmo
+ * argumento de `montarRelatorio` em `rotas-do-backend.ts` — a guarda recebe o
+ * caso em vez de lê-lo das constantes, para poder ficar vermelha.
+ */
+const entidadeMock: EntidadeCadastro = {
+  id: 'ficticia',
+  nome: 'Fictícia',
+  plural: 'Fictícias',
+  fonte: 'mock',
+  modulos: [
+    {
+      id: 'identificacao',
+      titulo: 'Identificação',
+      resumo: 'O módulo obrigatório da entidade de mentira',
+      obrigatorio: true,
+      campos: [
+        { k: 'nome', r: 'Nome', req: true, col: true, fil: 'texto', campo: 'nome' },
+        { k: 'ativo', r: 'Ativo', t: 'check', fil: 'bool', campo: 'ativo' },
+      ],
+    },
+    {
+      id: 'trabalhistas',
+      titulo: 'Dados trabalhistas',
+      resumo: 'O segundo módulo filtrável — é dele que sai a troca de painel',
+      campos: [
+        { k: 'admissao', r: 'Data de admissão', t: 'data', fil: 'data', campo: 'dataAdmissao' },
+      ],
+    },
+    {
+      id: 'semFiltro',
+      titulo: 'Sem filtro',
+      resumo: 'Módulo sem campo filtrável — não vira chip',
+      campos: [{ k: 'obs', r: 'Observação', campo: 'observacao' }],
+    },
+  ],
+}
+
 /** Casca controlada: o componente é controlado, e o teste precisa do estado. */
 function ComEstado({ inicial = [] as FiltroDaTabela[] }) {
   const [filtros, setFiltros] = useState<FiltroDaTabela[]>(inicial)
   return <FiltroPorModulo entidade={profissional} filtros={filtros} onChange={setFiltros} />
 }
 
-/** Colaborador tem QUATRO módulos filtráveis — é nele que a troca de painel se vê. */
+/** A entidade de mentira tem DOIS módulos filtráveis — é nela que a troca de painel se vê. */
 function ComEstadoMock() {
   const [filtros, setFiltros] = useState<FiltroDaTabela[]>([])
-  return <FiltroPorModulo entidade={colaborador} filtros={filtros} onChange={setFiltros} />
+  return <FiltroPorModulo entidade={entidadeMock} filtros={filtros} onChange={setFiltros} />
 }
 
 describe('tradução schema → filtro', () => {
@@ -46,18 +96,25 @@ describe('tradução schema → filtro', () => {
     expect(profissional.fonte).toBe('http')
     expect(idDoFiltro(profissional, nome as never)).toBe('legalName')
 
+    const nomeMock = entidadeMock.modulos[0]?.campos.find((c) => c.k === 'nome')
+    expect(entidadeMock.fonte).toBe('mock')
+    expect(idDoFiltro(entidadeMock, nomeMock as never)).toBe('nome')
+
+    // E o colaborador, que era o exemplo `mock` deste caso até 25/08, hoje prova
+    // o outro lado: migrou para `http` e passou a viajar o `dto`.
     const nomeColab = colaborador.modulos[0]?.campos.find((c) => c.k === 'nome')
-    expect(colaborador.fonte).toBe('mock')
-    expect(idDoFiltro(colaborador, nomeColab as never)).toBe('nome')
+    expect(colaborador.fonte).toBe('http')
+    expect(idDoFiltro(colaborador, nomeColab as never)).toBe('name')
   })
 
   it('período e faixa viram isBetween com os dois extremos', () => {
-    // Colaborador é `mock`, e é onde há campo de data COM lastro: no
-    // profissional (`http`) a data existe no mockup e o contrato não a publica.
-    const admissao = colaborador.modulos
+    // A entidade de mentira é `mock`, e é onde há campo de data COM lastro: nas
+    // quatro entidades `http` a data existe no mockup e o contrato não a publica
+    // na whitelist — inclusive no colaborador, cuja admissão só vem na FICHA.
+    const admissao = entidadeMock.modulos
       .flatMap((m) => m.campos)
       .find((c) => c.fil === 'data') as never
-    const filtro = filtroDoCampo(colaborador, admissao, ['2026-01-01', '2026-12-31'])
+    const filtro = filtroDoCampo(entidadeMock, admissao, ['2026-01-01', '2026-12-31'])
 
     expect(filtro?.variante).toBe('date')
     expect(filtro?.operador).toBe('isBetween')
@@ -66,7 +123,7 @@ describe('tradução schema → filtro', () => {
 
   /** Módulo sem campo filtrável não vira chip: painel vazio não responde nada. */
   it('só entra na faixa o módulo que tem o que filtrar', () => {
-    for (const entidade of [profissional, colaborador]) {
+    for (const entidade of [profissional, entidadeMock]) {
       const modulos = modulosFiltraveis(entidade)
       expect(modulos.length).toBeLessThan(entidade.modulos.length)
       for (const { campos } of modulos) expect(campos.length).toBeGreaterThan(0)
@@ -78,12 +135,22 @@ describe('tradução schema → filtro', () => {
    *
    * O mockup desenha Documentos e Participação como filtráveis; o contrato não
    * publica `dto` para nenhum campo deles, e campo fora da whitelist é 400 no
-   * primeiro clique. Colaborador é `mock` — ali quem resolve é o provider, pelo
-   * `campo`, e por isso quatro módulos entram.
+   * primeiro clique. Na entidade `mock` quem resolve é o provider, pelo `campo`,
+   * e por isso os dois módulos com `fil` entram.
    */
   it('http oferece só o que o contrato publica; mock oferece o que o schema guarda', () => {
     expect(modulosFiltraveis(profissional).map((m) => m.modulo.id)).toEqual(['identificacao'])
-    expect(modulosFiltraveis(colaborador).map((m) => m.modulo.id).length).toBeGreaterThan(1)
+    expect(modulosFiltraveis(entidadeMock).map((m) => m.modulo.id).length).toBeGreaterThan(1)
+  })
+
+  /**
+   * O TERCEIRO estado, que não existia até 25/08: recurso `http` cujo servidor
+   * recusa o parâmetro `filters` inteiro. Não é "o contrato publica pouco" — é
+   * "o contrato não publica nada", e a faixa tem de sair da tela por completo.
+   */
+  it('http sem `filters` no contrato não oferece módulo nenhum', () => {
+    expect(colaborador.whitelistDeFiltro).toEqual([])
+    expect(modulosFiltraveis(colaborador)).toEqual([])
   })
 
   it('a contagem do chip é por LINHA de filtro, não por campo', () => {
@@ -120,9 +187,11 @@ describe('FiltroPorModulo', () => {
     await user.click(screen.getByRole('button', { name: /Identificação/ }))
     expect(screen.getByText('Filtros de Identificação')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /Documentos/ }))
+    // O segundo módulo da entidade de mentira. Era `Documentos`, do colaborador,
+    // até 25/08 — o nome mudou junto com a entidade, a regra não.
+    await user.click(screen.getByRole('button', { name: /Dados trabalhistas/ }))
     expect(screen.queryByText('Filtros de Identificação')).not.toBeInTheDocument()
-    expect(screen.getByText(/Filtros de Documentos/)).toBeInTheDocument()
+    expect(screen.getByText(/Filtros de Dados trabalhistas/)).toBeInTheDocument()
   })
 
   it('clicar no chip aberto fecha — é alternador, não só abertura', async () => {
@@ -191,16 +260,46 @@ describe('FiltroPorModulo', () => {
   })
 })
 
-describe('ColunasPorModulo', () => {
+/**
+ * As colunas por módulo deixaram de ter painel próprio na Reface 2.0: elas são
+ * os GRUPOS do menu `Colunas` da barra. O que se afirma continua sendo o mesmo —
+ * agrupado por origem, fixa não desmarca, opcional liga e desliga —, porque é
+ * disso que a #104 trata; o que mudou foi onde o operador clica.
+ */
+describe('colunas por módulo, dentro do menu Colunas', () => {
   function ComColunas() {
     const [extras, setExtras] = useState<string[]>([])
-    return <ColunasPorModulo entidade={profissional} extras={extras} onChange={setExtras} />
+    return (
+      <MenuDeColunas
+        colunas={[]}
+        onAlternar={() => undefined}
+        onReordenar={() => undefined}
+        opcionais={gruposDoModulo(profissional, extras)}
+        onAlternarOpcional={(id) =>
+          setExtras((atuais) =>
+            atuais.includes(id) ? atuais.filter((x) => x !== id) : [...atuais, id],
+          )
+        }
+      />
+    )
   }
 
   /** Só o mock tem mais de um módulo com lastro — ver o teste da faixa acima. */
   function ComColunasMock() {
     const [extras, setExtras] = useState<string[]>([])
-    return <ColunasPorModulo entidade={colaborador} extras={extras} onChange={setExtras} />
+    return (
+      <MenuDeColunas
+        colunas={[]}
+        onAlternar={() => undefined}
+        onReordenar={() => undefined}
+        opcionais={gruposDoModulo(entidadeMock, extras)}
+        onAlternarOpcional={(id) =>
+          setExtras((atuais) =>
+            atuais.includes(id) ? atuais.filter((x) => x !== id) : [...atuais, id],
+          )
+        }
+      />
+    )
   }
 
   /**
@@ -213,9 +312,25 @@ describe('ColunasPorModulo', () => {
     renderWithQuery(<ComColunas />)
     await user.click(screen.getByRole('button', { name: 'Colunas' }))
 
-    // O nome acessível inclui `fixa`: o controle está desabilitado, e quem
-    // ouve precisa do motivo tanto quanto quem lê o rótulo ao lado.
-    const fixa = screen.getByRole('checkbox', { name: 'Nome de apresentação fixa' })
+    /**
+     * Casa pelo RÓTULO DA COLUNA, e não pelo nome acessível inteiro — porque o
+     * nome inteiro está em disputa e este teste não é quem a resolve.
+     *
+     * O que ele afirmava antes era `'Nome de apresentação fixa'`, com espaço, e
+     * isso passava por uma imprecisão da biblioteca: o `<span>fixa</span>` do
+     * `menu-de-colunas.tsx` é `aria-hidden="true"`, ou seja, o COMPONENTE diz
+     * que a palavra não entra no nome acessível. O cálculo de accname do
+     * testing-library a incluía assim mesmo, e ainda punha um espaço; ao
+     * atualizar, passou a incluí-la GRUDADA (`Nome de apresentaçãofixa`), que
+     * não é o que nenhum dos dois lados queria.
+     *
+     * Fica registrado o conflito, para quem decidir a acessibilidade da tela:
+     * ou o `aria-hidden` sai e a palavra passa a ser anunciada de propósito, ou
+     * ele fica e o comentário que prometia o contrário some. Enquanto isso, a
+     * asserção mede o que é verdade nas duas leituras — que este é o checkbox
+     * daquela coluna, marcado e desabilitado.
+     */
+    const fixa = screen.getByRole('checkbox', { name: /^Nome de apresentação/ })
     expect(fixa).toBeChecked()
     expect(fixa).toBeDisabled()
 

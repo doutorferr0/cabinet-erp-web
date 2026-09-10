@@ -1,7 +1,11 @@
+import { screen, waitFor } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
+import { z } from 'zod'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ID_DO_COLABORADOR, stubDeColaboradores } from '@/test/colaboradores'
 import {
   acaoNaLinha,
   renderRoute,
@@ -10,9 +14,6 @@ import {
   respostaSessao,
   respostaVinculos,
 } from '@/test/utils'
-import { screen, waitFor } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
-import { z } from 'zod'
 
 /**
  * Modo `Consul.` — transcrição §9 padrão 8. A tela é a mesma do `Alterar`;
@@ -60,21 +61,21 @@ describe('CadastroForm em modo consulta', () => {
 
     expect(screen.queryByRole('button', { name: /Gravar/ })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Fechar/ })).toBeInTheDocument()
-    // O modo é CONTEXTO da banda, não sufixo do título: o `<h1>` diz a tela, o
+    // O modo é CONTEXTO do cabeçalho, não sufixo do título: o `<h1>` diz a tela, o
     // Meta ao lado diz em que modo ela está.
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Cadastro de Colaboradores')
     expect(screen.getByText('Consulta')).toBeInTheDocument()
   })
 
-  // A banda é identidade, não campo: `<fieldset disabled>` apaga o formulário
+  // O cabeçalho é identidade, não campo: `<fieldset disabled>` apaga o formulário
   // inteiro no modo consulta, e apagar junto o nome da tela deixaria o operador
   // sem saber onde está.
-  it('banda de identidade não é desabilitada com o formulário', async () => {
+  it('cabeçalho de página não é desabilitado com o formulário', async () => {
     renderWithQuery(<FormularioDeMentira readOnly />)
 
     await screen.findByLabelText('Nome completo')
-    const banda = screen.getByRole('heading', { level: 1 }).closest('div')
-    expect(banda?.closest('fieldset')).toBeNull()
+    const cabecalho = screen.getByRole('heading', { level: 1 }).closest('div')
+    expect(cabecalho?.closest('fieldset')).toBeNull()
   })
 
   it('desabilita também os botões de dentro do formulário', async () => {
@@ -86,7 +87,7 @@ describe('CadastroForm em modo consulta', () => {
   })
 
   it('sem o search param a tela continua editável', async () => {
-    renderRoute('/cadastros/colaboradores/1')
+    renderRoute(`/cadastros/colaboradores/${ID_DO_COLABORADOR}`, stubDeColaboradores())
 
     const nome = await screen.findByLabelText('Nome completo')
     expect(nome).toBeEnabled()
@@ -95,14 +96,14 @@ describe('CadastroForm em modo consulta', () => {
   })
 
   it('a LINHA leva ao modo consulta — o botão Consul. deixou de existir', async () => {
-    const { router, user } = renderRoute('/cadastros/colaboradores')
+    const { router, user } = renderRoute('/cadastros/colaboradores', stubDeColaboradores())
 
     // #198: clicar na linha abre o registro em consulta. O passo "marca a
     // linha, procura o botão" morreu com ela.
     await user.click(await screen.findByText('CARLA SOUZA'))
 
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/cadastros/colaboradores/1')
+      expect(router.state.location.pathname).toBe(`/cadastros/colaboradores/${ID_DO_COLABORADOR}`)
     })
     expect(router.state.location.search).toEqual({ modo: 'consulta' })
     // A saída da tela é o `Voltar` da folha (#235). Era o `Fechar` do cabeçalho
@@ -111,12 +112,12 @@ describe('CadastroForm em modo consulta', () => {
   })
 
   it('Alterar da barra de seleção NÃO entra em consulta', async () => {
-    const { router, user } = renderRoute('/cadastros/colaboradores')
+    const { router, user } = renderRoute('/cadastros/colaboradores', stubDeColaboradores())
 
     await acaoNaLinha(user, 'CARLA SOUZA', 'Alterar')
 
     await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/cadastros/colaboradores/1')
+      expect(router.state.location.pathname).toBe(`/cadastros/colaboradores/${ID_DO_COLABORADOR}`)
     })
     expect(router.state.location.search).toEqual({})
   })
@@ -196,19 +197,24 @@ describe('CadastroForm em modo consulta', () => {
     renderRoute('/compras/ordens/oc-consulta?modo=consulta', stub as never)
 
     // O total continua sendo calculado e exibido…
-    expect(await screen.findByLabelText('SubTotal')).toHaveTextContent('309,81')
+    // `Subtotal` desde a D17 (#485): a grade do documento passou a usar a
+    // grafia do mockup. O `SubTotal` camelCase é da `fileirasTotais`, que
+    // segue servindo a `FormGrid` — e `form-grid.test.tsx` continua com ele.
+    expect(await screen.findByLabelText('Subtotal')).toHaveTextContent('309,81')
     // …mas nenhuma célula aceita digitação.
     expect(screen.getByLabelText('Quantidade linha 1')).toBeDisabled()
     expect(screen.getByRole('button', { name: /Busca Alt\+T/ })).toBeDisabled()
   }, 30_000)
 
-  it('rodapé fixo usa régua forte na borda superior (DESIGN.md)', async () => {
-    renderRoute('/cadastros/colaboradores/1')
+  it('rodapé fixo se separa por UMA hairline, não por régua de 3px', async () => {
+    renderRoute(`/cadastros/colaboradores/${ID_DO_COLABORADOR}`, stubDeColaboradores())
 
     const gravar = await screen.findByRole('button', { name: /Gravar/ })
     const rodape = gravar.closest('div')
-    // A régua é utility (`rule-strong-top`), não `border-t` + cor na tela: a
-    // espessura de 3px é parte dela e muda num ponto só na recalibração.
-    expect(rodape?.className).toContain('rule-strong-top')
+    // D16: a régua forte de 3px competia com a borda dos cards logo acima —
+    // duas ferramentas de separação na mesma fronteira, que a §Hierarquia
+    // proíbe. Fica a mais barata que resolve: hairline `n-200`.
+    expect(rodape?.className).not.toContain('rule-strong-top')
+    expect(rodape?.className).toContain('[border-color:var(--n-200)]')
   })
 })

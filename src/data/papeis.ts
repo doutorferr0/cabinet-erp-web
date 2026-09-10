@@ -71,6 +71,8 @@ export type FamiliaDeCaminho =
   | 'projects'
   | 'dashboard'
   | 'roles'
+  | 'tenants'
+  | 'prices'
 
 /**
  * Papel mínimo por família de caminho — cópia da matriz do backend
@@ -191,6 +193,43 @@ export const PAPEL_MINIMO_POR_FAMILIA: Record<FamiliaDeCaminho, Papel> = {
    * junto com `alcanca()` — não só esta linha.
    */
   roles: 'admin',
+  /**
+   * `owner` e não `admin`, e a diferença é de espécie.
+   *
+   * O critério desta matriz é *o erro de um vaza para os documentos de todo
+   * mundo* — e aqui vaza mais longe que isso. A empresa é a unidade de
+   * ISOLAMENTO deste sistema: criar uma acrescenta um recorte ao grupo, e
+   * desativar uma tira do seletor todo mundo que trabalhava nela. `admin`
+   * administra as pessoas DE uma empresa; quem monta o grupo responde por ele.
+   *
+   * Não é adivinhação: `/api/tenants` é caminho novo, e caminho de domínio sem
+   * linha na matriz do SERVIDOR cai em `owner`. Declarar `admin` aqui acenderia
+   * na tela um botão que o servidor recusa.
+   */
+  tenants: 'owner',
+  /**
+   * PREÇO (G9) — `admin`, e a linha vem do contrato, não desta matriz.
+   *
+   * As duas escritas do módulo — a tabela do fornecedor e o índice de venda —
+   * exigem `precos:gerenciar`, **ação nova que nenhum template de fábrica
+   * concede**: só `Proprietário` e `Administrador` a alcançam, por `grants_all`.
+   * Quem entra com `Operação completa` vê 403 `papel-insuficiente`, e ali é
+   * decisão do api, escrita em `rotas-do-backend.ts`: *quem vende usa o preço,
+   * quem o define responde pela margem.*
+   *
+   * Bate com o critério desta matriz sem precisar dele: preço de tabela é a
+   * entrada do `calculatedUnitPriceCents` de TODO orçamento novo, então o erro
+   * de um vaza para os documentos de todo mundo — é palavra por palavra o que
+   * já pôs `products` acima do atendimento, um degrau mais alto porque aqui o
+   * que vaza é dinheiro.
+   *
+   * A LEITURA não passa por aqui: esta matriz só governa escrita, e quem vende
+   * precisa ver o preço para vender.
+   *
+   * Vira a permissão nomeada `precos:gerenciar` quando o modelo por AÇÃO
+   * (api#84) entregar; até lá o papel é o piso, porque a matriz é por papel.
+   */
+  prices: 'admin',
 }
 
 /**
@@ -213,12 +252,27 @@ const PREFIXOS_POR_FAMILIA: Record<FamiliaDeCaminho, string[]> = {
   'stock-locations': ['/api/stock-locations'],
   'payment-terms': ['/api/payment-terms'],
   'installment-policy': ['/api/installment-policy'],
-  purchases: ['/api/purchase-requests', '/api/purchase-orders', '/api/purchases'],
+  purchases: [
+    '/api/purchase-requests',
+    '/api/purchase-orders',
+    '/api/purchases',
+    // O recebimento é da família `compras` no contrato (as seis têm `tags:
+    // compras`), e cinco das seis pedem `compras:editar`. `POST /{id}/post` pede
+    // `estoque:movimentar`, que este mapa por PREFIXO não tem como distinguir —
+    // quem separa as duas é o handler, não a tabela de caminhos.
+    '/api/goods-receipts',
+  ],
   employees: ['/api/employees'],
   'catalog-lookups': ['/api/catalog-lookups'],
   projects: ['/api/projects'],
   dashboard: ['/api/dashboard'],
   roles: ['/api/roles'],
+  tenants: ['/api/tenants'],
+  // Os três caminhos do módulo Preço. `/api/table-prices` está na frente e não
+  // sob `/api/variants/{id}/…` por decisão do SERVIDOR: a matriz de permissão
+  // do api casa por PREFIXO, e sob o caminho aninhado a tabela herdaria a
+  // exigência do kardex — quem movimenta estoque passaria a editar preço.
+  prices: ['/api/table-prices', '/api/price-indexes', '/api/cost-profiles'],
 }
 
 /** Devolve a família de um caminho de API, ou `undefined` quando não se aplica. */

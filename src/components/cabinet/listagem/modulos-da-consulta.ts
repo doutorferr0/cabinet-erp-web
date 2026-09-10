@@ -1,8 +1,8 @@
 import {
   type CampoCadastro,
   type EntidadeCadastro,
-  type ModuloCadastro,
   filtrosDe,
+  type ModuloCadastro,
 } from '@/features/cadastro/modulos'
 import type { FiltroDaTabela, VarianteDeFiltro } from '@/lib/filtro-de-consulta'
 import { novoFiltroId, operadorPadrao } from '@/lib/filtro-de-consulta'

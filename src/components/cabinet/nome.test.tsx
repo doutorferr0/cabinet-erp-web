@@ -1,10 +1,10 @@
-import { renderWithQuery } from '@/test/utils'
 import { describe, expect, it } from 'vitest'
+import { renderWithQuery } from '@/test/utils'
 import { Nome, Produto } from './nome'
 
 describe('Nome', () => {
   it('põe o nome próprio na voz de quem, um degrau acima do vizinho', () => {
-    // O degrau existe porque a altura-x do Newsreader é menor: no mesmo
+    // O degrau existe porque a altura-x da família de título é menor: no mesmo
     // tamanho, o nome do cliente lê como texto secundário e a hierarquia da
     // linha inverte. Em `em` para acompanhar o vizinho, seja célula ou título.
     const { container } = renderWithQuery(<Nome>Construtora Almeida Ltda</Nome>)
@@ -12,7 +12,7 @@ describe('Nome', () => {
     const nome = container.querySelector('[data-slot="nome"]')
     expect(nome).toHaveTextContent('Construtora Almeida Ltda')
     expect(nome).toHaveClass('font-nome')
-    expect(nome).toHaveClass('text-[1.15em]')
+    expect(nome).toHaveClass('text-[1.1em]')
   })
 
   it('só o peso forte engrossa — coluna inteira em 700 não destaca nada', () => {
@@ -31,8 +31,10 @@ describe('Produto', () => {
     const { container } = renderWithQuery(<Produto>Pendente Bordeaux</Produto>)
 
     const produto = container.querySelector('[data-slot="produto"]')
-    expect(produto).toHaveClass('font-display')
-    expect(produto).toHaveClass('text-muted-foreground')
+    // O QUÊ: Inter 500, tinta cheia — é a coluna que se lê primeiro (2026-09-04).
+    expect(produto).toHaveClass('font-sans')
+    expect(produto).toHaveClass('font-medium')
+    expect(produto).toHaveClass('text-foreground')
   })
 
   it('a classe de quem chama vence, para onde o produto é o assunto', () => {

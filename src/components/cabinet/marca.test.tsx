@@ -1,5 +1,5 @@
-import { renderWithQuery } from '@/test/utils'
 import { describe, expect, it } from 'vitest'
+import { renderWithQuery } from '@/test/utils'
 import { Marca } from './marca'
 
 describe('Marca', () => {

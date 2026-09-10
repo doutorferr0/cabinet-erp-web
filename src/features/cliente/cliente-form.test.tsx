@@ -1,7 +1,7 @@
-import { parceiro, servidorDeParceiros, stubDeParceiros } from '@/test/parceiros'
-import { acaoNaLinha, renderRoute } from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { parceiro, servidorDeParceiros, stubDeParceiros } from '@/test/parceiros'
+import { acaoNaLinha, renderRoute } from '@/test/utils'
 
 describe('tela Cliente', () => {
   it('listagem mostra os clientes do servidor, pedindo só o papel da tela', async () => {
@@ -48,17 +48,17 @@ describe('tela Cliente', () => {
     expect(await screen.findByLabelText('CPF / CNPJ')).toHaveValue('12.345.678/0001-90')
   })
 
-  it('formulário grava e volta para a listagem, com o papel desta tela', async () => {
+  it('formulário grava e abre o cadastro que nasceu, com o papel desta tela', async () => {
     const { stub, chamadas } = servidorDeParceiros()
     const { router, user } = renderRoute('/cadastros/clientes/novo', stub)
 
     await user.type(await screen.findByLabelText('Nome'), 'CLIENTE TESTE')
     await user.click(screen.getByRole('button', { name: /Gravar/ }))
 
+    // A INCLUSÃO abre o registro que nasceu (#405) — o id é o que o servidor
+    // devolveu, e é ele que prova que a tela foi para o registro certo.
     await waitFor(
-      () => {
-        expect(router.state.location.pathname).toBe('/cadastros/clientes')
-      },
+      () => expect(router.state.location.pathname).toMatch(/^\/cadastros\/clientes\/./),
       { timeout: 5000 },
     )
 
@@ -150,12 +150,12 @@ describe('tela Cliente', () => {
     await user.type(ie, '110055443322')
     await user.click(screen.getByRole('button', { name: /Gravar/ }))
 
-    await waitFor(
-      () => {
-        expect(router.state.location.pathname).toBe('/cadastros/clientes')
-      },
-      { timeout: 5000 },
-    )
+    // A ALTERAÇÃO permanece no documento (#405): quem responde ao clique é o
+    // toast, e a sincronização passa a ser a ESCRITA, não a troca de tela.
+    await waitFor(() => expect(chamadas.some((c) => c.metodo === 'PUT')).toBe(true), {
+      timeout: 5000,
+    })
+    expect(router.state.location.pathname).toMatch(/^\/cadastros\/clientes\/./)
 
     // O que o operador digitou chegou ao corpo do `PUT`. Sem o campo na tela, a
     // IE do cliente só existia se outra tela a tivesse gravado.
@@ -187,12 +187,12 @@ describe('tela Cliente', () => {
 
     await user.click(screen.getByRole('button', { name: /Gravar/ }))
 
-    await waitFor(
-      () => {
-        expect(router.state.location.pathname).toBe('/cadastros/clientes')
-      },
-      { timeout: 5000 },
-    )
+    // A ALTERAÇÃO permanece no documento (#405): quem responde ao clique é o
+    // toast, e a sincronização passa a ser a ESCRITA, não a troca de tela.
+    await waitFor(() => expect(chamadas.some((c) => c.metodo === 'PUT')).toBe(true), {
+      timeout: 5000,
+    })
+    expect(router.state.location.pathname).toMatch(/^\/cadastros\/clientes\/./)
 
     // Os nomes são os do contrato, e `personType` não está aqui: o radio fica
     // no bloco obrigatório e tem teste próprio, porque é o único que traduz
@@ -221,12 +221,12 @@ describe('tela Cliente', () => {
     await user.click(screen.getByRole('radio', { name: 'JURÍDICA' }))
     await user.click(screen.getByRole('button', { name: /Gravar/ }))
 
-    await waitFor(
-      () => {
-        expect(router.state.location.pathname).toBe('/cadastros/clientes')
-      },
-      { timeout: 5000 },
-    )
+    // A ALTERAÇÃO permanece no documento (#405): quem responde ao clique é o
+    // toast, e a sincronização passa a ser a ESCRITA, não a troca de tela.
+    await waitFor(() => expect(chamadas.some((c) => c.metodo === 'PUT')).toBe(true), {
+      timeout: 5000,
+    })
+    expect(router.state.location.pathname).toMatch(/^\/cadastros\/clientes\/./)
 
     expect(chamadas.find((c) => c.metodo === 'PUT')?.corpo).toMatchObject({
       personType: 'company',
@@ -262,12 +262,12 @@ describe('tela Cliente', () => {
 
     await user.click(screen.getByRole('button', { name: /Gravar/ }))
 
-    await waitFor(
-      () => {
-        expect(router.state.location.pathname).toBe('/cadastros/clientes')
-      },
-      { timeout: 5000 },
-    )
+    // A ALTERAÇÃO permanece no documento (#405): quem responde ao clique é o
+    // toast, e a sincronização passa a ser a ESCRITA, não a troca de tela.
+    await waitFor(() => expect(chamadas.some((c) => c.metodo === 'PUT')).toBe(true), {
+      timeout: 5000,
+    })
+    expect(router.state.location.pathname).toMatch(/^\/cadastros\/clientes\/./)
 
     const corpo = chamadas.find((c) => c.metodo === 'PUT')?.corpo as Record<string, unknown>
     // Cada rua no SEU endereço: o que separa os três é o prefixo do formulário,
@@ -279,6 +279,84 @@ describe('tela Cliente', () => {
     // O endereço do CADASTRO não foi tocado, e continua nulo — endereço com os
     // sete campos em branco não é endereço.
     expect(corpo.address).toBeNull()
+  }, 30_000)
+
+  /**
+   * OS TELEFONES SAEM DA ESPEC, E QUEM PROVA É O CORPO DO `PUT`.
+   *
+   * Esta tela desenhava `Fone Comer.`, `FAX` e `Fone Resid.` à mão enquanto
+   * `moduloContatos` já declarava os três com `campo`, `dto` e rótulo. Duas
+   * fontes para a mesma resposta, e já divergindo no rótulo — a espec diz
+   * `Fax`, a tela dizia `FAX`.
+   *
+   * O teste pede os campos pelos rótulos DA ESPEC: quem voltar a desenhá-los à
+   * mão com os rótulos antigos reprova aqui. E mede o corpo do `PUT` porque
+   * rótulo certo com caminho Zod errado daria um campo bonito que não viaja —
+   * o defeito exato que a #244 pagou.
+   */
+  it('os telefones vêm do módulo compartilhado e chegam ao PUT', async () => {
+    const { stub, chamadas } = servidorDeParceiros([
+      parceiro({ code: 'C001', legalName: 'ANDRÉ BATALHA', isCustomer: true }),
+    ])
+    const { router, user } = renderRoute('/cadastros/clientes', stub)
+
+    await acaoNaLinha(user, 'ANDRÉ BATALHA', 'Alterar')
+    await screen.findByLabelText('Nome')
+
+    await user.click(screen.getByRole('button', { name: 'Outros contatos' }))
+    const contatos = within(screen.getByRole('group', { name: 'Outros contatos' }))
+    await user.type(contatos.getByLabelText('Telefone comercial'), '11 3322-1200')
+    await user.type(contatos.getByLabelText('Telefone residencial'), '11 3322-1210')
+    await user.type(contatos.getByLabelText('Fax'), '11 3322-1201')
+
+    // `name` EXATO, e não `/Gravar/`: com o bloco `Outros contatos` aberto há
+    // dois botões que casam — o do rodapé e o `Gravar contatos` da grade, que
+    // tem gravação própria de propósito. A regex pegava os dois e o caso
+    // morria antes de medir o corpo.
+    await user.click(screen.getByRole('button', { name: 'Gravar' }))
+
+    // A ALTERAÇÃO permanece no documento (#405): quem responde ao clique é o
+    // toast, e a sincronização passa a ser a ESCRITA, não a troca de tela.
+    await waitFor(() => expect(chamadas.some((c) => c.metodo === 'PUT')).toBe(true), {
+      timeout: 5000,
+    })
+    expect(router.state.location.pathname).toMatch(/^\/cadastros\/clientes\/./)
+
+    const corpo = chamadas.find((c) => c.metodo === 'PUT')?.corpo as Record<string, unknown>
+    expect(corpo.businessPhone).toBe('11 3322-1200')
+    expect(corpo.homePhone).toBe('11 3322-1210')
+    expect(corpo.fax).toBe('11 3322-1201')
+  }, 30_000)
+
+  /**
+   * A LACUNA DO COMUNICADOR NÃO PODE SUMIR JUNTO COM O CAMPO À MÃO.
+   *
+   * `moduloContatos({ comunicadores: false })` deixa os quatro comunicadores
+   * sem `campo` de propósito — o mockup os pede e o contrato não os publica
+   * (zero ocorrência de `communicator` nos schemas). Renderizando pela espec,
+   * `CampoDoModulo` os pula; sem `<Pendencias>` no bloco, a falta ficaria
+   * invisível na tela e contável só em relatório, que é como dívida declarada
+   * vira dívida esquecida.
+   */
+  it('o bloco de contatos diz o que ainda não guarda, sem desenhar o campo', async () => {
+    const { stub } = servidorDeParceiros([
+      parceiro({ code: 'C001', legalName: 'ANDRÉ BATALHA', isCustomer: true }),
+    ])
+    const { user } = renderRoute('/cadastros/clientes', stub)
+
+    await acaoNaLinha(user, 'ANDRÉ BATALHA', 'Alterar')
+    await screen.findByLabelText('Nome')
+
+    await user.click(screen.getByRole('button', { name: 'Outros contatos' }))
+    const contatos = within(screen.getByRole('group', { name: 'Outros contatos' }))
+
+    expect(contatos.getByText(/Ainda não guardamos/)).toHaveTextContent('Comunicador')
+    // Dito, e não desenhado: campo que aceita digitação e é descartado no
+    // `Gravar` é pior que campo ausente, porque parece que funcionou.
+    expect(contatos.queryByLabelText('Comunicador')).not.toBeInTheDocument()
+    // E o rodapé não pode acusar a GRADE de contatos, que existe e está logo
+    // acima — é sub-recurso, não lacuna.
+    expect(contatos.getByText(/Ainda não guardamos/)).not.toHaveTextContent('Contatos')
   }, 30_000)
 
   it('o que o servidor mandou nos dois endereços volta para a tela', async () => {

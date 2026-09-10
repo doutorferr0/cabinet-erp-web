@@ -1,3 +1,5 @@
+import { screen, waitFor } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import {
   acaoNaLinha,
   renderRoute,
@@ -5,8 +7,6 @@ import {
   respostaSessao,
   respostaVinculos,
 } from '@/test/utils'
-import { screen, waitFor } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 /**
  * A CONVERSÃO ORÇAMENTO → PEDIDO NA TELA — o gesto pelo qual quase todo pedido
@@ -143,7 +143,10 @@ function problema(tipo: string, detalhe: string, status = 409): Response {
 function servidor({
   escritas = [],
   recusa,
-}: { escritas?: Escrita[]; recusa?: () => Response } = {}) {
+}: {
+  escritas?: Escrita[]
+  recusa?: () => Response
+} = {}) {
   return async (entrada: RequestInfo | URL) => {
     const req = entrada instanceof Request ? entrada : null
     const url = String(req ? req.url : entrada)

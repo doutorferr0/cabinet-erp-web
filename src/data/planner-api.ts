@@ -1,7 +1,7 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { PlanItemDto, ProjectDto, ProjectPlanDto } from '@/api/gerado'
 import { getProjectPlan, listProjects, reschedulePlanItem } from '@/api/gerado'
-import { type RespostaDaApi, dadosOuErro, repetirSeValeAPena } from '@/data/api-provider'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { dadosOuErro, type RespostaDaApi, repetirSeValeAPena } from '@/data/api-provider'
 
 /**
  * FRONTEIRA DO PLANNER — projetos e o plano de um projeto.

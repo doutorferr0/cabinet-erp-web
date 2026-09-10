@@ -1,6 +1,11 @@
+import { useNavigate } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
+import { useFormContext } from 'react-hook-form'
+import { z } from 'zod'
 import { EnderecoBlock, RedesSociaisBlock } from '@/components/cabinet/blocks'
 import { BuscaDeCidade } from '@/components/cabinet/busca-de-cidade'
 import { CadastroForm } from '@/components/cabinet/cadastro-form'
+import { CamposDoModulo, Pendencias } from '@/components/cabinet/campos-do-modulo'
 import { FormBlock } from '@/components/cabinet/form-block'
 import {
   CheckboxField,
@@ -9,21 +14,17 @@ import {
   LookupField,
   RadioField,
   SelectField,
-  TextField,
   TextareaField,
+  TextField,
 } from '@/components/cabinet/form-controls'
 import {
-  type ModuloCadastro,
   cliente as entidadeCliente,
+  type ModuloCadastro,
   propsDoIcone,
 } from '@/features/cadastro/modulos'
 import { ContatosDoParceiro } from '@/features/parceiro/contatos-do-parceiro'
-import { SHORTCUTS, bindShortcut } from '@/lib/shortcuts'
+import { bindShortcut, SHORTCUTS } from '@/lib/shortcuts'
 import type { Cliente } from '@/mocks/clientes'
-import { useNavigate } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
-import { useFormContext } from 'react-hook-form'
-import { z } from 'zod'
 import { ProgressoObrigatorios } from './progresso-obrigatorios'
 
 /**
@@ -133,7 +134,11 @@ function BlocoDoModulo({
   id,
   emFoco,
   children,
-}: { id: string; emFoco: string | undefined; children: React.ReactNode }) {
+}: {
+  id: string
+  emFoco: string | undefined
+  children: React.ReactNode
+}) {
   const m = modulo(id)
   return (
     <FormBlock
@@ -160,7 +165,10 @@ type PrefixoCidade = 'endereco' | 'enderecoCobranca' | 'enderecoComercial'
 function BuscaCidade({
   prefixo,
   onOpenChange,
-}: { prefixo: PrefixoCidade | null; onOpenChange: (aberto: PrefixoCidade | null) => void }) {
+}: {
+  prefixo: PrefixoCidade | null
+  onOpenChange: (aberto: PrefixoCidade | null) => void
+}) {
   const { setValue } = useFormContext<Cliente>()
   return (
     <BuscaDeCidade
@@ -298,26 +306,31 @@ function ClienteCorpo({
       </BlocoDoModulo>
 
       <BlocoDoModulo emFoco={moduloEmFoco} id="contatos">
-        <div className="grid grid-cols-12 items-end gap-3">
-          <TextField
-            name="foneComercial"
-            label="Fone Comer."
-            className="col-span-6 sm:col-span-3"
-          />
-          <TextField name="fax" label="FAX" className="col-span-6 sm:col-span-3" />
-          <TextField
-            name="foneResidencial"
-            label="Fone Resid."
-            className="col-span-6 sm:col-span-3"
-          />
-        </div>
+        {/* Os telefones saem da ESPEC, não deste arquivo. Até aqui esta tela
+            desenhava `Fone Comer.`, `FAX` e `Fone Resid.` à mão enquanto
+            `moduloContatos` já declarava os três, com `campo`, `dto` e rótulo —
+            duas fontes para a mesma resposta, e a de baixo (a espec) é a que
+            `semLastro` e o `AvisoDeCobertura` leem. Divergir era questão de
+            tempo: o rótulo daqui já dizia `FAX` onde a espec diz `Fax`.
+
+            O render genérico é o mesmo que o Profissional usa desde a #101 —
+            promovido de `features/profissional/` para `components/cabinet/`
+            nesta leva, porque uma TERCEIRA tela passou a precisar dele e uma
+            tela de cadastro não pode importar de outra.
+
+            Os quatro comunicadores do módulo continuam sem `campo` (o Cliente
+            os declara com `comunicadores: false`), então `CampoDoModulo` os
+            pula — e `<Pendencias>` os diz pelo nome no rodapé, que é como a
+            lacuna deixa de ser invisível sem virar campo que não grava. */}
+        <CamposDoModulo modulo={modulo('contatos')} />
         {/* A GRADE de contatos (#293) — a aba `Con&tato` do `FrmCliente`, que
             era a única das três fichas de parceiro sem ela. Entra no módulo que
             já é o lugar do assunto: `Outros contatos` reúne os telefones do
             cadastro, e a lista de quem ATENDE nele é o resto da mesma pergunta.
-            Fica FORA da `<div>` dos campos porque não é campo do registro — é o
+            Fica FORA dos campos porque não é campo do registro — é o
             sub-recurso `/api/partners/{id}/contacts`, com gravação própria. */}
         <ContatosDoParceiro partnerId={idDoRegistro ?? null} readOnly={readOnly} />
+        <Pendencias modulo={modulo('contatos')} />
       </BlocoDoModulo>
 
       <BlocoDoModulo emFoco={moduloEmFoco} id="fiscal">
@@ -379,6 +392,7 @@ export function ClienteForm({
   moduloEmFoco,
   idDoRegistro,
   onGravar: gravarDeFora,
+  gravou = false,
 }: {
   cliente: Cliente
   readOnly?: boolean
@@ -408,6 +422,11 @@ export function ClienteForm({
    * ainda não atende.
    */
   onGravar?: (values: Cliente) => void
+  /**
+   * Gravação que deu certo (#405) — a alteração PERMANECE na tela, e é este
+   * sinal que devolve o formulário ao estado limpo. Ver `CadastroForm`.
+   */
+  gravou?: boolean
 }) {
   const navigate = useNavigate()
   const [buscaCidadePrefixo, setBuscaCidadePrefixo] = useState<PrefixoCidade | null>(null)
@@ -433,6 +452,7 @@ export function ClienteForm({
       onGravar={onGravar}
       onCancelar={() => void navigate({ to: '/cadastros/clientes' })}
       readOnly={readOnly}
+      gravou={gravou}
       titulo="Cadastro de Clientes"
       familia="partners"
       {...(contexto ? { contexto } : {})}

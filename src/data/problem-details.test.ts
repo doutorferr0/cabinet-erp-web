@@ -1,17 +1,17 @@
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { configurarApi } from '@/api/cliente'
 import {
-  ProblemType,
   authLogin,
   authSetActiveTenant,
   createPartner,
   createProduct,
+  ProblemType,
 } from '@/api/gerado'
-import { type ErroDaApi, dadosOuErro } from '@/data/api-provider'
+import { dadosOuErro, type ErroDaApi } from '@/data/api-provider'
 import { handlers } from '@/mocks/api/handlers'
 import { tituloDoProblema } from '@/mocks/api/problema'
-import { TENANT_MATRIZ, resetStore } from '@/mocks/api/store'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { resetStore, TENANT_MATRIZ } from '@/mocks/api/store'
 import contrato from '../../contracts/openapi-v1.json'
 
 /**

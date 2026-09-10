@@ -1,9 +1,9 @@
-import { ListaDeFiltros } from '@/components/cabinet/lista-de-filtros'
-import type { CampoFiltravel, FiltroDaTabela, Juncao } from '@/lib/filtro-de-consulta'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { describe, expect, it } from 'vitest'
+import { ListaDeFiltros } from '@/components/cabinet/lista-de-filtros'
+import type { CampoFiltravel, FiltroDaTabela, Juncao } from '@/lib/filtro-de-consulta'
 
 const campos: CampoFiltravel[] = [
   { id: 'nome', rotulo: 'Nome', variante: 'text' },

@@ -1,3 +1,4 @@
+import { HttpResponse, http } from 'msw'
 import type {
   ApprovalDecisionRequest,
   ApprovalRejectionRequest,
@@ -6,11 +7,10 @@ import type {
   ApprovalSummaryDto,
 } from '@/api/gerado'
 import { podeEscrever } from '@/data/papeis'
-import { http, HttpResponse } from 'msw'
 import { papelDaSessao } from './permissao'
-import { TIPO, camposInvalidos, naoEncontrado, problemaJson, semSessao } from './problema'
+import { camposInvalidos, naoEncontrado, problemaJson, semSessao, TIPO } from './problema'
 import { detalheDoOrcamento, orcamentoPorId } from './quotes'
-import { TENANT_FILIAL, TENANT_MATRIZ, store } from './store'
+import { store, TENANT_FILIAL, TENANT_MATRIZ } from './store'
 
 /**
  * O "backend" da FILA DE APROVAÇÕES no modo mock (`/api/approval-requests`).

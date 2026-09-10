@@ -1,8 +1,8 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ApprovalRequestDto } from '@/api/gerado'
 import { ErroDaApi } from '@/data/api-provider'
-import { ORDENAVEIS_APROVACAO, filaDeAprovacoes } from '@/data/aprovacoes-api'
+import { filaDeAprovacoes, ORDENAVEIS_APROVACAO } from '@/data/aprovacoes-api'
 import { instalarServidor, json, problema } from '@/test/servidor'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import contrato from '../../contracts/openapi-v1.json'
 
 /**

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { ApprovalRequestDto } from '@/api/gerado'
 import { ErroDoServidor } from '@/components/cabinet/erro-do-servidor'
 import { Button } from '@/components/ui/button'
@@ -12,7 +13,6 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useDecidirAprovacao } from '@/data/aprovacoes-api'
 import { formatInstanteBR, formatMoneyBRL, formatPercent } from '@/lib/formatters'
-import { useState } from 'react'
 import { SituacaoDoPedido } from './situacao'
 
 /** O piso do contrato (`ApprovalRejectionRequest.reason.minLength`), repetido aqui a serviço do operador. */

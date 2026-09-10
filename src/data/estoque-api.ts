@@ -1,3 +1,4 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
   PagedResultOfStockBalanceDto,
   PagedResultOfStockLocationDto,
@@ -13,14 +14,13 @@ import {
   listStockMovements,
 } from '@/api/gerado'
 import {
-  PAGE_SIZE_MAX,
-  type RespostaDaApi,
   dadosOuErro,
+  PAGE_SIZE_MAX,
   queryDaTabela,
+  type RespostaDaApi,
   repetirSeValeAPena,
 } from '@/data/api-provider'
 import type { PagedResult, TableFetcher } from '@/lib/table-query'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 /**
  * FRONTEIRA DE ESTOQUE — depósito, saldo por depósito e kardex.

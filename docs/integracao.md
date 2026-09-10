@@ -288,11 +288,18 @@ liga; quem não migrou foi `data.colaboradores` — ver a costura abaixo) e as t
 **PUBLICADO, SERVIDO E SEM CONSUMIDOR é o terceiro estado, e é o que mais cresce.** O contrato
 andou 47 operações desde a última edição desta página, e a maior parte nasceu sem tela do lado de
 cá: obra (4) · comissões (4, mais as 4 de faixa em `employees`/`partners`) · perfis de custo (5) ·
-recebimento de mercadoria (6) · etiquetas e impressão (8) · índices e tabela de preço (5) ·
+etiquetas e impressão (8) · índices e tabela de preço (5) ·
 reservas técnicas (3) · serviços (3) · papéis e permissões (5) · relatórios (10). **Não é dívida
 escondida nem promessa:** o caminho existe, o backend responde, e o que falta é a tela — que é
 trabalho de front, não de contrato. Medir isto é `grep` do nome da função gerada fora de
 `src/api/gerado/`, e é a conta que envelhece sozinha se ninguém a refizer.
+
+**RECEBIMENTO (G3) saiu desta lista em 26/08, e por não caber nela:** o contrato publica as seis
+operações, mas o backend NÃO responde — `src/core/http/servidor.ts` não tem nenhum handler de
+`/api/goods-receipts`, e as seis são 501 (`natureza: 'sem-handler'`, a fase B é a `api#122`). Quem
+as serve é `src/mocks/api/recebimento.ts`, com estado de verdade: o vínculo por linha com a ordem
+de compra, a conferência que cobra motivo na transição e o lançamento que move o kardex e baixa a
+chegada futura. É o oposto do estado deste parágrafo — servido pelo MOCK, não pelo backend.
 
 **COMPRAS é o caso do meio, e ele merece o parágrafo:** o contrato publica as 14 operações e o
 MSW as serve com estado de verdade, mas as telas de `/compras` continuam lendo os fixtures de
@@ -755,6 +762,37 @@ memória e a costura está declarada na tela.
 **A escrita responde 403 `papel-insuficiente` para `operator-full`, e ali é
 DECISÃO, não herança:** `/api/employees` é `admin` porque vínculo é o que decide
 o papel dos outros.
+
+#### O corte meio-termo do bloco pessoal (#403, 2026-08-28)
+
+O formulário tinha ~30 campos e o contrato publicava 17. A diferença fechou pelos
+DOIS lados, e nenhuma das metades é "o que deu para fazer":
+
+- **Sexo e raça/cor SAÍRAM** — da tela, do schema, do módulo de cadastro e do
+  contrato. São dado pessoal sensível na letra do art. 5º II da LGPD e o produto
+  não tem finalidade para eles: nenhuma tela decide nada com sexo ou raça de
+  colaborador e nenhum relatório os pede. **`sexo` continua no CLIENTE**
+  (`PartnerDto.gender`), que é pessoa física de fora e não relação de emprego.
+- **O resto ENTROU, em DOIS níveis.** Pessoal (nascimento, estado civil, cônjuge,
+  filiação, naturalidade, nacionalidade, ano de chegada, instrução, profissão) é
+  da ORGANIZAÇÃO e mora em `EmployeeDetailDto` + `EmployeeWriteRequest`.
+  **Vínculo e salário são da EMPRESA ATIVA** e moram no detalhe (leitura) e em
+  `EmployeeLinkRequest` (escrita), ao lado de cargo, setor e `hiredAt` — salário
+  na ficha da pessoa faria gravar numa empresa reescrever em silêncio o da outra.
+
+**`salaryCents` é `admin`-only na leitura E na escrita, e a leitura é a metade que
+se esquece.** Para papel sem permissão o servidor OMITE o campo do corpo, em vez
+de devolvê-lo `null`: `null` já quer dizer "não há salário registrado", e usar o
+mesmo valor para "você não pode ver" faria a tela imprimir um branco idêntico nos
+dois casos. `daFichaDoServidor` ainda não distingue as duas ausências —
+`Colaborador.salario` é `number | null` —, e isso está declarado no cabeçalho de
+`colaboradores-api.ts` e preso por teste. Espelho no servidor: **api#250**.
+
+A naturalidade viaja como `birthCityCode` + `birthCity` + `birthState`, e o código
+é **texto opaco, não chave estrangeira**: o contrato não publica recurso de
+cidades, então não há `/api/cities/{id}` para ele apontar. Existe para o dado
+sobreviver ao ida-e-volta, e vira referência de verdade quando cidades ganharem
+caminho.
 
 ### Suporte-da-plataforma — o break-glass, `/api/platform/support-grants`
 

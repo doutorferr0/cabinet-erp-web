@@ -1,3 +1,5 @@
+import { screen, waitFor } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
 import { respostaPagamento } from '@/test/orcamentos'
 import {
   acaoNaLinha,
@@ -6,8 +8,6 @@ import {
   respostaSessao,
   respostaVinculos,
 } from '@/test/utils'
-import { screen, waitFor } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
 
 /**
  * O `Gravar` DO ORÇAMENTO GRAVA (#186, bloco 3).

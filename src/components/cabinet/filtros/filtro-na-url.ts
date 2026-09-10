@@ -1,11 +1,11 @@
 import {
   type CampoFiltravel,
+  dispensaValor,
   type FiltroDaTabela,
   type Juncao,
+  novoFiltroId,
   OPERADORES,
   type OperadorDeFiltro,
-  dispensaValor,
-  novoFiltroId,
 } from '@/lib/filtro-de-consulta'
 
 /**

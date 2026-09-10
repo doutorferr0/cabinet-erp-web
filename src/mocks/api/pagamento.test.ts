@@ -1,4 +1,7 @@
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { configurarApi } from '@/api/cliente'
+import type { PaymentTermWriteRequest, QuoteWriteRequest } from '@/api/gerado'
 import {
   authLogin,
   authSetActiveTenant,
@@ -11,12 +14,9 @@ import {
   updatePaymentTerm,
   updateQuote,
 } from '@/api/gerado'
-import type { PaymentTermWriteRequest, QuoteWriteRequest } from '@/api/gerado'
 import { idDeApoio } from '@/mocks/lookups'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { handlers } from './handlers'
-import { TENANT_FILIAL, TENANT_MATRIZ, resetStore, store } from './store'
+import { resetStore, store, TENANT_FILIAL, TENANT_MATRIZ } from './store'
 
 /**
  * O MOCK DO PAGAMENTO — condição, política e o bloco do documento (contrato S4).

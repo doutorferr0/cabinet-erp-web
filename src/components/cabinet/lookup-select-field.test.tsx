@@ -1,10 +1,10 @@
+import { screen, waitFor } from '@testing-library/react'
+import { useForm } from 'react-hook-form'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LookupSelectField } from '@/components/cabinet/form-controls'
 import { Form } from '@/components/ui/form'
 import { instalarServidor, json } from '@/test/servidor'
 import { renderWithQuery } from '@/test/utils'
-import { screen, waitFor } from '@testing-library/react'
-import { useForm } from 'react-hook-form'
-import { afterEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * `[combo]` puro alimentado por um kind do servidor (`/api/catalog-lookups`).

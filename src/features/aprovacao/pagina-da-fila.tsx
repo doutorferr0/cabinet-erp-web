@@ -1,11 +1,11 @@
+import type { ColumnDef } from '@tanstack/react-table'
+import { useState } from 'react'
 import type { ApprovalRequestDto, ApprovalRequestStatus } from '@/api/gerado'
 import { VitraDataTable } from '@/components/cabinet/data-table'
 import { PageHeader } from '@/components/cabinet/page-header'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CHAVES_APROVACOES, filaDeAprovacoes, useResumoDeAprovacoes } from '@/data/aprovacoes-api'
 import { formatInstanteBR, formatMoneyBRL, formatPercent } from '@/lib/formatters'
-import type { ColumnDef } from '@tanstack/react-table'
-import { useState } from 'react'
 import { DecisaoDoPedido } from './decisao-do-pedido'
 import { SituacaoDoPedido } from './situacao'
 

@@ -1,4 +1,16 @@
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { configurarApi } from '@/api/cliente'
+import type {
+  AbcCurveReportDto,
+  BirthdaysReportDto,
+  ProfessionalRankingReportDto,
+  QuoteVsStockReportDto,
+  SalesComparisonReportDto,
+  SalespersonReportDto,
+  StockAgingReportDto,
+  StockValuationReportDto,
+} from '@/api/gerado'
 import {
   authLogin,
   authSetActiveTenant,
@@ -11,22 +23,10 @@ import {
   getStockAgingReport,
   getStockValuationReport,
 } from '@/api/gerado'
-import type {
-  AbcCurveReportDto,
-  BirthdaysReportDto,
-  ProfessionalRankingReportDto,
-  QuoteVsStockReportDto,
-  SalesComparisonReportDto,
-  SalespersonReportDto,
-  StockAgingReportDto,
-  StockValuationReportDto,
-} from '@/api/gerado'
 import { apiFetch } from '@/api/http'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { handlers } from './handlers'
 import { resetQuotes } from './quotes'
-import { TENANT_MATRIZ, resetStore, store } from './store'
+import { resetStore, store, TENANT_MATRIZ } from './store'
 
 /**
  * OS DEZ RELATÓRIOS no modo mock.

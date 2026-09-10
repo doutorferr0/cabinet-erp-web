@@ -1,7 +1,7 @@
-import type { ApprovalRequestDto } from '@/api/gerado'
-import { renderRoute } from '@/test/utils'
 import { screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ApprovalRequestDto } from '@/api/gerado'
+import { renderRoute } from '@/test/utils'
 
 /**
  * A TELA da fila de aprovações (F12), pelo router real.

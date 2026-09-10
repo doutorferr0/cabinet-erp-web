@@ -1,3 +1,4 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
   ApprovalRequestDto,
   ApprovalRequestStatus,
@@ -10,9 +11,8 @@ import {
   listApprovalRequests,
   rejectApprovalRequest,
 } from '@/api/gerado'
-import { PAGE_SIZE_MAX, type RespostaDaApi, dadosOuErro } from '@/data/api-provider'
+import { dadosOuErro, PAGE_SIZE_MAX, type RespostaDaApi } from '@/data/api-provider'
 import type { TableFetcher } from '@/lib/table-query'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 /**
  * FRONTEIRA DA FILA DE APROVAÇÕES — o desconto que passou do teto e espera alguém.

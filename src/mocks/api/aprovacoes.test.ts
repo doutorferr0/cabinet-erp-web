@@ -1,3 +1,5 @@
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { configurarApi } from '@/api/cliente'
 import type { ApprovalRequestDto, PagedResultOfApprovalRequestDto } from '@/api/gerado'
 import {
@@ -8,12 +10,10 @@ import {
   listApprovalRequests,
   rejectApprovalRequest,
 } from '@/api/gerado'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { resetAprovacoes } from './aprovacoes'
 import { handlers } from './handlers'
 import { resetQuotes } from './quotes'
-import { TENANT_FILIAL, TENANT_MATRIZ, resetStore } from './store'
+import { resetStore, TENANT_FILIAL, TENANT_MATRIZ } from './store'
 
 /**
  * O MOCK DA FILA DE APROVAÇÕES (F12).

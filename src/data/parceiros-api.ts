@@ -1,3 +1,4 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
   PagedResultOfPartnerDto,
   PartnerAddress,
@@ -7,16 +8,15 @@ import type {
 } from '@/api/gerado'
 import { createPartner, getPartner, linkPartner, listPartners, updatePartner } from '@/api/gerado'
 import {
-  ErroDaApi,
-  PAGE_SIZE_MAX,
-  type RespostaDaApi,
   createApiListProvider,
   dadosOuErro,
+  ErroDaApi,
   itemOuNulo,
+  PAGE_SIZE_MAX,
+  type RespostaDaApi,
 } from '@/data/api-provider'
 import type { ListProvider } from '@/data/provider'
 import { avisar } from '@/lib/avisos'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 /**
  * FRONTEIRA DE PARCEIROS — `GET /api/partners`.

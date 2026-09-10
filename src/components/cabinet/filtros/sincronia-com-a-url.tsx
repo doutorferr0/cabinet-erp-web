@@ -1,6 +1,6 @@
-import { type ConsultaNaUrl, consultaParaUrl } from '@/components/cabinet/filtros/filtro-na-url'
 import { useNavigate, useRouter } from '@tanstack/react-router'
 import { useEffect, useRef } from 'react'
+import { type ConsultaNaUrl, consultaParaUrl } from '@/components/cabinet/filtros/filtro-na-url'
 
 /**
  * A CONSULTA PUBLICADA NO ENDEREÇO — sem componente novo na tela.

@@ -1,8 +1,10 @@
-import { EnderecoBlock, RedesSociaisBlock } from '@/components/cabinet/blocks'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { FormProvider, useForm } from 'react-hook-form'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { EnderecoBlock, RedesSociaisBlock } from '@/components/cabinet/blocks'
+import { avisosAtuais, limparAvisos } from '@/lib/avisos'
+import { instalarServidor, json } from '@/test/servidor'
 
 function Harness() {
   const form = useForm({
@@ -28,6 +30,25 @@ function Harness() {
 }
 
 describe('blocos compartilhados', () => {
+  beforeEach(() => {
+    instalarServidor({
+      '/api/postal-codes/13010111': () =>
+        json({
+          zipCode: '13010111',
+          street: 'Avenida Francisco Glicério',
+          number: null,
+          complement: null,
+          district: 'Centro',
+          city: 'CAMPINAS',
+          state: 'SP',
+        }),
+      '/api/postal-codes/00000000': () => new Response('', { status: 404 }),
+    })
+  })
+  afterEach(() => {
+    limparAvisos()
+    vi.unstubAllGlobals()
+  })
   it('renderiza campos de endereço e redes sociais', () => {
     render(<Harness />)
     expect(screen.getByLabelText('Endereço')).toBeInTheDocument()
@@ -51,5 +72,19 @@ describe('blocos compartilhados', () => {
     expect(screen.getByLabelText('Bairro')).toHaveValue('Centro')
     expect(screen.getByLabelText('Cidade')).toHaveValue('CAMPINAS')
     expect(screen.getByText('SP')).toBeInTheDocument()
+  })
+
+  it('avisa quando o CEP não está na base disponível', async () => {
+    const user = userEvent.setup()
+    render(<Harness />)
+
+    await user.type(screen.getByLabelText('CEP'), '00000000')
+    await user.click(screen.getByRole('button', { name: 'Buscar endereço por CEP' }))
+
+    await waitFor(() => {
+      expect(avisosAtuais()).toContainEqual(
+        expect.objectContaining({ tom: 'warn', texto: expect.stringContaining('CEP') }),
+      )
+    })
   })
 })

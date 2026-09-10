@@ -1,3 +1,4 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ErroDaApi, repetirSeValeAPena } from '@/data/api-provider'
 import {
   ehModuloEmConstrucao,
@@ -7,7 +8,6 @@ import {
 import { orcamentosApi } from '@/data/quotes-api'
 import { instalarServidor } from '@/test/servidor'
 import { tableState } from '@/test/utils'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import contrato from '../../contracts/openapi-v1.json'
 
 /**

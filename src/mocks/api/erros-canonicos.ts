@@ -381,6 +381,13 @@ export const ERROS_CANONICOS = {
     extensoes: [],
     origem: 'so-contrato',
   },
+  'urn:cabinet:erro:quitacao-a-menor': {
+    status: 403,
+    detail:
+      'O papel deste vínculo não pode quitar a menor: o valor abate 5000 centavos e o saldo da parcela é 12000 (`financeiro:quitacao-a-menor`).',
+    extensoes: [],
+    origem: 'mock',
+  },
   'urn:cabinet:erro:movimento-ja-conciliado': {
     status: 409,
     detail: 'Este movimento já foi conciliado.',

@@ -32,11 +32,11 @@
  */
 
 import { execSync } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import net from 'node:net'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { type Browser, type Page, chromium } from '@playwright/test'
+import { type Browser, chromium, type Page } from '@playwright/test'
 
 const raiz = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 

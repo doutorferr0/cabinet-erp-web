@@ -1,3 +1,5 @@
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { configurarApi } from '@/api/cliente'
 import {
   authLogin,
@@ -11,9 +13,7 @@ import {
 import { lancarMovimento } from '@/data/estoque-api'
 import { saldoNoDeposito } from '@/data/inventario-api'
 import { handlers } from '@/mocks/api/handlers'
-import { TENANT_MATRIZ, resetStore } from '@/mocks/api/store'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { resetStore, TENANT_MATRIZ } from '@/mocks/api/store'
 
 /**
  * O AJUSTE DO INVENTÁRIO CHEGA AO KARDEX — contra o MOCK, que é quem responde

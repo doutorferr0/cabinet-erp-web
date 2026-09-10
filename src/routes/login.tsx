@@ -1,6 +1,6 @@
+import { createFileRoute } from '@tanstack/react-router'
 import { LoginTela } from '@/features/login/login'
 import { rotaDeOrigemValida } from '@/lib/rota-de-origem'
-import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/login')({
   component: LoginTela,

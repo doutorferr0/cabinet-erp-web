@@ -1,9 +1,9 @@
-import { useLogin } from '@/data/sessao'
-import { type ServidorFalso, instalarServidor } from '@/test/servidor'
-import { renderWithQuery } from '@/test/utils'
 import { useQuery } from '@tanstack/react-query'
 import { screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { useLogin } from '@/data/sessao'
+import { instalarServidor, type ServidorFalso } from '@/test/servidor'
+import { renderWithQuery } from '@/test/utils'
 
 /**
  * O login troca a IDENTIDADE, não só a sessão: os vínculos em cache são do

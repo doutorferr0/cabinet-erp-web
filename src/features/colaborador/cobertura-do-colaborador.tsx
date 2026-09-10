@@ -1,6 +1,6 @@
 import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
-import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import type { CamposDoContrato } from '@/components/cabinet/erro-do-servidor'
+import { ErroDeGravacao } from '@/components/cabinet/erro-do-servidor'
 import { camposDoContrato, colaborador as esquema } from '@/features/cadastro/modulos'
 
 /**

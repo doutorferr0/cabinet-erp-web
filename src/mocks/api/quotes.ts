@@ -1,3 +1,4 @@
+import { HttpResponse, http } from 'msw'
 import type {
   CancelDocumentRequest,
   QuoteDetailDto,
@@ -10,18 +11,18 @@ import type {
 } from '@/api/gerado'
 import { nomeDeApoio } from '@/mocks/lookups'
 import { type Orcamento, orcamentos } from '@/mocks/orcamentos'
-import { http, HttpResponse } from 'msw'
-import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
+import type { CamposFiltraveis } from './filtro-do-servidor'
+import { listar } from './listagem'
 import { obras } from './obras'
 import { condicaoAtiva, planoDoDocumento, politicaDaEmpresa } from './pagamento'
 import { verificarEscrita } from './permissao'
 import {
-  TIPO,
   camposInvalidos,
   naoEncontrado,
   problemaJson,
   semEmpresaAtiva,
   semSessao,
+  TIPO,
 } from './problema'
 import { servicoDoCadastro } from './servicos'
 import { store } from './store'
@@ -698,47 +699,13 @@ export const handlersDeOrcamento = [
     if (!store.activeTenantId) return HttpResponse.json({ rows: [], total: 0 })
 
     const url = new URL(request.url)
-    const q = url.searchParams.get('q')
-    const sortBy = url.searchParams.get('sortBy')
-    const sortDesc = url.searchParams.get('sortDesc') === 'true'
-    const page = Number(url.searchParams.get('page') ?? '1')
-    const pageSize = Number(url.searchParams.get('pageSize') ?? '10')
-
-    if (page < 1 || pageSize < 1 || pageSize > 100) {
-      return problemaJson(
-        400,
-        'Paginação inválida: page é 1-based e pageSize vai até 100.',
-        {},
-        TIPO.paginacaoInvalida,
-      )
-    }
-    if (sortBy && !ORDENAVEIS.includes(sortBy)) {
-      return problemaJson(400, `sortBy inválido: ${sortBy}.`, {}, TIPO.ordenacaoInvalida)
-    }
-
-    let linhas = estado.linhas.map(resumoDto)
-    if (q) {
-      const alvo = q.toLowerCase()
-      linhas = linhas.filter((o) =>
-        [o.number, o.customerName, o.projectName].some((t) => t?.toLowerCase().includes(alvo)),
-      )
-    }
-    const filtradas = aplicarFiltros(linhas, url, FILTRAVEIS)
-    if (typeof filtradas === 'string') return problemaJson(400, filtradas, {}, TIPO.filtroInvalido)
-    linhas = filtradas
-
-    if (sortBy) {
-      const chave = sortBy as keyof QuoteDto
-      linhas.sort((a, b) => {
-        const va = String(a[chave] ?? '')
-        const vb = String(b[chave] ?? '')
-        return sortDesc ? vb.localeCompare(va) : va.localeCompare(vb)
-      })
-    }
-
-    const total = linhas.length
-    const inicio = (page - 1) * pageSize
-    return HttpResponse.json({ rows: linhas.slice(inicio, inicio + pageSize), total })
+    return listar(
+      estado.linhas.map(resumoDto),
+      url,
+      ORDENAVEIS,
+      (orcamento) => [orcamento.number, orcamento.customerName, orcamento.projectName],
+      FILTRAVEIS,
+    )
   }),
 
   http.get('*/api/quotes/:id', ({ params }) => {
@@ -936,4 +903,33 @@ function vazio(): OrcamentoDoSeed {
     condicaoPagamento: null,
     parcelas: [],
   }
+}
+
+// ------------------------------------------------- leitura para os agregados
+
+/**
+ * O orçamento REDUZIDO ao que a faixa de KPI pergunta (#479) — mesma razão que
+ * `ordensParaAgregado` em `compras.ts`: quem serve a grade responde pelo
+ * resumo, senão a faixa e a grade contam a mesma coisa de dois jeitos.
+ *
+ * `totalCents` sai daqui já somado pelo `totalDoOrcamento`, que é o mesmo que a
+ * listagem usa — o total do orçamento não é a soma dos itens (desconto e
+ * serviços entram por regra própria), e recalcular fora daqui erraria.
+ */
+export interface OrcamentoParaAgregado {
+  dataEmissao: string | null
+  dataValidade: string | null
+  dataFechamento: string | null
+  cancelado: boolean
+  totalCents: number
+}
+
+export function orcamentosParaAgregado(): OrcamentoParaAgregado[] {
+  return estado.linhas.map((o) => ({
+    dataEmissao: o.dataEmissao,
+    dataValidade: o.dataValidade,
+    dataFechamento: o.dataFechamento,
+    cancelado: o.cancelado,
+    totalCents: totalDoOrcamento(o),
+  }))
 }

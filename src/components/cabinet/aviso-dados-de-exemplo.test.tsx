@@ -1,6 +1,6 @@
-import { AvisoDadosDeExemplo } from '@/components/cabinet/aviso-dados-de-exemplo'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { AvisoDadosDeExemplo } from '@/components/cabinet/aviso-dados-de-exemplo'
 
 describe('AvisoDadosDeExemplo', () => {
   it('diz que o dado é de demonstração e que a tela não grava', () => {

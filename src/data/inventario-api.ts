@@ -1,3 +1,4 @@
+import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   buscarSaldosDaVariante,
   invalidarEstoqueDaVariante,
@@ -5,7 +6,6 @@ import {
   saldosDoDeposito,
   somaDosSaldos,
 } from '@/data/estoque-api'
-import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 /**
  * INVENTÁRIO — a contagem por depósito, e o ajuste que ela produz.

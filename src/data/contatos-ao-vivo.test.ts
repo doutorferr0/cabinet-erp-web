@@ -1,8 +1,8 @@
+import { screen } from '@testing-library/react'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { configurarApi } from '@/api/cliente'
 import { listarContatos, sincronizarContatos } from '@/data/contatos-api'
 import { renderRoute } from '@/test/utils'
-import { screen } from '@testing-library/react'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 /**
  * A FRONTEIRA DOS CONTATOS CONTRA O POSTGRES — desligada por padrão.

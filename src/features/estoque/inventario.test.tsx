@@ -1,15 +1,15 @@
+import { screen, within } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { StockBalanceDto, StockLocationDto } from '@/api/gerado'
 import {
-  type ItemDaContagem,
   diferencaDoItem,
+  type ItemDaContagem,
   limparContagem,
   resumoDaContagem,
 } from '@/data/inventario-api'
 import { contagemDoTexto } from '@/features/estoque/inventario'
-import { type Rota, instalarServidor, json, problema } from '@/test/servidor'
+import { instalarServidor, json, problema, type Rota } from '@/test/servidor'
 import { renderRoute, respostaSessao, respostaVinculos } from '@/test/utils'
-import { screen, within } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * O CICLO DO INVENTÁRIO, contra servidor falso e pelo cliente gerado.

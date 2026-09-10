@@ -1,3 +1,7 @@
+import { useQuery } from '@tanstack/react-query'
+import type { ColumnDef } from '@tanstack/react-table'
+import { Search, X } from 'lucide-react'
+import { useState } from 'react'
 import type { ProductDto } from '@/api/gerado'
 import { AvisoDeCobertura } from '@/components/cabinet/aviso-de-cobertura'
 import { PageHeader } from '@/components/cabinet/page-header'
@@ -16,8 +20,8 @@ import {
 import { data } from '@/data'
 import { useDepositos } from '@/data/estoque-api'
 import {
-  type ItemDaContagem,
   diferencaDoItem,
+  type ItemDaContagem,
   resumoDaContagem,
   useAcrescentarItem,
   useAplicarContagem,
@@ -25,10 +29,6 @@ import {
 } from '@/data/inventario-api'
 import { mensagemDoErro } from '@/lib/erros'
 import { formatQuantidade } from '@/lib/formatters'
-import { useQuery } from '@tanstack/react-query'
-import type { ColumnDef } from '@tanstack/react-table'
-import { Search, X } from 'lucide-react'
-import { useState } from 'react'
 
 /**
  * INVENTÁRIO — abrir a contagem de um depósito, conferir contra o sistema e

@@ -1,16 +1,16 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ErroDaApi } from '@/data/api-provider'
 import {
-  URL_PRODUTOS,
   corpoDeDesativacao,
   gravarProduto,
   produtoDoContrato,
   produtoParaContrato,
   produtosApi,
+  URL_PRODUTOS,
   varianteParaContrato,
 } from '@/data/produtos-api'
 import { instalarServidor, json, problema } from '@/test/servidor'
 import { tableState } from '@/test/utils'
-import { afterEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * Contrato da fronteira de produtos — o primeiro cadastro servido pelo backend.

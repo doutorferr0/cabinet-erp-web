@@ -1,3 +1,5 @@
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { configurarApi } from '@/api/cliente'
 import type {
   EmployeeDetailDto,
@@ -14,11 +16,9 @@ import {
   resetEmployeePassword,
   updateEmployeeLink,
 } from '@/api/gerado'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { resetAcesso } from './acesso'
 import { handlers } from './handlers'
-import { TENANT_MATRIZ, resetStore } from './store'
+import { resetStore, TENANT_MATRIZ } from './store'
 
 /**
  * Os handlers de USUÁRIO DE ACESSO do mock — o comportamento que a tela

@@ -1,4 +1,4 @@
-import { type ReactNode, createContext, useContext, useEffect, useState } from 'react'
+import { createContext, type ReactNode, useContext, useEffect, useState } from 'react'
 
 type Theme = 'light' | 'dark' | 'system'
 
@@ -21,7 +21,10 @@ function resolve(theme: Theme): 'light' | 'dark' {
 export function ThemeProvider({
   children,
   defaultTheme = 'system',
-}: { children: ReactNode; defaultTheme?: Theme }) {
+}: {
+  children: ReactNode
+  defaultTheme?: Theme
+}) {
   const [theme, setThemeState] = useState<Theme>(() => {
     if (typeof window === 'undefined') return defaultTheme
     return (localStorage.getItem(storageKey) as Theme) || defaultTheme

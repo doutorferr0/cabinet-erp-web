@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest'
 import type { PartnerDto } from '@/api/gerado'
 import { corpoDeEscrita } from '@/data/parceiros-api'
 import { papelCliente } from '@/features/parceiro/papeis/cliente'
@@ -5,7 +6,6 @@ import { enderecoParaContrato } from '@/features/parceiro/papeis/contato-e-ender
 import { papelFornecedor } from '@/features/parceiro/papeis/fornecedor'
 import { papelProfissional } from '@/features/parceiro/papeis/profissional'
 import { parceiro } from '@/test/parceiros'
-import { describe, expect, it } from 'vitest'
 
 /**
  * IDA E VOLTA DE CONTATO E ENDEREÇO (#244).

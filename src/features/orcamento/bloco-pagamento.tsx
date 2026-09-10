@@ -1,3 +1,4 @@
+import { useWatch } from 'react-hook-form'
 import type { DocumentInstallmentDto, InstallmentPolicyDto } from '@/api/gerado'
 import { totalItemCentavos } from '@/components/cabinet/documento'
 import { FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form'
@@ -6,9 +7,8 @@ import {
   useCondicoesDePagamento,
   usePoliticaDeParcelamento,
 } from '@/data/pagamento-api'
-import { PERCENT_ESCALA, formatDateBR, formatMoneyBRL } from '@/lib/formatters'
+import { formatDateBR, formatMoneyBRL, PERCENT_ESCALA } from '@/lib/formatters'
 import type { Orcamento } from '@/mocks/orcamentos'
-import { useWatch } from 'react-hook-form'
 
 /**
  * O BLOCO PAGAMENTO do documento de venda — a aba `Pagamento` do legado
@@ -144,7 +144,15 @@ export function BlocoPagamento() {
           politica={limites}
           totalCentavos={totalCentavos}
         />
+        {/* `role="note"` porque `aria-label` em `<p>` cru é IGNORADO pela
+            espec — o rótulo não chegava a leitor de tela nenhum, e os dois
+            testes que o buscam passavam só porque o `findByLabelText` do
+            testing-library é mais permissivo que a plataforma. O `note` é um
+            role que aceita nome acessível, então a promessa passa a ser
+            verdadeira. Acusado pelo `useAriaPropsSupportedByRole`, que o
+            Biome 2 trouxe. */}
         <p
+          role="note"
           aria-label="Limites de parcelamento"
           className="pb-2 text-muted-foreground text-sm tabular-nums"
         >

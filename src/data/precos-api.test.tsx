@@ -1,7 +1,9 @@
+import { waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { PriceIndexDto } from '@/api/gerado'
 import {
-  PARCELAS_DA_SIMULACAO,
   indiceDoFornecedor,
+  PARCELAS_DA_SIMULACAO,
   useGravarTabelas,
   useIndicesDePreco,
   useSimularMargem,
@@ -10,8 +12,6 @@ import {
 } from '@/data/precos-api'
 import { instalarServidor, json, problema } from '@/test/servidor'
 import { renderWithQuery } from '@/test/utils'
-import { waitFor } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
 
 /**
  * A FRONTEIRA DE PREÇO — a fórmula e os quatro hooks.

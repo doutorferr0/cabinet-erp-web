@@ -1,7 +1,7 @@
+import { describe, expect, it } from 'vitest'
 import { cliente, fornecedor } from '@/features/cadastro/modulos'
 import { clienteVazio } from '@/mocks/clientes'
 import { fornecedorVazio } from '@/mocks/fornecedores'
-import { describe, expect, it } from 'vitest'
 import { registroParaFicha } from './registro-para-ficha'
 
 /**

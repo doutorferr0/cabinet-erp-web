@@ -444,8 +444,14 @@ export interface VitraDataTableProps<T extends LinhaDaTabela> {
    * Ações que agem sobre a SELEÇÃO. Só aparecem quando há linha marcada, e na
    * barra de seleção — não na barra de consulta, onde ficariam desabilitadas o
    * dia inteiro esperando um clique que quase nunca vem antes delas.
+   *
+   * Chamava-se `acoesDeLote` até a D37. O nome da spec da rodada é
+   * `acoesDeLote`, e ele é melhor pelo par: ao lado de `acoesDeLinha`, "lote" e
+   * "linha" dizem QUANTAS linhas a ação alcança, que é a única diferença entre
+   * as duas. "Seleção" descrevia o gesto de chegar até elas, não o alcance —
+   * e o gesto é o mesmo nas duas (clicar).
    */
-  acoesDeSelecao?: readonly DataTableAction<T>[]
+  acoesDeLote?: readonly DataTableAction<T>[]
   /**
    * Ações que agem sobre UMA linha, no lugar onde o olho já está: aparecem no
    * hover e no foco da própria linha, na última coluna.
@@ -499,11 +505,19 @@ export interface VitraDataTableProps<T extends LinhaDaTabela> {
  * `--info-bg`, `--bad-bg`) e não uma cor nova — duas famílias de verde na
  * mesma linha leriam como duas informações.
  *
- * São os tokens ALPHA do 2.0, deitados sobre o `n-50` que a linha de grupo já
- * tem: `--ok-bg` e companhia são `color-mix(… , transparent)`, então a
- * composição dá exatamente o `matiz sobre folha-2` do mockup, e a mesma
- * declaração serve os dois temas — o `n-50` é que troca de valor no escuro.
- * Um `#FEF8EC` cravado aqui viraria mancha clara no tema escuro.
+ * São os tokens semânticos do 2.0, e a mesma declaração serve os dois temas
+ * porque quem troca de valor no escuro é o token, não esta linha. Cor de âmbar
+ * cravada em hexadecimal aqui viraria mancha clara no tema escuro — é o motivo
+ * de a faixa ler `--ok-bg` e companhia em vez de um valor.
+ *
+ * **A frase que estava aqui venceu, e o número dela também (D37).** Ela dizia
+ * que estes eram "os tokens ALPHA, deitados sobre o `n-50` que a linha já tem",
+ * e que a composição dava o `matiz sobre folha-2` do mockup. Era verdade quando
+ * foi escrita: D1 mudou os `--*-bg` de `color-mix(…, transparent)` para
+ * `color-mix(…, var(--folha))`. **Eles são OPACOS agora** — não compõem com o
+ * `n-50` de baixo, cobrem-no. A faixa continua certa (o matiz é o mesmo), mas
+ * quem ler a explicação para calcular contraste ou empilhar outra camada em
+ * cima parte de uma premissa que não vale mais.
  */
 const TINT_DO_GRUPO: Record<StampTom, string> = {
   // `neutral` fica no `n-50` puro da faixa: o grupo sem estado (Rascunho, no
@@ -898,7 +912,7 @@ function VitraDataTableInterna<T extends LinhaDaTabela>({
   visaoInicial = VISAO_LISTA,
   entidade,
   aoAbrirLinha,
-  acoesDeSelecao,
+  acoesDeLote,
   acoesDeLinha,
   acaoDoVazio,
   aoEditarCelula,
@@ -939,7 +953,7 @@ function VitraDataTableInterna<T extends LinhaDaTabela>({
   const [idsSelecionados, setIdsSelecionados] = useState<readonly string[]>([])
   /** Modo IndexTable: a linha abre, o checkbox marca. Ver `aoAbrirLinha`. */
   const linhaAbre = aoAbrirLinha !== undefined
-  const marcavel = (acoesDeSelecao?.length ?? 0) > 0
+  const marcavel = (acoesDeLote?.length ?? 0) > 0
 
   function alternarLinha(id: string) {
     setIdsSelecionados((atuais) =>
@@ -2470,7 +2484,7 @@ function VitraDataTableInterna<T extends LinhaDaTabela>({
               <div className="-translate-y-full pointer-events-auto pb-1">
                 <BarraDeSelecao
                   quantidade={algumaMarcada ? selecionadas.length : ultimaQuantidade.current}
-                  acoes={acoesDeSelecao ?? []}
+                  acoes={acoesDeLote ?? []}
                   linhas={selecionadas}
                   aoLimpar={() => setIdsSelecionados([])}
                   saindo={barraSaindo}

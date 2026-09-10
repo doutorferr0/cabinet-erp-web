@@ -430,6 +430,24 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
   { metodo: 'get', caminho: '/api/table-prices/{variantId}' },
   { metodo: 'put', caminho: '/api/table-prices/{variantId}' },
 
+  // reajuste em massa (2 operações) — o caminho NASCE nesta PR (26/08), e por
+  // isso **não foi medido contra par local: não havia o que medir**. A cópia do
+  // contrato do api não pode conhecer `/api/price-adjustments` antes de um
+  // `sync:contract` de lá, então o que ele responde hoje é 404 `Este caminho não
+  // existe no contrato` — a mesma `natureza: 'sem-contrato'` que as cinco de
+  // suporte carregam em `ROTAS_NO_MOCK`.
+  //
+  // **E mesmo assim o lugar delas é AQUI, não em `ROTAS_NO_MOCK`** — é a decisão
+  // que o cabeçalho deste arquivo já tomou por `cost-profiles` em 24/08, pelo
+  // mesmo raciocínio: sem handler de mock e sem tela, mover para a outra lista
+  // faria a rota cair no fallback da SPA e devolver `index.html` com **200**, que
+  // é pior que o 404 honesto. O dano hoje é ZERO porque ninguém as consome.
+  //
+  // Quem escrever a tela do reajuste remede: se o api já servir, está no lugar
+  // certo; se responder 501, o lugar passa a ser `ROTAS_NO_MOCK` COM handler.
+  { metodo: 'get', caminho: '/api/price-adjustments' },
+  { metodo: 'post', caminho: '/api/price-adjustments' },
+
   // parceiro (5 operações) — os três papéis (cliente, fornecedor, profissional)
   // são o mesmo recurso com filtro `role`, então servir a listagem e o detalhe
   // atende as três telas de uma vez.
@@ -466,12 +484,14 @@ export const ROTAS_DO_BACKEND: readonly RotaDoBackend[] = [
 
   // quadro de tarefas e lista A fazer (5 operações) — módulo inteiro.
   //
-  // Convivem com um dashboard ainda mockado (`/api/dashboard/summary` e
-  // `/api/dashboard/agenda` são 501) e isso é DIFERENTE do caso do funil: os
-  // indicadores e a agenda são painéis próprios, com consulta própria, sem id
-  // em comum com a tarefa. O que se perde é a contagem do resumo bater com o
-  // quadro ao lado — dois painéis discordando, e não um quadro vazio mentindo
-  // que não há trabalho.
+  // Entraram ANTES do dashboard, e por um tempo conviveram com ele mockado: o
+  // resumo contava a ficção e o quadro ao lado contava o Postgres. Era
+  // discordância entre dois painéis, não quadro vazio mentindo que não há
+  // trabalho, e por isso a passagem pôde acontecer sem esperar. **Desde a #274
+  // não há mais o que conviver — `/api/dashboard/summary` e
+  // `/api/dashboard/agenda` estão nesta mesma lista, mais abaixo.** A frase
+  // anterior aqui dizia que os dois "são 501" e sobreviveu à própria correção,
+  // a 140 linhas das entradas que a desmentem.
   { metodo: 'get', caminho: '/api/tasks' },
   { metodo: 'post', caminho: '/api/tasks' },
   { metodo: 'patch', caminho: '/api/tasks/{taskId}' },

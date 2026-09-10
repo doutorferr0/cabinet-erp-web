@@ -14,6 +14,7 @@ import {
   type LucideIcon,
   Package,
   Settings,
+  ShieldCheck,
   ShoppingCart,
   SquareKanban,
   Store,
@@ -94,7 +95,7 @@ export interface NavItem {
    * A chave do contador que este item mostra à direita. Quem os produz é
    * `useContadoresNav()`; item sem chave não desenha número.
    */
-  contador?: 'minhasTarefas' | 'caixaDeEntrada'
+  contador?: 'minhasTarefas' | 'caixaDeEntrada' | 'aprovacoesPendentes'
 }
 
 /**
@@ -351,6 +352,22 @@ export const GRUPOS_NAV: readonly NavGroup[] = [
         url: '/vendas/reservas-tecnicas',
         icon: HandCoins,
         descricao: 'O que o profissional externo recebe pela indicação. Cancela, não apaga.',
+      },
+      {
+        /**
+         * A FILA DE APROVAÇÕES (F12, #417) fica DEPOIS dos documentos: ela é o
+         * que acontece por causa de um documento, não um documento.
+         *
+         * **Sem `incluir`, e a ausência é informação** — o pedido nasce no
+         * servidor, ao gravar desconto acima do teto; a paleta lê `incluir`
+         * para oferecer "Novo …", e inventar o caminho daria um comando que
+         * leva a uma tela sem botão.
+         */
+        title: 'Aprovações',
+        url: '/vendas/aprovacoes',
+        icon: ShieldCheck,
+        descricao: 'O desconto que passou do teto e espera alguém liberar. Recusa pede motivo.',
+        contador: 'aprovacoesPendentes',
       },
       {
         title: 'Clientes',

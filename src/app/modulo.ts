@@ -2,7 +2,7 @@
  * MÓDULO DA ROTA — de qual módulo é a tela que está no ar.
  *
  * A fase 1.6 dá a cada módulo um par de cores fixo (`[data-modulo]` no
- * `index.css`) e um shape de ornamento fixo. Quem resolve o par é o CSS; o que
+ * `index.css`) e uma forma fixa (`DO_MODULO` em `forma.tsx`). Quem resolve o par é o CSS; o que
  * falta é dizer ao CSS em que módulo o operador está, e essa informação só
  * existe na URL.
  *

@@ -1,6 +1,6 @@
-import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { renderRoute, respostaLookups, respostaSessao, respostaVinculos } from '@/test/utils'
 
 /**
  * PEDIDO DE COMPRA NA TELA — a fase C do G2.
@@ -134,7 +134,10 @@ function json(corpo: unknown, status = 200): Response {
 function servidor({
   escritas = [],
   pedido = PEDIDO,
-}: { escritas?: Escrita[]; pedido?: Record<string, unknown> } = {}) {
+}: {
+  escritas?: Escrita[]
+  pedido?: Record<string, unknown>
+} = {}) {
   return async (entrada: RequestInfo | URL) => {
     const req = entrada instanceof Request ? entrada : null
     const url = String(req ? req.url : entrada)
@@ -260,7 +263,14 @@ describe('pedido de compra na tela', () => {
     // que o servidor recusa com `item-ja-em-ordem`.
     expect(screen.queryByRole('button', { name: 'FILLAMENTO' })).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'EVOLED COMERCIAL' }))
+    // COM UM FORNECEDOR SÓ o gesto é a PRÓXIMA AÇÃO do cabeçalho (D19, #487),
+    // e a ponte do rodapé não aparece: dois botões com o mesmo destino na mesma
+    // tela era a duplicação que a Reface desfez. Com dois ou mais fornecedores
+    // em aberto a ponte volta — a próxima ação é uma, e o pedido com três
+    // fornecedores não tem uma próxima ordem, tem três.
+    await user.click(
+      screen.getByRole('button', { name: 'Gerar ordem de compra · EVOLED COMERCIAL' }),
+    )
 
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/compras/ordens/novo')

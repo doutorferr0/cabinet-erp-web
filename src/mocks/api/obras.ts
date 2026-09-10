@@ -1,15 +1,9 @@
+import { HttpResponse, http } from 'msw'
 import type { WorkDto, WorkWriteRequest } from '@/api/gerado'
-import { http, HttpResponse } from 'msw'
-import { type CamposFiltraveis, aplicarFiltros } from './filtro-do-servidor'
-import {
-  TIPO,
-  camposInvalidos,
-  naoEncontrado,
-  problemaJson,
-  semEmpresaAtiva,
-  semSessao,
-} from './problema'
-import { TENANT_FILIAL, TENANT_MATRIZ, novoId, store } from './store'
+import type { CamposFiltraveis } from './filtro-do-servidor'
+import { listar } from './listagem'
+import { camposInvalidos, naoEncontrado, semEmpresaAtiva, semSessao } from './problema'
+import { novoId, store, TENANT_FILIAL, TENANT_MATRIZ } from './store'
 
 /**
  * O "backend" das OBRAS no modo mock (`/api/works`, contrato #255).
@@ -183,52 +177,13 @@ export const handlersDeObras = [
     if (!store.activeTenantId) return HttpResponse.json({ rows: [], total: 0 })
 
     const url = new URL(request.url)
-    const sortBy = url.searchParams.get('sortBy')
-    if (sortBy && !ORDENAVEIS.includes(sortBy)) {
-      return problemaJson(400, `sortBy inválido: ${sortBy}.`, {}, TIPO.ordenacaoInvalida)
-    }
-    const page = Number(url.searchParams.get('page') ?? '1')
-    const pageSize = Number(url.searchParams.get('pageSize') ?? '10')
-    if (page < 1 || pageSize < 1 || pageSize > 100) {
-      return problemaJson(
-        400,
-        'Paginação inválida: page é 1-based e pageSize vai até 100.',
-        {},
-        TIPO.paginacaoInvalida,
-      )
-    }
-
-    let linhas = daEmpresa(store.activeTenantId).map(workDto)
-
-    const q = url.searchParams.get('q')
-    if (q) {
-      const alvo = q.toLowerCase()
-      linhas = linhas.filter((obra) =>
-        [obra.description, obra.workType, obra.customerName].some((texto) =>
-          texto?.toLowerCase().includes(alvo),
-        ),
-      )
-    }
-
-    const filtradas = aplicarFiltros(linhas, url, FILTRAVEIS)
-    if (typeof filtradas === 'string') return problemaJson(400, filtradas, {}, TIPO.filtroInvalido)
-    linhas = filtradas
-
-    if (sortBy) {
-      const desc = url.searchParams.get('sortDesc') === 'true'
-      const chave = sortBy as keyof WorkDto
-      linhas.sort((a, b) => {
-        const va = String(a[chave] ?? '')
-        const vb = String(b[chave] ?? '')
-        return desc ? vb.localeCompare(va) : va.localeCompare(vb)
-      })
-    }
-
-    const inicio = (page - 1) * pageSize
-    return HttpResponse.json({
-      rows: linhas.slice(inicio, inicio + pageSize),
-      total: linhas.length,
-    })
+    return listar(
+      daEmpresa(store.activeTenantId).map(workDto),
+      url,
+      ORDENAVEIS,
+      (obra) => [obra.description, obra.workType, obra.customerName],
+      FILTRAVEIS,
+    )
   }),
 
   http.get('*/api/works/:id', ({ params }) => {

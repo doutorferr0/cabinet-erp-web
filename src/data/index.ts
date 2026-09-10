@@ -1,20 +1,16 @@
+import { documentoDoColaborador, listaDeColaboradores } from '@/data/colaboradores-api'
 import { ordensDeCompraApi, pedidosDeCompraApi } from '@/data/compras-api'
 import { funis } from '@/data/crm-api'
 import { parceiros } from '@/data/parceiros-api'
 import { pedidosDeVendaApi } from '@/data/pedidos-venda-api'
 import { produtosApi } from '@/data/produtos-api'
-import {
-  type ListProvider,
-  type ResourceProvider,
-  createMockProvider,
-  normalize,
-  tabelaDeApoio,
-} from '@/data/provider'
+import { type ListProvider, type ResourceProvider, tabelaDeApoio } from '@/data/provider'
 import { orcamentosApi } from '@/data/quotes-api'
+import { servicosApi } from '@/data/servicos-api'
 import { bancos } from '@/mocks/bancos'
 import { cidades } from '@/mocks/cidades'
 import { clienteVazio } from '@/mocks/clientes'
-import { type Colaborador, colaboradorVazio, colaboradores } from '@/mocks/colaboradores'
+
 import { fornecedorVazio } from '@/mocks/fornecedores'
 import { profissionalVazio } from '@/mocks/profissionais'
 import { transportadoras } from '@/mocks/transportadoras'
@@ -49,11 +45,22 @@ export const data = {
 
   fornecedores: parceiros('supplier', fornecedorVazio),
 
-  colaboradores: createMockProvider<Colaborador>({
-    rows: colaboradores,
-    matches: (c, q) => String(c.id).includes(q) || normalize(c.nome).includes(q),
-    empty: colaboradorVazio,
-  }),
+  /**
+   * Colaborador — HTTP (`/api/employees`), o ÚLTIMO cadastro a sair do mock.
+   *
+   * A família inteira já atravessava para a rede desde a #276; o que faltava era
+   * esta tela CONSUMI-LA, e enquanto faltou o sistema tinha duas listas de quem
+   * trabalha aqui — o combo de responsável das atividades lia o Postgres e este
+   * cadastro lia a semente. **O bloco de RH deixou de ser o buraco na #403** —
+   * pessoal e trabalhista entraram no contrato, e sexo e raça/cor saíram da tela
+   * por LGPD. O que resta é a ESCRITA, que responde 403 ao papel da semente por
+   * decisão de permissão do api. Ver `colaboradores-api.ts`.
+   *
+   * Mesma divisão de `produtos` e `orcamentos`: a grade recebe o `EmployeeDto`
+   * cru, para o `sortBy` casar com a whitelist do servidor, e o formulário
+   * recebe a forma da transcrição §2.
+   */
+  colaboradores: { ...listaDeColaboradores, ...documentoDoColaborador },
 
   profissionais: parceiros('professional', profissionalVazio),
 
@@ -109,6 +116,17 @@ export const data = {
    * a tela não as oferece.
    */
   pedidosVenda: pedidosDeVendaApi,
+
+  /**
+   * Cadastro de SERVIÇOS — HTTP (`GET /api/services`), só listagem.
+   *
+   * Entrada de LISTA e não de recurso: o contrato publica listagem e escrita, e
+   * nenhum detalhe por id — o `ServiceDto` é plano, e a linha da listagem já é o
+   * registro inteiro. Quem a consome hoje é a aba Serviços do orçamento, que
+   * precisa escolher o que cobrar e congelar preço e percentual do eletricista
+   * na linha do documento.
+   */
+  servicos: servicosApi,
 
   /**
    * Funil de venda (CRM). Listagem, detalhe e registro em branco são todos do

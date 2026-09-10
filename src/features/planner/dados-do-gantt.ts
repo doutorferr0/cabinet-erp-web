@@ -1,5 +1,6 @@
 import type { PlanItemDtoKind, PlanPhaseDto, ProjectPlanDto } from '@/api/gerado'
 import type { Modulo } from '@/app/modulo'
+import type { Reagendamento } from '@/data/planner-api'
 
 /**
  * O PLANO DO CONTRATO → o que o SVAR Gantt come.
@@ -50,7 +51,7 @@ export const TIPOS: Record<PlanItemDtoKind, { rotulo: string; modulo: Modulo }> 
 export interface TarefaDoGantt {
   id: string
   text: string
-  type: 'summary' | 'task'
+  type: 'summary' | 'task' | 'milestone'
   start: Date
   /**
    * FIM EXCLUSIVO — e é a diferença de convenção que mais dá erro de um dia.
@@ -66,6 +67,26 @@ export interface TarefaDoGantt {
   open?: boolean
   /** Só nos filhos. O `taskTemplate` pinta por ele. */
   tipo?: PlanItemDtoKind
+}
+
+/**
+ * MARCO é o item que começa e acaba no MESMO dia.
+ *
+ * O contrato não tem campo de marco, e não precisa ter: um item de um dia já é
+ * um marco por definição — é uma data em que algo acontece, não um período em
+ * que algo corre. "Entrega final", "Aprovação do cliente" e "Visita técnica"
+ * nascem assim no plano, e desenhá-los como barra de um dia produz um retângulo
+ * de 3px que o olho lê como sujeira da grade.
+ *
+ * O SVAR desenha `type: 'milestone'` como losango, e `gantt-2.0.css` o pinta em
+ * n-900 — a mesma tinta da linha do hoje, porque as duas coisas são a mesma
+ * espécie: instante, não intervalo.
+ *
+ * **Isto é derivação, não campo novo.** Se um dia o contrato publicar `kind:
+ * 'milestone'`, esta função vira a leitura daquele campo e nada mais muda.
+ */
+export function ehMarco(startsOn: string, endsOn: string): boolean {
+  return startsOn === endsOn
 }
 
 /** `fase:<uuid>` / `item:<uuid>` — ver a nota de ids no topo. */
@@ -111,7 +132,7 @@ export function tarefasDoPlano(plano: ProjectPlanDto): TarefaDoGantt[] {
         id: idDoItem(item.id),
         parent: idDaFase(fase.id),
         text: item.label,
-        type: 'task',
+        type: ehMarco(item.startsOn, item.endsOn) ? 'milestone' : 'task',
         start: dataDoDia(item.startsOn),
         end: diaSeguinte(item.endsOn),
         // O contrato dá 0–100; o SVAR quer a mesma faixa. Guardado como veio.
@@ -154,6 +175,45 @@ export function janelaDoPlano(fases: PlanPhaseDto[]): JanelaDoPlano | null {
     // anterior, escrito na convenção exclusiva do SVAR.
     fim: new Date(ultimo.getFullYear(), ultimo.getMonth() + 1, 1),
   }
+}
+
+/**
+ * ONDE O DIA CAI na janela, medido em MESES (fracionário). `null` fora dela.
+ *
+ * Existe porque a linha do hoje é NOSSA de novo. `markers` do SVAR é recurso
+ * PRO: medido em 02/09/2026, o `init` da store faz `t.markers = []` e
+ * `t._markers = []` na mesma linha em que zera `baselines`, `criticalPath`,
+ * `schedule`, `rollups` e `slack` — a lista de recursos pagos que o
+ * `planner.tsx` já documentava. O `markers={[{ start: new Date() }]}` que
+ * estava na tela desde a troca de motor nunca desenhou nada, e o comentário ao
+ * lado dele afirmava o contrário.
+ *
+ * **A unidade é MÊS porque a grade é de mês, e as colunas têm largura IGUAL.**
+ * Medido no navegador: seis meses, 111px cada, sem proporção a dias do mês. Um
+ * cálculo em "fração de dias da janela" erraria até três dias em fevereiro
+ * contra dezembro — e erro de posição na linha do hoje é a pior espécie, porque
+ * a linha continua bonita mentindo.
+ *
+ * O fim da janela é EXCLUSIVO (dia 1 do mês seguinte ao último), então o
+ * intervalo aceito é `[inicio, fim)` — o que faz o último dia do plano cair
+ * dentro e o primeiro dia de fora ficar de fora.
+ */
+export function mesesAteODia(janela: JanelaDoPlano, dia: Date): number | null {
+  if (dia.getTime() < janela.inicio.getTime() || dia.getTime() >= janela.fim.getTime()) return null
+
+  const meses =
+    (dia.getFullYear() - janela.inicio.getFullYear()) * 12 +
+    (dia.getMonth() - janela.inicio.getMonth())
+  const diasNoMes = new Date(dia.getFullYear(), dia.getMonth() + 1, 0).getDate()
+  return meses + (dia.getDate() - 1) / diasNoMes
+}
+
+/** Quantos meses a janela inteira tem — o denominador da grade. */
+export function mesesDaJanela(janela: JanelaDoPlano): number {
+  return (
+    (janela.fim.getFullYear() - janela.inicio.getFullYear()) * 12 +
+    (janela.fim.getMonth() - janela.inicio.getMonth())
+  )
 }
 
 /** O período da fase, escrito para o humano: `mar 2026 — jun 2026`. */
@@ -204,4 +264,97 @@ export function progressoDoProjeto(plano: ProjectPlanDto): ProgressoDoProjeto {
         ? null
         : Math.round(itens.reduce((soma, i) => soma + i.progressPercent, 0) / total),
   }
+}
+
+/* ------------------------------------------------------------------------- *
+ * A VOLTA — o arraste da barra vira pedido do contrato.
+ *
+ * Tudo acima traduz contrato → gantt. Daqui para baixo é o caminho inverso, e
+ * ele é mais perigoso: a ida erra na tela, onde o olho vê; a volta erra no
+ * BANCO, onde ninguém vê até o próximo carregamento. As três conversões que
+ * ela faz — id com prefixo → uuid, `Date` → dia ISO, fim exclusivo → inclusivo
+ * — são exatamente as três que a ida fez, e cada uma erra em silêncio.
+ * ------------------------------------------------------------------------- */
+
+/**
+ * O dia LOCAL da data, em `YYYY-MM-DD`.
+ *
+ * Nunca `toISOString().slice(0,10)`: aquilo converte para UTC antes de cortar,
+ * e num fuso negativo (o nosso) uma barra solta às 00:00 de 10/03 viraria
+ * `2026-03-09`. O erro é de UM dia, aparece só em parte do dia e some quando
+ * quem confere está em UTC — a forma mais cara de bug de data que existe.
+ */
+export function isoDoDia(data: Date): string {
+  const mes = String(data.getMonth() + 1).padStart(2, '0')
+  const dia = String(data.getDate()).padStart(2, '0')
+  return `${data.getFullYear()}-${mes}-${dia}`
+}
+
+export interface EventoDeTarefa {
+  id?: string | number
+  task?: { start?: Date; end?: Date; [outros: string]: unknown }
+  /** `true` enquanto o dedo ainda está no botão do mouse. */
+  inProgress?: boolean
+}
+
+/**
+ * O evento do gantt → o corpo do `PATCH`. `null` quando NÃO é para gravar.
+ *
+ * Devolve `null` em quatro situações, e cada uma tem uma razão própria:
+ *
+ * 1. **`inProgress`** — o SVAR dispara `update-task` a cada quadro do arraste.
+ *    Gravar em todos faria dezenas de `PATCH` por gesto, e o último a chegar
+ *    (não o último a sair) decidiria a data final. Grava-se na SOLTURA.
+ * 2. **Sem `start` nem `end`** — o mesmo evento carrega mudança de progresso,
+ *    de texto e de abertura da fase. Só data vira reagendamento; o resto não
+ *    tem caminho no contrato e mandá-lo seria inventar escrita.
+ * 3. **Id de FASE** — o contrato só reagenda ITEM. A fase acompanha os filhos
+ *    (é a regra declarada no caminho), então mover a fase por si mesma não tem
+ *    para onde ir. Ver a nota do `readonly` de fase em `planner.tsx`.
+ * 4. **Id que não veio daqui** — sem prefixo, `idOriginal` devolve `null` e nós
+ *    também. Adivinhar o uuid a partir de um id estranho seria escrever numa
+ *    linha que ninguém pediu.
+ *
+ * A conversão do fim usa **menos um MILISSEGUNDO**, não menos um dia. O `end`
+ * do SVAR é exclusivo e normalmente cai à meia-noite do dia seguinte —
+ * `-1 dia` acertaria esse caso. Mas quando o motor devolve a ponta já dentro do
+ * último dia (23:59), `-1 dia` tiraria um dia a mais e a barra encolheria
+ * sozinha a cada arraste. `-1ms` acerta os DOIS, porque só pergunta "em que dia
+ * cai o instante imediatamente anterior ao fim".
+ */
+export function reagendamentoDoEvento(evento: EventoDeTarefa): Reagendamento | null {
+  if (evento.inProgress) return null
+
+  const inicio = evento.task?.start
+  const fim = evento.task?.end
+  if (!(inicio instanceof Date) || !(fim instanceof Date)) return null
+
+  const id = String(evento.id ?? '')
+  if (!id.startsWith('item:')) return null
+  const itemId = idOriginal(id)
+  if (!itemId) return null
+
+  return {
+    itemId,
+    startsOn: isoDoDia(inicio),
+    endsOn: isoDoDia(fimInclusivo(inicio, fim)),
+  }
+}
+
+/**
+ * A ponta de fim que o contrato quer, a partir da que o SVAR devolve.
+ *
+ * O caso normal é `fim - 1ms` — ver a nota do `reagendamentoDoEvento`. O caso
+ * que o `-1ms` sozinho erra é o **MARCO**: o losango tem duração zero, o motor
+ * devolve `end === start`, e `start - 1ms` cai no dia ANTERIOR. O `PATCH` sairia
+ * com `endsOn` antes de `startsOn` — data invertida, que o contrato recusa com
+ * 400 e a barra volta sozinha sem explicação.
+ *
+ * Arrastar um marco é gesto legítimo (mover a data da entrega final é
+ * exatamente o que o Planner serve para fazer), então a conversão precisa
+ * cobri-lo: fim não posterior ao início = evento de um dia, e o dia é o do
+ * início.
+ */
+function fimInclusivo(inicio: Date, fim: Date): Date {
+  return fim.getTime() <= inicio.getTime() ? inicio : new Date(fim.getTime() - 1)
 }

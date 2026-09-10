@@ -22,3 +22,10 @@ coverage/
 .impeccable/config.local.json
 .impeccable/hook.cache.json
 .impeccable/critique/
+
+# Playwright: relatório, rastro e screenshot da execução. São artefatos de UMA
+# execução — o CI os sobe como artifact quando reprova, e versioná-los poria
+# binário de trace em todo commit de quem roda `pnpm e2e` localmente.
+test-results/
+playwright-report/
+blob-report/

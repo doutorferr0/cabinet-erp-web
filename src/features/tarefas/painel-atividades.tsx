@@ -1,3 +1,5 @@
+import { Check, Pencil, Plus } from 'lucide-react'
+import { useState } from 'react'
 import type { ActivityDto } from '@/api/gerado'
 import { FalhaDoPainel } from '@/components/cabinet/falha-do-painel'
 import { Nome } from '@/components/cabinet/nome'
@@ -16,8 +18,6 @@ import {
 import { diaDoInstante } from '@/lib/datas'
 import { formatDateBR } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
-import { Check, Pencil, Plus } from 'lucide-react'
-import { useState } from 'react'
 import { DialogoDeAtividade, ROTULO_DO_TIPO } from './atividade-dialogo'
 
 /**

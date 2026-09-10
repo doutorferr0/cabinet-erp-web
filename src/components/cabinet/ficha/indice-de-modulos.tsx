@@ -33,7 +33,7 @@ export function IndiceDeModulos({
   className?: string
 }) {
   return (
-    <nav aria-label="Módulos do cadastro" className={className}>
+    <nav aria-label="Módulos do cadastro" data-slot="indice-de-modulos" className={className}>
       <ul className="flex flex-col gap-1">
         {entidade.modulos.map((modulo) => {
           const preenchidos = camposPreenchidos(registro, modulo, rotulos).length

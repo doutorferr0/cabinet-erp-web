@@ -1,13 +1,19 @@
-import type { ProjectPlanDto } from '@/api/gerado'
 import { describe, expect, it } from 'vitest'
+import type { ProjectPlanDto } from '@/api/gerado'
 import {
-  TIPOS,
+  type EventoDeTarefa,
+  ehMarco,
   idDaFase,
   idDoItem,
   idOriginal,
+  isoDoDia,
   janelaDoPlano,
+  mesesAteODia,
+  mesesDaJanela,
   periodoDaFase,
   progressoDoProjeto,
+  reagendamentoDoEvento,
+  TIPOS,
   tarefasDoPlano,
   totalDeItens,
 } from './dados-do-gantt'
@@ -178,5 +184,165 @@ describe('o que a tela resume, e o SVAR não sabe', () => {
 
   it('plano vazio não é 0% — é projeto sem plano', () => {
     expect(progressoDoProjeto({ projectId: 'p', phases: [] }).percentual).toBeNull()
+  })
+})
+
+/**
+ * A VOLTA — o arraste vira pedido do contrato.
+ *
+ * Estes casos existem porque o miolo do SVAR NÃO renderiza em jsdom (o limite
+ * está medido no cabeçalho de `planner.test.tsx`): não há como arrastar uma
+ * barra num teste e conferir o que saiu. O que se pode fazer — e é o que estes
+ * casos fazem — é alimentar a função com o evento que a lib emite e travar a
+ * tradução, que é a parte nossa e a parte que erra em silêncio.
+ */
+describe('o arraste vira reagendamento', () => {
+  const evento = (extra: Partial<EventoDeTarefa> = {}): EventoDeTarefa => ({
+    id: idDoItem('item-1'),
+    task: { start: new Date(2026, 6, 1), end: new Date(2026, 7, 1) },
+    ...extra,
+  })
+
+  it('o id perde o prefixo e as datas viram dia ISO', () => {
+    expect(reagendamentoDoEvento(evento())).toEqual({
+      itemId: 'item-1',
+      startsOn: '2026-07-01',
+      // Fim EXCLUSIVO na lib (1º de agosto) é 31 de julho no contrato.
+      endsOn: '2026-07-31',
+    })
+  })
+
+  it('o fim volta a ser INCLUSIVO — item de um dia não vira dois', () => {
+    const umDia = evento({
+      task: { start: new Date(2026, 6, 10), end: new Date(2026, 6, 11) },
+    })
+    const r = reagendamentoDoEvento(umDia)
+    expect(r?.startsOn).toBe('2026-07-10')
+    expect(r?.endsOn).toBe('2026-07-10')
+  })
+
+  it('fim já DENTRO do último dia não perde um dia', () => {
+    // O `-1ms` existe para este caso: com `-1 dia` a barra encolheria sozinha a
+    // cada arraste, e ninguém liga um encolhimento gradual ao arraste.
+    const r = reagendamentoDoEvento(
+      evento({ task: { start: new Date(2026, 6, 10), end: new Date(2026, 6, 12, 23, 59, 59) } }),
+    )
+    expect(r?.endsOn).toBe('2026-07-12')
+  })
+
+  it('durante o arraste não grava nada', () => {
+    // Um `PATCH` por quadro faria o último a CHEGAR decidir a data final.
+    expect(reagendamentoDoEvento(evento({ inProgress: true }))).toBeNull()
+  })
+
+  it('evento sem data não é reagendamento', () => {
+    // O mesmo evento carrega progresso, texto e abertura de fase. Só data tem
+    // caminho no contrato; o resto seria escrita inventada.
+    expect(reagendamentoDoEvento(evento({ task: { progress: 40 } }))).toBeNull()
+  })
+
+  it('mexer na FASE não vira escrita — o contrato reagenda ITEM', () => {
+    expect(reagendamentoDoEvento(evento({ id: idDaFase('fase-1') }))).toBeNull()
+  })
+
+  it('id que não veio daqui não vira uuid adivinhado', () => {
+    expect(reagendamentoDoEvento(evento({ id: 'solto-42' }))).toBeNull()
+  })
+
+  it('o dia é o LOCAL, não o de UTC', () => {
+    // `toISOString().slice(0,10)` devolveria 2026-06-30 num fuso negativo — erro
+    // de um dia que só aparece em parte do dia e some para quem confere em UTC.
+    expect(isoDoDia(new Date(2026, 6, 1, 0, 0, 0))).toBe('2026-07-01')
+    expect(isoDoDia(new Date(2026, 6, 1, 23, 59, 59))).toBe('2026-07-01')
+  })
+})
+
+describe('marco — o item de um dia é uma data, não um período', () => {
+  it('mesmo dia nas duas pontas é marco; qualquer duração não é', () => {
+    expect(ehMarco('2026-07-10', '2026-07-10')).toBe(true)
+    expect(ehMarco('2026-07-10', '2026-07-11')).toBe(false)
+  })
+
+  it('o marco vira `milestone`, e o resto continua `task`', () => {
+    // Sem isto o SVAR desenha um retângulo de poucos pixels que o olho lê como
+    // sujeira da grade — a "Entrega final" some do plano sem sumir do dado.
+    const plano: ProjectPlanDto = {
+      projectId: 'proj-1',
+      phases: [
+        {
+          id: 'fase-1',
+          name: 'Instalação',
+          startsOn: '2026-03-10',
+          endsOn: '2026-03-20',
+          items: [
+            {
+              id: 'item-longo',
+              label: 'Montagem',
+              kind: 'task',
+              startsOn: '2026-03-10',
+              endsOn: '2026-03-19',
+              progressPercent: 0,
+            },
+            {
+              id: 'item-marco',
+              label: 'Entrega final',
+              kind: 'delivery',
+              startsOn: '2026-03-20',
+              endsOn: '2026-03-20',
+              progressPercent: 0,
+            },
+          ],
+        },
+      ],
+    }
+
+    const tarefas = tarefasDoPlano(plano)
+    expect(tarefas.find((t) => t.id === idDoItem('item-longo'))?.type).toBe('task')
+    expect(tarefas.find((t) => t.id === idDoItem('item-marco'))?.type).toBe('milestone')
+    // A fase continua resumo mesmo tendo um marco dentro.
+    expect(tarefas.find((t) => t.id === idDaFase('fase-1'))?.type).toBe('summary')
+  })
+
+  it('arrastar o MARCO não inverte as datas', () => {
+    // O losango tem duração zero: o motor devolve `end === start`, e o `-1ms`
+    // sozinho cairia no dia anterior. `endsOn` antes de `startsOn` é 400 do
+    // contrato, e na tela é a barra voltando sozinha sem uma palavra.
+    const r = reagendamentoDoEvento({
+      id: idDoItem('item-marco'),
+      task: { start: new Date(2026, 2, 20), end: new Date(2026, 2, 20) },
+    })
+    expect(r).toEqual({ itemId: 'item-marco', startsOn: '2026-03-20', endsOn: '2026-03-20' })
+  })
+})
+
+describe('onde HOJE cai na janela — a linha que o SVAR não desenha', () => {
+  // Julho a setembro de 2026; o fim é EXCLUSIVO (1º de outubro).
+  const janela = { inicio: new Date(2026, 6, 1), fim: new Date(2026, 9, 1) }
+
+  it('conta em MESES, e a fração é do mês — não da janela', () => {
+    // Colunas de mês têm largura IGUAL na grade (medido: 111px cada,
+    // independente de o mês ter 30 ou 31 dias). Uma fração calculada sobre os
+    // dias da janela inteira erraria dias no meio do ano.
+    expect(mesesAteODia(janela, new Date(2026, 6, 1))).toBe(0)
+    expect(mesesAteODia(janela, new Date(2026, 7, 1))).toBe(1)
+    // 16 de agosto: 15 dias corridos de um mês de 31.
+    expect(mesesAteODia(janela, new Date(2026, 7, 16))).toBeCloseTo(1 + 15 / 31, 6)
+  })
+
+  it('o último dia da janela está DENTRO; o primeiro de fora, fora', () => {
+    expect(mesesAteODia(janela, new Date(2026, 8, 30))).not.toBeNull()
+    expect(mesesAteODia(janela, new Date(2026, 9, 1))).toBeNull()
+  })
+
+  it('fora da janela é `null` — não é zero', () => {
+    // Zero encostaria a linha na borda esquerda dizendo que hoje é o começo do
+    // plano, que é a mentira mais fácil de acreditar num gantt.
+    expect(mesesAteODia(janela, new Date(2026, 5, 30))).toBeNull()
+    expect(mesesAteODia(janela, new Date(2027, 0, 1))).toBeNull()
+  })
+
+  it('a janela sabe quantos meses tem, inclusive virando o ano', () => {
+    expect(mesesDaJanela(janela)).toBe(3)
+    expect(mesesDaJanela({ inicio: new Date(2026, 10, 1), fim: new Date(2027, 1, 1) })).toBe(3)
   })
 })

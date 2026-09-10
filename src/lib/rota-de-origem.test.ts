@@ -1,5 +1,5 @@
-import { destinoDepoisDoLogin, rotaDeOrigemValida } from '@/lib/rota-de-origem'
 import { describe, expect, it } from 'vitest'
+import { destinoDepoisDoLogin, rotaDeOrigemValida } from '@/lib/rota-de-origem'
 
 describe('rotaDeOrigemValida', () => {
   it('aceita caminho interno, com e sem busca', () => {

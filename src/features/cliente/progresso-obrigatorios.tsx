@@ -1,6 +1,6 @@
-import { type EntidadeCadastro, camposDe } from '@/features/cadastro/modulos'
-import { cn } from '@/lib/utils'
 import { useFormContext, useWatch } from 'react-hook-form'
+import { camposDe, type EntidadeCadastro } from '@/features/cadastro/modulos'
+import { cn } from '@/lib/utils'
 
 /**
  * "X de N obrigatórios" — o sinal que a diretriz 3 exige no TOPO do formulário.

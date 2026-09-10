@@ -1,10 +1,10 @@
 import type { ListFilter } from '@/api/gerado'
 import {
   type FiltroDaTabela,
+  linhaPassaNosFiltros,
   OPERADORES,
   type OperadorDeFiltro,
   type VarianteDeFiltro,
-  linhaPassaNosFiltros,
 } from '@/lib/filtro-de-consulta'
 
 /**

@@ -134,6 +134,22 @@ export interface DataTableAction<T> {
   icon?: LucideIcon
   /** Recebe a linha selecionada (null quando `needsSelection` é false). */
   onClick?: (row: T | null) => void
+  /**
+   * A ação que sabe agir em VÁRIAS linhas de uma vez.
+   *
+   * Quando presente, a barra de seleção deixa de matar o botão com mais de uma
+   * linha marcada e chama ISTO com todas elas. Ausente = a ação continua sendo
+   * de um registro por vez, que é o caso de `Alterar` e `Excluir`.
+   *
+   * **A porta se abriu porque o contrato abriu.** Enquanto nenhuma escrita em
+   * lote existia, a única implementação possível era um laço de N requisições no
+   * cliente — que falha pela metade sem ninguém saber quantas passaram, e é por
+   * isso que a barra as desabilitava. `POST /api/financial-settlements/batch` é
+   * a primeira escrita TUDO-OU-NADA do contrato: o lote inteiro é um ato do
+   * servidor, e a tela pode prometê-lo sem mentir. Ação que não tenha uma
+   * operação assim atrás continua sem `emLote`.
+   */
+  emLote?: (linhas: readonly T[]) => void
   /** Desabilita sem linha selecionada (Alterar, Consul., Excluir/Cancelar). */
   needsSelection?: boolean
   /** Desabilita SEMPRE — a ação existe na barra mas não é possível aqui. */
@@ -428,8 +444,14 @@ export interface VitraDataTableProps<T extends LinhaDaTabela> {
    * Ações que agem sobre a SELEÇÃO. Só aparecem quando há linha marcada, e na
    * barra de seleção — não na barra de consulta, onde ficariam desabilitadas o
    * dia inteiro esperando um clique que quase nunca vem antes delas.
+   *
+   * Chamava-se `acoesDeLote` até a D37. O nome da spec da rodada é
+   * `acoesDeLote`, e ele é melhor pelo par: ao lado de `acoesDeLinha`, "lote" e
+   * "linha" dizem QUANTAS linhas a ação alcança, que é a única diferença entre
+   * as duas. "Seleção" descrevia o gesto de chegar até elas, não o alcance —
+   * e o gesto é o mesmo nas duas (clicar).
    */
-  acoesDeSelecao?: readonly DataTableAction<T>[]
+  acoesDeLote?: readonly DataTableAction<T>[]
   /**
    * Ações que agem sobre UMA linha, no lugar onde o olho já está: aparecem no
    * hover e no foco da própria linha, na última coluna.
@@ -483,11 +505,19 @@ export interface VitraDataTableProps<T extends LinhaDaTabela> {
  * `--info-bg`, `--bad-bg`) e não uma cor nova — duas famílias de verde na
  * mesma linha leriam como duas informações.
  *
- * São os tokens ALPHA do 2.0, deitados sobre o `n-50` que a linha de grupo já
- * tem: `--ok-bg` e companhia são `color-mix(… , transparent)`, então a
- * composição dá exatamente o `matiz sobre folha-2` do mockup, e a mesma
- * declaração serve os dois temas — o `n-50` é que troca de valor no escuro.
- * Um `#FEF8EC` cravado aqui viraria mancha clara no tema escuro.
+ * São os tokens semânticos do 2.0, e a mesma declaração serve os dois temas
+ * porque quem troca de valor no escuro é o token, não esta linha. Cor de âmbar
+ * cravada em hexadecimal aqui viraria mancha clara no tema escuro — é o motivo
+ * de a faixa ler `--ok-bg` e companhia em vez de um valor.
+ *
+ * **A frase que estava aqui venceu, e o número dela também (D37).** Ela dizia
+ * que estes eram "os tokens ALPHA, deitados sobre o `n-50` que a linha já tem",
+ * e que a composição dava o `matiz sobre folha-2` do mockup. Era verdade quando
+ * foi escrita: D1 mudou os `--*-bg` de `color-mix(…, transparent)` para
+ * `color-mix(…, var(--folha))`. **Eles são OPACOS agora** — não compõem com o
+ * `n-50` de baixo, cobrem-no. A faixa continua certa (o matiz é o mesmo), mas
+ * quem ler a explicação para calcular contraste ou empilhar outra camada em
+ * cima parte de uma premissa que não vale mais.
  */
 const TINT_DO_GRUPO: Record<StampTom, string> = {
   // `neutral` fica no `n-50` puro da faixa: o grupo sem estado (Rascunho, no
@@ -681,12 +711,16 @@ function VazioDaConsulta({
  * ## Ação de UM registro com VÁRIAS linhas marcadas
  *
  * `Alterar` abre um cadastro; `Excluir` desativa um por vez, com confirmação
- * que nomeia o registro. Nenhuma das duas tem hoje uma versão em lote na
- * fronteira de dados — o contrato não publica escrita em lote e um laço de N
- * requisições no cliente falha pela metade sem ninguém saber quantas passaram.
- * Então elas ficam DESABILITADAS com mais de uma linha marcada, dizendo o
- * motivo. Prometer massa e agir na primeira linha seria a promessa errada no
- * botão mais caro da tela.
+ * que nomeia o registro. Nenhuma das duas tem versão em lote na fronteira de
+ * dados — e um laço de N requisições no cliente falha pela metade sem ninguém
+ * saber quantas passaram. Então elas ficam DESABILITADAS com mais de uma linha
+ * marcada, dizendo o motivo. Prometer massa e agir na primeira linha seria a
+ * promessa errada no botão mais caro da tela.
+ *
+ * **A exceção é a ação que declara `emLote`**, e ela só existe onde o SERVIDOR
+ * faz o lote num ato só: hoje, a quitação em lote do financeiro
+ * (`POST /api/financial-settlements/batch`, tudo-ou-nada). Ali a promessa é
+ * verdadeira, porque nenhuma baixa fica gravada se uma parcela recusar.
  */
 function BarraDeSelecao<T extends LinhaDaTabela>({
   quantidade,
@@ -748,7 +782,10 @@ function BarraDeSelecao<T extends LinhaDaTabela>({
       </output>
       <div className="flex flex-wrap items-center gap-2">
         {acoes.map((acao) => {
-          const morta = acao.disabled === true || varias
+          // Ação com `emLote` NÃO morre com várias marcadas — é justamente o que
+          // ela existe para fazer.
+          const emLote = acao.emLote !== undefined
+          const morta = acao.disabled === true || (varias && !emLote)
           return (
             <Button
               key={acao.id}
@@ -765,11 +802,18 @@ function BarraDeSelecao<T extends LinhaDaTabela>({
               title={
                 acao.disabled === true
                   ? acao.title
-                  : varias
+                  : varias && !emLote
                     ? `${acao.label} age em um registro por vez — desmarque as outras linhas.`
                     : undefined
               }
-              onClick={() => acao.onClick?.(linhas[0] ?? null)}
+              onClick={() => {
+                // Com uma linha marcada, a ação em lote continua passando pelo
+                // caminho de lote: o diálogo de N=1 é o mesmo de N=10, e mandar
+                // uma para `onClick` faria a tela ter dois caminhos para o mesmo
+                // gesto — com uma chance de divergir a cada mudança.
+                if (emLote) acao.emLote?.(linhas)
+                else acao.onClick?.(linhas[0] ?? null)
+              }}
             >
               {acao.icon ? <acao.icon aria-hidden="true" /> : null}
               {acao.label}
@@ -868,7 +912,7 @@ function VitraDataTableInterna<T extends LinhaDaTabela>({
   visaoInicial = VISAO_LISTA,
   entidade,
   aoAbrirLinha,
-  acoesDeSelecao,
+  acoesDeLote,
   acoesDeLinha,
   acaoDoVazio,
   aoEditarCelula,
@@ -909,7 +953,7 @@ function VitraDataTableInterna<T extends LinhaDaTabela>({
   const [idsSelecionados, setIdsSelecionados] = useState<readonly string[]>([])
   /** Modo IndexTable: a linha abre, o checkbox marca. Ver `aoAbrirLinha`. */
   const linhaAbre = aoAbrirLinha !== undefined
-  const marcavel = (acoesDeSelecao?.length ?? 0) > 0
+  const marcavel = (acoesDeLote?.length ?? 0) > 0
 
   function alternarLinha(id: string) {
     setIdsSelecionados((atuais) =>
@@ -2440,7 +2484,7 @@ function VitraDataTableInterna<T extends LinhaDaTabela>({
               <div className="-translate-y-full pointer-events-auto pb-1">
                 <BarraDeSelecao
                   quantidade={algumaMarcada ? selecionadas.length : ultimaQuantidade.current}
-                  acoes={acoesDeSelecao ?? []}
+                  acoes={acoesDeLote ?? []}
                   linhas={selecionadas}
                   aoLimpar={() => setIdsSelecionados([])}
                   saindo={barraSaindo}

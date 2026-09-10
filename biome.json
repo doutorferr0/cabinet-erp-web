@@ -15,6 +15,7 @@
       "!**/.claude",
       "!**/src/routeTree.gen.ts",
       "!**/src/api/gerado",
+      "!**/src/data/geografia/municipios-ibge.json",
       "!**/src/assets",
       "!**/docs/**/*.html",
       "!**/tsconfig.json",

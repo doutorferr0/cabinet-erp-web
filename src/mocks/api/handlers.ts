@@ -21,6 +21,7 @@ import { diaDoInstante, diaLocalISO } from '@/lib/datas'
 import { fetchCep } from '@/mocks/ceps'
 import { handlersDeAcesso } from './acesso'
 import { handlersDeAgregados } from './agregados'
+import { handlersDeAprovacao } from './aprovacoes'
 import { handlersDeAtividades } from './atividades'
 import { handlersDeCompras } from './compras'
 import { handlersDeContatos } from './contatos'
@@ -30,6 +31,7 @@ import { handlersDeEmpresas } from './empresas'
 import { handlersDeEntrega } from './entrega'
 import { erroCanonico } from './erros-canonicos'
 import type { CamposFiltraveis } from './filtro-do-servidor'
+import { handlersDeFinanceiro } from './financeiro'
 import { lerConsulta, listar } from './listagem'
 import { handlersDeLookups } from './lookups'
 import { handlersDeObras } from './obras'
@@ -954,6 +956,16 @@ export const handlers = [
   // mas ligar a passagem é medição de par local, que é outra decisão. Sem este
   // arquivo o quadro de cargas não tinha resposta em ambiente nenhum.
   ...handlersDeEntrega,
+  // ---------------- FINANCEIRO (G7) ----------------
+  // Arquivo próprio, como compras. As 15 operações da tag `financeiro` entraram
+  // pela #340 sem handler nenhum, e a ausência estava DECLARADA com o motivo:
+  // nenhuma tela as consumia. As telas de título, agenda de vencimentos e
+  // quitação são a Fase C, e é a chegada delas que traz o mock junto — o site
+  // público é 100% mock, e sem handler Contas a Pagar abriria em branco com
+  // cara de "não há o que pagar". Ver o cabeçalho de `financeiro.ts` para o que
+  // ele reproduz e o que declara de fora (movimento de caixa, transferência,
+  // conciliação e período fechado).
+  ...handlersDeFinanceiro,
 
   // ---------------- RELATÓRIOS DE GESTÃO (#310) ----------------
   // Arquivo próprio, como compras. As dez operações estavam no contrato desde a
@@ -964,6 +976,15 @@ export const handlers = [
   // que o mock não guarda, o envelope vem vazio em vez de somar número
   // inventado. O cabeçalho de `relatorios.ts` é onde essa linha está desenhada.
   ...handlersDeRelatorios,
+
+  // ---------------- FILA DE APROVAÇÕES (F12) ----------------
+  // Arquivo próprio, como compras e relatórios. As cinco operações nasceram
+  // NESTA PR e nenhum servidor as implementa — o gancho que CRIA o pedido é a
+  // fase 1 do `cabinet-erp-api#237`. Sem este arquivo a tela da fila cairia no
+  // fallback da SPA e receberia `index.html` com 200; com ele, a fila mostra as
+  // duas metades da regra (quem decide vê tudo, quem pediu vê o próprio) antes
+  // de o backend existir. Ver o cabeçalho de `aprovacoes.ts`.
+  ...handlersDeAprovacao,
 
   // ---------------- papéis e permissões (web#292 · api#84) ----------------
   // Arquivo próprio, como CRM e orçamento: estado que não é do store das telas

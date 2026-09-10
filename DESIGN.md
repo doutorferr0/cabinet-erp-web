@@ -722,6 +722,28 @@ para fora da janela e não existe.
   ficam a 1,16:1 e o par fundo+traço quase não diz o estado — a **forma** é o canal que sobra: o
   controle vivo repousa elevado, o morto fica rente ao papel.
 
+### Assinaturas fixadas na D37 (#532) — o que a passada de consistência decidiu
+
+A rodada Reface 2.0 correu com 30 issues em paralelo, e nomes divergiram. O que ficou:
+
+| peça | nome final | o que era |
+|---|---|---|
+| prop da barra de lote | **`acoesDeLote`** | `acoesDeSelecao` (D8) — a spec e esta página já diziam "lote" |
+| número grande | **`KpiTile`**, `escala="destaque"` | `NumeroHeroi` (fusão v5, #236), apagado: sem consumidor desde D15/D20 |
+| monograma do funil | **`MonogramaDoFunil`** / `iniciaisDoFunil` | `Monograma` — colidia com `components/cabinet/monograma.tsx` |
+| iniciais | **primeira + SEGUNDA palavra** (partículas fora) | primeira + última. A última palavra de razão social é `Ltda`/`ME`/`S/A`, e primeira+última fazia metade do cadastro terminar na mesma letra |
+| ★ de favorito | **`Fixar X nos favoritos` / `Tirar X dos favoritos`** | `Marcar X` / `Desmarcar X` (D4) — a aba da listagem já usava a primeira |
+| favoritos | **`saved_views` do contrato** (`useFavoritosDaTela`, `GrupoFavoritos`) | `localStorage` (D4) e um `favoritos.tsx` órfão (D13), ao mesmo tempo |
+| célula da coluna `Ativo` | `CelulaAtivo`, com **`data-slot="stamp"`** | saía como `data-slot="badge"`, contra o que o próprio `badge.tsx` promete |
+
+**Duas continuam divergentes de propósito, e a decisão é de produto, não de nomenclatura:** o
+`MonogramaDoFunil` colore pelo PAPEL (cliente/responsável) e o compartilhado por hash do nome; o
+primeiro tem texto acessível e o segundo é sempre `aria-hidden`. Os dois argumentos estão escritos
+no cabeçalho de cada arquivo.
+
+O que a D37 **não** fechou, com número medido: `text-[` (114, dos quais 40 são cor por `var()`),
+`border-2` (89) e os dois medidores de contraste — ver `docs/design/d37-mapa-de-consistencia.md` §9.3.
+
 ## Telas com layout próprio
 
 Três famílias não são composição das 12 peças e por isso têm regra escrita:

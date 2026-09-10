@@ -20,6 +20,7 @@ import {
   useTabelasDaVariante,
   vendaSugeridaCents,
 } from '@/data/precos-api'
+import { diaLocalISO } from '@/lib/datas'
 import { formatMoneyBRL, formatPercent } from '@/lib/formatters'
 import { cn } from '@/lib/utils'
 
@@ -250,9 +251,13 @@ function TabelaDoFornecedor({
             onClick={() =>
               gravar.mutate(
                 {
+                  // A vigência é a da REQUISIÇÃO (`effectiveFrom` ausente = hoje,
+                  // pelo contrato); a data por linha só existe porque o `PUT`
+                  // reaproveita o DTO da leitura, e vai com o mesmo "hoje".
                   prices: linhas.map((linha) => ({
                     supplierId: linha.supplierId,
                     tablePriceCents: linha.tablePriceCents,
+                    effectiveFrom: diaLocalISO(),
                   })),
                 },
                 { onSuccess: descartar },

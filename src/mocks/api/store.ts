@@ -264,6 +264,15 @@ const ABERTURA_DO_SEED = '2026-08-01T12:00:00.000Z'
  * Nenhuma delas é MISTA (percentual com valor fixo): o contrato recusa isso com
  * 400 enquanto a ordem de aplicação não for decidida, e um seed que fizesse o
  * que a escrita recusa ensinaria a regra errada.
+ *
+ * **O ENCARGO DE ATRASO cobre os três estados que o contrato distingue**, um em
+ * cada condição, porque dois deles se parecem e a diferença é o que a tela tem
+ * de mostrar: `À VISTA` tem `lateCharges: null` — ninguém configurou o atraso
+ * dela, e a tela mostra um traço; `30/60/90` tem a regra clássica (1% ao mês de
+ * mora e 2% de multa), que é a frase que o documento imprime; e `ENTRADA + 2x`
+ * tem os dois em `0`, que é "conferido, esta condição não cobra". Um seed com
+ * encargo em todas faria o traço nunca aparecer, e o estado sem resposta é
+ * justamente o que se esquece de tratar.
  */
 function condicoesDoSeed(): CondicaoDaEmpresa[] {
   return [
@@ -272,6 +281,7 @@ function condicoesDoSeed(): CondicaoDaEmpresa[] {
       tenantId: TENANT_MATRIZ,
       name: 'À VISTA',
       active: true,
+      lateCharges: null,
       installments: [{ number: 1, daysAfterIssue: 0, percent: 1_000_000, amountCents: null }],
     },
     {
@@ -279,6 +289,8 @@ function condicoesDoSeed(): CondicaoDaEmpresa[] {
       tenantId: TENANT_MATRIZ,
       name: '30/60/90',
       active: true,
+      // 1% ao mês e 2% de multa — a escala é de 4 casas (`10000` = 1%).
+      lateCharges: { interestPercentMonthly: 10_000, finePercent: 20_000 },
       installments: [
         { number: 1, daysAfterIssue: 30, percent: 333_334, amountCents: null },
         { number: 2, daysAfterIssue: 60, percent: 333_333, amountCents: null },
@@ -290,6 +302,7 @@ function condicoesDoSeed(): CondicaoDaEmpresa[] {
       tenantId: TENANT_MATRIZ,
       name: 'ENTRADA + 2x',
       active: true,
+      lateCharges: { interestPercentMonthly: 0, finePercent: 0 },
       installments: [
         { number: 1, daysAfterIssue: 0, percent: 333_334, amountCents: null },
         { number: 2, daysAfterIssue: 30, percent: 333_333, amountCents: null },

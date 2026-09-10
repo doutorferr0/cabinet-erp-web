@@ -27,8 +27,16 @@ especificação de **entrada** que o backend precisa implementar, não cópia qu
   planner nasceram assim — caminho que o front escreveu antes de existir implementação — e hoje
   respondem. No modo mock quem responde é `src/mocks/api/handlers.ts`, e a tela não sabe a
   diferença: é isso que mantém `cabinetonline.cc` de pé sem backend nenhum.
-- **Ainda mock por falta de caminho no contrato:** cidades e boletim. Seguem a regra antiga:
-  dados tipados em `src/mocks/`, campos LITERAIS de `topicos/transcricaosoftlux.md` da memória.
+- **Ainda mock por falta de caminho no contrato:** boletim. Segue a regra antiga: dados tipados
+  em `src/mocks/`, campos LITERAIS de `topicos/transcricaosoftlux.md` da memória.
+- **CIDADES SAIU DESSA LISTA, e não foi virando HTTP.** Os 5571 municípios do IBGE são dado
+  público, oficial e igual para todo tenant: viraram asset LOCAL do front
+  (`src/data/geografia/`, gerado por `scripts/gera-municipios-ibge.mjs`, carregado sob demanda),
+  com o código do IBGE no lugar da sequência inventada de três dígitos. Não há caminho no
+  contrato porque não deve haver — publicá-lo seria pedir ao backend proxy de um arquivo que não
+  muda. O registry ganhou por isso uma terceira `origem`, `'local'`: nem servidor, nem exemplo.
+  A fase fiscal é que move a fonte para o servidor, e sai barata porque o código já é o certo.
+  Ver `docs/geografia-ibge.md`.
 - **Ainda mock COM caminho no contrato — que é outra coisa:** colaborador. A família tem 8
   operações — listagem, ficha, escrita, vínculo e faixas de comissão — e a passagem as liga;
   quem não migrou foi `data.colaboradores`, e o que segura é o lado do MOCK — falta handler de
@@ -43,6 +51,14 @@ especificação de **entrada** que o backend precisa implementar, não cópia qu
   escondida: é o trilho seguinte, e enquanto durar, as telas de compras e o mock do contrato são
   dois mundos que não se falam — gravar numa não aparece na outra. Migrar mexe em `src/data/`,
   não na tela, que é a regra de acesso a dado logo abaixo.
+- **APROVAÇÕES (F12) é o caso NOVO da lista, e é mock por falta de SERVIDOR, não de caminho.** O
+  contrato publica as 5 operações de `/api/approval-requests` (fila, resumo, ficha, aprovar,
+  recusar), `src/mocks/api/aprovacoes.ts` as serve com estado de verdade e a tela
+  (`features/aprovacao/`) as consome. O que falta do outro lado não são handlers: é o GANCHO que
+  CRIA o pedido, ao gravar documento com desconto acima do teto (`cabinet-erp-api#237`, fase 1).
+  Por isso as cinco ficam em `ROTAS_NO_MOCK` mesmo depois de o api sincronizar o contrato —
+  ligá-las antes do gancho poria uma fila vazia no lugar de uma que funciona, e "não há nada
+  para aprovar" é indistinguível de "o gancho não existe". Ver `docs/integracao.md` §Fila.
 - **PROIBIDO continua:** inventar chamada HTTP, inventar shape de API sem passar pelo contrato,
   escrever à mão tipo que o contrato define. Todo tipo de servidor vem do codegen —
   `pnpm codegen` (Orval + pós-codegen), saída em `src/api/gerado/`, **commitada**, com
@@ -498,7 +514,7 @@ um push dispara os dois builds em paralelo, e o que os separa é só a env fixad
   true`. Origem nova (preview, domínio novo) precisa entrar na lista do `cabinet-erp-api` antes de
   conseguir logar.
 - **O `app.` mostra dado fake onde a tela ainda é mock, e isso NÃO é modo mock.** Provider de
-  `src/data/index.ts` montado sobre `src/mocks/` (colaborador, compras, cidades, boletim) não fala
+  `src/data/index.ts` montado sobre `src/mocks/` (colaborador, compras, boletim) não fala
   com a rede em modo nenhum — em `app.cabinetonline.cc` ele serve a mesma fixture, agora ao lado de
   dado do Postgres. Migrar tela para HTTP virou trabalho de produção, não de demo.
 - Push em QUALQUER outra branch → preview isolado em **cada** um dos dois projetos, com URL própria

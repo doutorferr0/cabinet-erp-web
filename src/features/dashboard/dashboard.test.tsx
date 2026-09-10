@@ -63,10 +63,12 @@ const ATIVIDADES: ActivityDto[] = [
 
 interface Opcoes {
   resumoFalha?: boolean
+  /** Resumo servido no lugar do padrão — o backend real zera dois campos. */
+  resumo?: DashboardSummaryDto
 }
 
 /** Servidor falso do Dashboard, com registro das chamadas de escrita. */
-function servidor({ resumoFalha = false }: Opcoes = {}) {
+function servidor({ resumoFalha = false, resumo = RESUMO }: Opcoes = {}) {
   const escritas: Array<{ caminho: string; metodo: string; corpo: unknown }> = []
 
   const stub: FetchStub = async (input) => {
@@ -93,7 +95,7 @@ function servidor({ resumoFalha = false }: Opcoes = {}) {
             status: 409,
             headers: { 'content-type': 'application/problem+json' },
           })
-        : json(RESUMO)
+        : json(resumo)
     }
     if (caminho === '/api/dashboard/agenda') return json(AGENDA)
     if (caminho === '/api/todos') return json(TODOS)
@@ -133,6 +135,26 @@ describe('tela Dashboard', () => {
     await waitFor(() => expect(vendas.textContent).toBe('R$182.400,00'))
     expect(screen.getByText('+12%')).toBeInTheDocument()
     expect(screen.getByText('vs. mês anterior')).toBeInTheDocument()
+  })
+
+  it('`Pedidos a receber` não imprime o zero que o servidor não apura', async () => {
+    // O backend real devolve `incomingOrders`/`incomingOrdersToday` SEMPRE `0` —
+    // o DTO os exige `integer` e não tem `null` para dizer "sem dado". Imprimir
+    // `0` diria "nenhum pedido a receber" num sistema que tem ordem de compra.
+    renderRoute('/dashboard', servidor({ resumo: { ...RESUMO, incomingOrders: 0 } }).stub)
+
+    const rotulo = await screen.findByText('Pedidos a receber')
+    const cartao = rotulo.closest('[data-slot="kpi-tile"]') as HTMLElement
+    expect(within(cartao).getByText('—')).toBeInTheDocument()
+    expect(within(cartao).getByText('o servidor ainda não apura')).toBeInTheDocument()
+    expect(within(cartao).queryByText('0')).not.toBeInTheDocument()
+
+    // O cartão continua levando à lista, que é onde o número existe de verdade.
+    expect(cartao.closest('a')?.getAttribute('href')).toBe('/compras/pedidos')
+
+    // E os outros três seguem mostrando o que o servidor apura: a declaração é
+    // deste campo, não um modo "sem dado" da fileira inteira.
+    expect(screen.getByText('4 vencem esta semana')).toBeInTheDocument()
   })
 
   it('o bento abre pelo HERÓI, e a tinta continua sendo a do assunto', async () => {

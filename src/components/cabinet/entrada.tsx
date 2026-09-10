@@ -1,48 +1,9 @@
-import { motion } from 'motion/react'
-
-/**
- * ENTRADA DE TELA (DESIGN.md §Motion, fase 1.6).
- *
- * A única animação de LAYOUT do sistema: a região sobe 16px e aparece, uma vez
- * por navegação. Serve para dizer "a tela trocou" — num ERP em que o operador
- * fica oito horas, movimento que não informa é atrito, e é por isso que a lista
- * de onde ele NÃO entra é tão importante quanto a receita:
- *
- *   linha de tabela · célula de grade · campo · anel de foco · hover e press.
- *
- * Hover e press continuam em CSS (`lift-control`): eles respondem ao mouse, e
- * mouse não espera mola. Peça que aparece (popover, menu, diálogo, dica) tem
- * receita própria, também em CSS (`pop-spring`), porque quem monta e desmonta
- * essas peças é a `react-aria-components`.
- *
- * **Anima na MONTAGEM, e só.** Quem garante uma vez por navegação é a `key` do
- * consumidor: o shell dá `key={pathname}` à folha, então trocar de tela remonta
- * e anima, enquanto paginar, ordenar ou digitar — que mudam search params ou
- * estado, não o caminho — não remontam e não animam. Animação que se repete a
- * cada re-render é a que faz o operador esperar a tela parar de se mexer.
- *
- * `reducedMotion="user"` está na raiz (`providers.tsx`): com "reduzir
- * movimento" ligado no sistema, a mola vira duração zero e nada aqui muda.
- */
-
-/** Mola da entrada: `{stiffness:120, damping:30}` — chega sem passar do alvo. */
-const MOLA = { type: 'spring', stiffness: 120, damping: 30 } as const
-
-/** Passo do escalonamento entre regiões irmãs. */
-const PASSO = 0.08
-
-/**
- * Máximo de regiões escalonadas. Além da sexta o atraso passa de meio segundo e
- * o operador vê a tela montar em partes em vez de aparecer — teto, não sugestão.
- */
-export const ORDEM_MAXIMA = 5
-
-export function atrasoDaOrdem(ordem: number): number {
-  return Math.min(Math.max(ordem, 0), ORDEM_MAXIMA) * PASSO
-}
-
 export interface EntradaProps {
-  /** Posição no escalonamento: 0 entra primeiro, 1 entra 80ms depois. */
+  /**
+   * Posição no antigo escalonamento. Continua na assinatura porque o
+   * `page-frame` a passa em cada região e ele é zona de outra issue — a prop é
+   * aceita e ignorada, o que é honesto: a peça não anima mais.
+   */
   ordem?: number
   className?: string
   /** Marcador da peça envolvida — a folha continua sendo `page-frame`. */
@@ -50,16 +11,35 @@ export interface EntradaProps {
   children: React.ReactNode
 }
 
-export function Entrada({ ordem = 0, className, 'data-slot': slot, children }: EntradaProps) {
+/**
+ * Entrada de região — hoje um embrulho SEM animação (D16, issue #484).
+ *
+ * ## Por que a animação saiu
+ *
+ * Ela era a única animação de LAYOUT do sistema: cada região subia 16px e
+ * aparecia, escalonada por 80ms, uma vez por navegação. A rodada 2.0 a proíbe
+ * por escrito — *"proibido: animação de entrada de tela"* (regra 7 da issue-mãe
+ * #469) — e o motivo é o mesmo que já estava escrito aqui em defesa dela: num
+ * ERP em que o operador fica oito horas, movimento que não informa é atrito.
+ * "A tela trocou" ele já sabe: foi ele quem clicou. O que a mola custava era
+ * meio segundo até a última região parar de se mexer, em toda navegação, para
+ * dizer o que o cursor já tinha dito.
+ *
+ * Some com ela a dependência de `motion/react` neste caminho — o motion continua
+ * no repo para peça que APARECE (popover, dialog), que é outra gramática.
+ *
+ * ## Por que o componente fica
+ *
+ * `page-frame.tsx` monta cinco regiões com `<Entrada ordem={n}>`, e é zona de
+ * outra issue da rodada. Apagar o componente obrigaria a editar o shell no meio
+ * de um trabalho paralelo para trocar cinco `<Entrada>` por cinco `<div>` —
+ * conflito garantido, em troca de um nó a menos por região. O embrulho fica, sem
+ * mola; quando o shell for reescrito, ele sai com um `git rm`.
+ */
+export function Entrada({ className, 'data-slot': slot, children }: EntradaProps) {
   return (
-    <motion.div
-      className={className}
-      {...(slot !== undefined && { 'data-slot': slot })}
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ ...MOLA, delay: atrasoDaOrdem(ordem) }}
-    >
+    <div className={className} {...(slot !== undefined && { 'data-slot': slot })}>
       {children}
-    </motion.div>
+    </div>
   )
 }

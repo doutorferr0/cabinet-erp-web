@@ -1,12 +1,13 @@
+import { describe, expect, it } from 'vitest'
 import {
-  PERCENT_ESCALA,
   formatDateBR,
+  formatInstanteBR,
   formatMoneyBRL,
   formatPercent,
   formatQuantidade,
+  PERCENT_ESCALA,
   parseQuantidade,
 } from '@/lib/formatters'
-import { describe, expect, it } from 'vitest'
 
 /** Regras de borda do CLAUDE.md: centavos int, ISO no dado, pt-BR na exibição. */
 describe('formatMoneyBRL', () => {
@@ -37,6 +38,11 @@ describe('formatDateBR', () => {
     expect(formatDateBR(undefined)).toBe('')
     expect(formatDateBR('')).toBe('')
   })
+
+  it('delega instante ISO ao formatador de data e hora', () => {
+    const instante = '2026-09-08T14:30:00.000Z'
+    expect(formatDateBR(instante)).toBe(formatInstanteBR(instante))
+  })
 })
 
 describe('formatPercent', () => {
@@ -44,6 +50,7 @@ describe('formatPercent', () => {
     expect(formatPercent(10)).toBe('0,0010')
     expect(formatPercent(PERCENT_ESCALA)).toBe('1,0000')
     expect(formatPercent(10 * PERCENT_ESCALA)).toBe('10,0000')
+    expect(formatPercent(PERCENT_ESCALA, 2)).toBe('1,00')
     expect(formatPercent(0)).toBe('0,0000')
   })
 })

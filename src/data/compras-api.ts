@@ -1,3 +1,4 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
   PagedResultOfPurchaseArrivalRowDto,
   PagedResultOfPurchaseReplenishmentRowDto,
@@ -24,16 +25,15 @@ import {
   updatePurchaseRequest,
 } from '@/api/gerado'
 import {
-  PAGE_SIZE_MAX,
-  type RespostaDaApi,
   createApiListProvider,
   dadosOuErro,
   itemOuNulo,
+  PAGE_SIZE_MAX,
+  type RespostaDaApi,
 } from '@/data/api-provider'
 import type { DocumentoProvider, ListProvider } from '@/data/provider'
 import { avisar } from '@/lib/avisos'
 import { formatQuantidade, parseQuantidade } from '@/lib/formatters'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 /**
  * FRONTEIRA DE COMPRAS — `/api/purchase-requests`, `/api/purchase-orders` e as
@@ -731,7 +731,11 @@ export function useReagendarOrdemDeCompra() {
       id,
       dataPrevista,
       motivo,
-    }: { id: string; dataPrevista: string; motivo: string }) => {
+    }: {
+      id: string
+      dataPrevista: string
+      motivo: string
+    }) => {
       const resposta: RespostaDaApi = await reschedulePurchaseOrder(id, {
         expectedAt: dataPrevista,
         reason: motivo,

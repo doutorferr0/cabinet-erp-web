@@ -1,3 +1,15 @@
+import { setupServer } from 'msw/node'
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  type MockInstance,
+  vi,
+} from 'vitest'
 import { configurarApi } from '@/api/cliente'
 import type {
   CredentialTokenDto,
@@ -15,11 +27,9 @@ import {
   inviteEmployee,
   listEmployees,
 } from '@/api/gerado'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { resetAcesso } from './acesso'
 import { handlers } from './handlers'
-import { TENANT_MATRIZ, resetStore } from './store'
+import { resetStore, TENANT_MATRIZ } from './store'
 
 /**
  * O CICLO DA CREDENCIAL no mock — convite, recuperação e o gasto do token.
@@ -53,7 +63,11 @@ beforeAll(() => servidor.listen({ onUnhandledRequest: 'error' }))
 afterEach(() => servidor.resetHandlers())
 afterAll(() => servidor.close())
 
-let logado: ReturnType<typeof vi.spyOn>
+// `MockInstance<typeof console.info>` e não `ReturnType<typeof vi.spyOn>`: sem o
+// argumento, o genérico do vitest 4 cai no `Procedure` padrão e `mock.calls`
+// vira `any[]` — os quatro `TS7006` que a atualização acusou. Amarrar à
+// assinatura real de `console.info` devolve o tipo de cada argumento.
+let logado: MockInstance<typeof console.info>
 
 beforeEach(async () => {
   resetAcesso()

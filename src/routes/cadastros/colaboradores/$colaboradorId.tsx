@@ -1,16 +1,20 @@
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { AvisoDadosDeExemplo } from '@/components/cabinet/aviso-dados-de-exemplo'
 import {
   ErroDeCarregamento,
   EsqueletoDeCarregamento,
 } from '@/components/cabinet/estado-de-consulta'
-import { FichaDeCadastro } from '@/components/cabinet/ficha/ficha-de-cadastro'
+import { RegistroNaoEncontrado } from '@/components/cabinet/vazio-com-saida'
 import { data } from '@/data'
 import { useRotulosDeApoio } from '@/data/lookups-api'
+import { FichaDeRegistro } from '@/features/cadastro/ficha-de-registro'
 import { colaborador as esquema } from '@/features/cadastro/modulos'
+import { CoberturaDoColaborador } from '@/features/colaborador/cobertura-do-colaborador'
 import { ColaboradorForm } from '@/features/colaborador/colaborador-form'
+import { resumoDoColaborador } from '@/features/colaborador/ficha-resumo'
+import { usarColaborador } from '@/features/colaborador/usar-colaborador'
 import { isConsulta, validateModoSearch } from '@/lib/modo-consulta'
-import { useQuery } from '@tanstack/react-query'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import type { Colaborador } from '@/mocks/colaboradores'
 
 export const Route = createFileRoute('/cadastros/colaboradores/$colaboradorId')({
   component: ColaboradorEditPage,
@@ -23,21 +27,20 @@ function ColaboradorEditPage() {
   const readOnly = isConsulta(search)
   // A outra metade da #94: traduz o id de lista de apoio no nome, na leitura.
   const { carregando: carregandoApoio, rotulos } = useRotulosDeApoio()
-  const isNovo = colaboradorId === 'novo'
   const navigate = useNavigate()
+  // A ficha CRUA do servidor fica na query, e não só o `Colaborador` derivado:
+  // o corpo do `PUT` devolve `document` e `photoUrl` como vieram, e eles não
+  // têm campo no formulário (#402). Ver `usar-colaborador.ts`.
+  const { query, isNovo, registro, incluir, gravar } = usarColaborador(colaboradorId)
 
-  const query = useQuery({
-    queryKey: ['colaborador', colaboradorId],
-    queryFn: () => (isNovo ? data.colaboradores.empty() : data.colaboradores.get(colaboradorId, 0)),
-  })
-
-  if (query.isPending || carregandoApoio) {
+  if ((!isNovo && query.isPending) || carregandoApoio) {
     return <EsqueletoDeCarregamento />
   }
 
-  // `data.colaboradores` é mock (nunca rejeita hoje) — o braço existe para o
-  // dia em que colaborador ganhar caminho HTTP no contrato, seguindo a mesma
-  // regra dos outros 5 cadastros de detalhe.
+  // Falhou ≠ não existe: 404 chega como `null` (não está lá), qualquer outra
+  // falha chega como erro — 403 é papel insuficiente, 409 é "nenhuma empresa
+  // ativa na sessão". Tratar os dois como "não encontrado" mandaria procurar um
+  // registro que existe.
   if (query.isError) {
     return (
       <ErroDeCarregamento
@@ -48,8 +51,13 @@ function ColaboradorEditPage() {
     )
   }
 
-  if (!query.data) {
-    return <p className="text-muted-foreground">Colaborador não encontrado.</p>
+  if (!registro) {
+    return (
+      <RegistroNaoEncontrado
+        titulo="Colaborador não encontrado."
+        voltar="/cadastros/colaboradores"
+      />
+    )
   }
 
   // `Consul.` mostra a FICHA, não o formulário desabilitado (issue #103): ler é
@@ -65,12 +73,21 @@ function ColaboradorEditPage() {
     return (
       <div className="flex flex-col gap-4">
         <AvisoDadosDeExemplo origem={data.colaboradores.origem} />
-        <FichaDeCadastro
+        <FichaDeRegistro
           entidade={esquema}
           {...(rotulos ? { rotulos } : {})}
-          registro={query.data}
-          titulo="Cadastro de Colaboradores"
-          contexto={query.data.nome}
+          registro={registro}
+          titulo="Colaborador"
+          nome={registro.nome}
+          {...(query.data?.jobTitle ? { meta: query.data.jobTitle } : {})}
+          ativo={registro.ativo}
+          // `PUT /api/employees/{id}` com o `active` invertido. Continua o
+          // caminho do Gravar — e continua `admin` no contrato: quem opera com
+          // `operator-full` recebe 403, e o erro sai no diálogo em vez de a
+          // tela fingir que gravou.
+          aoAlternarAtivo={() => gravar.mutate({ ...registro, ativo: !registro.ativo })}
+          alternando={gravar.isPending}
+          resumo={resumoDoColaborador(query.data)}
           aoEditar={(moduloId) =>
             void navigate({
               to: '/cadastros/colaboradores/$colaboradorId',
@@ -89,10 +106,18 @@ function ColaboradorEditPage() {
     <div className="flex flex-col gap-4">
       <AvisoDadosDeExemplo origem={data.colaboradores.origem} />
       <ColaboradorForm
-        colaborador={query.data}
+        colaborador={registro}
         readOnly={readOnly}
-        contexto={readOnly ? 'Consulta' : isNovo ? 'Incluir' : query.data.nome}
+        contexto={readOnly ? 'Consulta' : isNovo ? 'Incluir' : registro.nome}
         {...(moduloEmFoco ? { moduloEmFoco } : {})}
+        gravando={incluir.isPending || gravar.isPending}
+        aviso={
+          <CoberturaDoColaborador isNovo={isNovo} erro={isNovo ? incluir.error : gravar.error} />
+        }
+        // `POST` em `/novo`, `PUT` em edição — quem sabe disso é a ROTA, que lê
+        // o id da URL. O formulário não tem como distinguir "id em branco
+        // porque é novo" de "id em branco porque a ficha não chegou".
+        onGravar={(v: Colaborador) => (isNovo ? incluir.mutate(v) : gravar.mutate(v))}
       />
     </div>
   )

@@ -1,6 +1,6 @@
-import { renderWithQuery } from '@/test/utils'
 import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { renderWithQuery } from '@/test/utils'
 import { TelaNaoCapturada } from './tela-nao-capturada'
 
 describe('TelaNaoCapturada', () => {

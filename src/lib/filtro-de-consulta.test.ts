@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest'
 import {
   type CampoFiltravel,
   type FiltroDaTabela,
@@ -6,11 +7,10 @@ import {
   filtrosValidos,
   linhaPassaNosFiltros,
   novoFiltroId,
-  operadorPadrao,
   operadoresDaVariante,
+  operadorPadrao,
   somenteDigitos,
 } from '@/lib/filtro-de-consulta'
-import { describe, expect, it } from 'vitest'
 
 interface Linha {
   id: number

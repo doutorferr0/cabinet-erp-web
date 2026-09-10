@@ -1,4 +1,4 @@
-import { type EntidadeCadastro, camposDe } from '@/features/cadastro/modulos'
+import { camposDe, type EntidadeCadastro } from '@/features/cadastro/modulos'
 
 /**
  * O REGISTRO QUE A FICHA LÊ — sem os defaults do formulário.

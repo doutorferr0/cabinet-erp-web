@@ -1,0 +1,193 @@
+/* =====================================================================
+   PLANNER 2.0 — a pele do gantt, escrita em `--wx-*`.
+
+   O SVAR publica ~60 variáveis `--wx-*` e NENHUMA classe de tema é aplicada
+   por este app: `wx-willow-theme` e `wx-material-theme` existem na folha da
+   lib, mas quem as põe no DOM é o exemplo do vendor, não o componente. O
+   efeito medido em 02/09 é que boa parte das variáveis chegava **indefinida**
+   ao navegador — e regra que resolve para nada não pinta nada.
+
+   **`--wx-gantt-marker-*` não está aqui, e a ausência é a decisão.** Definir
+   aquelas variáveis foi a primeira tentativa de trazer a linha do hoje de
+   volta, e ela não podia funcionar: `markers` é recurso PRO, o `init` da store
+   do SVAR faz `t.markers = []`, e `.wx-marker` nunca chega ao DOM. Estilo para
+   um seletor que não existe é a mesma mentira que a variável vazia, com o
+   sinal trocado — quem lesse a folha concluiria que a linha vem da lib. Ela
+   vem de `linha-do-hoje.tsx`, e o desenho dela está no fim deste arquivo.
+
+   Por isso esta folha define o conjunto INTEIRO que a tela usa, e o define a
+   partir dos tokens 2.0 (`--n-*`, `--s-*`, `--t-*`). O escopo é
+   `[data-slot='gantt']` — a lib é um estrangeiro dentro da nossa página, e o
+   contrato desta folha é: nada daqui vaza para fora do quadro.
+
+   Modo escuro sai de graça: `--n-*` são redefinidos em `.dark` por
+   `tokens-2.0.css`, e tudo abaixo os lê por `var()`.
+
+   ## A exceção medida: a grade do fundo é CANVAS, não CSS
+
+   `CellGrid` desenha as células num `<canvas>` e escolhe a cor assim:
+
+       getComputedStyle(el).getPropertyValue('--wx-gantt-border')
+         .substring(u.indexOf('#'))
+
+   Ou seja: ele espera um **hexadecimal dentro da string**, e corta tudo antes
+   do `#`. `1px solid var(--n-200)` funciona porque o valor computado de uma
+   custom property já vem com o `var()` substituído — mas isso amarra duas
+   coisas que vale escrever antes que alguém as quebre sem perceber:
+
+   1. `--n-200` precisa continuar sendo **hex**. Virasse `oklch()` ou
+      `color-mix()`, o `indexOf('#')` daria -1, `substring(-1)` devolveria a
+      string inteira e o `strokeStyle` cairia no preto do canvas — a grade
+      voltaria a ser o xadrez que a auditoria §1.1 condena.
+   2. A leitura acontece UMA vez, na montagem (`useEffect` com deps vazias).
+      Trocar de tema com o Planner aberto mantém a grade na cor antiga até
+      remontar. É dívida conhecida e barata: quem troca de tema vê a grade
+      certa na próxima visita, e a alternativa era observar o tema aqui dentro
+      para corrigir um traço de 1px.
+   ===================================================================== */
+
+[data-slot="gantt"] {
+  /* ---------- superfícies: folha por dentro, bancada nenhuma ---------- */
+  --wx-background: var(--n-0);
+  --wx-background-alt: var(--n-50);
+  --wx-border: 1px solid var(--n-200);
+
+  /* ---------- tipo: os papéis da §Hierarquia, não os do vendor ---------- */
+  --wx-font-family: var(--font-sans);
+  --wx-font-size: var(--t-ui-size, 13px);
+  --wx-font-size-sm: var(--t-meta-size, 12px);
+  --wx-font-weight: 500;
+  --wx-font-weight-md: 600;
+  --wx-color-font: var(--n-900);
+  --wx-color-secondary-font: var(--n-500);
+  --wx-color-font-disabled: var(--n-400);
+  --wx-color-link: var(--n-900);
+
+  /* ---------- traço: hairline em toda fronteira interna ----------
+     Uma ferramenta por fronteira (§Hierarquia): a linha aqui é hairline
+     n-200 e mais nada — sem borda dura, sem fundo diferente no mesmo lugar. */
+  --wx-gantt-border: 1px solid var(--n-200);
+  --wx-gantt-border-color: var(--n-200);
+  --wx-grid-body-row-border: 1px solid var(--n-200);
+  --wx-timescale-border: 1px solid var(--n-200);
+  --wx-table-cell-border: 1px solid var(--n-200);
+  --wx-table-header-border: 1px solid var(--n-200);
+  --wx-table-header-cell-border: none;
+  /* A lateral de fases é LISTA, não planilha: nenhuma linha vertical entre
+     colunas (§Hierarquia, "Tabela: sem linhas verticais"). A grade do GRÁFICO
+     é outra fronteira e outra regra — ver `cellBorders` em `planner.tsx`. */
+  --wx-grid-body-cell-border: none;
+
+  /* ---------- cabeçalho de meses: tint, não borda ---------- */
+  --wx-table-header-background: var(--n-50);
+  --wx-timescale-font: 600 var(--t-rotulo-size, 10.5px) / 1.2 var(--font-sans);
+  --wx-timescale-font-color: var(--n-500);
+  --wx-timescale-shadow: none;
+  --wx-grid-header-font: 600 var(--t-rotulo-size, 10.5px) / 1.2 var(--font-sans);
+  --wx-grid-header-font-color: var(--n-500);
+  --wx-grid-header-text-transform: uppercase;
+  --wx-grid-header-shadow: none;
+
+  /* ---------- corpo da lateral ---------- */
+  --wx-grid-body-font: 500 var(--t-ui-size, 13px) / 1.3 var(--font-sans);
+  --wx-grid-body-font-color: var(--n-900);
+  --wx-icon-color: var(--n-500);
+  --wx-gantt-icon-color: var(--n-500);
+  --wx-icon-size: 16px;
+
+  /* ---------- barras ----------
+     A COR não mora aqui: quem pinta é `bg-modulo` no `taskTemplate`, que é o
+     mesmo mecanismo `[data-modulo]` do resto do app e por isso acompanha a
+     remapeação de `--modulo-02` para `--tint-*` sem esta folha saber. O que
+     mora aqui é o CONTORNO — n-300, hairline de controle — e a ausência de
+     fundo próprio, para o tint do módulo não ficar por baixo de um cinza. */
+  --wx-gantt-task-color: transparent;
+  --wx-gantt-task-border: 1px solid var(--n-300);
+  --wx-gantt-task-border-color: var(--n-900);
+  --wx-gantt-task-font-color: var(--n-900);
+  --wx-gantt-task-fill-color: transparent;
+  --wx-gantt-summary-color: transparent;
+  --wx-gantt-summary-border: 1px solid var(--n-300);
+  --wx-gantt-summary-border-color: var(--n-900);
+  --wx-gantt-summary-font-color: var(--n-900);
+  --wx-gantt-summary-fill-color: transparent;
+  --wx-gantt-bar-border-radius: var(--r-item);
+  --wx-gantt-bar-font: 500 var(--t-ui-size, 13px) / 1.3 var(--font-sans);
+  --wx-gantt-bar-shadow: var(--hard-soft);
+
+  /* ---------- marco: losango de TINTA ----------
+     O marco não é uma barra curta — é uma data. Por isso ele é o único
+     elemento do quadro em n-900 cheio junto com a linha do hoje: os dois são
+     "instante", e o resto é "intervalo". */
+  --wx-gantt-milestone-color: var(--n-900);
+  --wx-gantt-milestone-border-radius: 0;
+
+  /* ---------- seleção e fim de semana ---------- */
+  --wx-gantt-select-color: var(--n-50);
+  --wx-table-select-background: var(--n-50);
+  --wx-table-select-focus-background: var(--n-50);
+  --wx-table-select-border: none;
+  --wx-gantt-holiday-background: var(--n-50);
+  --wx-gantt-holiday-color: var(--n-500);
+
+  --wx-color-primary: var(--n-900);
+  --wx-color-danger: var(--bad, #b3261e);
+  --wx-gantt-progress-border-color: var(--n-300);
+}
+
+/* A faixa de meses gruda no topo do quadro ao rolar. `.wx-scale` já nasce
+   `position: sticky` na folha da lib; o que falta é ela ter FUNDO próprio —
+   sem isso as barras passariam por baixo do texto e as duas linhas ficariam
+   ilegíveis no meio do rolar. O tint n-50 é a mesma ferramenta que separa
+   cabeçalho de corpo em toda tabela do sistema. */
+[data-slot="gantt"] .wx-scale {
+  background-color: var(--n-50);
+}
+
+/* Barra sem fundo próprio: quem pinta é o `taskTemplate`. Sem isto, o `border`
+   da lib desenharia por cima do tint e a barra teria duas molduras. */
+[data-slot="gantt"] .wx-bar:not(.wx-milestone) {
+  overflow: hidden;
+}
+
+/* A fase (resumo) é MOLDURA, não barra cheia: ela existe para dizer de onde a
+   onde o grupo vai, e pintá-la com o mesmo peso dos filhos faria o olho ler
+   duas vezes a mesma informação. */
+[data-slot="gantt"] .wx-summary {
+  background-color: color-mix(in oklab, var(--n-900) 6%, transparent);
+}
+
+/* =====================================================================
+   A LINHA DO HOJE — nossa de novo, porque `markers` do SVAR é PRO.
+   O componente `linha-do-hoje.tsx` põe só a geometria medida no `style`;
+   a aparência é esta, e mora aqui pela cascata: `tokens-2.0.css` entra sem
+   `@layer` e derrubaria uma utility do Tailwind com a mesma especificidade.
+   ===================================================================== */
+[data-slot="gantt"] [data-slot="planner-hoje"] {
+  position: absolute;
+  overflow: hidden;
+  pointer-events: none;
+  /* Acima da grade e das barras, abaixo do cabeçalho de meses, que é sticky
+     e precisa continuar cobrindo o que passa por baixo dele. */
+  z-index: 4;
+}
+
+[data-slot="gantt"] [data-slot="planner-hoje"] .traco {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: var(--n-900);
+}
+
+[data-slot="gantt"] [data-slot="planner-hoje"] .rotulo {
+  position: absolute;
+  top: 0;
+  white-space: nowrap;
+  padding: 1px var(--s-1);
+  background-color: var(--n-900);
+  color: var(--n-0);
+  font: 600 var(--t-rotulo-size, 10.5px) / 1.2 var(--font-sans);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}

@@ -1,3 +1,6 @@
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
 import {
   Menubar,
   MenubarContent,
@@ -6,9 +9,6 @@ import {
   MenubarSeparator,
   MenubarTrigger,
 } from '@/components/ui/menubar'
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
 
 function Exemplo({ aoImprimir = () => {} }: { aoImprimir?: () => void }) {
   return (

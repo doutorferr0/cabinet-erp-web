@@ -1,9 +1,9 @@
 import { readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { Pendencias } from '@/components/cabinet/campos-do-modulo'
-import { moduloContatos } from '@/features/cadastro/modulos'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { Pendencias } from '@/components/cabinet/campos-do-modulo'
+import { moduloContatos } from '@/features/cadastro/modulos'
 
 /**
  * O RODAPÉ DE PENDÊNCIAS NÃO PODE NEGAR O QUE O BLOCO DESENHA.

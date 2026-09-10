@@ -1,5 +1,5 @@
-import { configurarApi } from '@/api/cliente'
 import { vi } from 'vitest'
+import { configurarApi } from '@/api/cliente'
 
 /**
  * Servidor falso para teste, no nível do `fetch`.

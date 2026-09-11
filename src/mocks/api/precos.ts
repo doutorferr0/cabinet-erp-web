@@ -354,7 +354,8 @@ function comoTabelaDto(linha: TabelaDaEmpresa): VariantTablePriceDto {
     supplierName: nomeDeFornecedor(linha.supplierId) ?? linha.supplierName ?? null,
     supplierCode: codigoNoFornecedor(linha.variantId, linha.supplierId),
     tablePriceCents: linha.tablePriceCents,
-    effectiveFrom: linha.effectiveFrom,
+    // Na leitura a vigência vai sempre; a semente e o `PUT` preenchem.
+    effectiveFrom: linha.effectiveFrom ?? diaLocalISO(),
   }
 }
 

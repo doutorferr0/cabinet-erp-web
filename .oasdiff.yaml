@@ -1,0 +1,12 @@
+# Configuração do `oasdiff breaking` que o job `contrato-compat` (ci.yml) roda.
+#
+# A REGRA ADITIVA deste repo (docs/spring/contrato.md §Regra aditiva) diz que
+# valor NOVO de enum é ADIÇÃO em 1.x — e o `ProblemType` é o enum que mais
+# cresce: toda recusa nova de negócio entra como URN (#399 reajuste-sem-base,
+# #358 quitacao-a-menor, #417 aprovacao-*). O oasdiff, por padrão, trata enum
+# que cresce numa RESPOSTA como quebra (`response-property-enum-value-added`,
+# ERR), porque um cliente genérico pode não conhecer o valor novo. Aqui o
+# cliente é este front, gerado do mesmo contrato e obrigado pelo catálogo
+# `erros-canonicos.ts` a conhecer toda URN — o valor novo nunca chega sem quem
+# o leia. Medido em 2026-09-10: a main reprovou 4 URNs, todas aditivas.
+severity-levels: contracts/baseline/severidade-oasdiff.txt

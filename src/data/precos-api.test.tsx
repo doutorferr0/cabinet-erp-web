@@ -180,11 +180,7 @@ function SondaDeGravacao() {
   return (
     <button
       type="button"
-      onClick={() =>
-        m.mutate({
-          prices: [{ supplierId: 'forn-1', tablePriceCents: 90_000, effectiveFrom: '2026-09-10' }],
-        })
-      }
+      onClick={() => m.mutate({ prices: [{ supplierId: 'forn-1', tablePriceCents: 90_000 }] })}
     >
       gravar
     </button>
@@ -201,7 +197,7 @@ describe('useGravarTabelas', () => {
     await waitFor(() => expect(servidor.chamadas).toHaveLength(1))
     expect(servidor.chamadas[0]?.metodo).toBe('PUT')
     expect(servidor.chamadas[0]?.corpo).toEqual({
-      prices: [{ supplierId: 'forn-1', tablePriceCents: 90_000, effectiveFrom: '2026-09-10' }],
+      prices: [{ supplierId: 'forn-1', tablePriceCents: 90_000 }],
     })
   })
 })

@@ -1002,6 +1002,26 @@ export const PASSAGEM_ADIANTADA: readonly RotaNoMock[] = [
     // O Node foi congelado em 28/08 sem estas cinco; quem as serve é o Spring.
     servidor: 'spring-pendente' as const,
   })),
+  // REAJUSTE EM MASSA (2) — na passagem desde a #399 (G9), pelo raciocínio
+  // escrito ao lado delas em `ROTAS_DO_BACKEND`: sem handler de mock e sem
+  // tela, a outra lista devolveria `index.html` com 200. O caminho NASCEU no
+  // contrato deste repo; a cópia do api não o conhece (`sem-contrato`) e o Node
+  // congelado nunca vai conhecer — quem serve é o Spring. Sai daqui quando a
+  // tela do reajuste nascer: ou o servidor já responde, ou o mock ganha handler
+  // e a linha vai para `ROTAS_NO_MOCK`.
+  ...(
+    [
+      ['get', '/api/price-adjustments'],
+      ['post', '/api/price-adjustments'],
+    ] as const
+  ).map(([metodo, caminho]) => ({
+    metodo,
+    caminho,
+    motivo:
+      'caminho publicado pelo front (#399) — a cópia do contrato do api não o tem, e não há handler de mock nem tela que o consuma',
+    natureza: 'sem-contrato' as const,
+    servidor: 'spring-pendente' as const,
+  })),
 ]
 
 /**

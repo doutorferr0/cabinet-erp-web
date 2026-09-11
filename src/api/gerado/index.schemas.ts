@@ -7570,6 +7570,8 @@ export interface VariantTablePriceDto {
   /** O **preço de tabela** do fornecedor para esta variante, em centavos — `Preco_Produto.Pre_Tabela`. É o preço de LISTA da compra, antes dos descontos em cascata: não é o que se paga nem o que se vende. É exatamente o `tablePriceCents` que `CostSimulationRequest` recebe. */
   tablePriceCents: number;
   /**
+     * Na LEITURA, sempre presente. Na ESCRITA (`PUT`, que reaproveita este DTO na lista) é opcional e ignorada: a vigência da lista é a `effectiveFrom` da requisição — exigi-la por linha seria propriedade obrigatória nova numa requisição 1.x, que a regra aditiva (`contrato-compat`) proíbe.
+     *
      * O dia em que ESTA tabela passou a valer — a `Dt de Vigência` da tela de produto.
      *
      * Vale até a véspera da vigência seguinte do mesmo fornecedor, e a última vale sem prazo. Não há `validTo`: com duas datas por linha, fechar a anterior e abrir a nova são duas escritas, e a que falhasse deixaria buraco ou sobreposição — dois preços vigentes no mesmo dia, com o preço dependendo de qual linha a consulta achasse primeiro. `SupplierBuyingCompanyDto` carrega as duas porque lá o vínculo pode simplesmente TERMINAR sem nada no lugar; tabela de preço não termina, ela é substituída.
@@ -7578,7 +7580,7 @@ export interface VariantTablePriceDto {
      *
      * **A costura, dita em voz alta:** o ÍNDICE não é versionado (`PriceIndexDto` segue linha única por fornecedor — o `Indice_preco` do legado, 376 linhas, não tem coluna de data). Então `at=<dia>` reconstitui a TABELA daquele dia, não o preço de venda daquele dia: quem multiplicar o resultado pelo índice de hoje está misturando duas datas. Para o preço praticado no passado a resposta certa é o documento, que o congelou.
      */
-  effectiveFrom: string;
+  effectiveFrom?: string;
   /**
      * O reajuste em massa que criou esta linha — `PriceAdjustmentDto.id`. **`null` é caso normal**: é a linha digitada uma a uma no `PUT`, e a maioria das primeiras tabelas nasce assim.
      *

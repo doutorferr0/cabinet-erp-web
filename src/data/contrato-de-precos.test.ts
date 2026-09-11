@@ -77,16 +77,22 @@ describe('1. preço é histórico, não coluna', () => {
    * uma `Dt de Vigência` colada à grade de Fornecedor. Sem `effectiveFrom` na
    * CHAVE, a tabela nova sobrescreve a velha e some o porquê da venda passada.
    */
-  it('a linha de tabela carrega a vigência, e ela é OBRIGATÓRIA', () => {
-    expect(schemas.VariantTablePriceDto?.required).toEqual([
-      'supplierId',
-      'effectiveFrom',
-      'tablePriceCents',
-    ])
+  /**
+   * OPCIONAL no schema, e a razão é o `PUT` que reaproveita este DTO na lista:
+   * exigir a data por linha seria propriedade obrigatória NOVA numa requisição
+   * 1.x — quebra pela regra aditiva (`contrato-compat` reprovou a `main` em
+   * 2026-09-10 exatamente por isso). A vigência da lista é a `effectiveFrom`
+   * da REQUISIÇÃO; na leitura o servidor a preenche sempre.
+   */
+  it('a linha de tabela carrega a vigência — opcional no schema, presente na leitura', () => {
+    expect(schemas.VariantTablePriceDto?.required).toEqual(['supplierId', 'tablePriceCents'])
     expect(propriedade('VariantTablePriceDto', 'effectiveFrom')).toMatchObject({
       type: 'string',
       format: 'date',
     })
+    expect(propriedade('VariantTablePriceDto', 'effectiveFrom').description).toContain(
+      'regra aditiva',
+    )
   })
 
   /**
